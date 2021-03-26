@@ -86,7 +86,7 @@ multidimensional acquisition GUI in most microscope software).  A
 - *your object here?...*
 
 ```python
-# simplified, and possibly outdated.  See useq.MDAEvent in codebase
+# simplified, and possibly outdated.  See useq.MDASequence in codebase
 
 class MDASequence(BaseModel):
     axis_order: str  # e.g. 'tpcz'
