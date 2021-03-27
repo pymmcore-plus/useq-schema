@@ -1,4 +1,5 @@
 import itertools
+from typing import Any, List, Sequence, Tuple
 
 import numpy as np
 import pytest
@@ -18,13 +19,15 @@ from useq import (
     ZRelativePositions,
 )
 
-z_as_class = [
+_T = List[Tuple[Any, Sequence[float]]]
+
+z_as_class: _T = [
     (ZAboveBelow(above=8, below=4, step=2), [-4, -2, 0, 2, 4, 6, 8]),
     (ZAbsolutePositions(absolute=[0, 0.5, 5]), [0, 0.5, 5]),
     (ZRelativePositions(relative=[0, 0.5, 5]), [0, 0.5, 5]),
     (ZRangeAround(range=8, step=1), [-4, -3, -2, -1, 0, 1, 2, 3, 4]),
 ]
-z_as_dict = [
+z_as_dict: _T = [
     ({"above": 8, "below": 4, "step": 2}, [-4, -2, 0, 2, 4, 6, 8]),
     ({"absolute": [0, 0.5, 5]}, [0, 0.5, 5]),
     ({"relative": [0, 0.5, 5]}, [0, 0.5, 5]),
@@ -34,7 +37,7 @@ z_as_dict = [
 ]
 z_inputs = z_as_class + z_as_dict
 
-t_as_class = [
+t_as_class: _T = [
     # frame every second for 4 seconds
     (TIntervalDuration(interval=1, duration=4), [0, 1000, 2000, 3000, 4000]),
     # 5 frames spanning 8 seconds
@@ -50,7 +53,7 @@ t_as_class = [
     ),
 ]
 
-t_as_dict = [
+t_as_dict: _T = [
     ({"interval": 0.5, "duration": 2}, [0, 500, 1000, 1500, 2000]),
     ({"loops": 5, "duration": 8}, [0, 2000, 4000, 6000, 8000]),
     ({"loops": 5, "duration": {"seconds": 8}}, [0, 2000, 4000, 6000, 8000]),
@@ -89,23 +92,23 @@ p_inputs = [
 
 
 @pytest.mark.parametrize("zplan, zexpectation", z_inputs)
-def test_z_plan(zplan, zexpectation):
+def test_z_plan(zplan: Any, zexpectation: Sequence[float]) -> None:
     assert list(MDASequence(z_plan=zplan).z_plan) == zexpectation
 
 
 @pytest.mark.parametrize("tplan, texpectation", t_inputs)
-def test_t_plan(tplan, texpectation):
+def test_t_plan(tplan: Any, texpectation: Sequence[float]) -> None:
     assert list(MDASequence(time_plan=tplan).time_plan) == texpectation
 
 
 @pytest.mark.parametrize("channel, cexpectation", c_inputs)
-def test_channel(channel, cexpectation):
+def test_channel(channel: Any, cexpectation: Sequence[float]) -> None:
     channel = MDASequence(channels=[channel]).channels[0]
     assert (channel.group, channel.config) == cexpectation
 
 
 @pytest.mark.parametrize("position, pexpectation", p_inputs)
-def test_position(position, pexpectation):
+def test_position(position: Any, pexpectation: Sequence[float]) -> None:
     position = MDASequence(stage_positions=[position]).stage_positions[0]
     assert (position.x, position.y, position.z) == pexpectation
 

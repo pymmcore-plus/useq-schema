@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Iterator, Optional, Sequence, Union
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 import numpy as np
@@ -22,8 +22,8 @@ INDICES = (TIME, POSITION, CHANNEL, Z)
 
 class MDASequence(BaseModel):
     axis_order: str = "".join(INDICES)
-    stage_positions: tuple[Position, ...] = Field(default_factory=tuple)
-    channels: tuple[Channel, ...] = Field(default_factory=tuple)
+    stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
+    channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
 
@@ -70,7 +70,7 @@ class MDASequence(BaseModel):
         return order
 
     @root_validator
-    def validate_mda(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def validate_mda(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if "axis_order" in values:
             values["axis_order"] = cls._check_order(
                 values["axis_order"],
@@ -145,7 +145,7 @@ class MDASequence(BaseModel):
     #     return len(list(self.iter_events()))
 
     @property
-    def shape(self) -> tuple[int, ...]:
+    def shape(self) -> Tuple[int, ...]:
         # NOTE: Doesn't account for skipped Z or channel frames
         shp = (len(list(self.iter_axis(k))) for k in self.axis_order)
         return tuple(s for s in shp if s)

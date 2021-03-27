@@ -42,8 +42,8 @@ execution of the event (such as an image acquisition).
 
 # where `None` generally means "make no change"
 class MDAEvent:
-    metadata: dict[str, Any] = {}  # user-specific data
-    index: dict[str, int] = {}  # {'axis'->index} for this event
+    metadata: Dict[str, Any] = {}  # user-specific data
+    index: Dict[str, int] = {}  # {'axis'->index} for this event
     channel: Optional[Channel]  # optical config
     exposure: Optional[PositiveFloat]  # will likely expand for camera
     min_start_time: Optional[int]  # min time delta for beginning event
@@ -90,8 +90,8 @@ multidimensional acquisition GUI in most microscope software).  A
 
 class MDASequence(BaseModel):
     axis_order: str  # e.g. 'tpcz'
-    stage_positions: tuple[Position]
-    channels: tuple[Channel, ...]
+    stage_positions: Tuple[Position]
+    channels: Tuple[Channel, ...]
     time_plan: AnyTimePlan  # see details below
     z_plan: AnyZPlan  # see details below
 

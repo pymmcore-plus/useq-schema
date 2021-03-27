@@ -18,8 +18,8 @@ class PropertyTuple(NamedTuple):
 
 
 class MDAEvent(BaseModel):
-    metadata: dict[str, Any] = Field(default_factory=dict)
-    index: dict[str, int] = Field(default_factory=dict)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    index: Dict[str, int] = Field(default_factory=dict)
     channel: Optional[Channel] = None
     exposure: Optional[PositiveFloat] = None
     min_start_time: Optional[int] = None
@@ -62,6 +62,3 @@ class MDAEvent(BaseModel):
             if value is None:
                 d.pop(key)
         return d
-
-
-mda = MDAEvent(channel={"asdf": 1})
