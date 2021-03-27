@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, NamedTuple, Optional, Sequence, Dict
+from typing import Any, NamedTuple, Sequence
 
 from pydantic import BaseModel, Field
 from pydantic.types import PositiveFloat
@@ -18,15 +18,15 @@ class PropertyTuple(NamedTuple):
 
 
 class MDAEvent(BaseModel):
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    index: Dict[str, int] = Field(default_factory=dict)
-    channel: Optional[Channel] = None
-    exposure: Optional[PositiveFloat] = None
-    min_start_time: Optional[int] = None
-    x_pos: Optional[float] = None
-    y_pos: Optional[float] = None
-    z_pos: Optional[float] = None
-    properties: Optional[Sequence[PropertyTuple]] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    index: dict[str, int] = Field(default_factory=dict)
+    channel: Channel | None = None
+    exposure: PositiveFloat | None = None
+    min_start_time: int | None = None
+    x_pos: float | None = None
+    y_pos: float | None = None
+    z_pos: float | None = None
+    properties: Sequence[PropertyTuple] | None = None
     # sequence: Optional["MDASequence"] = None
     # action
     # keep shutter open between channels/steps
@@ -35,7 +35,7 @@ class MDAEvent(BaseModel):
         return super().__repr__()
 
     def to_pycromanager(self) -> dict:
-        d = {
+        d: dict[str, Any] = {
             "exposure": self.exposure,
             "axes": {},
             "z": self.z_pos,

@@ -2,8 +2,8 @@ import itertools
 
 import numpy as np
 import pytest
+
 from useq import (
-    INDICES,
     Channel,
     MDASequence,
     NoT,
@@ -66,7 +66,7 @@ t_as_dict = [
 t_inputs = t_as_class + t_as_dict
 
 
-all_orders = ["".join(i) for i in itertools.permutations(INDICES)]
+all_orders = ["".join(i) for i in itertools.permutations("tpcz")]
 
 c_inputs = [
     (Channel(config="DAPI"), ("Channel", "DAPI")),

@@ -1,7 +1,7 @@
-from pydantic.dataclasses import dataclass
 from typing import Iterator, List, Sequence, Union
 
 import numpy as np
+from pydantic.dataclasses import dataclass
 
 
 class ZPlan:
@@ -33,7 +33,7 @@ class ZTopBottom(ZPlan):
     step: float
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return np.arange(self.bottom, self.top + self.step, self.step)
 
     @property
@@ -52,7 +52,7 @@ class ZRangeAround(ZPlan):
     step: float
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return np.arange(-self.range / 2, self.range / 2 + self.step, self.step)
 
 
@@ -65,7 +65,7 @@ class ZAboveBelow(ZPlan):
     step: float
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return np.arange(-abs(self.below), +abs(self.above) + self.step, self.step)
 
 
@@ -76,7 +76,7 @@ class ZRelativePositions(ZPlan):
     relative: List[float]
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return self.relative
 
 
@@ -87,7 +87,7 @@ class ZAbsolutePositions(ZPlan):
     absolute: List[float]
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return self.absolute
 
     @property
@@ -101,7 +101,7 @@ class NoZ(ZPlan):
 
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return []
 
     def __bool__(self) -> bool:

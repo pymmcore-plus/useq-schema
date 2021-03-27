@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Iterator, Optional, Sequence, Tuple
+from typing import Any, Iterator, Optional, Sequence
 from warnings import warn
 
 import numpy as np
@@ -22,8 +22,8 @@ INDICES = (TIME, POSITION, CHANNEL, Z)
 
 class MDASequence(BaseModel):
     axis_order: str = "".join(INDICES)
-    stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
-    channels: Tuple[Channel, ...] = Field(default_factory=tuple)
+    stage_positions: tuple[Position, ...] = Field(default_factory=tuple)
+    channels: tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
 
@@ -32,13 +32,13 @@ class MDASequence(BaseModel):
         extra = "forbid"
 
     @validator("z_plan", pre=True)
-    def validate_zplan(cls, v):
+    def validate_zplan(cls, v):  # type: ignore
         if not v:
             return NoZ()
         return v
 
     @validator("time_plan", pre=True)
-    def validate_time_plan(cls, v):
+    def validate_time_plan(cls, v):  # type: ignore
         if isinstance(v, (tuple, list)):
             return {"phases": v}
         if not v:
@@ -46,7 +46,7 @@ class MDASequence(BaseModel):
         return v
 
     @validator("stage_positions", pre=True)
-    def validate_positions(cls, v):
+    def validate_positions(cls, v):  # type: ignore
         if isinstance(v, np.ndarray):
             if v.ndim == 1:
                 return [v]
@@ -55,7 +55,7 @@ class MDASequence(BaseModel):
         return v
 
     @validator("axis_order", pre=True)
-    def validate_axis_order(cls, v):
+    def validate_axis_order(cls, v):  # type: ignore
         if not isinstance(v, str):
             raise TypeError(f"acquisition order must be a string, got {type(v)}")
         order = v.lower()
@@ -70,7 +70,7 @@ class MDASequence(BaseModel):
         return order
 
     @root_validator
-    def validate_mda(cls, values):
+    def validate_mda(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "axis_order" in values:
             values["axis_order"] = cls._check_order(
                 values["axis_order"],
@@ -115,12 +115,16 @@ class MDASequence(BaseModel):
         return order
 
     def add_channel(
-        self, config, group: str = "Channel", exposure=None, do_stack=False
-    ):
+        self,
+        config: str,
+        group: str = "Channel",
+        exposure: int = None,
+        do_stack: bool = False,
+    ) -> None:
         new = Channel(config=config, group=group, exposure=exposure, do_stack=do_stack)
         self.channels = tuple(self.channels) + (new,)
 
-    def remove_channel(self, **kwargs):
+    def remove_channel(self, **kwargs: str | int | bool) -> None:
         to_pop = [
             c
             for c in self.channels
@@ -128,7 +132,7 @@ class MDASequence(BaseModel):
         ]
         self.channels = tuple(i for i in self.channels if i not in to_pop)
 
-    def __str__(self):
+    def __str__(self) -> str:
         out = "Multi-Dimensional Acquisition ▶ "
         shape = [
             f"n{k.lower()}: {len(list(self.iter_axis(k)))}" for k in self.axis_order
@@ -146,7 +150,7 @@ class MDASequence(BaseModel):
         shp = (len(list(self.iter_axis(k))) for k in self.axis_order)
         return tuple(s for s in shp if s)
 
-    def iter_axis(self, axis):
+    def iter_axis(self, axis: str) -> Iterator[Position | Channel | float]:
         yield from {
             TIME: self.time_plan,
             POSITION: self.stage_positions,
@@ -173,9 +177,9 @@ class MDASequence(BaseModel):
             _ev = dict(zip(order, item))
             index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
-            position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
-            channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
-            time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
+            position: Position | None = _ev[POSITION][1] if POSITION in _ev else None
+            channel: Channel | None = _ev[CHANNEL][1] if CHANNEL in _ev else None
+            time: int | None = _ev[TIME][1] if TIME in _ev else None
 
             # skip channels
             if channel and TIME in index and index[TIME] % channel.acquire_every:
@@ -197,12 +201,16 @@ class MDASequence(BaseModel):
                 y_pos=getattr(position, "y", None),
                 z_pos=z_pos,
                 exposure=getattr(channel, "exposure", None),
-                channel=channel and channel.dict(),
+                channel=channel.dict() if channel else None,
             )
 
     def _combine_z(
-        self, z_pos, z_ind, channel: Optional[Channel], position: Optional[Position]
-    ):
+        self,
+        z_pos: float,
+        z_ind: int,
+        channel: Channel | None,
+        position: Position | None,
+    ) -> float:
         if channel:
             # only acquire on the middle plane:
             if not channel.do_stack and z_ind != len(self.z_plan) // 2:
