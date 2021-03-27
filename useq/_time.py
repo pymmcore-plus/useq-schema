@@ -19,6 +19,7 @@ class timedelta(datetime.timedelta):
 
 
 class TimePlan:
+    # TODO: probably needs to be implemented by engine
     prioritize_duration: bool = False  # or prioritize num frames
 
     def __iter__(self) -> Iterator[int]:

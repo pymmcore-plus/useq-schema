@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from pydantic.dataclasses import dataclass
 from typing import Iterator, List, Sequence, Union
 
 import numpy as np

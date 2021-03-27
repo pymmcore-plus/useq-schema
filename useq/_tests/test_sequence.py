@@ -2,7 +2,7 @@ import itertools
 
 import numpy as np
 import pytest
-from useq.sequence import (
+from useq import (
     INDICES,
     Channel,
     MDASequence,

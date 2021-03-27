@@ -117,10 +117,8 @@ class MDASequence(BaseModel):
     def add_channel(
         self, config, group: str = "Channel", exposure=None, do_stack=False
     ):
-        new_chan = Channel(
-            config=config, group=group, exposure=exposure, do_stack=do_stack
-        )
-        self.channels = tuple(self.channels) + (new_chan,)
+        new = Channel(config=config, group=group, exposure=exposure, do_stack=do_stack)
+        self.channels = tuple(self.channels) + (new,)
 
     def remove_channel(self, **kwargs):
         to_pop = [
@@ -138,9 +136,9 @@ class MDASequence(BaseModel):
         out += ", ".join(shape)
         return out
 
-    def __len__(self):
-        np.prod(self.shape)
-        return len(list(self.iter_events()))
+    # def __len__(self):
+    #     # np.prod(self.shape)
+    #     return len(list(self.iter_events()))
 
     @property
     def shape(self) -> tuple[int, ...]:
