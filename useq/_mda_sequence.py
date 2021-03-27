@@ -201,7 +201,9 @@ class MDASequence(BaseModel):
                 y_pos=getattr(position, "y", None),
                 z_pos=z_pos,
                 exposure=getattr(channel, "exposure", None),
-                channel=channel.dict() if channel else None,
+                channel={"config": channel.config, "group": channel.group}
+                if channel
+                else None,
             )
 
     def _combine_z(

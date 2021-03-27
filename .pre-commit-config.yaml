@@ -31,11 +31,5 @@ repos:
     rev: v0.812
     hooks:
       - id: mypy
-        additional_dependencies: [tokenize-rt==3.2.0, pydantic]
-        args:
-          [
-            "--ignore-missing-imports",
-            "--scripts-are-modules",
-            "--no-warn-unused-ignores",
-          ]
-        exclude: examples
+        additional_dependencies: [pydantic]
+        exclude: tests

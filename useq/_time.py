@@ -1,5 +1,5 @@
 import datetime
-from typing import Iterator, Sequence, Union
+from typing import Any, Callable, Generator, Iterator, Sequence, Union
 
 from pydantic.dataclasses import dataclass
 from pydantic.datetime_parse import parse_duration
@@ -8,11 +8,11 @@ from pydantic.types import PositiveInt
 
 class timedelta(datetime.timedelta):
     @classmethod
-    def __get_validators__(cls):
+    def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
         yield cls.validate
 
     @classmethod
-    def validate(cls, v):
+    def validate(cls, v: Any) -> datetime.timedelta:
         if isinstance(v, dict):
             return datetime.timedelta(**v)
         return parse_duration(v)
@@ -71,7 +71,7 @@ class TIntervalDuration(TimePlan):
 class NoT(TimePlan):
     """Don't acquire T."""
 
-    def deltas(self):
+    def deltas(self) -> Iterator[datetime.timedelta]:
         yield from ()
 
 
