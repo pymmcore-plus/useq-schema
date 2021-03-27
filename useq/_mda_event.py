@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from typing import Any, Dict, NamedTuple, Optional, Sequence
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pydantic.types import PositiveFloat
 
+from ._base_model import UseqModel
 
-class Channel(BaseModel):
+
+class Channel(UseqModel):
     config: str
     group: str = "Channel"
 
@@ -17,7 +19,7 @@ class PropertyTuple(NamedTuple):
     property_value: Any
 
 
-class MDAEvent(BaseModel):
+class MDAEvent(UseqModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     index: Dict[str, int] = Field(default_factory=dict)
     channel: Optional[Channel] = None
@@ -30,14 +32,6 @@ class MDAEvent(BaseModel):
     # sequence: Optional["MDASequence"] = None
     # action
     # keep shutter open between channels/steps
-
-    class Config:
-        allow_population_by_field_name = True
-        extra = "forbid"
-        validate_assignment = True
-
-    def __repr__(self) -> str:
-        return super().__repr__()
 
     def to_pycromanager(self) -> dict:
         d: Dict[str, Any] = {

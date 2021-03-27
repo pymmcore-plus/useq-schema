@@ -5,8 +5,9 @@ from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 import numpy as np
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import Field, root_validator, validator
 
+from ._base_model import UseqModel
 from ._channel import Channel
 from ._mda_event import MDAEvent
 from ._position import Position
@@ -20,16 +21,12 @@ Z = "z"
 INDICES = (TIME, POSITION, CHANNEL, Z)
 
 
-class MDASequence(BaseModel):
+class MDASequence(UseqModel):
     axis_order: str = "".join(INDICES)
     stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
-
-    class Config:
-        validate_assignment = True
-        extra = "forbid"
 
     @validator("z_plan", pre=True)
     def validate_zplan(cls, v):  # type: ignore

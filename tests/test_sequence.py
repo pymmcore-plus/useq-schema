@@ -119,7 +119,7 @@ def test_position(position: Any, pexpectation: Sequence[float]) -> None:
 @pytest.mark.parametrize("zplan, zexpectation", z_as_dict)
 @pytest.mark.parametrize("channel, cexpectation", c_inputs[:3])
 @pytest.mark.parametrize("position, pexpectation", p_inputs[:4])
-@pytest.mark.parametrize("order", ["tpcz", "tcpz", "tpzc", "ptc", "zc"])
+@pytest.mark.parametrize("order", ["tpcz", "tpzc", "ptzc", "ptcz", "ptc", "zc"])
 def test_combinations(
     tplan: Any,
     texpectation: Sequence[float],
