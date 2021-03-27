@@ -3,9 +3,11 @@ from typing import Any, List, Sequence, Tuple
 
 import numpy as np
 import pytest
+from pydantic import BaseModel
 
 from useq import (
     Channel,
+    MDAEvent,
     MDASequence,
     NoT,
     NoZ,
@@ -144,3 +146,9 @@ def test_combinations(
 
     assert list(mda)
     assert mda.to_pycromanager()
+
+
+@pytest.mark.parametrize("cls", [MDASequence, MDAEvent])
+def test_schema(cls: BaseModel) -> None:
+    assert cls.schema()
+    assert cls.schema_json()
