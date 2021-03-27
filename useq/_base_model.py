@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import IO, Optional, Type, Union
 
 from pydantic import BaseModel
 from pydantic.error_wrappers import ErrorWrapper, ValidationError
@@ -109,9 +109,22 @@ class UseqModel(BaseModel):
         exclude_unset: bool = True,  # pydantic has False by default
         exclude_defaults: bool = False,
         exclude_none: bool = False,
-    ) -> str:
-        """Generate a YAML representation of the model."""
+        stream: Optional[IO[str]] = None,
+    ) -> Optional[str]:
+        """Generate a YAML representation of the model.
+
+        Returns
+        -------
+        yaml : str or None
+            YAML output ... If `stream` is provided, returns `None`.
+        """
+        from datetime import timedelta
+
         import yaml
+
+        yaml.SafeDumper.add_multi_representer(
+            timedelta, lambda dumper, data: dumper.represent_str(str(data))
+        )
 
         data = self.dict(
             include=include,
@@ -121,4 +134,4 @@ class UseqModel(BaseModel):
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
         )
-        return yaml.safe_dump(data)
+        return yaml.safe_dump(data, stream=stream)
