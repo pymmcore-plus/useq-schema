@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Iterator, Sequence, Tuple
+from typing import Iterator, Optional, Sequence, Tuple
 from warnings import warn
 
 import numpy as np
@@ -175,9 +175,9 @@ class MDASequence(BaseModel):
             _ev = dict(zip(order, item))
             index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
-            position: Position | None = _ev[POSITION][1] if POSITION in _ev else None
-            channel: Channel | None = _ev[CHANNEL][1] if CHANNEL in _ev else None
-            time: int | None = _ev[TIME][1] if TIME in _ev else None
+            position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
+            channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
+            time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
 
             # skip channels
             if channel and TIME in index and index[TIME] % channel.acquire_every:
@@ -203,7 +203,7 @@ class MDASequence(BaseModel):
             )
 
     def _combine_z(
-        self, z_pos, z_ind, channel: Channel | None, position: Position | None
+        self, z_pos, z_ind, channel: Optional[Channel], position: Optional[Position]
     ):
         if channel:
             # only acquire on the middle plane:

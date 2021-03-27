@@ -2,7 +2,7 @@ import itertools
 
 import numpy as np
 import pytest
-from micromanager_gui.sequence import (
+from useq.sequence import (
     INDICES,
     Channel,
     MDASequence,
