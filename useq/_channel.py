@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generator
+from typing import Any, Callable, Generator, Optional
 
 from pydantic import BaseModel
 from pydantic.types import PositiveFloat, PositiveInt
@@ -9,11 +9,11 @@ from pydantic.types import PositiveFloat, PositiveInt
 class Channel(BaseModel):
     config: str
     group: str = "Channel"
-    exposure: PositiveFloat | None = None
+    exposure: Optional[PositiveFloat] = None
     do_stack: bool = True
     z_offset: float = 0.0
     acquire_every: PositiveInt = 1  # acquire every n frames
-    camera: str | None = None
+    camera: Optional[str] = None
 
     @classmethod
     def __get_validators__(cls) -> Generator[Callable, None, None]:

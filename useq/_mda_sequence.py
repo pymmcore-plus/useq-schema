@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Iterator, Optional, Sequence
+from typing import Any, Iterator, Optional, Sequence, Union
 from warnings import warn
 
 import numpy as np
@@ -124,7 +124,7 @@ class MDASequence(BaseModel):
         new = Channel(config=config, group=group, exposure=exposure, do_stack=do_stack)
         self.channels = tuple(self.channels) + (new,)
 
-    def remove_channel(self, **kwargs: str | int | bool) -> None:
+    def remove_channel(self, **kwargs: Union[str, int, bool]) -> None:
         to_pop = [
             c
             for c in self.channels
@@ -150,7 +150,7 @@ class MDASequence(BaseModel):
         shp = (len(list(self.iter_axis(k))) for k in self.axis_order)
         return tuple(s for s in shp if s)
 
-    def iter_axis(self, axis: str) -> Iterator[Position | Channel | float]:
+    def iter_axis(self, axis: str) -> Iterator[Union[Position, Channel, float]]:
         yield from {
             TIME: self.time_plan,
             POSITION: self.stage_positions,
@@ -177,9 +177,9 @@ class MDASequence(BaseModel):
             _ev = dict(zip(order, item))
             index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
-            position: Position | None = _ev[POSITION][1] if POSITION in _ev else None
-            channel: Channel | None = _ev[CHANNEL][1] if CHANNEL in _ev else None
-            time: int | None = _ev[TIME][1] if TIME in _ev else None
+            position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
+            channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
+            time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
 
             # skip channels
             if channel and TIME in index and index[TIME] % channel.acquire_every:
@@ -208,8 +208,8 @@ class MDASequence(BaseModel):
         self,
         z_pos: float,
         z_ind: int,
-        channel: Channel | None,
-        position: Position | None,
+        channel: Optional[Channel],
+        position: Optional[Position],
     ) -> float:
         if channel:
             # only acquire on the middle plane:
