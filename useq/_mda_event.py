@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, NamedTuple, Optional, Sequence, Dict
+from typing import Any, Dict, NamedTuple, Optional, Sequence
 
 from pydantic import BaseModel, Field
 from pydantic.types import PositiveFloat
@@ -31,11 +31,16 @@ class MDAEvent(BaseModel):
     # action
     # keep shutter open between channels/steps
 
+    class Config:
+        allow_population_by_field_name = True
+        extra = "forbid"
+        validate_assignment = True
+
     def __repr__(self) -> str:
         return super().__repr__()
 
     def to_pycromanager(self) -> dict:
-        d = {
+        d: Dict[str, Any] = {
             "exposure": self.exposure,
             "axes": {},
             "z": self.z_pos,

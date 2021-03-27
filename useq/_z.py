@@ -1,13 +1,13 @@
-from pydantic.dataclasses import dataclass
 from typing import Iterator, List, Sequence, Union
 
 import numpy as np
+from pydantic import BaseModel
 
 
-class ZPlan:
+class ZPlan(BaseModel):
     go_up: bool
 
-    def __iter__(self) -> Iterator[float]:
+    def __iter__(self) -> Iterator[float]:  # type: ignore
         positions = self.positions()
         if not self.go_up:
             positions = positions[::-1]
@@ -24,7 +24,6 @@ class ZPlan:
         return True
 
 
-@dataclass
 class ZTopBottom(ZPlan):
     """Define absolute top & bottom positions."""
 
@@ -33,7 +32,7 @@ class ZTopBottom(ZPlan):
     step: float
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return np.arange(self.bottom, self.top + self.step, self.step)
 
     @property
@@ -44,7 +43,6 @@ class ZTopBottom(ZPlan):
 # ZTopBottom()
 
 
-@dataclass
 class ZRangeAround(ZPlan):
     """Range symmetrically around some reference position."""
 
@@ -52,11 +50,10 @@ class ZRangeAround(ZPlan):
     step: float
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return np.arange(-self.range / 2, self.range / 2 + self.step, self.step)
 
 
-@dataclass
 class ZAboveBelow(ZPlan):
     """Range asymmetrically above and below some reference position."""
 
@@ -65,29 +62,27 @@ class ZAboveBelow(ZPlan):
     step: float
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return np.arange(-abs(self.below), +abs(self.above) + self.step, self.step)
 
 
-@dataclass
 class ZRelativePositions(ZPlan):
     """Direct list of relative z positions."""
 
     relative: List[float]
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return self.relative
 
 
-@dataclass
 class ZAbsolutePositions(ZPlan):
     """Direct list of absolute z positions."""
 
     absolute: List[float]
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return self.absolute
 
     @property
@@ -95,13 +90,12 @@ class ZAbsolutePositions(ZPlan):
         return False
 
 
-@dataclass
 class NoZ(ZPlan):
     """Don't acquire Z."""
 
     go_up: bool = True
 
-    def positions(self):
+    def positions(self) -> Sequence[float]:
         return []
 
     def __bool__(self) -> bool:

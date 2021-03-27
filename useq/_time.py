@@ -1,28 +1,28 @@
 import datetime
-from typing import Iterator, Sequence, Union
+from typing import Any, Callable, Generator, Iterator, Sequence, Union
 
-from pydantic.dataclasses import dataclass
+from pydantic import BaseModel
 from pydantic.datetime_parse import parse_duration
 from pydantic.types import PositiveInt
 
 
 class timedelta(datetime.timedelta):
     @classmethod
-    def __get_validators__(cls):
+    def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
         yield cls.validate
 
     @classmethod
-    def validate(cls, v):
+    def validate(cls, v: Any) -> datetime.timedelta:
         if isinstance(v, dict):
             return datetime.timedelta(**v)
         return parse_duration(v)
 
 
-class TimePlan:
+class TimePlan(BaseModel):
     # TODO: probably needs to be implemented by engine
     prioritize_duration: bool = False  # or prioritize num frames
 
-    def __iter__(self) -> Iterator[int]:
+    def __iter__(self) -> Iterator[int]:  # type: ignore
         for td in self.deltas():
             yield int(1000 * td.total_seconds())
 
@@ -39,13 +39,11 @@ class TimePlan:
         return len(self) > 0
 
 
-@dataclass
 class TIntervalLoops(TimePlan):
     interval: timedelta
     loops: PositiveInt
 
 
-@dataclass
 class TDurationLoops(TimePlan):
     duration: timedelta
     loops: PositiveInt
@@ -56,7 +54,6 @@ class TDurationLoops(TimePlan):
         return self.duration / (self.loops - 1)
 
 
-@dataclass
 class TIntervalDuration(TimePlan):
     interval: timedelta
     duration: timedelta
@@ -67,18 +64,16 @@ class TIntervalDuration(TimePlan):
         return self.duration // self.interval + 1
 
 
-@dataclass
 class NoT(TimePlan):
     """Don't acquire T."""
 
-    def deltas(self):
+    def deltas(self) -> Iterator[datetime.timedelta]:
         yield from ()
 
 
 SinglePhaseTimePlan = Union[TIntervalDuration, TIntervalLoops, TDurationLoops, NoT]
 
 
-@dataclass
 class MultiPhaseTimePlan(TimePlan):
     phases: Sequence[SinglePhaseTimePlan]
 
@@ -94,4 +89,4 @@ class MultiPhaseTimePlan(TimePlan):
             accum += td
 
 
-AnyTimePlan = Union[SinglePhaseTimePlan, MultiPhaseTimePlan]
+AnyTimePlan = Union[MultiPhaseTimePlan, SinglePhaseTimePlan]
