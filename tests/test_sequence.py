@@ -41,31 +41,31 @@ z_inputs = z_as_class + z_as_dict
 
 t_as_class: _T = [
     # frame every second for 4 seconds
-    (TIntervalDuration(interval=1, duration=4), [0, 1000, 2000, 3000, 4000]),
+    (TIntervalDuration(interval=1, duration=4), [0, 1, 2, 3, 4]),
     # 5 frames spanning 8 seconds
-    (TDurationLoops(loops=5, duration=8), [0, 2000, 4000, 6000, 8000]),
+    (TDurationLoops(loops=5, duration=8), [0, 2, 4, 6, 8]),
     # 5 frames, taken every 250 ms
-    (TIntervalLoops(loops=5, interval=0.25), [0, 250, 500, 750, 1000]),
+    (TIntervalLoops(loops=5, interval=0.25), [0, 0.25, 0.5, 0.75, 1]),
     (
         [
             TIntervalLoops(loops=5, interval=0.25),
             TIntervalDuration(interval=1, duration=4),
         ],
-        [0, 250, 500, 750, 1000, 2000, 3000, 4000, 5000],
+        [0, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5],
     ),
 ]
 
 t_as_dict: _T = [
     (None, []),
-    ({"interval": 0.5, "duration": 2}, [0, 500, 1000, 1500, 2000]),
-    ({"loops": 5, "duration": 8}, [0, 2000, 4000, 6000, 8000]),
-    ({"loops": 5, "interval": 0.25}, [0, 250, 500, 750, 1000]),
+    ({"interval": 0.5, "duration": 2}, [0, 0.5, 1, 1.5, 2]),
+    ({"loops": 5, "duration": 8}, [0, 2, 4, 6, 8]),
+    ({"loops": 5, "interval": 0.25}, [0, 0.25, 0.5, 0.75, 1]),
     (
         [{"loops": 5, "interval": 0.25}, {"interval": 1, "duration": 4}],
-        [0, 250, 500, 750, 1000, 2000, 3000, 4000, 5000],
+        [0, 0.25, 0.50, 0.75, 1, 2, 3, 4, 5],
     ),
-    ({"loops": 5, "duration": {"milliseconds": 8}}, [0, 2, 4, 6, 8]),
-    ({"loops": 5, "duration": {"seconds": 8}}, [0, 2000, 4000, 6000, 8000]),
+    ({"loops": 5, "duration": {"milliseconds": 8}}, [0, 0.002, 0.004, 0.006, 0.008]),
+    ({"loops": 5, "duration": {"seconds": 8}}, [0, 2, 4, 6, 8]),
     (NoT(), []),
 ]
 t_inputs = t_as_class + t_as_dict

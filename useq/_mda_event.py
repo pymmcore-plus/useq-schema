@@ -24,7 +24,7 @@ class MDAEvent(UseqModel):
     index: Dict[str, int] = Field(default_factory=dict)
     channel: Optional[Channel] = None
     exposure: Optional[PositiveFloat] = None
-    min_start_time: Optional[int] = None
+    min_start_time: Optional[float] = None  # time in sec
     x_pos: Optional[float] = None
     y_pos: Optional[float] = None
     z_pos: Optional[float] = None

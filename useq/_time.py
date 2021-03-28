@@ -22,9 +22,9 @@ class TimePlan(BaseModel):
     # TODO: probably needs to be implemented by engine
     prioritize_duration: bool = False  # or prioritize num frames
 
-    def __iter__(self) -> Iterator[int]:  # type: ignore
+    def __iter__(self) -> Iterator[float]:  # type: ignore
         for td in self.deltas():
-            yield int(1000 * td.total_seconds())
+            yield td.total_seconds()
 
     def __len__(self) -> int:
         return len(list(self.deltas()))
