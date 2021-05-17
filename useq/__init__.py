@@ -20,3 +20,5 @@ __all__ = [
     "ZRangeAround",
     "ZRelativePositions",
 ]
+
+MDAEvent.update_forward_refs(MDASequence=MDASequence)

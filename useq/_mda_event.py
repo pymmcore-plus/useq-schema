@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Dict, NamedTuple, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, NamedTuple, Optional, Sequence, Tuple
 
 from pydantic import Field
 from pydantic.types import PositiveFloat
 
 from ._base_model import UseqModel
+
+if TYPE_CHECKING:
+    from ._mda_sequence import MDASequence
+
+    ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
 
 class Channel(UseqModel):
@@ -29,9 +34,14 @@ class MDAEvent(UseqModel):
     y_pos: Optional[float] = None
     z_pos: Optional[float] = None
     properties: Optional[Sequence[PropertyTuple]] = None
-    # sequence: Optional["MDASequence"] = None
+    sequence: Optional[MDASequence] = Field(default=None, repr=False)
     # action
     # keep shutter open between channels/steps
+
+    def __repr_args__(self) -> ReprArgs:
+        d = self.__dict__.copy()
+        d.pop("sequence")
+        return list(d.items())
 
     def to_pycromanager(self) -> dict:
         d: Dict[str, Any] = {

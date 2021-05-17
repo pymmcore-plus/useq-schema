@@ -191,6 +191,9 @@ class MDASequence(UseqModel):
             except self._SkipFrame:
                 continue
 
+            _channel = (
+                {"config": channel.config, "group": channel.group} if channel else None
+            )
             yield MDAEvent(
                 index=index,
                 min_start_time=time,
@@ -198,9 +201,8 @@ class MDASequence(UseqModel):
                 y_pos=getattr(position, "y", None),
                 z_pos=z_pos,
                 exposure=getattr(channel, "exposure", None),
-                channel={"config": channel.config, "group": channel.group}
-                if channel
-                else None,
+                channel=_channel,
+                sequence=self,
             )
 
     def _combine_z(

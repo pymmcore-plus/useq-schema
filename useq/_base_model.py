@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import IO, Optional, Type, Union
+from typing import IO, TYPE_CHECKING, Any, Optional, Sequence, Tuple, Type, Union
 
 from pydantic import BaseModel
 from pydantic.error_wrappers import ErrorWrapper, ValidationError
 from pydantic.types import StrBytes
 from pydantic.utils import ROOT_KEY
+
+if TYPE_CHECKING:
+    ReprArgs = Sequence[Tuple[Optional[str], Any]]
+
 
 __all__ = ["UseqModel"]
 
@@ -17,14 +21,33 @@ class UseqModel(BaseModel):
         extra = "forbid"
         validate_assignment = True
 
+    def __repr_args__(self) -> ReprArgs:
+        return [
+            (k, val)
+            for k, val in super().__repr_args__()
+            if k in self.__fields__
+            and val
+            != (
+                self.__fields__[k].default_factory()  # type: ignore
+                if self.__fields__[k].default_factory
+                else self.__fields__[k].default
+            )
+        ]
+
     def __repr__(self) -> str:
         """Repr, that only shows values that are changed form the defaults."""
         from textwrap import indent
 
         lines = []
-        for f in sorted(self.__fields__.values(), key=lambda f: f.name):
-            current = getattr(self, f.name)
-            default = f.default_factory() if f.default_factory else f.default
+        for k, current in sorted(self.__repr_args__()):
+            if not k:
+                continue
+            f = self.__fields__[k]
+            default = (
+                self.__fields__[k].default_factory()  # type: ignore
+                if self.__fields__[k].default_factory
+                else self.__fields__[k].default
+            )
             if current != default:
                 lines.append(f"{f.name}={current!r},")
         if len(lines) == 1:
