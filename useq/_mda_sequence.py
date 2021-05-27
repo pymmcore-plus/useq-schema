@@ -80,6 +80,12 @@ class MDASequence(UseqModel):
 
         return values
 
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, MDASequence):
+            return self.dict(exclude={"uid"}) == other.dict(exclude={"uid"})
+        else:
+            return False
+
     @classmethod
     def _check_order(
         cls,
