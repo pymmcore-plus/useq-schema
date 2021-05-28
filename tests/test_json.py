@@ -30,4 +30,4 @@ def test_yaml(tmp_path: Path) -> None:
     mda = MDASequence.parse_file(yaml_file)
     assert mda == MDA
     # round trip
-    assert mda.json() == JSON
+    assert mda.json(exclude={"uid"}) == JSON

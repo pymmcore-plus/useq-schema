@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from itertools import product
 from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union
+from uuid import UUID, uuid4
 from warnings import warn
 
 import numpy as np
@@ -27,6 +28,7 @@ class MDASequence(UseqModel):
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
+    uid: UUID = Field(default_factory=uuid4)
 
     @validator("z_plan", pre=True)
     def validate_zplan(cls, v):  # type: ignore
@@ -77,6 +79,12 @@ class MDASequence(UseqModel):
             )
 
         return values
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, MDASequence):
+            return self.dict(exclude={"uid"}) == other.dict(exclude={"uid"})
+        else:
+            return False
 
     @classmethod
     def _check_order(
