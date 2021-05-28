@@ -145,8 +145,9 @@ class MDASequence(UseqModel):
         out += ", ".join(shape)
         return out
 
-    # def __len__(self):
-    #     # np.prod(self.shape)
+    def __len__(self):
+        ln = np.prod(self.shape)
+        return ln
     #     return len(list(self.iter_events()))
 
     @property
