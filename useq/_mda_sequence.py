@@ -30,6 +30,9 @@ class MDASequence(UseqModel):
     z_plan: AnyZPlan = Field(default_factory=NoZ)
     uid: UUID = Field(default_factory=uuid4)
 
+    def __hash__(self):
+        return hash(self.uid)
+
     @validator("z_plan", pre=True)
     def validate_zplan(cls, v):  # type: ignore
         if not v:
