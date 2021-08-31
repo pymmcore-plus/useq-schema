@@ -30,17 +30,17 @@ class MDASequence(UseqModel):
     z_plan: AnyZPlan = Field(default_factory=NoZ)
     uid: UUID = Field(default_factory=uuid4)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.uid)
 
     @validator("z_plan", pre=True)
-    def validate_zplan(cls, v):  # type: ignore
+    def validate_zplan(cls, v: Any) -> Union[dict, NoZ]:
         if not v:
             return NoZ()
         return v
 
     @validator("time_plan", pre=True)
-    def validate_time_plan(cls, v):  # type: ignore
+    def validate_time_plan(cls, v: Any) -> Union[dict, NoT]:
         if isinstance(v, (tuple, list)):
             return {"phases": v}
         if not v:
@@ -48,7 +48,7 @@ class MDASequence(UseqModel):
         return v
 
     @validator("stage_positions", pre=True)
-    def validate_positions(cls, v):  # type: ignore
+    def validate_positions(cls, v: Any) -> list:
         if isinstance(v, np.ndarray):
             if v.ndim == 1:
                 return [v]
@@ -57,7 +57,7 @@ class MDASequence(UseqModel):
         return v
 
     @validator("axis_order", pre=True)
-    def validate_axis_order(cls, v):  # type: ignore
+    def validate_axis_order(cls, v: Any) -> str:
         if not isinstance(v, str):
             raise TypeError(f"acquisition order must be a string, got {type(v)}")
         order = v.lower()
