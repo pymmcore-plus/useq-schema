@@ -38,7 +38,7 @@ z_plan:
 
 MDA = MDASequence(
     axis_order="tpcz",
-    metadata = {"some info": "something"},
+    metadata={"some info": "something"},
     stage_positions=[
         (10, 20),
         dict(x=10, y=20, z=50, z_plan=dict(above=10, below=0, step=1)),
