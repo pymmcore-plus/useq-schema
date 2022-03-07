@@ -89,6 +89,7 @@ multidimensional acquisition GUI in most microscope software).  A
 # simplified, and possibly outdated.  See useq.MDASequence in codebase
 
 class MDASequence(BaseModel):
+    metadata: Dict[str, Any] = {}  # user-specific data
     axis_order: str  # e.g. 'tpcz'
     stage_positions: Tuple[Position]
     channels: Tuple[Channel, ...]

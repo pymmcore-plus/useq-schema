@@ -23,6 +23,7 @@ INDICES = (TIME, POSITION, CHANNEL, Z)
 
 
 class MDASequence(UseqModel):
+    metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: str = "".join(INDICES)
     stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
