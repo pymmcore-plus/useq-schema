@@ -62,7 +62,8 @@ class MDASequence(UseqModel):
         if not isinstance(v, str):
             raise TypeError(f"acquisition order must be a string, got {type(v)}")
         order = v.lower()
-        if extra := {x for x in order if x not in INDICES}:
+        extra = {x for x in order if x not in INDICES}
+        if extra:
             raise ValueError(
                 f"Can only iterate over axes: {INDICES!r}. Got extra: {extra}"
             )
