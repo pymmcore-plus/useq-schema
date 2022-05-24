@@ -1,0 +1,24 @@
+states:
+  - name: solid
+  - name: liquid
+  - name: gas
+    on_exit: [resume, notify]
+  - name: plasma
+    on_enter: [alert]
+    on_exit: [resume]
+transitions:
+  - trigger: melt
+    source: solid
+    dest: liquid
+  - trigger: evaporate
+    source: liquid
+    dest: gas
+    conditions: [is_valid]
+  - trigger: sublimate
+    source: solid
+    dest: gas
+    unless: [is_not_valid]
+  - trigger: ionize
+    source: gas
+    dest: plasma
+    conditions: [is_valid, is_also_valid]
