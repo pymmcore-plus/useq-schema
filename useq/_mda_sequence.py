@@ -35,9 +35,7 @@ class MDASequence(UseqModel):
 
     @validator("z_plan", pre=True)
     def validate_zplan(cls, v):  # type: ignore
-        if not v:
-            return NoZ()
-        return v
+        return v or NoZ()
 
     @validator("time_plan", pre=True)
     def validate_time_plan(cls, v):  # type: ignore
@@ -61,8 +59,7 @@ class MDASequence(UseqModel):
         if not isinstance(v, str):
             raise TypeError(f"acquisition order must be a string, got {type(v)}")
         order = v.lower()
-        extra = {x for x in order if x not in INDICES}
-        if extra:
+        if extra := {x for x in order if x not in INDICES}:
             raise ValueError(
                 f"Can only iterate over axes: {INDICES!r}. Got extra: {extra}"
             )
@@ -141,12 +138,10 @@ class MDASequence(UseqModel):
         self.channels = tuple(i for i in self.channels if i not in to_pop)
 
     def __str__(self) -> str:
-        out = "Multi-Dimensional Acquisition ▶ "
         shape = [
             f"n{k.lower()}: {len(list(self.iter_axis(k)))}" for k in self.axis_order
         ]
-        out += ", ".join(shape)
-        return out
+        return "Multi-Dimensional Acquisition ▶ " + ", ".join(shape)
 
     # def __len__(self):
     #     # np.prod(self.shape)
@@ -197,7 +192,7 @@ class MDASequence(UseqModel):
                 z_pos = (
                     self._combine_z(_ev[Z][1], index[Z], channel, position)
                     if Z in _ev
-                    else None
+                    else position.z if position else None
                 )
             except self._SkipFrame:
                 continue
