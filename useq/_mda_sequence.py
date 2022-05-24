@@ -195,7 +195,9 @@ class MDASequence(UseqModel):
                 z_pos = (
                     self._combine_z(_ev[Z][1], index[Z], channel, position)
                     if Z in _ev
-                    else position.z if position else None
+                    else position.z
+                    if position
+                    else None
                 )
             except self._SkipFrame:
                 continue
