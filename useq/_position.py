@@ -22,8 +22,6 @@ class Position(BaseModel):
 
     @classmethod
     def validate(cls, value: Any) -> Position:
-        print("")
-        print("value:", value)
         if isinstance(value, Position):
             return value
         if isinstance(value, dict):
@@ -32,6 +30,5 @@ class Position(BaseModel):
             x, *value = value
             y, *value = value or (None,)
             z = value[0] if value else None
-            print(x, y, z)
             return Position(x=x, y=y, z=z)
         raise TypeError(f"Cannot coerce {value!r} to Position")
