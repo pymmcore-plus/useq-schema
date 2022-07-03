@@ -46,7 +46,3 @@ class Position(BaseModel):
 
             return Position(name=name, x=x, y=y, z=z)
         raise TypeError(f"Cannot coerce {value!r} to Position")
-
-def f(**kwargs):
-    for key, value in kwargs.items():
-        print(key, value)
