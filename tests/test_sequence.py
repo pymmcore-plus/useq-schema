@@ -1,9 +1,7 @@
-from ctypes import Union
 import itertools
 from typing import Any, List, Sequence, Tuple
 
 import numpy as np
-from pyparsing import Optional
 import pytest
 from pydantic import BaseModel
 
@@ -87,7 +85,10 @@ p_inputs = [
     ({"x": 0, "y": 1, "z": 2, "name": "test_name"}, (0, 1, 2, "test_name")),
     ({"y": 200}, (None, 200, None, None)),
     ((100, 200, 300, None), (100, 200, 300, None)),
-    ({"z": 100, "z_plan": {"above": 8, "below": 4, "step": 2}}, (None, None, 100, None)),
+    (
+        {"z": 100, "z_plan": {"above": 8, "below": 4, "step": 2}},
+        (None, None, 100, None),
+    ),
     (np.ones(3), (1, 1, 1, None)),
     ((None, 200, None, None), (None, 200, None, None)),
     (np.ones(2), (1, 1, None, None)),
