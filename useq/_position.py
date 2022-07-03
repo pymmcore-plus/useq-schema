@@ -29,7 +29,24 @@ class Position(BaseModel):
         if isinstance(value, (np.ndarray, tuple)):
             x, *value = value
             y, *value = value or (None,)
-            z = value[0] if value else None
-            name = value[1] if value and len(value) > 1 else None
+            if value:
+                if len(value) == 1:
+                    if isinstance(value[0], str):
+                        name = value[0]
+                        z = None
+                    else:
+                        z = value[0]
+                        name = None
+                else:
+                    z = value[0]
+                    name = value[1]
+            else:
+                z = None
+                name = None
+
             return Position(name=name, x=x, y=y, z=z)
         raise TypeError(f"Cannot coerce {value!r} to Position")
+
+def f(**kwargs):
+    for key, value in kwargs.items():
+        print(key, value)

@@ -15,9 +15,11 @@ channels:
 metadata:
   some info: something
 stage_positions:
-- x: 10.0
+- name: test_name_1
+  x: 10.0
   y: 20.0
-- x: 10.0
+- name: test_name_2
+  x: 10.0
   y: 20.0
   z: 50.0
   z_plan:
@@ -40,8 +42,8 @@ MDA = MDASequence(
     axis_order="tpcz",
     metadata={"some info": "something"},
     stage_positions=[
-        (10, 20),
-        dict(x=10, y=20, z=50, z_plan=dict(above=10, below=0, step=1)),
+        (10, 20, "test_name_1"),
+        dict(x=10, y=20, z=50, name = "test_name_2", z_plan=dict(above=10, below=0, step=1)),
     ],
     channels=[
         dict(config="Cy5", exposure=50),
@@ -56,7 +58,7 @@ MDA = MDASequence(
 )
 
 
-def test_yaml(tmp_path: Path) -> None:
+def test_yaml(tmp_path: Path) -> None:    
     yaml_file = tmp_path / "test.yaml"
     yaml_file.write_text(YAML)
     mda = MDASequence.parse_file(yaml_file)
