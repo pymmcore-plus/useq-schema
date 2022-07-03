@@ -30,5 +30,6 @@ class Position(BaseModel):
             x, *value = value
             y, *value = value or (None,)
             z = value[0] if value else None
-            return Position(x=x, y=y, z=z)
+            name = value[1] if value and len(value) > 1 else None
+            return Position(name=name, x=x, y=y, z=z)
         raise TypeError(f"Cannot coerce {value!r} to Position")
