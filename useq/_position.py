@@ -22,6 +22,8 @@ class Position(BaseModel):
 
     @classmethod
     def validate(cls, value: Any) -> Position:
+        print("")
+        print("value:", value)
         if isinstance(value, Position):
             return value
         if isinstance(value, dict):
@@ -29,20 +31,7 @@ class Position(BaseModel):
         if isinstance(value, (np.ndarray, tuple)):
             x, *value = value
             y, *value = value or (None,)
-            if value:
-                if len(value) == 1:
-                    if isinstance(value[0], str):
-                        name = value[0]
-                        z = None
-                    else:
-                        z = value[0]
-                        name = None
-                else:
-                    z = value[0]
-                    name = value[1]
-            else:
-                z = None
-                name = None
-
-            return Position(name=name, x=x, y=y, z=z)
+            z = value[0] if value else None
+            print(x, y, z)
+            return Position(x=x, y=y, z=z)
         raise TypeError(f"Cannot coerce {value!r} to Position")

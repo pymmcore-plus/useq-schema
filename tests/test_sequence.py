@@ -82,17 +82,14 @@ c_inputs = [
 ]
 
 p_inputs = [
-    ({"x": 0, "y": 1, "z": 2, "name": "test_name"}, (0, 1, 2, "test_name")),
-    ({"y": 200}, (None, 200, None, None)),
-    ((100, 200, 300, None), (100, 200, 300, None)),
-    (
-        {"z": 100, "z_plan": {"above": 8, "below": 4, "step": 2}},
-        (None, None, 100, None),
-    ),
-    (np.ones(3), (1, 1, 1, None)),
-    ((None, 200, None, None), (None, 200, None, None)),
-    (np.ones(2), (1, 1, None, None)),
-    (Position(x=100, y=200, z=300, name="test_name"), (100, 200, 300, "test_name")),
+    ({"x": 0, "y": 1, "z": 2}, (0, 1, 2)),
+    ({"y": 200}, (None, 200, None)),
+    ((100, 200, 300), (100, 200, 300)),
+    ({"z": 100, "z_plan": {"above": 8, "below": 4, "step": 2}}, (None, None, 100)),
+    (np.ones(3), (1, 1, 1)),
+    ((None, 200, None), (None, 200, None)),
+    (np.ones(2), (1, 1, None)),
+    (Position(x=100, y=200, z=300), (100, 200, 300)),
 ]
 
 
@@ -113,9 +110,9 @@ def test_channel(channel: Any, cexpectation: Sequence[float]) -> None:
 
 
 @pytest.mark.parametrize("position, pexpectation", p_inputs)
-def test_position(position: Any, pexpectation: Sequence[tuple]) -> None:
+def test_position(position: Any, pexpectation: Sequence[float]) -> None:
     position = MDASequence(stage_positions=[position]).stage_positions[0]
-    assert (position.x, position.y, position.z, position.name) == pexpectation
+    assert (position.x, position.y, position.z) == pexpectation
 
 
 @pytest.mark.parametrize("tplan, texpectation", t_as_dict[:5])
@@ -132,7 +129,7 @@ def test_combinations(
     cexpectation: Sequence[float],
     order: str,
     position: Any,
-    pexpectation: Sequence[tuple],
+    pexpectation: Sequence[float],
 ) -> None:
     mda = MDASequence(
         z_plan=zplan,
@@ -145,7 +142,7 @@ def test_combinations(
     assert list(mda.time_plan) == texpectation
     assert (mda.channels[0].group, mda.channels[0].config) == cexpectation
     position = mda.stage_positions[0]
-    assert (position.x, position.y, position.z, position.name) == pexpectation
+    assert (position.x, position.y, position.z) == pexpectation
 
     assert list(mda)
     assert mda.to_pycromanager()

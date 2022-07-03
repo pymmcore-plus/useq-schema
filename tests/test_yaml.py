@@ -15,10 +15,9 @@ channels:
 metadata:
   some info: something
 stage_positions:
-- name: test_name_1
-  x: 10.0
+- x: 10.0
   y: 20.0
-- name: test_name_2
+- name: test_name
   x: 10.0
   y: 20.0
   z: 50.0
@@ -42,9 +41,9 @@ MDA = MDASequence(
     axis_order="tpcz",
     metadata={"some info": "something"},
     stage_positions=[
-        (10, 20, "test_name_1"),
+        (10, 20),
         dict(
-            x=10, y=20, z=50, name="test_name_2", z_plan=dict(above=10, below=0, step=1)
+            x=10, y=20, z=50, name="test_name", z_plan=dict(above=10, below=0, step=1)
         ),
     ],
     channels=[
