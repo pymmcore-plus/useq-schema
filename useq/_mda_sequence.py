@@ -209,6 +209,7 @@ class MDASequence(UseqModel):
             yield MDAEvent(
                 index=index,
                 min_start_time=time,
+                pos_name=getattr(position, "name", None),
                 x_pos=getattr(position, "x", None),
                 y_pos=getattr(position, "y", None),
                 z_pos=z_pos,

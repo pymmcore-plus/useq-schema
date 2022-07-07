@@ -17,7 +17,8 @@ metadata:
 stage_positions:
 - x: 10.0
   y: 20.0
-- x: 10.0
+- name: test_name
+  x: 10.0
   y: 20.0
   z: 50.0
   z_plan:
@@ -41,7 +42,9 @@ MDA = MDASequence(
     metadata={"some info": "something"},
     stage_positions=[
         (10, 20),
-        dict(x=10, y=20, z=50, z_plan=dict(above=10, below=0, step=1)),
+        dict(
+            x=10, y=20, z=50, name="test_name", z_plan=dict(above=10, below=0, step=1)
+        ),
     ],
     channels=[
         dict(config="Cy5", exposure=50),
