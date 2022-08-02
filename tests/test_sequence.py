@@ -155,10 +155,7 @@ def test_schema(cls: BaseModel) -> None:
 
 
 def test_z_position() -> None:
-    mda = MDASequence(
-        axis_order="tpcz",
-        stage_positions=[(222, 1, 10), (111, 1, 20)]
-    )
+    mda = MDASequence(axis_order="tpcz", stage_positions=[(222, 1, 10), (111, 1, 20)])
     assert not mda.z_plan
     for event in mda:
         assert event.z_pos
