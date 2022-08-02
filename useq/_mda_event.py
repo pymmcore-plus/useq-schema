@@ -30,6 +30,7 @@ class MDAEvent(UseqModel):
     channel: Optional[Channel] = None
     exposure: Optional[PositiveFloat] = None
     min_start_time: Optional[float] = None  # time in sec
+    pos_name: Optional[str] = None
     x_pos: Optional[float] = None
     y_pos: Optional[float] = None
     z_pos: Optional[float] = None
