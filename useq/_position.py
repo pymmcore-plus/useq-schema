@@ -3,12 +3,13 @@ from __future__ import annotations
 from typing import Any, Callable, Generator, Optional
 
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from ._base_model import FrozenModel
 from ._z import AnyZPlan, NoZ
 
 
-class Position(BaseModel):
+class Position(FrozenModel):
     # if None, implies 'do not move this axis'
     x: Optional[float] = None
     y: Optional[float] = None

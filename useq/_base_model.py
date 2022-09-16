@@ -1,7 +1,17 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Any, Optional, Sequence, Tuple, Type, Union
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    Any,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pydantic import BaseModel
 from pydantic.error_wrappers import ErrorWrapper, ValidationError
@@ -12,15 +22,19 @@ if TYPE_CHECKING:
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
 
-__all__ = ["UseqModel"]
+__all__ = ["UseqModel", "FrozenModel"]
+
+_Y = TypeVar("_Y", bound="UseqModel")
 
 
-class UseqModel(BaseModel):
+class FrozenModel(BaseModel):
     class Config:
         allow_population_by_field_name = True
-        extra = "forbid"
-        validate_assignment = True
+        extra = "ignore"
+        frozen = True
 
+
+class UseqModel(FrozenModel):
     def __repr_args__(self) -> ReprArgs:
         return [
             (k, val)
@@ -60,14 +74,14 @@ class UseqModel(BaseModel):
 
     @classmethod
     def parse_raw(
-        cls: Type[UseqModel],
+        cls: Type[_Y],
         b: StrBytes,
         *,
         content_type: Optional[str] = None,
         encoding: str = "utf8",
         proto: Optional[str] = None,
         allow_pickle: bool = False,
-    ) -> UseqModel:
+    ) -> _Y:
         if content_type is None:
             assume_yaml = False
         else:
@@ -79,7 +93,7 @@ class UseqModel(BaseModel):
             try:
                 obj = yaml.safe_load(b)
             except Exception as e:
-                raise ValidationError([ErrorWrapper(e, loc=ROOT_KEY)], cls)
+                raise ValidationError([ErrorWrapper(e, loc=ROOT_KEY)], cls) from e
             return cls.parse_obj(obj)
         return super().parse_raw(
             b,
@@ -91,14 +105,14 @@ class UseqModel(BaseModel):
 
     @classmethod
     def parse_file(
-        cls: Type[UseqModel],
+        cls: Type[_Y],
         path: Union[str, Path],
         *,
         content_type: Optional[str] = None,
         encoding: str = "utf8",
         proto: Optional[str] = None,
         allow_pickle: bool = False,
-    ) -> UseqModel:
+    ) -> _Y:
         if encoding is None:
             assume_yaml = False
         elif content_type:

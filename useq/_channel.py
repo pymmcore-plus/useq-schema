@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import Any, Callable, Generator, Optional
 
-from pydantic import BaseModel
 from pydantic.types import PositiveFloat, PositiveInt
 
+from ._base_model import FrozenModel
 
-class Channel(BaseModel):
+
+class Channel(FrozenModel):
     config: str
     group: str = "Channel"
     exposure: Optional[PositiveFloat] = None
