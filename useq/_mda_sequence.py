@@ -123,24 +123,6 @@ class MDASequence(UseqModel):
 
         return order
 
-    def add_channel(
-        self,
-        config: str,
-        group: str = "Channel",
-        exposure: int = None,
-        do_stack: bool = False,
-    ) -> None:
-        new = Channel(config=config, group=group, exposure=exposure, do_stack=do_stack)
-        self.channels = tuple(self.channels) + (new,)
-
-    def remove_channel(self, **kwargs: Union[str, int, bool]) -> None:
-        to_pop = [
-            c
-            for c in self.channels
-            if any(getattr(c, k) == v for k, v in kwargs.items())
-        ]
-        self.channels = tuple(i for i in self.channels if i not in to_pop)
-
     def __str__(self) -> str:
         shape = [
             f"n{k.lower()}: {len(list(self.iter_axis(k)))}" for k in self.axis_order
