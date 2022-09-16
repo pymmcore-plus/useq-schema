@@ -1,11 +1,21 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, NamedTuple, Optional, Sequence, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    NamedTuple,
+    NoReturn,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
-from pydantic import Field
+from pydantic import Field, validator
 from pydantic.types import PositiveFloat
 
 from ._base_model import UseqModel
+from ._utils import ReadOnlyDict
 
 if TYPE_CHECKING:
     from ._mda_sequence import MDASequence
@@ -24,9 +34,13 @@ class PropertyTuple(NamedTuple):
     property_value: Any
 
 
+def _readonly(self: object, *_: Any, **__: Any) -> NoReturn:
+    raise RuntimeError(f"Cannot modify {type(self).__name__}")
+
+
 class MDAEvent(UseqModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    index: Dict[str, int] = Field(default_factory=dict)
+    index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)
     channel: Optional[Channel] = None
     exposure: Optional[PositiveFloat] = None
     min_start_time: Optional[float] = None  # time in sec
@@ -38,6 +52,10 @@ class MDAEvent(UseqModel):
     sequence: Optional[MDASequence] = Field(default=None, repr=False)
     # action
     # keep shutter open between channels/steps
+
+    @validator("index", pre=True)
+    def validate_index(cls, v: dict) -> ReadOnlyDict[str, int]:
+        return ReadOnlyDict(v)
 
     def __repr_args__(self) -> ReprArgs:
         d = self.__dict__.copy()

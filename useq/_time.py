@@ -1,9 +1,10 @@
 import datetime
 from typing import Any, Callable, Generator, Iterator, Sequence, Union
 
-from pydantic import BaseModel
 from pydantic.datetime_parse import parse_duration
 from pydantic.types import PositiveInt
+
+from ._base_model import FrozenModel
 
 
 class timedelta(datetime.timedelta):
@@ -18,7 +19,7 @@ class timedelta(datetime.timedelta):
         return parse_duration(v)
 
 
-class TimePlan(BaseModel):
+class TimePlan(FrozenModel):
     # TODO: probably needs to be implemented by engine
     prioritize_duration: bool = False  # or prioritize num frames
 

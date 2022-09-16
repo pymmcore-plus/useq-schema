@@ -1,10 +1,11 @@
 from typing import Iterator, List, Sequence, Union
 
 import numpy as np
-from pydantic import BaseModel
+
+from ._base_model import FrozenModel
 
 
-class ZPlan(BaseModel):
+class ZPlan(FrozenModel):
     go_up: bool
 
     def __iter__(self) -> Iterator[float]:  # type: ignore
