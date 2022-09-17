@@ -200,11 +200,13 @@ class MDASequence(UseqModel):
         ------
         Iterator[MDAEvent]
         """
-        for item in product(*(enumerate(self.iter_axis(ax)) for ax in self.axis_order)):
+        order = self.used_axes
+
+        for item in product(*(enumerate(self.iter_axis(ax)) for ax in order)):
             if not item:  # the case with no events
                 continue
 
-            _ev = dict(zip(self.axis_order, item))
+            _ev = dict(zip(order, item))
             index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
             position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
