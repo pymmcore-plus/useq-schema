@@ -14,9 +14,7 @@ class timedelta(datetime.timedelta):
 
     @classmethod
     def validate(cls, v: Any) -> datetime.timedelta:
-        if isinstance(v, dict):
-            return datetime.timedelta(**v)
-        return parse_duration(v)
+        return datetime.timedelta(**v) if isinstance(v, dict) else parse_duration(v)
 
 
 class TimePlan(FrozenModel):
