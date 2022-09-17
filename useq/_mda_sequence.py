@@ -89,7 +89,7 @@ class MDASequence(UseqModel):
     z_plan: AnyZPlan = Field(default_factory=NoZ)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
-    _length: int | None = PrivateAttr(default=None)
+    _length: Optional[int] = PrivateAttr(default=None)
 
     @property
     def uid(self) -> UUID:
