@@ -106,21 +106,12 @@ class MDASequence(UseqModel):
     @root_validator
     def validate_mda(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if "axis_order" in values:
-            order = cls._check_order(
+            values["axis_order"] = cls._check_order(
                 values["axis_order"],
                 z_plan=values.get("z_plan"),
                 stage_positions=values.get("stage_positions", ()),
                 channels=values.get("channels", ()),
             )
-
-            # strip dimensions that have no length
-            lengths = {
-                TIME: len(values.get("time_plan", [])),
-                POSITION: len(values.get("stage_positions", [])),
-                Z: len(values.get("z_plan", [])),
-                CHANNEL: len(values.get("channels", [])),
-            }
-            values["axis_order"] = "".join(i for i in order if lengths[i])
 
         return values
 
@@ -180,6 +171,10 @@ class MDASequence(UseqModel):
     @property
     def sizes(self) -> Dict[str, int]:
         return {k: len(list(self.iter_axis(k))) for k in self.axis_order}
+
+    @property
+    def used_axes(self) -> str:
+        return "".join(k for k in self.axis_order if self.sizes[k])
 
     def iter_axis(self, axis: str) -> Iterator[Union[Position, Channel, float]]:
         yield from {
