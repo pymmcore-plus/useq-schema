@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -21,8 +21,30 @@ POSITION = "p"
 Z = "z"
 INDICES = (TIME, POSITION, CHANNEL, Z)
 
+Undefined = object()
+
 
 class MDASequence(UseqModel):
+    """A sequence of MDA events.
+
+    Parameters
+    ----------
+    axis_order : str
+        The order of the axes in the sequence. Must be a permutation of
+        "tpcz". The default is "tpcz".
+    stage_positions : Tuple[Position, ...]
+        The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `z_plan`,
+        all of which are optional).
+    channels : Tuple[Channel, ...]
+        The channels to acquire. see `Channel`.
+    time_plan : AnyTimePlan
+        The time plan to follow. One of `TIntervalDuration`, `TIntervalLoops`,
+        `TDurationLoops`, `MultiPhaseTimePlan`, or `NoT`
+    z_plan : AnyZPlan
+        The z plan to follow. One of `ZTopBottom`, `ZRangeAround`, `ZAboveBelow`,
+        `ZRelativePositions`, `ZAbsolutePositions`, or `NoZ`.
+    """
+
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: str = "".join(INDICES)
     stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
@@ -31,22 +53,31 @@ class MDASequence(UseqModel):
     z_plan: AnyZPlan = Field(default_factory=NoZ)
     uid: UUID = Field(default_factory=uuid4)
 
+    @no_type_check
+    def replace(
+        self,
+        metadata: Dict[str, Any] = Undefined,
+        axis_order: str = Undefined,
+        stage_positions: Tuple[Position, ...] = Undefined,
+        channels: Tuple[Channel, ...] = Undefined,
+        time_plan: AnyTimePlan = Undefined,
+        z_plan: AnyZPlan = Undefined,
+    ) -> MDASequence:
+        """Return a new `MDAsequence` replacing specified fields with new values."""
+        kwargs = {k: v for k, v in locals().items() if v is not Undefined}
+        state = self.dict(exclude={"uid"})
+        return type(self)(**{**state, **kwargs})
+
     def __hash__(self) -> int:
         return hash(self.uid)
 
     @validator("z_plan", pre=True)
     def validate_zplan(cls, v: Any) -> Union[dict, NoZ]:
-        if not v:
-            return NoZ()
-        return v
+        return v or NoZ()
 
     @validator("time_plan", pre=True)
     def validate_time_plan(cls, v: Any) -> Union[dict, NoT]:
-        if isinstance(v, (tuple, list)):
-            return {"phases": v}
-        if not v:
-            return NoT()
-        return v
+        return {"phases": v} if isinstance(v, (tuple, list)) else v or NoT()
 
     @validator("stage_positions", pre=True)
     def validate_positions(cls, v: Any) -> list:
@@ -75,12 +106,21 @@ class MDASequence(UseqModel):
     @root_validator
     def validate_mda(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if "axis_order" in values:
-            values["axis_order"] = cls._check_order(
+            order = cls._check_order(
                 values["axis_order"],
                 z_plan=values.get("z_plan"),
                 stage_positions=values.get("stage_positions", ()),
                 channels=values.get("channels", ()),
             )
+
+            # strip dimensions that have no length
+            lengths = {
+                TIME: len(values.get("time_plan", [])),
+                POSITION: len(values.get("stage_positions", [])),
+                Z: len(values.get("z_plan", [])),
+                CHANNEL: len(values.get("channels", [])),
+            }
+            values["axis_order"] = "".join(i for i in order if lengths[i])
 
         return values
 
@@ -90,9 +130,8 @@ class MDASequence(UseqModel):
         else:
             return False
 
-    @classmethod
+    @staticmethod
     def _check_order(
-        cls,
         order: str,
         z_plan: AnyZPlan = None,
         stage_positions: Sequence[Position] = (),
@@ -135,9 +174,12 @@ class MDASequence(UseqModel):
 
     @property
     def shape(self) -> Tuple[int, ...]:
-        # NOTE: Doesn't account for skipped Z or channel frames
-        shp = (len(list(self.iter_axis(k))) for k in self.axis_order)
-        return tuple(s for s in shp if s)
+        # NOTE: Doesn't account for jagged arrays, like skipped Z or channel frames
+        return tuple(s for s in self.sizes.values() if s)
+
+    @property
+    def sizes(self) -> Dict[str, int]:
+        return {k: len(list(self.iter_axis(k))) for k in self.axis_order}
 
     def iter_axis(self, axis: str) -> Iterator[Union[Position, Channel, float]]:
         yield from {
@@ -148,22 +190,26 @@ class MDASequence(UseqModel):
         }[axis]
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore
-        yield from self.iter_events(self.axis_order)
+        yield from self.iter_events()
 
     class _SkipFrame(Exception):
         pass
 
-    def iter_events(self, order: str = None) -> Iterator[MDAEvent]:
+    def iter_events(self) -> Iterator[MDAEvent]:
+        """Iterate over all events in the MDA sequence.
 
-        order = self._check_order(order or self.axis_order)
-        # strip dimensions that have no length
-        order = "".join(i for i in order if list(self.iter_axis(i)))
+        This does the job of iterating over all the frames in the MDA sequence,
+        handling the merging of z plans in channels and stage positions.
 
-        for item in product(*(enumerate(self.iter_axis(ax)) for ax in order)):
+        Yields
+        ------
+        Iterator[MDAEvent]
+        """
+        for item in product(*(enumerate(self.iter_axis(ax)) for ax in self.axis_order)):
             if not item:  # the case with no events
                 continue
 
-            _ev = dict(zip(order, item))
+            _ev = dict(zip(self.axis_order, item))
             index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
             position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
