@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from warnings import warn
 
 import numpy as np
-from pydantic import Field, root_validator, validator
+from pydantic import Field, PrivateAttr, root_validator, validator
 
 from ._base_model import UseqModel
 from ._channel import Channel
@@ -25,13 +25,19 @@ Undefined = object()
 
 
 class MDASequence(UseqModel):
-    """A sequence of MDA events.
+    """A sequence of MDA (Multi-Dimensional Acquisition) events.
+
+    This is the core of the useq library, and is used define a sequence of events to be
+    run on a microscope. It object may be constructed manually, or from file (e.g. json
+    or yaml).
+
+    The object itself acts as an iterator for `useq.MDAEvent` objects:
 
     Parameters
     ----------
     axis_order : str
-        The order of the axes in the sequence. Must be a permutation of
-        "tpcz". The default is "tpcz".
+        The order of the axes in the sequence. Must be a permutation of "tpcz". The
+        default is "tpcz".
     stage_positions : Tuple[Position, ...]
         The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `z_plan`,
         all of which are optional).
@@ -43,6 +49,36 @@ class MDASequence(UseqModel):
     z_plan : AnyZPlan
         The z plan to follow. One of `ZTopBottom`, `ZRangeAround`, `ZAboveBelow`,
         `ZRelativePositions`, `ZAbsolutePositions`, or `NoZ`.
+
+    Examples
+    --------
+    >>> from useq import MDASequence, Position, Channel, TIntervalDuration
+    >>> seq = MDASequence(
+    ...     time_plan={"interval": 0.1, "loops": 2},
+    ...     stage_positions=[(1, 1, 1)],
+    ...     z_plan={"range": 3, "step": 1},
+    ...     channels=[{"config": "DAPI", "exposure": 1}]
+    ... )
+    >>> print(seq)
+    Multi-Dimensional Acquisition ▶ nt: 2, np: 1, nc: 1, nz: 4
+
+    >>> for event in seq:
+    ...     print(event)
+
+    >>> print(seq.yaml())
+    channels:
+    - config: DAPI
+      exposure: 1.0
+    stage_positions:
+    - x: 1.0
+      y: 1.0
+      z: 1.0
+    time_plan:
+      interval: '0:00:00.100000'
+      loops: 2
+    z_plan:
+      range: 3.0
+      step: 1.0
     """
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -51,7 +87,14 @@ class MDASequence(UseqModel):
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
-    uid: UUID = Field(default_factory=uuid4)
+
+    _uid: UUID = PrivateAttr(default_factory=uuid4)
+    _length: Optional[int] = PrivateAttr(default=None)
+
+    @property
+    def uid(self) -> UUID:
+        """A unique identifier for this sequence."""
+        return self._uid
 
     @no_type_check
     def replace(
@@ -159,9 +202,10 @@ class MDASequence(UseqModel):
         ]
         return "Multi-Dimensional Acquisition ▶ " + ", ".join(shape)
 
-    # def __len__(self):
-    #     # np.prod(self.shape)
-    #     return len(list(self.iter_events()))
+    def __len__(self) -> int:
+        if self._length is None:
+            self._length = len(list(self.iter_events()))
+        return self._length
 
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -202,7 +246,8 @@ class MDASequence(UseqModel):
         """
         order = self.used_axes
 
-        for item in product(*(enumerate(self.iter_axis(ax)) for ax in order)):
+        event_iterator = (enumerate(self.iter_axis(ax)) for ax in order)
+        for global_index, item in enumerate(product(*event_iterator)):
             if not item:  # the case with no events
                 continue
 
@@ -241,6 +286,7 @@ class MDASequence(UseqModel):
                 exposure=getattr(channel, "exposure", None),
                 channel=_channel,
                 sequence=self,
+                global_index=global_index,
             )
 
     def _combine_z(
