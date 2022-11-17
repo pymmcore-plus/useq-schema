@@ -34,7 +34,7 @@ class ZTopBottom(ZPlan):
     go_up: bool = True
 
     def positions(self) -> Sequence[float]:
-        return np.arange(self.bottom, self.top + self.step, self.step)
+        return np.arange(self.bottom, self.top + self.step, self.step)  # type: ignore
 
     @property
     def is_relative(self) -> bool:
@@ -52,7 +52,9 @@ class ZRangeAround(ZPlan):
     go_up: bool = True
 
     def positions(self) -> Sequence[float]:
-        return np.arange(-self.range / 2, self.range / 2 + self.step, self.step)
+        return np.arange(  # type: ignore
+            -self.range / 2, self.range / 2 + self.step, self.step
+        )
 
 
 class ZAboveBelow(ZPlan):
@@ -64,7 +66,9 @@ class ZAboveBelow(ZPlan):
     go_up: bool = True
 
     def positions(self) -> Sequence[float]:
-        return np.arange(-abs(self.below), +abs(self.above) + self.step, self.step)
+        return np.arange(  # type: ignore
+            -abs(self.below), +abs(self.above) + self.step, self.step
+        )
 
 
 class ZRelativePositions(ZPlan):

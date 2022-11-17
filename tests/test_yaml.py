@@ -42,20 +42,24 @@ MDA = MDASequence(
     metadata={"some info": "something"},
     stage_positions=[
         (10, 20),
-        dict(
-            x=10, y=20, z=50, name="test_name", z_plan=dict(above=10, below=0, step=1)
-        ),
+        {
+            "x": 10,
+            "y": 20,
+            "z": 50,
+            "name": "test_name",
+            "z_plan": {"above": 10, "below": 0, "step": 1},
+        },
     ],
     channels=[
-        dict(config="Cy5", exposure=50),
-        dict(config="FITC", exposure=100.0),
-        dict(config="DAPI", do_stack=False, acquire_every=3),
+        {"config": "Cy5", "exposure": 50},
+        {"config": "FITC", "exposure": 100.0},
+        {"config": "DAPI", "do_stack": False, "acquire_every": 3},
     ],
     time_plan=[
-        dict(interval=3, loops=3),
-        dict(duration={"minutes": 40}, interval=10),
+        {"interval": 3, "loops": 3},
+        {"duration": {"minutes": 40}, "interval": 10},
     ],
-    z_plan=dict(range=1.0, step=0.5),
+    z_plan={"range": 1.0, "step": 0.5},
 )
 
 

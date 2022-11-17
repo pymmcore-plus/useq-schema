@@ -5,22 +5,35 @@ on:
     branches:
       - main
     tags:
-      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
-  pull_request:
-    branches:
-      - main
+      - "v*"
+  pull_request: {}
   workflow_dispatch:
 
 jobs:
+  check-manifest:
+    name: Check Manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - run: pip install check-manifest && check-manifest
+
   test:
     name: ${{ matrix.platform }} (${{ matrix.python-version }})
     runs-on: ${{ matrix.platform }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.7, 3.8, 3.9 ,"3.10"]
+        python-version: [3.7, 3.8, 3.9 ,"3.10", "3.11"]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+
       - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -31,13 +44,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[testing]
+          pip install -e .[test]
 
       - name: Test
         run: pytest -v --color=yes --cov-report=xml --cov=useq
 
       - name: Coverage
-        if: runner.os == 'Linux'
         uses: codecov/codecov-action@v1
 
   test_pymmcore:
@@ -59,7 +71,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e pymmcore-plus-from-github[testing]
-          pip install -e .[testing]
+          pip install -e .[test]
 
       - name: Install Micro-Manager
         run: python -m pymmcore_plus.install
@@ -81,16 +93,21 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install dependencies
+      - name: install
         run: |
-          python -m pip install --upgrade pip
-          pip install -U setuptools setuptools_scm wheel twine
+          git tag
+          pip install -U pip
+          pip install -U build twine
+          python -m build
+          twine check dist/*
+          ls -lh dist
 
       - name: Build and publish
+        run: twine upload dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
-        run: |
-          git tag
-          python setup.py sdist bdist_wheel
-          twine upload dist/*
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true

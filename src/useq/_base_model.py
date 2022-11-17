@@ -43,7 +43,7 @@ class UseqModel(FrozenModel):
             and val
             != (
                 self.__fields__[k].default_factory()  # type: ignore
-                if self.__fields__[k].default_factory
+                if self.__fields__[k].default_factory is not None
                 else self.__fields__[k].default
             )
         ]
@@ -59,7 +59,7 @@ class UseqModel(FrozenModel):
             f = self.__fields__[k]
             default = (
                 self.__fields__[k].default_factory()  # type: ignore
-                if self.__fields__[k].default_factory
+                if self.__fields__[k].default_factory is not None
                 else self.__fields__[k].default
             )
             if current != default:
@@ -97,7 +97,7 @@ class UseqModel(FrozenModel):
             return cls.parse_obj(obj)
         return super().parse_raw(
             b,
-            content_type=content_type,
+            content_type=content_type,  # type: ignore
             encoding=encoding,
             proto=proto,  # type: ignore
             allow_pickle=allow_pickle,
@@ -131,7 +131,7 @@ class UseqModel(FrozenModel):
 
         return super().parse_file(
             path,
-            content_type=content_type,
+            content_type=content_type,  # type: ignore
             encoding=encoding,
             proto=proto,  # type: ignore
             allow_pickle=allow_pickle,
@@ -140,8 +140,8 @@ class UseqModel(FrozenModel):
     def yaml(
         self,
         *,
-        include: Union[set, dict] = None,
-        exclude: Union[set, dict] = None,
+        include: Optional[Union[set, dict]] = None,
+        exclude: Optional[Union[set, dict]] = None,
         by_alias: bool = False,
         exclude_unset: bool = True,  # pydantic has False by default
         exclude_defaults: bool = False,
