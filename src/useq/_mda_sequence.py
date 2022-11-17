@@ -123,7 +123,7 @@ class MDASequence(UseqModel):
         return {"phases": v} if isinstance(v, (tuple, list)) else v or NoT()
 
     @validator("stage_positions", pre=True)
-    def validate_positions(cls, v: Any) -> list:
+    def validate_positions(cls, v: Any) -> Any:
         if isinstance(v, np.ndarray):
             if v.ndim == 1:
                 return [v]
@@ -160,14 +160,14 @@ class MDASequence(UseqModel):
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, MDASequence):
-            return self.dict(exclude={"uid"}) == other.dict(exclude={"uid"})
+            return bool(self.dict(exclude={"uid"}) == other.dict(exclude={"uid"}))
         else:
             return False
 
     @staticmethod
     def _check_order(
         order: str,
-        z_plan: AnyZPlan = None,
+        z_plan: Optional[AnyZPlan] = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
     ) -> str:
