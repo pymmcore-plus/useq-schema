@@ -18,7 +18,4 @@ sys.exit(1)
 #
 # To be removed once GitHub catches up.
 
-setup(  # noqa
-    name="useq-schema",
-    install_requires=[],
-)
+setup(name="useq-schema", install_requires=["pydantic", "numpy"])  # noqa

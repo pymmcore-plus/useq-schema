@@ -29,7 +29,7 @@ classifiers = [
     "Topic :: Software Development",
 ]
 dynamic = ["version"]
-dependencies = []
+dependencies = ["pydantic", "numpy"]
 
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
@@ -46,7 +46,7 @@ dev = [
     "pytest",
     "rich",
     "ruff",
-    "PyYaml"
+    "PyYaml",
 ]
 
 [project.urls]
