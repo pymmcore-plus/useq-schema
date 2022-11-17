@@ -4,7 +4,6 @@ from typing import Any, List, Sequence, Tuple
 import numpy as np
 import pytest
 from pydantic import BaseModel
-
 from useq import (
     Channel,
     MDAEvent,
