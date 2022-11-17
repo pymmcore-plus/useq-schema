@@ -42,8 +42,8 @@ class UseqModel(FrozenModel):
             if k in self.__fields__
             and val
             != (
-                factory()
-                if (factory := self.__fields__[k].default_factory) is not None
+                self.__fields__[k].default_factory()  # type: ignore
+                if self.__fields__[k].default_factory is not None
                 else self.__fields__[k].default
             )
         ]
@@ -58,8 +58,8 @@ class UseqModel(FrozenModel):
                 continue
             f = self.__fields__[k]
             default = (
-                factory()
-                if (factory := self.__fields__[k].default_factory) is not None
+                self.__fields__[k].default_factory()  # type: ignore
+                if self.__fields__[k].default_factory is not None
                 else self.__fields__[k].default
             )
             if current != default:
