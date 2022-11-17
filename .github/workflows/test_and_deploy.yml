@@ -50,7 +50,7 @@ jobs:
         run: pytest -v --color=yes --cov-report=xml --cov=useq
 
       - name: Coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
 
   test_pymmcore:
     name: Test pymmcore-plus
