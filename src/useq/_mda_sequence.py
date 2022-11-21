@@ -1,7 +1,17 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    no_type_check,
+)
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -15,6 +25,10 @@ from ._position import Position
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
 
+if TYPE_CHECKING:
+    from ._time import NoT
+    from ._z import NoZ
+
 TIME = "t"
 CHANNEL = "c"
 POSITION = "p"
@@ -27,26 +41,28 @@ Undefined = object()
 class MDASequence(UseqModel):
     """A sequence of MDA (Multi-Dimensional Acquisition) events.
 
-    This is the core of the useq library, and is used define a sequence of events to be
-    run on a microscope. It object may be constructed manually, or from file (e.g. json
-    or yaml).
+    This is the core object in the `useq` library, and is used define a sequence of
+    events to be run on a microscope. It object may be constructed manually, or from
+    file (e.g. json or yaml).
 
-    The object itself acts as an iterator for `useq.MDAEvent` objects:
+    The object itself acts as an iterator for [`useq.MDAEvent`][] objects:
 
     Parameters
     ----------
     axis_order : str
         The order of the axes in the sequence. Must be a permutation of "tpcz". The
         default is "tpcz".
-    stage_positions : Tuple[Position, ...]
+    stage_positions : tuple[Position, ...]
         The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `z_plan`,
         all of which are optional).
-    channels : Tuple[Channel, ...]
+    channels : tuple[Channel, ...]
         The channels to acquire. see `Channel`.
-    time_plan : AnyTimePlan
+    time_plan : MultiPhaseTimePlan | TIntervalDuration | TIntervalLoops \
+        | TDurationLoops | NoT
         The time plan to follow. One of `TIntervalDuration`, `TIntervalLoops`,
         `TDurationLoops`, `MultiPhaseTimePlan`, or `NoT`
-    z_plan : AnyZPlan
+    z_plan : ZTopBottom | ZRangeAround | ZAboveBelow | ZRelativePositions | \
+        ZAbsolutePositions | NoZ
         The z plan to follow. One of `ZTopBottom`, `ZRangeAround`, `ZAboveBelow`,
         `ZRelativePositions`, `ZAbsolutePositions`, or `NoZ`.
 
