@@ -10,6 +10,27 @@ from ._z import AnyZPlan, NoZ
 
 
 class Position(FrozenModel):
+    """Define a position in 3D space.
+
+    Any of the attributes can be `None` to indicate that the position is not
+    defined. This is useful for defining a position relative to the current
+    position.
+
+    Attributes
+    ----------
+    x : float | None
+        X position in microns.
+    y : float | None
+        Y position in microns.
+    z : float | None
+        Z position in microns.
+    name : str | None
+        Optional name for the position.
+    z_plan : ZTopBottom | ZRangeAround | ZAboveBelow | ZRelativePositions | \
+        ZAbsolutePositions | NoZ | None
+        Z plan to execute at this position specifically. By default, [`NoZ`][useq.NoZ].
+    """
+
     # if None, implies 'do not move this axis'
     x: Optional[float] = None
     y: Optional[float] = None

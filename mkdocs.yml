@@ -5,7 +5,7 @@ site_description: Implementation agnostic schema for microscopy acquisition sequ
 
 repo_name: pymmcore-plus/useq-schema
 repo_url: https://github.com/pymmcore-plus/useq-schema
-edit_uri: edit/main/docs/
+edit_uri: ""
 # use_directory_urls: false
 
 watch:
@@ -13,7 +13,11 @@ watch:
 
 nav:
   - index.md
-
+  - Schema:
+    - schema/sequence.md
+    - schema/event.md
+    - schema/axes.md
+  - api.md
 
 theme:
   name: "material"
@@ -57,7 +61,6 @@ hooks:
 
 plugins:
   - search
-  - render_swagger
   - mkdocstrings:
       custom_templates: docs/templates
       handlers:
@@ -66,35 +69,13 @@ plugins:
             - https://docs.python.org/3/objects.inv
             - https://numpy.org/doc/stable/objects.inv
           options:
-            ## Headings options:
             heading_level: 3 # default is 2
             show_root_heading: true # default is false
-            # show_root_toc_entry: false # default is true
             show_root_full_path: false # default is true
-            # show_root_members_full_path: true # default is false
-            # show_object_full_path: true # default is false
-            # show_category_heading: true # default is false
-
-            ## Members options:
-            members_order: 'source' # default is 'alphabetical'
-            filters: ['^[^_]'] # list of filters to filter objects by name
-            # group_by_category: false # default is true
-            # show_submodules: true # default is false
-
-            ## Docstrings options:
             docstring_style: 'numpy'
-            # docstring_options: {}  # griffe.docstrings options
-            # docstring_section_style: 'list'  # default is 'table' (or spacy)
-            line_length: 50  # default is 60
-            # merge_init_into_class: true  # default is false
             show_if_no_docstring: true  # default is false
-
-            ## Signatures/annotations options:
             show_signature: false  # default is true
-            show_signature_annotations: true # default is false
             annotations_path: 'source' # default is 'brief'
-            # separate_signature: true # default is false
-
             show_bases: false # default is true
             show_source: false # default is true
 
