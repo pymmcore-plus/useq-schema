@@ -1,6 +1,6 @@
 site_name: useq-schema
 site_url: https://pymmcore-plus.github.io/useq-schema
-site_description: Implementation agnostic schema for microscopy acquisition sequence
+site_description: Implementation agnostic schema for microscopy experiments
 # strict: true
 
 repo_name: pymmcore-plus/useq-schema
@@ -56,18 +56,13 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
 
-hooks:
-  - docs/_hooks.py
-
 plugins:
   - search
   - mkdocstrings:
-      custom_templates: docs/templates
       handlers:
         python:
           import:
             - https://docs.python.org/3/objects.inv
-            - https://numpy.org/doc/stable/objects.inv
           options:
             heading_level: 3 # default is 2
             show_root_heading: true # default is false
