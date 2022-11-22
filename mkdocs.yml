@@ -12,19 +12,23 @@ watch:
   - src
 
 nav:
-  - index.md
-  - Schema:
-    - schema/sequence.md
-    - schema/event.md
-    - schema/axes.md
-  - api.md
+  - pymmcore-plus: /pymmcore-plus/
+  - useq-schema:
+      - index.md
+      - Schema:
+        - schema/sequence.md
+        - schema/event.md
+        - schema/axes.md
+      - api.md
 
 theme:
   name: "material"
   features:
     - content.tabs.link
+    - navigation.tabs
   icon:
     logo: fontawesome/solid/microscope
+    repo: fontawesome/brands/github
   palette:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
