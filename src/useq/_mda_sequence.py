@@ -1,7 +1,17 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    no_type_check,
+)
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -15,6 +25,10 @@ from ._position import Position
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
 
+if TYPE_CHECKING:
+    from ._time import NoT
+    from ._z import NoZ
+
 TIME = "t"
 CHANNEL = "c"
 POSITION = "p"
@@ -27,28 +41,35 @@ Undefined = object()
 class MDASequence(UseqModel):
     """A sequence of MDA (Multi-Dimensional Acquisition) events.
 
-    This is the core of the useq library, and is used define a sequence of events to be
-    run on a microscope. It object may be constructed manually, or from file (e.g. json
-    or yaml).
+    This is the core object in the `useq` library, and is used define a sequence of
+    events to be run on a microscope. It object may be constructed manually, or from
+    file (e.g. json or yaml).
 
-    The object itself acts as an iterator for `useq.MDAEvent` objects:
+    The object itself acts as an iterator for [`useq.MDAEvent`][] objects:
 
-    Parameters
+    Attributes
     ----------
+    metadata : dict
+        A dictionary of user metadata to be stored with the sequence.
     axis_order : str
-        The order of the axes in the sequence. Must be a permutation of "tpcz". The
-        default is "tpcz".
-    stage_positions : Tuple[Position, ...]
+        The order of the axes in the sequence. Must be a permutation of `"tpcz"`. The
+        default is `"tpcz"`.
+    stage_positions : tuple[Position, ...]
         The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `z_plan`,
         all of which are optional).
-    channels : Tuple[Channel, ...]
+    channels : tuple[Channel, ...]
         The channels to acquire. see `Channel`.
-    time_plan : AnyTimePlan
+    time_plan : MultiPhaseTimePlan | TIntervalDuration | TIntervalLoops \
+        | TDurationLoops | NoT
         The time plan to follow. One of `TIntervalDuration`, `TIntervalLoops`,
         `TDurationLoops`, `MultiPhaseTimePlan`, or `NoT`
-    z_plan : AnyZPlan
+    z_plan : ZTopBottom | ZRangeAround | ZAboveBelow | ZRelativePositions | \
+        ZAbsolutePositions | NoZ
         The z plan to follow. One of `ZTopBottom`, `ZRangeAround`, `ZAboveBelow`,
         `ZRelativePositions`, `ZAbsolutePositions`, or `NoZ`.
+    uid : UUID
+        A read-only unique identifier (uuid version 4) for the sequence. This will be
+        generated, do not set.
 
     Examples
     --------
@@ -106,7 +127,12 @@ class MDASequence(UseqModel):
         time_plan: AnyTimePlan = Undefined,
         z_plan: AnyZPlan = Undefined,
     ) -> MDASequence:
-        """Return a new `MDAsequence` replacing specified fields with new values."""
+        """Return a new `MDAsequence` replacing specified kwargs with new values.
+
+        MDASequences are immutable, so this method is useful for creating a new
+        sequence with only a few fields changed.  The uid of the new sequence will
+        be different from the original
+        """
         kwargs = {k: v for k, v in locals().items() if v is not Undefined}
         state = self.dict(exclude={"uid"})
         return type(self)(**{**state, **kwargs})
@@ -159,6 +185,7 @@ class MDASequence(UseqModel):
         return values
 
     def __eq__(self, other: Any) -> bool:
+        """Return `True` if two `MDASequences` are equal (uid is excluded)."""
         if isinstance(other, MDASequence):
             return bool(self.dict(exclude={"uid"}) == other.dict(exclude={"uid"}))
         else:
@@ -203,24 +230,33 @@ class MDASequence(UseqModel):
         return "Multi-Dimensional Acquisition ▶ " + ", ".join(shape)
 
     def __len__(self) -> int:
+        """Return the number of events in this sequence."""
         if self._length is None:
             self._length = len(list(self.iter_events()))
         return self._length
 
     @property
     def shape(self) -> Tuple[int, ...]:
-        # NOTE: Doesn't account for jagged arrays, like skipped Z or channel frames
+        """Return the shape of this sequence.
+
+        !!! note
+
+            This doesn't account for jagged arrays, like skipped Z or channel frames.
+        """
         return tuple(s for s in self.sizes.values() if s)
 
     @property
     def sizes(self) -> Dict[str, int]:
+        """Mapping of axis to size of that axis."""
         return {k: len(list(self.iter_axis(k))) for k in self.axis_order}
 
     @property
     def used_axes(self) -> str:
+        """Single letter string of axes used in this sequence, e.g. `ztc`."""
         return "".join(k for k in self.axis_order if self.sizes[k])
 
-    def iter_axis(self, axis: str) -> Iterator[Union[Position, Channel, float]]:
+    def iter_axis(self, axis: str) -> Iterator[Position | Channel | float]:
+        """Iterate over the events of a given axis."""
         yield from {
             TIME: self.time_plan,
             POSITION: self.stage_positions,
@@ -228,7 +264,8 @@ class MDASequence(UseqModel):
             CHANNEL: self.channels,
         }[axis]
 
-    def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore
+    def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
+        """Same as `iter_events`. Supports `for event in sequence: ...` syntax."""
         yield from self.iter_events()
 
     class _SkipFrame(Exception):
@@ -238,11 +275,13 @@ class MDASequence(UseqModel):
         """Iterate over all events in the MDA sequence.
 
         This does the job of iterating over all the frames in the MDA sequence,
-        handling the merging of z plans in channels and stage positions.
+        handling the logic of merging all z plans in channels and stage positions
+        defined in the plans for each axis.
 
         Yields
         ------
         Iterator[MDAEvent]
+            Each event in the MDA sequence.
         """
         order = self.used_axes
 
@@ -308,4 +347,8 @@ class MDASequence(UseqModel):
         return z_pos
 
     def to_pycromanager(self) -> list[dict]:
+        """Convenience to convert this sequence to a list of pycro-manager events.
+
+        See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
+        """
         return [event.to_pycromanager() for event in self]

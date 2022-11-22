@@ -24,11 +24,35 @@ if TYPE_CHECKING:
 
 
 class Channel(UseqModel):
+    """Channel in a MDA event.
+
+    Attributes
+    ----------
+    config : str
+        Name of the configuration to use for this channel, (e.g. `"488nm"`, `"DAPI"`,
+        `"FITC"`).
+    group : str
+        Optional name of the group to which this channel belongs. By default,
+        `"Channel"`.
+    """
+
     config: str
     group: str = "Channel"
 
 
 class PropertyTuple(NamedTuple):
+    """Three-tuple capturing a device, property, and value.
+
+    Attributes
+    ----------
+    device_name : str
+        Name of a device.
+    property_name : str
+        Name of a property recognized by the device.
+    value : Any
+        Value for the property.
+    """
+
     device_name: str
     property_name: str
     property_value: Any
@@ -39,6 +63,48 @@ def _readonly(self: object, *_: Any, **__: Any) -> NoReturn:
 
 
 class MDAEvent(UseqModel):
+    """Define a single event in an MDA sequence.
+
+    Attributes
+    ----------
+    metadata : dict
+        Optional metadata to be associated with this event.
+    index : dict[str, int]
+        Index of this event in the sequence. This is a read-only mapping of axis name
+        to index.
+    channel : Channel | None
+        Channel to use for this event. If `None`, implies use current channel.
+        By default, `None`.
+    exposure : PositiveFloat | None
+        Exposure time in seconds. If not provided, implies use current exposure time.
+        By default, `None`.
+    min_start_time : float | None
+        Minimum start time of this event, in seconds.  If provided, the engine will
+        pause until this time has elapsed (relative to the start of the sequence)
+        before starting this event. By default, `None`.
+    x_pos : float | None
+        X position in microns. If not provided, implies use current position. By
+        default, `None`.
+    y_pos : float | None
+        Y position in microns. If not provided, implies use current position. By
+        default, `None`.
+    z_pos : float | None
+        Z position in microns. If not provided, implies use current position. By
+        default, `None`.
+    properties : Sequence[PropertyTuple] | None
+        List of [`useq.PropertyTuple`][] to set before starting this event. Where each
+        tuple is a 3-tuple of `(device_name, property_name, property_value)`.  This is
+        inspired by micro-manager's Device Adapter API, but could be used to set
+        arbitrary properties in any backend that supports the concept of devices that
+        have properties with values. By default, `None`.
+    sequence : MDASequence | None
+        A reference to the [`useq.MDASequence`][] this event belongs to. This is a
+        read-only attribute. By default, `None`.
+    global_index : int
+        The global index of this event in the sequence. This is a read-only attribute.
+        By default, `0`.
+    """
+
     metadata: Dict[str, Any] = Field(default_factory=dict)
     index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)
     channel: Optional[Channel] = None
@@ -65,6 +131,10 @@ class MDAEvent(UseqModel):
         return list(d.items())
 
     def to_pycromanager(self) -> dict:
+        """Convenience method to convert this event to a pycro-manager events.
+
+        See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
+        """
         d: Dict[str, Any] = {
             "exposure": self.exposure,
             "axes": {},

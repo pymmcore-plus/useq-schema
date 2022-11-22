@@ -18,6 +18,7 @@ class timedelta(datetime.timedelta):
 
 
 class TimePlan(FrozenModel):
+
     # TODO: probably needs to be implemented by engine
     prioritize_duration: bool = False  # or prioritize num frames
 
@@ -39,11 +40,37 @@ class TimePlan(FrozenModel):
 
 
 class TIntervalLoops(TimePlan):
+    """Define temporal sequence using interval and number of loops.
+
+    Attributes
+    ----------
+    interval : str | timedelta
+        Time between frames.
+    loops : PositiveInt
+        Number of frames.
+    prioritize_duration : bool
+        If `True`, instructs engine to prioritize duration over number of frames in case
+        of conflict. By default, `False`.
+    """
+
     interval: timedelta
     loops: PositiveInt
 
 
 class TDurationLoops(TimePlan):
+    """Define temporal sequence using duration and number of loops.
+
+    Attributes
+    ----------
+    duration : str | timedelta
+        Total duration of sequence.
+    loops : PositiveInt
+        Number of frames.
+    prioritize_duration : bool
+        If `True`, instructs engine to prioritize duration over number of frames in case
+        of conflict. By default, `False`.
+    """
+
     duration: timedelta
     loops: PositiveInt
 
@@ -54,6 +81,19 @@ class TDurationLoops(TimePlan):
 
 
 class TIntervalDuration(TimePlan):
+    """Define temporal sequence using interval and duration.
+
+    Attributes
+    ----------
+    interval : str | timedelta
+        Time between frames.
+    duration : str | timedelta
+        Total duration of sequence.
+    prioritize_duration : bool
+        If `True`, instructs engine to prioritize duration over number of frames in case
+        of conflict. By default, `True`.
+    """
+
     interval: timedelta
     duration: timedelta
     prioritize_duration: bool = True
@@ -64,7 +104,7 @@ class TIntervalDuration(TimePlan):
 
 
 class NoT(TimePlan):
-    """Don't acquire T."""
+    """Don't acquire a time sequence."""
 
     def deltas(self) -> Iterator[datetime.timedelta]:
         yield from ()
@@ -74,6 +114,14 @@ SinglePhaseTimePlan = Union[TIntervalDuration, TIntervalLoops, TDurationLoops, N
 
 
 class MultiPhaseTimePlan(TimePlan):
+    """Time sequence composed of multiple phases.
+
+    Attributes
+    ----------
+    phases : Sequence[TIntervalDuration | TIntervalLoops | TDurationLoops | NoT]
+        Sequence of time plans.
+    """
+
     phases: Sequence[SinglePhaseTimePlan]
 
     def deltas(self) -> Iterator[datetime.timedelta]:

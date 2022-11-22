@@ -26,7 +26,20 @@ class ZPlan(FrozenModel):
 
 
 class ZTopBottom(ZPlan):
-    """Define absolute top & bottom positions."""
+    """Define Z using absolute top & bottom positions.
+
+    Attributes
+    ----------
+    top : float
+        Top position.
+    bottom : float
+        Bottom position.
+    step : float
+        Step size in microns.
+    go_up : bool
+        If `True`, instructs engine to start at bottom and move towards top. By default,
+        `True`.
+    """
 
     top: float
     bottom: float
@@ -45,7 +58,18 @@ class ZTopBottom(ZPlan):
 
 
 class ZRangeAround(ZPlan):
-    """Range symmetrically around some reference position."""
+    """Define Z as a symmetric range around some reference position.
+
+    Attributes
+    ----------
+    range : float
+        Range in microns.
+    step : float
+        Step size in microns.
+    go_up : bool
+        If `True`, instructs engine to start at bottom and move towards top. By default,
+        `True`.
+    """
 
     range: float
     step: float
@@ -58,7 +82,20 @@ class ZRangeAround(ZPlan):
 
 
 class ZAboveBelow(ZPlan):
-    """Range asymmetrically above and below some reference position."""
+    """Define Z as asymmetric range above and below some reference position.
+
+    Attributes
+    ----------
+    above : float
+        Range above reference position in microns.
+    below : float
+        Range below reference position in microns.
+    step : float
+        Step size in microns.
+    go_up : bool
+        If `True`, instructs engine to start at bottom and move towards top. By default,
+        `True`.
+    """
 
     above: float
     below: float
@@ -72,7 +109,16 @@ class ZAboveBelow(ZPlan):
 
 
 class ZRelativePositions(ZPlan):
-    """Direct list of relative z positions."""
+    """Define Z as a list of positions relative to some reference.
+
+    Attributes
+    ----------
+    relative : list[float]
+        List of relative z positions.
+    go_up : bool
+        If `True` (the default), visits points in the order provided, otherwise in
+        reverse.
+    """
 
     relative: List[float]
     go_up: bool = True
@@ -82,7 +128,16 @@ class ZRelativePositions(ZPlan):
 
 
 class ZAbsolutePositions(ZPlan):
-    """Direct list of absolute z positions."""
+    """Define Z as a list of absolute positions.
+
+    Attributes
+    ----------
+    relative : list[float]
+        List of relative z positions.
+    go_up : bool
+        If `True` (the default), visits points in the order provided, otherwise in
+        reverse.
+    """
 
     absolute: List[float]
     go_up: bool = True

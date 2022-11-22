@@ -45,6 +45,11 @@ dev = [
     "ruff",
     "PyYaml",
 ]
+docs = [
+    "mkdocs >=1.4",
+    "mkdocs-material",
+    "mkdocstrings-python",
+]
 
 [project.urls]
 Source = "https://github.com/pymmcore-plus/useq-schema"
