@@ -20,6 +20,7 @@ nav:
         - schema/event.md
         - schema/axes.md
       - api.md
+  - pymmcore-widgets: /pymmcore-widgets/
 
 theme:
   name: "material"
