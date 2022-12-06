@@ -19,3 +19,10 @@ In addition to declaring a schema (which is intended to be language agnostic),
             - __eq__
             - __len__
             - __iter__
+
+
+::: useq._mda_sequence.iter_sequence
+    options:
+        show_source: true
+        show_signature: true
+        show_signature_annotations: true
