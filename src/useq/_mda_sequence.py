@@ -264,59 +264,15 @@ class MDASequence(UseqModel):
     def iter_events(self) -> Iterator[MDAEvent]:
         """Iterate over all events in the MDA sequence.
 
-        This does the job of iterating over all the frames in the MDA sequence,
-        handling the logic of merging all z plans in channels and stage positions
-        defined in the plans for each axis.
+        See source of [useq._mda_sequence.iter_sequence][] for details on how
+        events are constructed and yielded.
 
         Yields
         ------
-        Iterator[MDAEvent]
+        MDAEvent
             Each event in the MDA sequence.
         """
-        order = self.used_axes
-
-        event_iterator = (enumerate(self.iter_axis(ax)) for ax in order)
-        for global_index, item in enumerate(product(*event_iterator)):
-            if not item:  # the case with no events
-                continue
-
-            _ev = dict(zip(order, item))
-            index = {k: _ev[k][0] for k in INDICES if k in _ev}
-
-            position: Position | None = _ev[POSITION][1] if POSITION in _ev else None
-            channel: Channel | None = _ev[CHANNEL][1] if CHANNEL in _ev else None
-            time: int | None = _ev[TIME][1] if TIME in _ev else None
-
-            # skip channels
-            if channel and TIME in index and index[TIME] % channel.acquire_every:
-                continue
-
-            try:
-                z_pos = (
-                    self._combine_z(_ev[Z][1], index[Z], channel, position)
-                    if Z in _ev
-                    else position.z
-                    if position
-                    else None
-                )
-            except self._SkipFrame:
-                continue
-
-            _channel = (
-                {"config": channel.config, "group": channel.group} if channel else None
-            )
-            yield MDAEvent(
-                index=index,
-                min_start_time=time,
-                pos_name=getattr(position, "name", None),
-                x_pos=getattr(position, "x", None),
-                y_pos=getattr(position, "y", None),
-                z_pos=z_pos,
-                exposure=getattr(channel, "exposure", None),
-                channel=_channel,
-                sequence=self,
-                global_index=global_index,
-            )
+        return iter_sequence(self)
 
     def _combine_z(
         self,
@@ -342,3 +298,73 @@ class MDASequence(UseqModel):
         See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
         """
         return [event.to_pycromanager() for event in self]
+
+
+MDAEvent.update_forward_refs(MDASequence=MDASequence)
+
+
+def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
+    """Iterate over all events in the MDA sequence.
+
+    !!! note
+
+        This method will usually be used via [`useq.MDASequence.iter_events`][], or by
+        simply iterating over the sequence.
+
+    This does the job of iterating over all the frames in the MDA sequence,
+    handling the logic of merging all z plans in channels and stage positions
+    defined in the plans for each axis.
+
+    The is the most "logic heavy" part of `useq-schema` (the rest of which is
+    almost entirely declarative).  This iterator is useful for consuming `MDASequence`
+    objects in a python runtime, but it isn't considered a "core" part of the schema.
+
+    Yields
+    ------
+    MDAEvent
+        Each event in the MDA sequence.
+    """
+    order = sequence.used_axes
+
+    event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
+    for global_index, item in enumerate(product(*event_iterator)):
+        if not item:  # the case with no events
+            continue
+
+        _ev = dict(zip(order, item))
+        index = {k: _ev[k][0] for k in INDICES if k in _ev}
+
+        position: Position | None = _ev[POSITION][1] if POSITION in _ev else None
+        channel: Channel | None = _ev[CHANNEL][1] if CHANNEL in _ev else None
+        time: int | None = _ev[TIME][1] if TIME in _ev else None
+
+        # skip channels
+        if channel and TIME in index and index[TIME] % channel.acquire_every:
+            continue
+
+        try:
+            z_pos = (
+                sequence._combine_z(_ev[Z][1], index[Z], channel, position)
+                if Z in _ev
+                else position.z
+                if position
+                else None
+            )
+        except sequence._SkipFrame:
+            continue
+
+        _channel = (
+            {"config": channel.config, "group": channel.group} if channel else None
+        )
+        yield MDAEvent(
+            index=index,
+            min_start_time=time,
+            pos_name=getattr(position, "name", None),
+            x_pos=getattr(position, "x", None),
+            y_pos=getattr(position, "y", None),
+            z_pos=z_pos,
+            exposure=getattr(channel, "exposure", None),
+            channel=_channel,
+            sequence=sequence,
+            global_index=global_index,
+        )

@@ -54,18 +54,22 @@ def _readonly(self: object, *_: Any, **__: Any) -> NoReturn:
 
 
 class MDAEvent(UseqModel):
-    """Define a single event in an MDA sequence.
+    """Define a single event in a [`MDASequence`][useq.MDASequence].
+
+    Usually, this object will be generator by iterating over a
+    [`MDASequence`][useq.MDASequence] (see [`useq.MDASequence.iter_events`][]).
 
     Attributes
     ----------
-    metadata : dict
-        Optional metadata to be associated with this event.
     index : dict[str, int]
-        Index of this event in the sequence. This is a read-only mapping of axis name
-        to index.
+        Index of this event in the sequence. This is a mapping of axis name
+        to index.  For example: `{'t': 4, 'c': 0, 'z': 5},`
     channel : Channel | None
         Channel to use for this event. If `None`, implies use current channel.
-        By default, `None`.
+        By default, `None`.  `Channel` is a simple pydantic object with two attributes:
+        `config` and `group`.  `config` is the name of the configuration to use for this
+        channel, (e.g. `"488nm"`, `"DAPI"`, `"FITC"`).  `group` is the name of the group
+        to which this channel belongs. By default, `"Channel"`.
     exposure : PositiveFloat | None
         Exposure time in seconds. If not provided, implies use current exposure time.
         By default, `None`.
@@ -73,6 +77,8 @@ class MDAEvent(UseqModel):
         Minimum start time of this event, in seconds.  If provided, the engine will
         pause until this time has elapsed (relative to the start of the sequence)
         before starting this event. By default, `None`.
+    pos_name : str | None
+        Name assigned to the position.
     x_pos : float | None
         X position in microns. If not provided, implies use current position. By
         default, `None`.
@@ -84,19 +90,21 @@ class MDAEvent(UseqModel):
         default, `None`.
     properties : Sequence[PropertyTuple] | None
         List of [`useq.PropertyTuple`][] to set before starting this event. Where each
-        tuple is a 3-tuple of `(device_name, property_name, property_value)`.  This is
-        inspired by micro-manager's Device Adapter API, but could be used to set
-        arbitrary properties in any backend that supports the concept of devices that
-        have properties with values. By default, `None`.
+        item in the list is a 3-member named tuple of `(device_name, property_name,
+        property_value)`.  This is inspired by micro-manager's Device Adapter API, but
+        could be used to set arbitrary properties in any backend that supports the
+        concept of devices that have properties with values. By default, `None`.
     sequence : MDASequence | None
         A reference to the [`useq.MDASequence`][] this event belongs to. This is a
         read-only attribute. By default, `None`.
     global_index : int
-        The global index of this event in the sequence. This is a read-only attribute.
-        By default, `0`.
+        The global index of this event in the sequence. For example, in an
+        `MDASequence` with 2 channels and 5 time points, the global index of each
+        event will be an integer from 0 to 9.  By default, `0`.
+    metadata : dict
+        Optional metadata to be associated with this event.
     """
 
-    metadata: dict[str, Any] = Field(default_factory=dict)
     index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)
     channel: Channel | None = None
     exposure: PositiveFloat | None = None
@@ -105,9 +113,10 @@ class MDAEvent(UseqModel):
     x_pos: float | None = None
     y_pos: float | None = None
     z_pos: float | None = None
-    properties: Sequence[PropertyTuple] | None = None
+    properties: list[PropertyTuple] | None = None
     sequence: MDASequence | None = Field(default=None, repr=False)
     global_index: int = Field(default=0, repr=False)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     # action
     # keep shutter open between channels/steps
