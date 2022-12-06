@@ -67,6 +67,7 @@ packages = ["src/useq"]
 [tool.ruff]
 line-length = 88
 target-version = "py37"
+src = ["src", "tests"]
 select = [
     "E",    # style errors
     "F",    # flakes
@@ -74,7 +75,7 @@ select = [
     "I", # isort
     "U",    # pyupgrade
     # "N",  # pep8-naming
-    # "S",  # bandit
+    "S",  # bandit
     "C",    # comprehensions
     "B",    # bugbear
     "A001", # Variable shadowing a python builtin
@@ -91,7 +92,7 @@ extend-ignore = [
 ]
 
 [tool.ruff.per-file-ignores]
-"tests/*.py" = ["D"]
+"tests/*.py" = ["D", "S101"]
 
 # https://docs.pytest.org/en/6.2.x/customize.html
 [tool.pytest.ini_options]
