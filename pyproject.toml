@@ -71,7 +71,7 @@ select = [
     "E",    # style errors
     "F",    # flakes
     "D",    # pydocstyle
-    "I001", # isort
+    "I", # isort
     "U",    # pyupgrade
     # "N",  # pep8-naming
     # "S",  # bandit
@@ -79,7 +79,6 @@ select = [
     "B",    # bugbear
     "A001", # Variable shadowing a python builtin
     "RUF",  # ruff-specific rules
-    "M001", # Unused noqa directive
 ]
 extend-ignore = [
     "D100", # Missing docstring in public module

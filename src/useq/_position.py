@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, Optional
+from typing import Any, Callable, Generator
 
 import numpy as np
 from pydantic import Field
@@ -32,10 +32,10 @@ class Position(FrozenModel):
     """
 
     # if None, implies 'do not move this axis'
-    x: Optional[float] = None
-    y: Optional[float] = None
-    z: Optional[float] = None
-    name: Optional[str] = None
+    x: float | None = None
+    y: float | None = None
+    z: float | None = None
+    name: str | None = None
     z_plan: AnyZPlan = Field(default_factory=NoZ)
 
     @classmethod

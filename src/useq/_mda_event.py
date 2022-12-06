@@ -1,15 +1,6 @@
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    NamedTuple,
-    NoReturn,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, Optional, Sequence, Tuple
 
 from pydantic import Field, validator
 from pydantic.types import PositiveFloat
@@ -105,17 +96,17 @@ class MDAEvent(UseqModel):
         By default, `0`.
     """
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)
-    channel: Optional[Channel] = None
-    exposure: Optional[PositiveFloat] = None
-    min_start_time: Optional[float] = None  # time in sec
-    pos_name: Optional[str] = None
-    x_pos: Optional[float] = None
-    y_pos: Optional[float] = None
-    z_pos: Optional[float] = None
-    properties: Optional[Sequence[PropertyTuple]] = None
-    sequence: Optional[MDASequence] = Field(default=None, repr=False)
+    channel: Channel | None = None
+    exposure: PositiveFloat | None = None
+    min_start_time: float | None = None  # time in sec
+    pos_name: str | None = None
+    x_pos: float | None = None
+    y_pos: float | None = None
+    z_pos: float | None = None
+    properties: Sequence[PropertyTuple] | None = None
+    sequence: MDASequence | None = Field(default=None, repr=False)
     global_index: int = Field(default=0, repr=False)
 
     # action
@@ -135,7 +126,7 @@ class MDAEvent(UseqModel):
 
         See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
         """
-        d: Dict[str, Any] = {
+        d: dict[str, Any] = {
             "exposure": self.exposure,
             "axes": {},
             "z": self.z_pos,

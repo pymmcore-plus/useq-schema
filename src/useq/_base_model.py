@@ -1,17 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import (
-    IO,
-    TYPE_CHECKING,
-    Any,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import IO, TYPE_CHECKING, Any, Optional, Sequence, Tuple, TypeVar
 
 from pydantic import BaseModel
 from pydantic.error_wrappers import ErrorWrapper, ValidationError
@@ -74,12 +64,12 @@ class UseqModel(FrozenModel):
 
     @classmethod
     def parse_raw(
-        cls: Type[_Y],
+        cls: type[_Y],
         b: StrBytes,
         *,
-        content_type: Optional[str] = None,
+        content_type: str | None = None,
         encoding: str = "utf8",
-        proto: Optional[str] = None,
+        proto: str | None = None,
         allow_pickle: bool = False,
     ) -> _Y:
         if content_type is None:
@@ -105,12 +95,12 @@ class UseqModel(FrozenModel):
 
     @classmethod
     def parse_file(
-        cls: Type[_Y],
-        path: Union[str, Path],
+        cls: type[_Y],
+        path: str | Path,
         *,
-        content_type: Optional[str] = None,
+        content_type: str | None = None,
         encoding: str = "utf8",
-        proto: Optional[str] = None,
+        proto: str | None = None,
         allow_pickle: bool = False,
     ) -> _Y:
         if encoding is None:
@@ -140,14 +130,14 @@ class UseqModel(FrozenModel):
     def yaml(
         self,
         *,
-        include: Optional[Union[set, dict]] = None,
-        exclude: Optional[Union[set, dict]] = None,
+        include: set | dict | None = None,
+        exclude: set | dict | None = None,
         by_alias: bool = False,
         exclude_unset: bool = True,  # pydantic has False by default
         exclude_defaults: bool = False,
         exclude_none: bool = False,
-        stream: Optional[IO[str]] = None,
-    ) -> Optional[str]:
+        stream: IO[str] | None = None,
+    ) -> str | None:
         """Generate a YAML representation of the model.
 
         Returns

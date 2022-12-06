@@ -1,17 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterator,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    no_type_check,
-)
+from typing import TYPE_CHECKING, Any, Iterator, Sequence, no_type_check
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -102,15 +92,15 @@ class MDASequence(UseqModel):
       step: 1.0
     """
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     axis_order: str = "".join(INDICES)
-    stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
-    channels: Tuple[Channel, ...] = Field(default_factory=tuple)
+    stage_positions: tuple[Position, ...] = Field(default_factory=tuple)
+    channels: tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
-    _length: Optional[int] = PrivateAttr(default=None)
+    _length: int | None = PrivateAttr(default=None)
 
     @property
     def uid(self) -> UUID:
@@ -120,10 +110,10 @@ class MDASequence(UseqModel):
     @no_type_check
     def replace(
         self,
-        metadata: Dict[str, Any] = Undefined,
+        metadata: dict[str, Any] = Undefined,
         axis_order: str = Undefined,
-        stage_positions: Tuple[Position, ...] = Undefined,
-        channels: Tuple[Channel, ...] = Undefined,
+        stage_positions: tuple[Position, ...] = Undefined,
+        channels: tuple[Channel, ...] = Undefined,
         time_plan: AnyTimePlan = Undefined,
         z_plan: AnyZPlan = Undefined,
     ) -> MDASequence:
@@ -141,11 +131,11 @@ class MDASequence(UseqModel):
         return hash(self.uid)
 
     @validator("z_plan", pre=True)
-    def validate_zplan(cls, v: Any) -> Union[dict, NoZ]:
+    def validate_zplan(cls, v: Any) -> dict | NoZ:
         return v or NoZ()
 
     @validator("time_plan", pre=True)
-    def validate_time_plan(cls, v: Any) -> Union[dict, NoT]:
+    def validate_time_plan(cls, v: Any) -> dict | NoT:
         return {"phases": v} if isinstance(v, (tuple, list)) else v or NoT()
 
     @validator("stage_positions", pre=True)
@@ -173,7 +163,7 @@ class MDASequence(UseqModel):
         return order
 
     @root_validator
-    def validate_mda(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_mda(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "axis_order" in values:
             values["axis_order"] = cls._check_order(
                 values["axis_order"],
@@ -194,7 +184,7 @@ class MDASequence(UseqModel):
     @staticmethod
     def _check_order(
         order: str,
-        z_plan: Optional[AnyZPlan] = None,
+        z_plan: AnyZPlan | None = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
     ) -> str:
@@ -236,7 +226,7 @@ class MDASequence(UseqModel):
         return self._length
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         """Return the shape of this sequence.
 
         !!! note
@@ -246,7 +236,7 @@ class MDASequence(UseqModel):
         return tuple(s for s in self.sizes.values() if s)
 
     @property
-    def sizes(self) -> Dict[str, int]:
+    def sizes(self) -> dict[str, int]:
         """Mapping of axis to size of that axis."""
         return {k: len(list(self.iter_axis(k))) for k in self.axis_order}
 
@@ -293,9 +283,9 @@ class MDASequence(UseqModel):
             _ev = dict(zip(order, item))
             index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
-            position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
-            channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
-            time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
+            position: Position | None = _ev[POSITION][1] if POSITION in _ev else None
+            channel: Channel | None = _ev[CHANNEL][1] if CHANNEL in _ev else None
+            time: int | None = _ev[TIME][1] if TIME in _ev else None
 
             # skip channels
             if channel and TIME in index and index[TIME] % channel.acquire_every:
@@ -332,8 +322,8 @@ class MDASequence(UseqModel):
         self,
         z_pos: float,
         z_ind: int,
-        channel: Optional[Channel],
-        position: Optional[Position],
+        channel: Channel | None,
+        position: Position | None,
     ) -> float:
         if channel:
             # only acquire on the middle plane:
