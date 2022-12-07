@@ -162,6 +162,8 @@ class NoZ(ZPlan):
         return False
 
 
+# order matters... this is the order in which pydantic will try to coerce input.
+# should go from most specific to least specific
 AnyZPlan = Union[
-    ZTopBottom, ZRangeAround, ZAboveBelow, ZRelativePositions, ZAbsolutePositions, NoZ
+    ZTopBottom, ZAboveBelow, ZRangeAround, ZAbsolutePositions, ZRelativePositions, NoZ
 ]
