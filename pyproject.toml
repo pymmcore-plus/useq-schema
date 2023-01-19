@@ -72,10 +72,10 @@ select = [
     "E",    # style errors
     "F",    # flakes
     "D",    # pydocstyle
-    "I", # isort
-    "U",    # pyupgrade
+    "I",    # isort
+    "UP",   # pyupgrade
     # "N",  # pep8-naming
-    "S",  # bandit
+    "S",    # bandit
     "C",    # comprehensions
     "B",    # bugbear
     "A001", # Variable shadowing a python builtin
@@ -83,6 +83,7 @@ select = [
 ]
 extend-ignore = [
     "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
     "D107", # Missing docstring in __init__
     "D203", # 1 blank line required before class docstring
     "D212", # Multi-line docstring summary should start at the first line
