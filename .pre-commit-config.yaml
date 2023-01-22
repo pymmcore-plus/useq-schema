@@ -18,6 +18,8 @@ repos:
       - id: check-docstring-first
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: pretty-format-json
+        args: ["--autofix"]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.0.226

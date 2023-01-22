@@ -1,0 +1,31 @@
+axis_order: tpcz
+channels:
+- config: Cy5
+  exposure: 50.0
+- config: FITC
+  exposure: 100.0
+- acquire_every: 3
+  config: DAPI
+  do_stack: false
+metadata:
+  some info: something
+stage_positions:
+- x: 10.0
+  y: 20.0
+- name: test_name
+  x: 10.0
+  y: 20.0
+  z: 50.0
+  z_plan:
+    above: 10.0
+    below: 0.0
+    step: 1.0
+time_plan:
+  phases:
+  - interval: 0:00:03
+    loops: 3
+  - duration: 0:40:00
+    interval: 0:00:10
+z_plan:
+  range: 1.0
+  step: 0.5
