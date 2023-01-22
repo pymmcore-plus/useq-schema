@@ -1,13 +1,20 @@
 # useq-schema
 
+[![License](https://img.shields.io/pypi/l/useq-schema.svg?color=green)](https://github.com/pymmcore-plus/useq-schema/raw/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/useq-schema.svg?color=green)](https://pypi.org/project/useq-schema)
+[![tests](https://github.com/pymmcore-plus/useq-schema/actions/workflows/test_and_deploy.yml/badge.svg)](https://github.com/pymmcore-plus/useq-schema/actions/workflows/test_and_deploy.yml)
+[![docs](https://github.com/pymmcore-plus/useq-schema/actions/workflows/docs.yml/badge.svg)](https://pymmcore-plus.github.io/useq-schema/)
+[![codecov](https://codecov.io/gh/pymmcore-plus/useq-schema/branch/main/graph/badge.svg)](https://codecov.io/gh/pymmcore-plus/useq-schema)
+
 *An implementation agnostic schema for describing a sequence of events during a
 multi-dimensional imaging acquisition.*
+
+**Documentation: <https://pymmcore-plus.github.io/useq-schema/>**
 
 The goal of this repo is to provide a specification (and some python utilities)
 for generating event objects that can be consumed by microscope acquisition
 engines.  The *hope* is that this will encourage inter-operability between
 various efforts to drive automated image acquisition.
-
 
 The schema *tries* to remain agnostic to the specific acquisition engine, though
 it was designed based on the Micro-Manager acquisition engine. One hope is to
