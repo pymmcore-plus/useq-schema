@@ -1,8 +1,9 @@
-from pathlib import Path
 import json
+from pathlib import Path
+
+import pytest
 
 from useq import MDASequence
-import pytest
 
 
 @pytest.mark.parametrize("ext", ["json", "yaml"])

@@ -1,9 +1,10 @@
 import datetime
 from typing import Any, Callable, Generator, Iterator, Sequence, Union
 
-from pydantic import BaseModel
 from pydantic.datetime_parse import parse_duration
 from pydantic.types import PositiveInt
+
+from ._base_model import FrozenModel
 
 
 class timedelta(datetime.timedelta):
@@ -13,12 +14,11 @@ class timedelta(datetime.timedelta):
 
     @classmethod
     def validate(cls, v: Any) -> datetime.timedelta:
-        if isinstance(v, dict):
-            return datetime.timedelta(**v)
-        return parse_duration(v)
+        return datetime.timedelta(**v) if isinstance(v, dict) else parse_duration(v)
 
 
-class TimePlan(BaseModel):
+class TimePlan(FrozenModel):
+
     # TODO: probably needs to be implemented by engine
     prioritize_duration: bool = False  # or prioritize num frames
 
@@ -40,11 +40,37 @@ class TimePlan(BaseModel):
 
 
 class TIntervalLoops(TimePlan):
+    """Define temporal sequence using interval and number of loops.
+
+    Attributes
+    ----------
+    interval : str | timedelta
+        Time between frames.
+    loops : PositiveInt
+        Number of frames.
+    prioritize_duration : bool
+        If `True`, instructs engine to prioritize duration over number of frames in case
+        of conflict. By default, `False`.
+    """
+
     interval: timedelta
     loops: PositiveInt
 
 
 class TDurationLoops(TimePlan):
+    """Define temporal sequence using duration and number of loops.
+
+    Attributes
+    ----------
+    duration : str | timedelta
+        Total duration of sequence.
+    loops : PositiveInt
+        Number of frames.
+    prioritize_duration : bool
+        If `True`, instructs engine to prioritize duration over number of frames in case
+        of conflict. By default, `False`.
+    """
+
     duration: timedelta
     loops: PositiveInt
 
@@ -55,6 +81,19 @@ class TDurationLoops(TimePlan):
 
 
 class TIntervalDuration(TimePlan):
+    """Define temporal sequence using interval and duration.
+
+    Attributes
+    ----------
+    interval : str | timedelta
+        Time between frames.
+    duration : str | timedelta
+        Total duration of sequence.
+    prioritize_duration : bool
+        If `True`, instructs engine to prioritize duration over number of frames in case
+        of conflict. By default, `True`.
+    """
+
     interval: timedelta
     duration: timedelta
     prioritize_duration: bool = True
@@ -65,7 +104,7 @@ class TIntervalDuration(TimePlan):
 
 
 class NoT(TimePlan):
-    """Don't acquire T."""
+    """Don't acquire a time sequence."""
 
     def deltas(self) -> Iterator[datetime.timedelta]:
         yield from ()
@@ -75,6 +114,14 @@ SinglePhaseTimePlan = Union[TIntervalDuration, TIntervalLoops, TDurationLoops, N
 
 
 class MultiPhaseTimePlan(TimePlan):
+    """Time sequence composed of multiple phases.
+
+    Attributes
+    ----------
+    phases : Sequence[TIntervalDuration | TIntervalLoops | TDurationLoops | NoT]
+        Sequence of time plans.
+    """
+
     phases: Sequence[SinglePhaseTimePlan]
 
     def deltas(self) -> Iterator[datetime.timedelta]:

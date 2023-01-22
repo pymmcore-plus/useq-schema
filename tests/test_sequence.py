@@ -152,3 +152,29 @@ def test_combinations(
 def test_schema(cls: BaseModel) -> None:
     assert cls.schema()
     assert cls.schema_json()
+
+
+def test_z_position() -> None:
+    mda = MDASequence(axis_order="tpcz", stage_positions=[(222, 1, 10), (111, 1, 20)])
+    assert not mda.z_plan
+    for event in mda:
+        assert event.z_pos
+
+
+def test_shape_and_axes() -> None:
+    mda = MDASequence(
+        z_plan=z_as_class[0][0], time_plan=t_as_class[0][0], axis_order="tzp"
+    )
+    assert mda.shape == (5, 7)
+    assert mda.axis_order == "tzp"
+    assert mda.used_axes == "tz"
+    assert mda.sizes == {"t": 5, "z": 7, "p": 0}
+
+    mda2 = mda.replace(axis_order="zptc")
+    assert mda2.shape == (7, 5)
+    assert mda2.axis_order == "zptc"
+    assert mda2.used_axes == "zt"
+    assert mda2.sizes == {"z": 7, "p": 0, "t": 5, "c": 0}
+
+    with pytest.raises(ValueError):
+        mda.replace(axis_order="zptasdfs")
