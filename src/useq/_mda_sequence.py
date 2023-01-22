@@ -22,6 +22,7 @@ from ._base_model import UseqModel
 from ._channel import Channel
 from ._mda_event import MDAEvent
 from ._position import Position
+from ._tile import AnyTilePlan, NoTile, TileFromCorners, TileRelative
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
 
@@ -33,10 +34,10 @@ TIME = "t"
 CHANNEL = "c"
 POSITION = "p"
 Z = "z"
-INDICES = (TIME, POSITION, CHANNEL, Z)
+TILE = "g"
+INDICES = (TIME, POSITION, CHANNEL, Z, TILE)
 
 Undefined = object()
-
 
 class MDASequence(UseqModel):
     """A sequence of MDA (Multi-Dimensional Acquisition) events.
@@ -57,6 +58,8 @@ class MDASequence(UseqModel):
     stage_positions : tuple[Position, ...]
         The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `z_plan`,
         all of which are optional).
+    tile_plan : TileFromCorners, TileRelative, NoTile
+        The tile plan to follow. One of `TileFromCorners`, `TileRelative` or `NoTile`.
     channels : tuple[Channel, ...]
         The channels to acquire. see `Channel`.
     time_plan : MultiPhaseTimePlan | TIntervalDuration | TIntervalLoops \
@@ -77,11 +80,12 @@ class MDASequence(UseqModel):
     >>> seq = MDASequence(
     ...     time_plan={"interval": 0.1, "loops": 2},
     ...     stage_positions=[(1, 1, 1)],
+    ...     tile_plan={"rows": 2, "cols": 2},
     ...     z_plan={"range": 3, "step": 1},
     ...     channels=[{"config": "DAPI", "exposure": 1}]
     ... )
     >>> print(seq)
-    Multi-Dimensional Acquisition ▶ nt: 2, np: 1, nc: 1, nz: 4
+    Multi-Dimensional Acquisition ▶ nt: 2, np: 1, nc: 1, nz: 4, ng: 4
 
     >>> for event in seq:
     ...     print(event)
@@ -89,11 +93,14 @@ class MDASequence(UseqModel):
     >>> print(seq.yaml())
     channels:
     - config: DAPI
-      exposure: 1.0
+        exposure: 1.0
     stage_positions:
     - x: 1.0
       y: 1.0
       z: 1.0
+    tile_plan:
+      cols: 2
+      rows: 2
     time_plan:
       interval: '0:00:00.100000'
       loops: 2
@@ -105,17 +112,26 @@ class MDASequence(UseqModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: str = "".join(INDICES)
     stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
+    tile_plan: AnyTilePlan = Field(default_factory=NoTile)
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _length: Optional[int] = PrivateAttr(default=None)
+    _fov_size: tuple[float, float] = PrivateAttr(default=(1, 1))
 
     @property
     def uid(self) -> UUID:
         """A unique identifier for this sequence."""
         return self._uid
+
+    def set_fov_size(self, fov_size: tuple[float, float]) -> None:
+        """Set the field of view size.
+
+        This is used to calculate the number of tiles in a tile plan.
+        """
+        self._fov_size = fov_size
 
     @no_type_check
     def replace(
@@ -123,6 +139,7 @@ class MDASequence(UseqModel):
         metadata: Dict[str, Any] = Undefined,
         axis_order: str = Undefined,
         stage_positions: Tuple[Position, ...] = Undefined,
+        tile_plan: AnyTilePlan = Undefined,
         channels: Tuple[Channel, ...] = Undefined,
         time_plan: AnyTimePlan = Undefined,
         z_plan: AnyZPlan = Undefined,
@@ -157,6 +174,10 @@ class MDASequence(UseqModel):
                 return list(v)
         return v
 
+    @validator("tile_plan", pre=True)
+    def validate_tileplan(cls, v: Any) -> Union[dict, NoTile]:
+        return v or NoTile()
+
     @validator("axis_order", pre=True)
     def validate_axis_order(cls, v: Any) -> str:
         if not isinstance(v, str):
@@ -180,6 +201,16 @@ class MDASequence(UseqModel):
                 z_plan=values.get("z_plan"),
                 stage_positions=values.get("stage_positions", ()),
                 channels=values.get("channels", ()),
+                tile_plan=values.get("tile_plan"),
+            )
+
+        if not values.get("stage_positions", ()) and isinstance(
+            values.get("tile_plan"), TileRelative
+        ):
+            raise ValueError(
+                "At least ONE stage position is necessary for a "
+                "'relative positions' tile_plan. 'stage_positions': "
+                f"{values.get('stage_positions', ())}."
             )
 
         return values
@@ -197,6 +228,7 @@ class MDASequence(UseqModel):
         z_plan: Optional[AnyZPlan] = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
+        tile_plan: Optional[AnyTilePlan] = None,
     ) -> str:
         if (
             Z in order
@@ -262,6 +294,7 @@ class MDASequence(UseqModel):
             POSITION: self.stage_positions,
             Z: self.z_plan,
             CHANNEL: self.channels,
+            TILE: self.tile_plan.iter_tiles(self._fov_size[0], self._fov_size[1]),
         }[axis]
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
@@ -337,20 +370,38 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     order = sequence.used_axes
 
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
+
     for global_index, item in enumerate(product(*event_iterator)):
         if not item:  # the case with no events
             continue
 
         _ev = dict(zip(order, item))
+
         index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
         position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
         channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
         time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
+        tile: Optional[AnyTilePlan] = _ev[TILE][1] if TILE in _ev else None
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
             continue
+
+        x_pos = getattr(position, "x", None)
+        y_pos = getattr(position, "y", None)
+
+        if tile:
+            if tile["is_relative"]:
+                # e.g. TileRelative
+                dx = tile.get("dx")
+                dy = tile.get("dy")
+                x_pos = x_pos + dx
+                y_pos = y_pos + dy
+            else:
+                # e.g. TileFromCorners
+                x_pos = tile.get("x")
+                y_pos = tile.get("y")
 
         try:
             z_pos = (
@@ -370,8 +421,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             index=index,
             min_start_time=time,
             pos_name=getattr(position, "name", None),
-            x_pos=getattr(position, "x", None),
-            y_pos=getattr(position, "y", None),
+            x_pos=x_pos,
+            y_pos=y_pos,
             z_pos=z_pos,
             exposure=getattr(channel, "exposure", None),
             channel=_channel,

@@ -7,6 +7,7 @@ from pydantic import Field
 
 from ._base_model import FrozenModel
 from ._z import AnyZPlan, NoZ
+from ._tile import AnyTilePlan, TileFromCorners, TileRelative ,NoTile
 
 
 class Position(FrozenModel):
@@ -29,6 +30,9 @@ class Position(FrozenModel):
     z_plan : ZTopBottom | ZRangeAround | ZAboveBelow | ZRelativePositions | \
         ZAbsolutePositions | NoZ | None
         Z plan to execute at this position specifically. By default, [`NoZ`][useq.NoZ].
+    tile_plan : TileRelative, NoTile
+        TileRelative plan execute at this position specifically.
+        By default, [`NoTile`][useq.NoTile].
     """
 
     # if None, implies 'do not move this axis'
@@ -37,6 +41,7 @@ class Position(FrozenModel):
     z: Optional[float] = None
     name: Optional[str] = None
     z_plan: AnyZPlan = Field(default_factory=NoZ)
+    tile_plan: TileRelative | NoTile = Field(default_factory=NoTile)
 
     @classmethod
     def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
