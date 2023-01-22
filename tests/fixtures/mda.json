@@ -1,0 +1,78 @@
+{
+  "axis_order": "tpcz",
+  "channels": [
+    {
+      "acquire_every": 1,
+      "camera": null,
+      "config": "Cy5",
+      "do_stack": true,
+      "exposure": 50.0,
+      "group": "Channel",
+      "z_offset": 0.0
+    },
+    {
+      "acquire_every": 1,
+      "camera": null,
+      "config": "FITC",
+      "do_stack": true,
+      "exposure": 100.0,
+      "group": "Channel",
+      "z_offset": 0.0
+    },
+    {
+      "acquire_every": 3,
+      "camera": null,
+      "config": "DAPI",
+      "do_stack": false,
+      "exposure": null,
+      "group": "Channel",
+      "z_offset": 0.0
+    }
+  ],
+  "metadata": {
+    "some info": "something"
+  },
+  "stage_positions": [
+    {
+      "name": null,
+      "x": 10.0,
+      "y": 20.0,
+      "z": null,
+      "z_plan": {
+        "go_up": true
+      }
+    },
+    {
+      "name": "test_name",
+      "x": 10.0,
+      "y": 20.0,
+      "z": 50.0,
+      "z_plan": {
+        "above": 10.0,
+        "below": 0.0,
+        "go_up": true,
+        "step": 1.0
+      }
+    }
+  ],
+  "time_plan": {
+    "phases": [
+      {
+        "interval": 3.0,
+        "loops": 3,
+        "prioritize_duration": false
+      },
+      {
+        "duration": 2400.0,
+        "interval": 10.0,
+        "prioritize_duration": true
+      }
+    ],
+    "prioritize_duration": false
+  },
+  "z_plan": {
+    "go_up": true,
+    "range": 1.0,
+    "step": 0.5
+  }
+}

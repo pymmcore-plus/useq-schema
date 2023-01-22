@@ -1,17 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterator,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    no_type_check,
-)
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -25,10 +15,6 @@ from ._position import Position
 from ._tile import AnyTilePlan, NoTile, TileRelative
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
-
-if TYPE_CHECKING:
-    from ._time import NoT
-    from ._z import NoZ
 
 TIME = "t"
 CHANNEL = "c"
