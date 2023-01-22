@@ -22,7 +22,7 @@ from ._base_model import UseqModel
 from ._channel import Channel
 from ._mda_event import MDAEvent
 from ._position import Position
-from ._tile import AnyTilePlan, NoTile, TileFromCorners, TileRelative
+from ._tile import AnyTilePlan, NoTile, TileRelative
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
 
@@ -38,6 +38,7 @@ TILE = "g"
 INDICES = (TIME, POSITION, CHANNEL, Z, TILE)
 
 Undefined = object()
+
 
 class MDASequence(UseqModel):
     """A sequence of MDA (Multi-Dimensional Acquisition) events.
@@ -382,7 +383,9 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
         channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
         time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
-        tile: Optional[AnyTilePlan] = _ev[TILE][1] if TILE in _ev else None
+        tile: Optional[dict[str, bool | float]] = _ev[TILE][1] if TILE in _ev else None
+        # tile e.g. {'is_relative': True, 'dx': 0, 'dy': 0}
+        # or {'is_relative': False, 'x': 0, 'y': 0}
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
@@ -392,12 +395,12 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         y_pos = getattr(position, "y", None)
 
         if tile:
-            if tile["is_relative"]:
+            if tile.get("is_relative"):
                 # e.g. TileRelative
                 dx = tile.get("dx")
                 dy = tile.get("dy")
-                x_pos = x_pos + dx
-                y_pos = y_pos + dy
+                x_pos = x_pos + dx if x_pos else None
+                y_pos = y_pos + dy if y_pos else None
             else:
                 # e.g. TileFromCorners
                 x_pos = tile.get("x")
