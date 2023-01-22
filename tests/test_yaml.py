@@ -17,6 +17,7 @@ metadata:
 stage_positions:
 - x: 10.0
   y: 20.0
+  z: null
 - name: test_name
   x: 10.0
   y: 20.0
@@ -25,6 +26,9 @@ stage_positions:
     above: 10.0
     below: 0.0
     step: 1.0
+tile_plan:
+  cols: 1
+  rows: 2
 time_plan:
   phases:
   - interval: 0:00:03
@@ -60,6 +64,7 @@ MDA = MDASequence(
         {"duration": {"minutes": 40}, "interval": 10},
     ],
     z_plan={"range": 1.0, "step": 0.5},
+    tile_plan={"rows": 2, "cols": 1},
 )
 
 
