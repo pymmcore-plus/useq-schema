@@ -56,7 +56,7 @@ class TileFromCorners(_TilePlan):
         First bounding coordinate (e.g. "top left").
     corner2 : Coordinate
         Second bounding coordinate (e.g. "bottom right").
-    
+
 
     Yields
     ------
@@ -69,7 +69,9 @@ class TileFromCorners(_TilePlan):
     corner1: Coordinate
     corner2: Coordinate
 
-    def iter_tiles(self, fov_width: float, fov_height: float) -> Iterator[dict[str, Any]]:
+    def iter_tiles(
+        self, fov_width: float, fov_height: float
+    ) -> Iterator[dict[str, Any]]:
         """Yield absolute tile positions to visit.
 
         `fov_width` and `fov_height` should be in physical units (not pixels).
@@ -95,9 +97,9 @@ class TileFromCorners(_TilePlan):
         yield from self._yield_grid_info(
             False, top_left, increment_x, increment_y, rows, cols, self.snake_order
         )
-    
+
     def _yield_grid_info(
-        self, 
+        self,
         is_relative: bool,
         top_left: Coordinate,
         increment_x: float,
@@ -176,7 +178,7 @@ class TileRelative(_TilePlan):
             self.cols,
             self.snake_order,
         )
-    
+
     def _yield_grid_info(
         self,
         is_relative: bool,
@@ -184,19 +186,15 @@ class TileRelative(_TilePlan):
         increment_y: float,
         rows: int,
         cols: int,
-        snake_order: bool
+        snake_order: bool,
     ) -> Iterator[dict[str, Any]]:
         for r, c in itertools.product(range(rows), range(cols)):
-            inc_y = - (r * increment_y)
+            inc_y = -(r * increment_y)
             if snake_order and r % 2 == 1:
-                inc_x = ((cols - c - 1) * increment_x)
+                inc_x = (cols - c - 1) * increment_x
             else:
-                inc_x = (c * increment_x)
-            yield {
-                "is_relative": is_relative,
-                "dx": inc_x,
-                "dy": inc_y
-            }
+                inc_x = c * increment_x
+            yield {"is_relative": is_relative, "dx": inc_x, "dy": inc_y}
 
 
 class NoTile(_TilePlan):

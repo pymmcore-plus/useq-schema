@@ -6,8 +6,8 @@ import numpy as np
 from pydantic import Field
 
 from ._base_model import FrozenModel
+from ._tile import NoTile, TileRelative
 from ._z import AnyZPlan, NoZ
-from ._tile import AnyTilePlan, TileFromCorners, TileRelative ,NoTile
 
 
 class Position(FrozenModel):

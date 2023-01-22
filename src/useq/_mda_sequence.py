@@ -22,7 +22,7 @@ from ._base_model import UseqModel
 from ._channel import Channel
 from ._mda_event import MDAEvent
 from ._position import Position
-from ._tile import AnyTilePlan, NoTile, TileFromCorners, TileRelative
+from ._tile import AnyTilePlan, NoTile, TileRelative
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
 
@@ -38,6 +38,7 @@ TILE = "g"
 INDICES = (TIME, POSITION, CHANNEL, Z, TILE)
 
 Undefined = object()
+
 
 class MDASequence(UseqModel):
     """A sequence of MDA (Multi-Dimensional Acquisition) events.
