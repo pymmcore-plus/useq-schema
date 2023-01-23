@@ -80,7 +80,7 @@ class MDASequence(UseqModel):
     >>> print(seq.yaml())
     channels:
     - config: DAPI
-        exposure: 1.0
+      exposure: 1.0
     stage_positions:
     - x: 1.0
       y: 1.0
