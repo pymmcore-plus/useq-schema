@@ -6,7 +6,7 @@ from useq import MDASequence
 @pytest.fixture
 def mda1() -> MDASequence:
     return MDASequence(
-        axis_order="tpcz",
+        axis_order="tpgcz",
         metadata={"some info": "something"},
         stage_positions=[
             (10, 20),
