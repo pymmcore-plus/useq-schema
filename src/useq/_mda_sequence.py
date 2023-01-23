@@ -1,7 +1,17 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    no_type_check,
+)
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -12,9 +22,20 @@ from ._base_model import UseqModel
 from ._channel import Channel
 from ._mda_event import MDAEvent
 from ._position import Position
-from ._tile import AnyTilePlan, NoTile, TileRelative
+from ._tile import AnyTilePlan, NoTile
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
+
+if TYPE_CHECKING:
+    from typing_extensions import TypedDict
+
+    class TileDict(TypedDict, total=True):
+        """Tile dictionary."""
+
+        is_relative: bool
+        x: float
+        y: float
+
 
 TIME = "t"
 CHANNEL = "c"
@@ -80,7 +101,7 @@ class MDASequence(UseqModel):
     >>> print(seq.yaml())
     channels:
     - config: DAPI
-        exposure: 1.0
+      exposure: 1.0
     stage_positions:
     - x: 1.0
       y: 1.0
@@ -161,6 +182,10 @@ class MDASequence(UseqModel):
                 return list(v)
         return v
 
+    @validator("tile_plan", pre=True)
+    def validate_tileplan(cls, v: Any) -> Union[dict, NoTile]:
+        return v or NoTile
+
     @validator("axis_order", pre=True)
     def validate_axis_order(cls, v: Any) -> str:
         if not isinstance(v, str):
@@ -184,18 +209,8 @@ class MDASequence(UseqModel):
                 z_plan=values.get("z_plan"),
                 stage_positions=values.get("stage_positions", ()),
                 channels=values.get("channels", ()),
-                tile_plan=values.get("tile_plan"),
+                tile_plan=values.get("tile_plan")
             )
-
-        if not values.get("stage_positions", ()) and isinstance(
-            values.get("tile_plan"), TileRelative
-        ):
-            raise ValueError(
-                "At least ONE stage position is necessary for a "
-                "'relative positions' tile_plan. 'stage_positions': "
-                f"{values.get('stage_positions', ())}."
-            )
-
         return values
 
     def __eq__(self, other: Any) -> bool:
@@ -211,6 +226,7 @@ class MDASequence(UseqModel):
         z_plan: Optional[AnyZPlan] = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
+        tile_plan: Optional[AnyTilePlan] = None
     ) -> str:
         if (
             Z in order
@@ -364,9 +380,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
         channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
         time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
-        tile: Optional[dict[str, bool | float]] = _ev[TILE][1] if TILE in _ev else None
-        # tile e.g. {'is_relative': True, 'dx': 0, 'dy': 0}
-        # or {'is_relative': False, 'x': 0, 'y': 0}
+        tile: Optional[TileDict] = _ev[TILE][1] if TILE in _ev else None
+        # tile e.g. {'is_relative': True, 'x': 0, 'y': 0}
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
@@ -378,10 +393,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         if tile:
             if tile.get("is_relative"):
                 # e.g. TileRelative
-                dx = tile.get("dx")
-                dy = tile.get("dy")
-                x_pos = x_pos + dx if x_pos else None
-                y_pos = y_pos + dy if y_pos else None
+                x_pos = x_pos + tile["x"] if x_pos else None
+                y_pos = y_pos + tile["y"] if y_pos else None
             else:
                 # e.g. TileFromCorners
                 x_pos = tile.get("x")

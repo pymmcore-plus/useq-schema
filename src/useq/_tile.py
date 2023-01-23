@@ -142,8 +142,8 @@ class TileRelative(_TilePlan):
     ------
     dict
         "is_relative": True
-        "dx": float
-        "dy": float
+        "x": float
+        "y": float
     """
 
     rows: int
@@ -198,7 +198,7 @@ class TileRelative(_TilePlan):
                 inc_x = (cols - c - 1) * increment_x
             else:
                 inc_x = c * increment_x
-            yield {"is_relative": is_relative, "dx": inc_x, "dy": inc_y}
+            yield {"is_relative": is_relative, "x": inc_x, "y": inc_y}
 
 
 class NoTile(_TilePlan):
