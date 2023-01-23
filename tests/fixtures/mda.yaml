@@ -1,4 +1,4 @@
-axis_order: tpcz
+axis_order: tpgcz
 channels:
 - config: Cy5
   exposure: 50.0
