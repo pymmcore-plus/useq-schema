@@ -93,8 +93,9 @@ class _TilePlan(FrozenModel):
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
         for r, c in itertools.product(range(rows), range(cols)):
-            inc_x = (cols - c - 1) if self.snake_order and r % 2 == 1 else c
-            yield TilePosition(x0 + (inc_x * dx), y0 - (r * dy), r, c, self.is_relative)
+            if self.snake_order and r % 2 == 1:
+                c = (cols - c - 1)
+            yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
 
     def __len__(self) -> int:
         return len(list(self.iter_tiles(1, 1)))
