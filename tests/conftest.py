@@ -28,4 +28,5 @@ def mda1() -> MDASequence:
             {"duration": {"minutes": 40}, "interval": 10},
         ],
         z_plan={"range": 1.0, "step": 0.5},
+        tile_plan={"is_relative": True, "rows": 2, "cols": 1},
     )
