@@ -1,89 +1,89 @@
 {
+  "axis_order": "tpcz",
+  "channels": [
+    {
+      "acquire_every": 1,
+      "camera": null,
+      "config": "Cy5",
+      "do_stack": true,
+      "exposure": 50.0,
+      "group": "Channel",
+      "z_offset": 0.0
+    },
+    {
+      "acquire_every": 1,
+      "camera": null,
+      "config": "FITC",
+      "do_stack": true,
+      "exposure": 100.0,
+      "group": "Channel",
+      "z_offset": 0.0
+    },
+    {
+      "acquire_every": 3,
+      "camera": null,
+      "config": "DAPI",
+      "do_stack": false,
+      "exposure": null,
+      "group": "Channel",
+      "z_offset": 0.0
+    }
+  ],
   "metadata": {
     "some info": "something"
   },
-  "axis_order": "tpcz",
   "stage_positions": [
     {
+      "name": null,
+      "tile_plan": {
+        "overlap": 0.0,
+        "snake_order": true
+      },
       "x": 10.0,
       "y": 20.0,
       "z": null,
-      "name": null,
       "z_plan": {
         "go_up": true
-      },
-      "tile_plan": {
-        "overlap": 0.0,
-        "snake_order": true
       }
     },
     {
-      "x": 10.0,
-      "y": 20.0,
-      "z": 50.0,
       "name": "test_name",
-      "z_plan": {
-        "go_up": true,
-        "above": 10.0,
-        "below": 0.0,
-        "step": 1.0
-      },
       "tile_plan": {
         "overlap": 0.0,
         "snake_order": true
+      },
+      "x": 10.0,
+      "y": 20.0,
+      "z": 50.0,
+      "z_plan": {
+        "above": 10.0,
+        "below": 0.0,
+        "go_up": true,
+        "step": 1.0
       }
     }
   ],
   "tile_plan": {
-    "overlap": 0.0,
-    "snake_order": true,
-    "rows": 2,
     "cols": 1,
-    "relative_to": "center"
+    "overlap": 0.0,
+    "relative_to": "center",
+    "rows": 2,
+    "snake_order": true
   },
-  "channels": [
-    {
-      "config": "Cy5",
-      "group": "Channel",
-      "exposure": 50.0,
-      "do_stack": true,
-      "z_offset": 0.0,
-      "acquire_every": 1,
-      "camera": null
-    },
-    {
-      "config": "FITC",
-      "group": "Channel",
-      "exposure": 100.0,
-      "do_stack": true,
-      "z_offset": 0.0,
-      "acquire_every": 1,
-      "camera": null
-    },
-    {
-      "config": "DAPI",
-      "group": "Channel",
-      "exposure": null,
-      "do_stack": false,
-      "z_offset": 0.0,
-      "acquire_every": 3,
-      "camera": null
-    }
-  ],
   "time_plan": {
-    "prioritize_duration": false,
     "phases": [
       {
-        "prioritize_duration": false,
         "interval": 3.0,
-        "loops": 3
+        "loops": 3,
+        "prioritize_duration": false
       },
       {
-        "prioritize_duration": true,
+        "duration": 2400.0,
         "interval": 10.0,
-        "duration": 2400.0
+        "prioritize_duration": true
       }
-    ]
+    ],
+    "prioritize_duration": false
   },
   "z_plan": {
     "go_up": true,
