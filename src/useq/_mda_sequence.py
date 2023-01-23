@@ -182,10 +182,6 @@ class MDASequence(UseqModel):
                 return list(v)
         return v
 
-    @validator("tile_plan", pre=True)
-    def validate_tileplan(cls, v: Any) -> Union[dict, NoTile]:
-        return v or NoTile
-
     @validator("axis_order", pre=True)
     def validate_axis_order(cls, v: Any) -> str:
         if not isinstance(v, str):
@@ -209,7 +205,6 @@ class MDASequence(UseqModel):
                 z_plan=values.get("z_plan"),
                 stage_positions=values.get("stage_positions", ()),
                 channels=values.get("channels", ()),
-                tile_plan=values.get("tile_plan"),
             )
         return values
 
@@ -226,7 +221,6 @@ class MDASequence(UseqModel):
         z_plan: Optional[AnyZPlan] = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
-        tile_plan: Optional[AnyTilePlan] = None,
     ) -> str:
         if (
             Z in order
@@ -285,7 +279,7 @@ class MDASequence(UseqModel):
         """Single letter string of axes used in this sequence, e.g. `ztc`."""
         return "".join(k for k in self.axis_order if self.sizes[k])
 
-    def iter_axis(self, axis: str) -> Iterator[Position | Channel | float]:
+    def iter_axis(self, axis: str) -> Iterator[Position | Channel | float | dict]:
         """Iterate over the events of a given axis."""
         yield from {
             TIME: self.time_plan,
