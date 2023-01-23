@@ -385,10 +385,13 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         y_pos = getattr(position, "y", None)
 
         if tile:
+            x_pos, y_pos = (x_pos or 0, y_pos or 0)
             if tile.get("is_relative"):
                 # e.g. TileRelative
-                x_pos = x_pos + tile["x"] if x_pos else None
-                y_pos = y_pos + tile["y"] if y_pos else None
+                dx = tile["x"]
+                dy = tile["y"]
+                x_pos = x_pos + dx
+                y_pos = y_pos + dy
             else:
                 # e.g. TileFromCorners
                 x_pos = tile.get("x")
