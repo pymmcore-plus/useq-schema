@@ -209,7 +209,7 @@ class MDASequence(UseqModel):
                 z_plan=values.get("z_plan"),
                 stage_positions=values.get("stage_positions", ()),
                 channels=values.get("channels", ()),
-                tile_plan=values.get("tile_plan")
+                tile_plan=values.get("tile_plan"),
             )
         return values
 
@@ -226,7 +226,7 @@ class MDASequence(UseqModel):
         z_plan: Optional[AnyZPlan] = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
-        tile_plan: Optional[AnyTilePlan] = None
+        tile_plan: Optional[AnyTilePlan] = None,
     ) -> str:
         if (
             Z in order
