@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import itertools
 import math
-from typing import Iterator, Literal, Union
+from typing import Any, Iterator, Literal, NamedTuple, Sequence, Union
+
+from pydantic import validator
 
 from useq._base_model import FrozenModel
 
@@ -21,6 +23,24 @@ class Coordinate(FrozenModel):
     x: float
     y: float
 
+    @classmethod
+    def validate(cls, v: Any) -> Coordinate:
+        if isinstance(v, Coordinate):
+            return v
+        if isinstance(v, dict):
+            return Coordinate(**v)
+        if isinstance(v, (list, tuple)):
+            return Coordinate(x=v[0], y=v[1])
+        raise ValueError(f"Cannot convert to Coordinate: {v}")
+
+
+class TilePosition(NamedTuple):
+    x: float
+    y: float
+    row: int
+    col: int
+    is_relative: bool
+
 
 class _TilePlan(FrozenModel):
     """Base class for all tile plans.
@@ -36,17 +56,54 @@ class _TilePlan(FrozenModel):
         If `False`, tiles are arranged in a row-wise order.
     """
 
-    overlap: float | tuple[float, float] = 0.0
+    overlap: tuple[float, float] = (0.0, 0.0)
     snake_order: bool = True
 
-    def iter_tiles(
-        self, fov_width: float, fov_height: float
-    ) -> Iterator[dict[str, bool | float]]:
+    @validator("overlap", pre=True)
+    def _validate_overlap(cls, v: Any) -> tuple[float, float]:
+        if isinstance(v, float):
+            return (v,) * 2
+        if isinstance(v, Sequence) and len(v) == 2:
+            return float(v[0]), float(v[1])
+        raise ValueError("overlap must be a float or a tuple of two floats")
+
+    @property
+    def is_relative(self) -> bool:
+        return False
+
+    def _offset_x(self, dx: float) -> float:
+        return 0
+
+    def _offset_y(self, dy: float) -> float:
+        return 0
+
+    def _nrows(self, dx: float) -> int:
+        """Return the number of rows, given a grid step size."""
+        raise NotImplementedError
+
+    def _ncols(self, dy: float) -> int:
+        """Return the number of cols, given a grid step size."""
+        raise NotImplementedError
+
+    def iter_tiles(self, fov_width: float, fov_height: float) -> Iterator[TilePosition]:
         """Iterate over all tiles, given a field of view size."""
-        raise NotImplementedError()
+        dx, dy = self._step_size(fov_width, fov_height)
+        rows = self._nrows(dx)
+        cols = self._ncols(dy)
+        x0 = self._offset_x(dx)
+        y0 = self._offset_y(dy)
+        for r, c in itertools.product(range(rows), range(cols)):
+            if self.snake_order and r % 2 == 1:
+                c = (cols - c - 1)
+            yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
 
     def __len__(self) -> int:
         return len(list(self.iter_tiles(1, 1)))
+
+    def _step_size(self, fov_width: float, fov_height: float) -> tuple[float, float]:
+        dx = fov_width - (fov_width * self.overlap[0]) / 100
+        dy = fov_height - (fov_height * self.overlap[1]) / 100
+        return dx, dy
 
 
 class TileFromCorners(_TilePlan):
@@ -58,69 +115,24 @@ class TileFromCorners(_TilePlan):
         First bounding coordinate (e.g. "top left").
     corner2 : Coordinate
         Second bounding coordinate (e.g. "bottom right").
-
-
-    Yields
-    ------
-    dict
-        "is_relative": False
-        "x": float
-        "y": float
     """
 
     corner1: Coordinate
     corner2: Coordinate
 
-    def iter_tiles(
-        self, fov_width: float, fov_height: float
-    ) -> Iterator[dict[str, bool | float]]:
-        """Yield absolute tile positions to visit.
+    def _nrows(self, dx: float) -> int:
+        total_width = abs(self.corner1.x - self.corner2.x)
+        return math.ceil(total_width / dx)
 
-        `fov_width` and `fov_height` should be in physical units (not pixels).
-        """
-        over = (self.overlap,) * 2 if isinstance(self.overlap, float) else self.overlap
-        overlap_x, overlap_y = over
+    def _ncols(self, dy: float) -> int:
+        total_height = abs(self.corner1.y - self.corner2.y)
+        return math.ceil(total_height / dy)
 
-        cam_width_minus_overlap = fov_width - (fov_width * overlap_x) / 100
-        cam_height_minus_overlap = fov_height - (fov_height * overlap_y) / 100
+    def _offset_x(self, dx: float) -> float:
+        return min(self.corner1.x, self.corner2.x)
 
-        total_width = abs(self.corner1.x + self.corner2.x)
-        total_height = abs(self.corner1.y + self.corner2.y)
-
-        rows = math.ceil(total_width / cam_width_minus_overlap)
-        cols = math.ceil(total_height / cam_height_minus_overlap)
-
-        increment_x = cam_width_minus_overlap if overlap_x > 0 else fov_width
-        increment_y = cam_height_minus_overlap if overlap_y > 0 else fov_height
-
-        # TODO: find which coord is the top left
-        top_left = self.corner1
-
-        yield from self._yield_grid_info(
-            False, top_left, increment_x, increment_y, rows, cols, self.snake_order
-        )
-
-    def _yield_grid_info(
-        self,
-        is_relative: bool,
-        top_left: Coordinate,
-        increment_x: float,
-        increment_y: float,
-        rows: int,
-        cols: int,
-        snake_order: bool,
-    ) -> Iterator[dict[str, bool | float]]:
-        for r, c in itertools.product(range(rows), range(cols)):
-            y_pos = top_left.y - (r * increment_y)
-            if snake_order and r % 2 == 1:
-                x_pos = top_left.x + ((cols - c - 1) * increment_x)
-            else:
-                x_pos = top_left.x + (c * increment_x)
-            yield {
-                "is_relative": is_relative,
-                "x": x_pos,
-                "y": y_pos,
-            }
+    def _offset_y(self, dy: float) -> float:
+        return max(self.corner1.y, self.corner2.y)
 
 
 class TileRelative(_TilePlan):
@@ -133,78 +145,34 @@ class TileRelative(_TilePlan):
     cols: int
         Number of columns.
     relative_to: Literal["center", "top_left"]:
-        Define if the position list will be generated using a
-        specified position as a central grid position (`center`) or
-        as the first top_left grid position (`top_left`).
-
-
-    Yields
-    ------
-    dict
-        "is_relative": True
-        "x": float
-        "y": float
+        Point in the grid to which the coordinates are relative. If "center", the grid
+        is centered around the origin. If "top_left", the grid is positioned such that
+        the top left corner is at the origin.
     """
 
     rows: int
     cols: int
     relative_to: Literal["center", "top_left"] = "center"
 
-    def iter_tiles(
-        self, fov_width: float, fov_height: float
-    ) -> Iterator[dict[str, bool | float]]:
-        """Yield deltas relative to some position.
+    @property
+    def is_relative(self) -> bool:
+        return False
 
-        `fov_width` and `fov_height` should be in physical units (not pixels).
-        """
-        over = (self.overlap,) * 2 if isinstance(self.overlap, float) else self.overlap
-        overlap_x, overlap_y = over
+    def _nrows(self, dx: float) -> int:
+        return self.rows
 
-        x_pos, y_pos = (0.0, 0.0)
-        cam_width_minus_overlap = fov_width - (fov_width * overlap_x) / 100
-        cam_height_minus_overlap = fov_height - (fov_height * overlap_y) / 100
+    def _ncols(self, dy: float) -> int:
+        return self.cols
 
-        if self.relative_to == "center":
-            # move to top left corner
-            move_x = (fov_width / 2) * (self.cols - 1) - cam_width_minus_overlap
-            move_y = (fov_height / 2) * (self.rows - 1) - cam_height_minus_overlap
-            x_pos -= move_x + fov_width
-            y_pos += move_y + fov_height
+    def _offset_x(self, dx: float) -> float:
+        return -((self.cols - 1) * dx) / 2 if self.relative_to == "center" else 0.0
 
-        increment_x = cam_width_minus_overlap if overlap_x > 0 else fov_width
-        increment_y = cam_height_minus_overlap if overlap_y > 0 else fov_height
-
-        yield from self._yield_grid_info(
-            True,
-            increment_x,
-            increment_y,
-            self.rows,
-            self.cols,
-            self.snake_order,
-        )
-
-    def _yield_grid_info(
-        self,
-        is_relative: bool,
-        increment_x: float,
-        increment_y: float,
-        rows: int,
-        cols: int,
-        snake_order: bool,
-    ) -> Iterator[dict[str, bool | float]]:
-        for r, c in itertools.product(range(rows), range(cols)):
-            inc_y = -(r * increment_y)
-            if snake_order and r % 2 == 1:
-                inc_x = (cols - c - 1) * increment_x
-            else:
-                inc_x = c * increment_x
-            yield {"is_relative": is_relative, "x": inc_x, "y": inc_y}
+    def _offset_y(self, dy: float) -> float:
+        return -((self.rows - 1) * dy) / 2 if self.relative_to == "center" else 0.0
 
 
 class NoTile(_TilePlan):
-    def iter_tiles(
-        self, fov_width: float, fov_height: float
-    ) -> Iterator[dict[str, bool | float]]:
+    def iter_tiles(self, fov_width: float, fov_height: float) -> Iterator[TilePosition]:
         return iter([])
 
 

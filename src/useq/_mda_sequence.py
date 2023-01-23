@@ -1,17 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterator,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    no_type_check,
-)
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -22,20 +12,9 @@ from ._base_model import UseqModel
 from ._channel import Channel
 from ._mda_event import MDAEvent
 from ._position import Position
-from ._tile import AnyTilePlan, NoTile
+from ._tile import AnyTilePlan, NoTile, TilePosition
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
-
-if TYPE_CHECKING:
-    from typing_extensions import TypedDict
-
-    class TileDict(TypedDict, total=True):
-        """Tile dictionary."""
-
-        is_relative: bool
-        x: float
-        y: float
-
 
 TIME = "t"
 CHANNEL = "c"
@@ -374,28 +353,22 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
         channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
         time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
-        tile: Optional[TileDict] = _ev[TILE][1] if TILE in _ev else None
+        tile: Optional[TilePosition] = _ev[TILE][1] if TILE in _ev else None
         # tile e.g. {'is_relative': True, 'x': 0, 'y': 0}
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
             continue
 
-        x_pos = getattr(position, "x", None)
-        y_pos = getattr(position, "y", None)
-
         if tile:
-            x_pos, y_pos = (x_pos or 0, y_pos or 0)
-            if tile.get("is_relative"):
-                # e.g. TileRelative
-                dx = tile["x"]
-                dy = tile["y"]
-                x_pos = x_pos + dx
-                y_pos = y_pos + dy
-            else:
-                # e.g. TileFromCorners
-                x_pos = tile.get("x")
-                y_pos = tile.get("y")
+            x_pos: Optional[float] = tile.x
+            y_pos: Optional[float] = tile.y
+            if tile.is_relative:
+                x_pos += getattr(position, "x", 0)
+                y_pos += getattr(position, "y", 0)
+        else:
+            x_pos = getattr(position, "x", None)
+            y_pos = getattr(position, "y", None)
 
         try:
             z_pos = (
