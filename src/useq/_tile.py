@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import itertools
 import math
+from enum import Enum
 from typing import Any, Iterator, NamedTuple, Sequence, Union
 
 from pydantic import validator
-from typing_extensions import Literal
 
 from useq._base_model import FrozenModel
+
+
+class RelativeTo(Enum):
+    center = "center"
+    top_left = "top_left"
 
 
 class Coordinate(FrozenModel):
@@ -153,11 +158,11 @@ class TileRelative(_TilePlan):
 
     rows: int
     cols: int
-    relative_to: Literal["center", "top_left"] = "center"
+    relative_to: RelativeTo = RelativeTo.center
 
     @property
     def is_relative(self) -> bool:
-        return False
+        return True
 
     def _nrows(self, dx: float) -> int:
         return self.rows
@@ -166,10 +171,18 @@ class TileRelative(_TilePlan):
         return self.cols
 
     def _offset_x(self, dx: float) -> float:
-        return -((self.cols - 1) * dx) / 2 if self.relative_to == "center" else 0.0
+        return (
+            -((self.cols - 1) * dx) / 2
+            if self.relative_to == RelativeTo.center
+            else 0.0
+        )
 
     def _offset_y(self, dy: float) -> float:
-        return -((self.rows - 1) * dy) / 2 if self.relative_to == "center" else 0.0
+        return (
+            -((self.rows - 1) * dy) / 2
+            if self.relative_to == RelativeTo.center
+            else 0.0
+        )
 
 
 class NoTile(_TilePlan):
