@@ -1,7 +1,7 @@
 import itertools
 import math
 from enum import Enum
-from typing import Any, Iterator, NamedTuple, Sequence, Union
+from typing import Any, Iterator, NamedTuple, Sequence, Tuple, Union
 
 from pydantic import validator
 
@@ -51,7 +51,7 @@ class _TilePlan(FrozenModel):
 
     Attributes
     ----------
-    overlap : float | tuple[float, float]
+    overlap : float | Tuple[float, float]
         Overlap between tiles in percent. If a single value is provided, it is
         used for both x and y. If a tuple is provided, the first value is used
         for x and the second for y.
@@ -60,11 +60,11 @@ class _TilePlan(FrozenModel):
         If `False`, tiles are arranged in a row-wise order.
     """
 
-    overlap: tuple[float, float] = (0.0, 0.0)
+    overlap: Tuple[float, float] = (0.0, 0.0)
     snake_order: bool = True
 
     @validator("overlap", pre=True)
-    def _validate_overlap(cls, v: Any) -> tuple[float, float]:
+    def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
         if isinstance(v, float):
             return (v,) * 2
         if isinstance(v, Sequence) and len(v) == 2:
@@ -104,7 +104,7 @@ class _TilePlan(FrozenModel):
     def __len__(self) -> int:
         return len(list(self.iter_tiles(1, 1)))
 
-    def _step_size(self, fov_width: float, fov_height: float) -> tuple[float, float]:
+    def _step_size(self, fov_width: float, fov_height: float) -> Tuple[float, float]:
         dx = fov_width - (fov_width * self.overlap[0]) / 100
         dy = fov_height - (fov_height * self.overlap[1]) / 100
         return dx, dy
