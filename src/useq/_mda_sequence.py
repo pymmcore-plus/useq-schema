@@ -111,7 +111,7 @@ class MDASequence(UseqModel):
         """A unique identifier for this sequence."""
         return self._uid
 
-    def set_fov_size(self, fov_size: tuple[float, float]) -> None:
+    def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
         """Set the field of view size.
 
         This is used to calculate the number of tiles in a tile plan.
