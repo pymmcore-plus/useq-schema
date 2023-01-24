@@ -258,7 +258,7 @@ class MDASequence(UseqModel):
 
     def iter_axis(
         self, axis: str
-    ) -> Iterator[Position | Channel | float | TilePosition]:
+    ) -> Iterator[Union[Position, Channel, float, TilePosition]]:
         """Iterate over the events of a given axis."""
         yield from {
             TIME: self.time_plan,
