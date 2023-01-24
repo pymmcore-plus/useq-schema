@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import itertools
 import math
 from enum import Enum
@@ -30,7 +28,7 @@ class Coordinate(FrozenModel):
     y: float
 
     @classmethod
-    def validate(cls, v: Any) -> Coordinate:
+    def validate(cls, v: Any) -> "Coordinate":
         if isinstance(v, Coordinate):
             return v
         if isinstance(v, dict):

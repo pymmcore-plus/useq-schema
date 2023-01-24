@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from itertools import product
 from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
 from uuid import UUID, uuid4
@@ -130,7 +128,7 @@ class MDASequence(UseqModel):
         channels: Tuple[Channel, ...] = Undefined,
         time_plan: AnyTimePlan = Undefined,
         z_plan: AnyZPlan = Undefined,
-    ) -> MDASequence:
+    ) -> "MDASequence":
         """Return a new `MDAsequence` replacing specified kwargs with new values.
 
         MDASequences are immutable, so this method is useful for creating a new

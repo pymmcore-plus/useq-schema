@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any, Callable, Generator, Optional
 
 import numpy as np
@@ -48,7 +46,7 @@ class Position(FrozenModel):
         yield cls.validate
 
     @classmethod
-    def validate(cls, value: Any) -> Position:
+    def validate(cls, value: Any) -> "Position":
         if isinstance(value, Position):
             return value
         if isinstance(value, dict):
