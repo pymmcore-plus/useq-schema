@@ -104,7 +104,7 @@ class MDASequence(UseqModel):
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _length: Optional[int] = PrivateAttr(default=None)
-    _fov_size: tuple[float, float] = PrivateAttr(default=(1, 1))
+    _fov_size: Tuple[float, float] = PrivateAttr(default=(1, 1))
 
     @property
     def uid(self) -> UUID:
