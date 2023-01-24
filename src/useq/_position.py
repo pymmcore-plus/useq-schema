@@ -1,4 +1,4 @@
-from typing import Any, Callable, Generator, Optional
+from typing import Any, Callable, Generator, Optional, Union
 
 import numpy as np
 from pydantic import Field
@@ -39,7 +39,7 @@ class Position(FrozenModel):
     z: Optional[float] = None
     name: Optional[str] = None
     z_plan: AnyZPlan = Field(default_factory=NoZ)
-    tile_plan: TileRelative | NoTile = Field(default_factory=NoTile)
+    tile_plan: Union[TileRelative, NoTile] = Field(default_factory=NoTile)
 
     @classmethod
     def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
