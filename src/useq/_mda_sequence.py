@@ -1,5 +1,15 @@
 from itertools import product
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    no_type_check,
+)
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -306,7 +316,7 @@ class MDASequence(UseqModel):
             z_pos += getattr(position, Z, None) or 0
         return z_pos
 
-    def to_pycromanager(self) -> list[dict]:
+    def to_pycromanager(self) -> List[dict]:
         """Convenience to convert this sequence to a list of pycro-manager events.
 
         See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
