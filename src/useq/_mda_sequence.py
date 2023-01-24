@@ -354,7 +354,6 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
         time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
         tile: Optional[TilePosition] = _ev[TILE][1] if TILE in _ev else None
-        # tile e.g. {'is_relative': True, 'x': 0, 'y': 0}
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
@@ -364,8 +363,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             x_pos: Optional[float] = tile.x
             y_pos: Optional[float] = tile.y
             if tile.is_relative:
-                x_pos += getattr(position, "x", 0)
-                y_pos += getattr(position, "y", 0)
+                x_pos = x_pos + getattr(position, "x", 0) if x_pos is not None else None
+                y_pos = y_pos + getattr(position, "y", 0) if y_pos is not None else None
         else:
             x_pos = getattr(position, "x", None)
             y_pos = getattr(position, "y", None)

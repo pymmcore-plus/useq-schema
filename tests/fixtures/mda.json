@@ -36,7 +36,10 @@
     {
       "name": null,
       "tile_plan": {
-        "overlap": 0.0,
+        "overlap": [
+          0.0,
+          0.0
+        ],
         "snake_order": true
       },
       "x": 10.0,
@@ -49,7 +52,10 @@
     {
       "name": "test_name",
       "tile_plan": {
-        "overlap": 0.0,
+        "overlap": [
+          0.0,
+          0.0
+        ],
         "snake_order": true
       },
       "x": 10.0,
@@ -65,7 +71,10 @@
   ],
   "tile_plan": {
     "cols": 1,
-    "overlap": 0.0,
+    "overlap": [
+      0.0,
+      0.0
+    ],
     "relative_to": "center",
     "rows": 2,
     "snake_order": true

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import itertools
 import math
-from typing import Any, Iterator, Literal, NamedTuple, Sequence, Union
+from typing import Any, Iterator, NamedTuple, Sequence, Union
 
 from pydantic import validator
+from typing_extensions import Literal
 
 from useq._base_model import FrozenModel
 
@@ -94,7 +95,7 @@ class _TilePlan(FrozenModel):
         y0 = self._offset_y(dy)
         for r, c in itertools.product(range(rows), range(cols)):
             if self.snake_order and r % 2 == 1:
-                c = (cols - c - 1)
+                c = cols - c - 1
             yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
 
     def __len__(self) -> int:
