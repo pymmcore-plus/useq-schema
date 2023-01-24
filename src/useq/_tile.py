@@ -136,7 +136,7 @@ class TileFromCorners(_TilePlan):
         return min(self.corner1.x, self.corner2.x)
 
     def _offset_y(self, dy: float) -> float:
-        return max(self.corner1.y, self.corner2.y)
+        return min(self.corner1.y, self.corner2.y)
 
 
 class TileRelative(_TilePlan):
