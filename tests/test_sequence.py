@@ -245,11 +245,11 @@ def test_combinations(
     zplan: Any,
     zexpectation: Sequence[float],
     channel: Any,
-    cexpectation: Sequence[float],
+    cexpectation: Sequence[str],
     positions: Any,
     pexpectation: Sequence[float],
     grid: Any,
-    gexpectation: Sequence[float],
+    gexpectation: list,
 ) -> None:
     mda = MDASequence(
         time_plan=tplan,
