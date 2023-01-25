@@ -373,8 +373,10 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             x_pos: Optional[float] = tile.x
             y_pos: Optional[float] = tile.y
             if tile.is_relative:
-                x_pos = x_pos + getattr(position, "x", 0) if x_pos is not None else None
-                y_pos = y_pos + getattr(position, "y", 0) if y_pos is not None else None
+                px = getattr(position, "x", 0) or 0
+                py = getattr(position, "y", 0) or 0
+                x_pos = x_pos + px if x_pos is not None else None
+                y_pos = y_pos + py if y_pos is not None else None
         else:
             x_pos = getattr(position, "x", None)
             y_pos = getattr(position, "y", None)
