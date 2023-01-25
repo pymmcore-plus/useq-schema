@@ -23,7 +23,7 @@ from useq import (
     ZRangeAround,
     ZRelativePositions,
 )
-from useq._tile import Coordinate, RelativeTo, TilePosition
+from useq._tile import Coordinate, RelativeTo
 
 _T = List[Tuple[Any, Sequence[float]]]
 
