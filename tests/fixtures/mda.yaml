@@ -1,4 +1,4 @@
-axis_order: tpcz
+axis_order: tpgcz
 channels:
 - config: Cy5
   exposure: 50.0
@@ -20,6 +20,9 @@ stage_positions:
     above: 10.0
     below: 0.0
     step: 1.0
+tile_plan:
+  cols: 1
+  rows: 2
 time_plan:
   phases:
   - interval: 0:00:03

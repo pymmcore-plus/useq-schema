@@ -87,6 +87,8 @@ class MDAEvent(UseqModel):
         Minimum start time of this event, in seconds.  If provided, the engine will
         pause until this time has elapsed (relative to the start of the sequence)
         before starting this event. By default, `None`.
+    pos_name : str | None
+        The name assigned to the position. By default, `None`.
     x_pos : float | None
         X position in microns. If not provided, implies use current position. By
         default, `None`.

@@ -1,5 +1,5 @@
 {
-  "axis_order": "tpcz",
+  "axis_order": "tpgcz",
   "channels": [
     {
       "acquire_every": 1,
@@ -35,6 +35,13 @@
   "stage_positions": [
     {
       "name": null,
+      "tile_plan": {
+        "overlap": [
+          0.0,
+          0.0
+        ],
+        "snake_order": true
+      },
       "x": 10.0,
       "y": 20.0,
       "z": null,
@@ -44,6 +51,13 @@
     },
     {
       "name": "test_name",
+      "tile_plan": {
+        "overlap": [
+          0.0,
+          0.0
+        ],
+        "snake_order": true
+      },
       "x": 10.0,
       "y": 20.0,
       "z": 50.0,
@@ -55,6 +69,16 @@
       }
     }
   ],
+  "tile_plan": {
+    "cols": 1,
+    "overlap": [
+      0.0,
+      0.0
+    ],
+    "relative_to": "center",
+    "rows": 2,
+    "snake_order": true
+  },
   "time_plan": {
     "phases": [
       {
