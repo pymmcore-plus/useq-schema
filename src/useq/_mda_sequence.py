@@ -1,15 +1,7 @@
+from __future__ import annotations
+
 from itertools import product
-from typing import (
-    Any,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    no_type_check,
-)
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -138,7 +130,7 @@ class MDASequence(UseqModel):
         channels: Tuple[Channel, ...] = Undefined,
         time_plan: AnyTimePlan = Undefined,
         z_plan: AnyZPlan = Undefined,
-    ) -> "MDASequence":
+    ) -> MDASequence:
         """Return a new `MDAsequence` replacing specified kwargs with new values.
 
         MDASequences are immutable, so this method is useful for creating a new
@@ -268,7 +260,7 @@ class MDASequence(UseqModel):
 
     def iter_axis(
         self, axis: str
-    ) -> Iterator[Union[Position, Channel, float, TilePosition]]:
+    ) -> Iterator[Position | Channel | float | TilePosition]:
         """Iterate over the events of a given axis."""
         yield from {
             TIME: self.time_plan,
@@ -316,7 +308,7 @@ class MDASequence(UseqModel):
             z_pos += getattr(position, Z, None) or 0
         return z_pos
 
-    def to_pycromanager(self) -> List[dict]:
+    def to_pycromanager(self) -> list[dict]:
         """Convenience to convert this sequence to a list of pycro-manager events.
 
         See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
@@ -351,13 +343,11 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     order = sequence.used_axes
 
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
-
     for global_index, item in enumerate(product(*event_iterator)):
         if not item:  # the case with no events
             continue
 
         _ev = dict(zip(order, item))
-
         index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
         position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None

@@ -178,9 +178,8 @@ def test_z_plan(zplan: Any, zexpectation: Sequence[float]) -> None:
 
 @pytest.mark.parametrize("tileplan, tileexpectation", g_inputs)
 def test_g_plan(tileplan: Any, tileexpectation: Sequence[Any]) -> None:
-    assert [
-        i[1] for i in list(MDASequence(tile_plan=tileplan).tile_plan)
-    ] == tileexpectation
+    result = [i[1] for i in list(MDASequence(tile_plan=tileplan).tile_plan)]
+    assert result == tileexpectation
 
 
 @pytest.mark.parametrize("tplan, texpectation", t_inputs)
@@ -219,7 +218,6 @@ def test_combinations(
     tileplan: Any,
     tileexpectation: TilePosition,
 ) -> None:
-
     mda = MDASequence(
         z_plan=zplan,
         time_plan=tplan,
@@ -228,7 +226,6 @@ def test_combinations(
         tile_plan=tileplan,
         axis_order=order,
     )
-
     assert list(mda.z_plan) == zexpectation
     assert list(mda.time_plan) == texpectation
     assert (mda.channels[0].group, mda.channels[0].config) == cexpectation
@@ -236,7 +233,6 @@ def test_combinations(
     assert (position.x, position.y, position.z) == pexpectation
 
     assert [i[1] for i in list(mda.tile_plan)] == tileexpectation
-
     assert list(mda)
     assert mda.to_pycromanager()
 
