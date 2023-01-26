@@ -12,13 +12,13 @@ class RelativeTo(Enum):
     center = "center"
     top_left = "top_left"
 
+
 class OrderMode(Enum):
     row_wise = "row_wise"
     column_wise = "column_wise"
     snake_row_wise = "snake_row_wise"
     snake_column_wise = "snake_column_wise"
-    spiral_in = "spiral_in"
-    spiral_out = "spiral_out"
+    spiral = "spiral"
 
 
 def _spiral_indices(rows: int, columns: int) -> Iterator[tuple[int, int]]:
@@ -131,33 +131,27 @@ class _TilePlan(FrozenModel):
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
 
-
-        if self.order_mode == OrderMode.row_wise:
+        if self.order_mode in {OrderMode.row_wise, OrderMode.snake_row_wise}:
             for r, c in itertools.product(range(rows), range(cols)):
-                yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
-
-        if self.order_mode == OrderMode.snake_row_wise:
-            for r, c in itertools.product(range(rows), range(cols)):
-                if r % 2 == 1:
+                if self.order_mode == OrderMode.snake_row_wise and r % 2 == 1:
                     c = cols - c - 1
                 yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
-        # if self.order_mode in {OrderMode.row_wise, OrderMode.snake_row_wise}:
-        #     for r, c in itertools.product(range(rows), range(cols)):
-        #         if self.order_mode == OrderMode.snake_row_wise and r % 2 == 1:
-        #             c = cols - c - 1
-        #         yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
-        
+
         elif self.order_mode in {OrderMode.column_wise, OrderMode.snake_column_wise}:
             for c, r in itertools.product(range(cols), range(rows)):
                 if self.order_mode == OrderMode.snake_column_wise and c % 2 == 1:
                     r = rows - r - 1
                 yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
-        
-        elif self.order_mode in {OrderMode.spiral_in, OrderMode.spiral_out}:
+
+        elif self.order_mode == OrderMode.spiral:
             for r, c in list(_spiral_indices(rows, cols)):
-                # yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
+                # direction: first up and then clockwise
                 yield TilePosition(x0 + c * dx, y0 + r * dy, r, c, self.is_relative)
+                # direction: first down and then counter-clockwise
+                # yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
+                # direction: first up and then counter-clockwise
                 # yield TilePosition(x0 - c * dx, y0 + r * dy, r, c, self.is_relative)
+                # direction: first down and then clockwise
                 # yield TilePosition(x0 - c * dx, y0 - r * dy, r, c, self.is_relative)
 
     def __len__(self) -> int:
@@ -182,20 +176,33 @@ class TileFromCorners(_TilePlan):
 
     corner1: Coordinate
     corner2: Coordinate
+    order_mode: OrderMode
 
     def _nrows(self, dx: float) -> int:
-        total_width = abs(self.corner1.x - self.corner2.x)
+        # total_width = abs(self.corner1.x - self.corner2.x)
+        # should we add 'dx' like below so that the coord of corner1 and corner2
+        # are the center of the image?
+        total_width = abs(self.corner1.x - self.corner2.x) + dx
         return math.ceil(total_width / dx)
 
     def _ncols(self, dy: float) -> int:
-        total_height = abs(self.corner1.y - self.corner2.y)
+        # total_height = abs(self.corner1.y - self.corner2.y)
+        # should we add 'dx' like below so that the coord of corner1 and corner2
+        # are the center of the image?
+        total_height = abs(self.corner1.y - self.corner2.y) + dy
         return math.ceil(total_height / dy)
 
     def _offset_x(self, dx: float) -> float:
-        return min(self.corner1.x, self.corner2.x)
+        if self.order_mode != OrderMode.spiral:
+            # if spiral, start from the center between corner1 and corner2
+            return min(self.corner1.x, self.corner2.x)
+        return abs(self.corner1.x - self.corner2.x) / 2
 
     def _offset_y(self, dy: float) -> float:
-        return min(self.corner1.y, self.corner2.y)
+        if self.order_mode != OrderMode.spiral:
+            # if spiral, start from the center between corner1 and corner2
+            return min(self.corner1.y, self.corner2.y)
+        return abs(self.corner1.y - self.corner2.y) / 2
 
 
 class TileRelative(_TilePlan):
@@ -236,9 +243,7 @@ class TileRelative(_TilePlan):
 
     def _offset_y(self, dy: float) -> float:
         return (
-            -((self.rows - 1) * dy) / 2
-            if self.relative_to == RelativeTo.center
-            else 0.0
+            ((self.rows - 1) * dy) / 2 if self.relative_to == RelativeTo.center else 0.0
         )
 
 
