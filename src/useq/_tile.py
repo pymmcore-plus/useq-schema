@@ -177,9 +177,7 @@ class TileRelative(_TilePlan):
 
     def _offset_y(self, dy: float) -> float:
         return (
-            -((self.rows - 1) * dy) / 2
-            if self.relative_to == RelativeTo.center
-            else 0.0
+            ((self.rows - 1) * dy) / 2 if self.relative_to == RelativeTo.center else 0.0
         )
 
 
