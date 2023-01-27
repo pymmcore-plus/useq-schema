@@ -125,11 +125,11 @@ class TileFromCorners(_TilePlan):
     corner2: Coordinate
 
     def _nrows(self, dx: float) -> int:
-        total_width = abs(self.corner1.x - self.corner2.x)
+        total_width = abs(self.corner1.x - self.corner2.x) + dx
         return math.ceil(total_width / dx)
 
     def _ncols(self, dy: float) -> int:
-        total_height = abs(self.corner1.y - self.corner2.y)
+        total_height = abs(self.corner1.y - self.corner2.y) + dy
         return math.ceil(total_height / dy)
 
     def _offset_x(self, dx: float) -> float:
