@@ -354,7 +354,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
     for global_index, item in enumerate(product(*event_iterator)):
         if not item:  # the case with no events
-            continue
+            continue  # pragma: no cover
 
         _ev = dict(zip(order, item))
 

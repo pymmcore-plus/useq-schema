@@ -167,10 +167,10 @@ class TileFromCorners(_TilePlan):
     ----------
     corner1 : Coordinate
         First bounding coordinate (e.g. "top left"). The position is considered
-        to be in the center of the image. 
+        to be in the center of the image.
     corner2 : Coordinate
         Second bounding coordinate (e.g. "bottom right"). The position is considered
-        to be in the center of the image. 
+        to be in the center of the image.
     """
 
     corner1: Coordinate

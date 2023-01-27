@@ -36,11 +36,11 @@
     {
       "name": null,
       "tile_plan": {
+        "order_mode": "snake_row_wise",
         "overlap": [
           0.0,
           0.0
-        ],
-        "snake_order": true
+        ]
       },
       "x": 10.0,
       "y": 20.0,
@@ -52,11 +52,11 @@
     {
       "name": "test_name",
       "tile_plan": {
+        "order_mode": "snake_row_wise",
         "overlap": [
           0.0,
           0.0
-        ],
-        "snake_order": true
+        ]
       },
       "x": 10.0,
       "y": 20.0,
@@ -71,13 +71,13 @@
   ],
   "tile_plan": {
     "cols": 1,
+    "order_mode": "snake_row_wise",
     "overlap": [
       0.0,
       0.0
     ],
     "relative_to": "center",
-    "rows": 2,
-    "snake_order": true
+    "rows": 2
   },
   "time_plan": {
     "phases": [
