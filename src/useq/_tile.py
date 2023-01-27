@@ -23,7 +23,7 @@ class OrderMode(Enum):
     spiral = "spiral"
 
 
-def _spiral_indices(rows: int, columns: int) -> Iterator[tuple[int, int]]:
+def _spiral_indices(rows: int, columns: int) -> Iterator[Tuple[int, int]]:
     """Return a spiral iterator over a 2D grid.
 
     Parameters
