@@ -11,7 +11,7 @@ tiles = [
         [(-0.5, 0.5, 0, 0), (0.5, 0.5, 0, 1), (-0.5, -0.5, 1, 0), (0.5, -0.5, 1, 1)],
     ),
     (
-        TileRelative(rows=2, cols=2, order_mode="snake_row_wise"),
+        TileRelative(rows=2, cols=2),
         [(-0.5, 0.5, 0, 0), (0.5, 0.5, 0, 1), (0.5, -0.5, 1, 1), (-0.5, -0.5, 1, 0)],
     ),
     (
@@ -31,9 +31,7 @@ tiles = [
         [(0.0, 0.0, 0, 0), (1.0, 0.0, 0, 1), (0.0, -1.0, 1, 0), (1.0, -1.0, 1, 1)],
     ),
     (
-        TileRelative(
-            rows=2, cols=2, relative_to="top_left", order_mode="snake_row_wise"
-        ),
+        TileRelative(rows=2, cols=2, relative_to="top_left"),
         [(0.0, 0.0, 0, 0), (1.0, 0.0, 0, 1), (1.0, -1.0, 1, 1), (0.0, -1.0, 1, 0)],
     ),
     (
@@ -65,7 +63,7 @@ tiles = [
         ],
     ),
     (
-        TileFromCorners(corner1=(0, 0), corner2=(2, 2), order_mode="snake_row_wise"),
+        TileFromCorners(corner1=(0, 0), corner2=(2, 2)),
         [
             (0.0, 0.0, 0, 0),
             (1.0, 0.0, 0, 1),
