@@ -2,54 +2,54 @@ from typing import List, Tuple, Union
 
 import pytest
 
-from useq import TileFromCorners, TileRelative
+from useq import GridFromCorners, GridRelative
 
 # assuming fov = (1, 1)
 tiles = [
     (
-        TileRelative(rows=2, cols=2, order_mode="row_wise"),
+        GridRelative(rows=2, cols=2, order_mode="row_wise"),
         [(-0.5, 0.5, 0, 0), (0.5, 0.5, 0, 1), (-0.5, -0.5, 1, 0), (0.5, -0.5, 1, 1)],
     ),
     (
-        TileRelative(rows=2, cols=2),
+        GridRelative(rows=2, cols=2),
         [(-0.5, 0.5, 0, 0), (0.5, 0.5, 0, 1), (0.5, -0.5, 1, 1), (-0.5, -0.5, 1, 0)],
     ),
     (
-        TileRelative(rows=2, cols=2, order_mode="column_wise"),
+        GridRelative(rows=2, cols=2, order_mode="column_wise"),
         [(-0.5, 0.5, 0, 0), (-0.5, -0.5, 1, 0), (0.5, 0.5, 0, 1), (0.5, -0.5, 1, 1)],
     ),
     (
-        TileRelative(rows=2, cols=2, order_mode="snake_column_wise"),
+        GridRelative(rows=2, cols=2, order_mode="snake_column_wise"),
         [(-0.5, 0.5, 0, 0), (-0.5, -0.5, 1, 0), (0.5, -0.5, 1, 1), (0.5, 0.5, 0, 1)],
     ),
     (
-        TileRelative(rows=2, cols=2, order_mode="spiral"),
+        GridRelative(rows=2, cols=2, order_mode="spiral"),
         [(0.0, 0.0, 0, 0), (0.0, 1.0, 1, 0), (1.0, 1.0, 1, 1), (1.0, 0.0, 0, 1)],
     ),
     (
-        TileRelative(rows=2, cols=2, relative_to="top_left", order_mode="row_wise"),
+        GridRelative(rows=2, cols=2, relative_to="top_left", order_mode="row_wise"),
         [(0.0, 0.0, 0, 0), (1.0, 0.0, 0, 1), (0.0, -1.0, 1, 0), (1.0, -1.0, 1, 1)],
     ),
     (
-        TileRelative(rows=2, cols=2, relative_to="top_left"),
+        GridRelative(rows=2, cols=2, relative_to="top_left"),
         [(0.0, 0.0, 0, 0), (1.0, 0.0, 0, 1), (1.0, -1.0, 1, 1), (0.0, -1.0, 1, 0)],
     ),
     (
-        TileRelative(rows=2, cols=2, relative_to="top_left", order_mode="column_wise"),
+        GridRelative(rows=2, cols=2, relative_to="top_left", order_mode="column_wise"),
         [(0.0, 0.0, 0, 0), (0.0, -1.0, 1, 0), (1.0, 0.0, 0, 1), (1.0, -1.0, 1, 1)],
     ),
     (
-        TileRelative(
+        GridRelative(
             rows=2, cols=2, relative_to="top_left", order_mode="snake_column_wise"
         ),
         [(0.0, 0.0, 0, 0), (0.0, -1.0, 1, 0), (1.0, -1.0, 1, 1), (1.0, 0.0, 0, 1)],
     ),
     (
-        TileRelative(rows=2, cols=2, relative_to="top_left", order_mode="spiral"),
+        GridRelative(rows=2, cols=2, relative_to="top_left", order_mode="spiral"),
         [(0.0, 0.0, 0, 0), (0.0, 1.0, 1, 0), (1.0, 1.0, 1, 1), (1.0, 0.0, 0, 1)],
     ),
     (
-        TileFromCorners(corner1=(0, 0), corner2=(2, 2), order_mode="row_wise"),
+        GridFromCorners(corner1=(0, 0), corner2=(2, 2), order_mode="row_wise"),
         [
             (0.0, 0.0, 0, 0),
             (1.0, 0.0, 0, 1),
@@ -63,7 +63,7 @@ tiles = [
         ],
     ),
     (
-        TileFromCorners(corner1=(0, 0), corner2=(2, 2)),
+        GridFromCorners(corner1=(0, 0), corner2=(2, 2)),
         [
             (0.0, 0.0, 0, 0),
             (1.0, 0.0, 0, 1),
@@ -77,7 +77,7 @@ tiles = [
         ],
     ),
     (
-        TileFromCorners(corner1=(0, 0), corner2=(2, 2), order_mode="column_wise"),
+        GridFromCorners(corner1=(0, 0), corner2=(2, 2), order_mode="column_wise"),
         [
             (0.0, 0.0, 0, 0),
             (0.0, -1.0, 1, 0),
@@ -91,7 +91,7 @@ tiles = [
         ],
     ),
     (
-        TileFromCorners(corner1=(0, 0), corner2=(2, 2), order_mode="snake_column_wise"),
+        GridFromCorners(corner1=(0, 0), corner2=(2, 2), order_mode="snake_column_wise"),
         [
             (0.0, 0.0, 0, 0),
             (0.0, -1.0, 1, 0),
@@ -105,7 +105,7 @@ tiles = [
         ],
     ),
     (
-        TileFromCorners(corner1=(0, 0), corner2=(2, 2), order_mode="spiral"),
+        GridFromCorners(corner1=(0, 0), corner2=(2, 2), order_mode="spiral"),
         [
             (1.0, 1.0, 0, 0),
             (1.0, 2.0, 1, 0),
@@ -122,9 +122,9 @@ tiles = [
 
 
 @pytest.mark.parametrize("tilemode, expectedpos", tiles)
-def test_tiles(
-    tilemode: Union[TileRelative, TileFromCorners], expectedpos: List[Tuple]
+def test_grids(
+    tilemode: Union[GridRelative, GridFromCorners], expectedpos: List[Tuple]
 ):
     assert [
-        (i.x, i.y, i.row, i.col) for i in list(tilemode.iter_tiles(1, 1))
+        (i.x, i.y, i.row, i.col) for i in list(tilemode.iter_grid_pos(1, 1))
     ] == expectedpos

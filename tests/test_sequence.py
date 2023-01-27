@@ -7,15 +7,15 @@ from pydantic import BaseModel
 
 from useq import (
     Channel,
+    GridFromCorners,
+    GridRelative,
     MDAEvent,
     MDASequence,
+    NoGrid,
     NoT,
-    NoTile,
     NoZ,
     Position,
     TDurationLoops,
-    TileFromCorners,
-    TileRelative,
     TIntervalDuration,
     TIntervalLoops,
     ZAboveBelow,
@@ -23,7 +23,7 @@ from useq import (
     ZRangeAround,
     ZRelativePositions,
 )
-from useq._tile import Coordinate, OrderMode, RelativeTo
+from useq._grid import Coordinate, OrderMode, RelativeTo
 
 _T = List[Tuple[Any, Sequence[float]]]
 
@@ -97,11 +97,11 @@ g_as_dict = [
 
 g_as_class = [
     (
-        TileRelative(overlap=10.0, rows=1, cols=2, relative_to="center"),
+        GridRelative(overlap=10.0, rows=1, cols=2, relative_to="center"),
         [(10.0, 10.0), OrderMode.snake_row_wise, 1, 2, RelativeTo.center],
     ),
     (
-        TileFromCorners(overlap=10.0, corner1=(0, 0), corner2=(2, 2)),
+        GridFromCorners(overlap=10.0, corner1=(0, 0), corner2=(2, 2)),
         [
             (10.0, 10.0),
             OrderMode.snake_row_wise,
@@ -109,7 +109,7 @@ g_as_class = [
             Coordinate(x=2, y=2),
         ],
     ),
-    (NoTile(), [(0.0, 0.0), OrderMode.snake_row_wise]),
+    (NoGrid(), [(0.0, 0.0), OrderMode.snake_row_wise]),
 ]
 g_inputs = g_as_class + g_as_dict
 
@@ -143,11 +143,11 @@ def test_z_plan(zplan: Any, zexpectation: Sequence[float]) -> None:
     assert list(MDASequence(z_plan=zplan).z_plan) == zexpectation
 
 
-@pytest.mark.parametrize("tileplan, tileexpectation", g_inputs)
-def test_g_plan(tileplan: Any, tileexpectation: Sequence[Any]) -> None:
+@pytest.mark.parametrize("gridplan, gridexpectation", g_inputs)
+def test_g_plan(gridplan: Any, gridexpectation: Sequence[Any]) -> None:
     assert [
-        i[1] for i in list(MDASequence(tile_plan=tileplan).tile_plan)
-    ] == tileexpectation
+        i[1] for i in list(MDASequence(grid_plan=gridplan).grid_plan)
+    ] == gridexpectation
 
 
 @pytest.mark.parametrize("tplan, texpectation", t_inputs)
@@ -223,7 +223,7 @@ def test_combinations(
         z_plan=zplan,
         channels=[channel],
         stage_positions=positions,
-        tile_plan=grid,
+        grid_plan=grid,
     )
 
     assert list(mda.z_plan) == zexpectation
@@ -231,7 +231,7 @@ def test_combinations(
     assert (mda.channels[0].group, mda.channels[0].config) == cexpectation
     position = mda.stage_positions[0]
     assert (position.x, position.y, position.z) == pexpectation
-    assert [i[1] for i in list(mda.tile_plan)] == gexpectation
+    assert [i[1] for i in list(mda.grid_plan)] == gexpectation
 
     assert mda.to_pycromanager()
 
