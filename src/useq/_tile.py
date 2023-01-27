@@ -176,19 +176,13 @@ class TileFromCorners(_TilePlan):
 
     corner1: Coordinate
     corner2: Coordinate
-    order_mode: OrderMode
+    order_mode: OrderMode = OrderMode.snake_row_wise
 
     def _nrows(self, dx: float) -> int:
-        # total_width = abs(self.corner1.x - self.corner2.x)
-        # should we add 'dx' like below so that the coord of corner1 and corner2
-        # are the center of the image?
         total_width = abs(self.corner1.x - self.corner2.x) + dx
         return math.ceil(total_width / dx)
 
     def _ncols(self, dy: float) -> int:
-        # total_height = abs(self.corner1.y - self.corner2.y)
-        # should we add 'dx' like below so that the coord of corner1 and corner2
-        # are the center of the image?
         total_height = abs(self.corner1.y - self.corner2.y) + dy
         return math.ceil(total_height / dy)
 
@@ -223,6 +217,7 @@ class TileRelative(_TilePlan):
     rows: int
     cols: int
     relative_to: RelativeTo = RelativeTo.center
+    order_mode: OrderMode = OrderMode.snake_row_wise
 
     @property
     def is_relative(self) -> bool:
@@ -235,6 +230,8 @@ class TileRelative(_TilePlan):
         return self.cols
 
     def _offset_x(self, dx: float) -> float:
+        if self.order_mode == OrderMode.spiral:
+            return 0.0
         return (
             -((self.cols - 1) * dx) / 2
             if self.relative_to == RelativeTo.center
@@ -242,6 +239,8 @@ class TileRelative(_TilePlan):
         )
 
     def _offset_y(self, dy: float) -> float:
+        if self.order_mode == OrderMode.spiral:
+            return 0.0
         return (
             ((self.rows - 1) * dy) / 2 if self.relative_to == RelativeTo.center else 0.0
         )
