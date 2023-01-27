@@ -14,6 +14,8 @@ class RelativeTo(Enum):
 
 
 class OrderMode(Enum):
+    """Different ways of ordering the grid positions."""
+
     row_wise = "row_wise"
     column_wise = "column_wise"
     snake_row_wise = "snake_row_wise"
@@ -89,9 +91,10 @@ class _TilePlan(FrozenModel):
         Overlap between tiles in percent. If a single value is provided, it is
         used for both x and y. If a tuple is provided, the first value is used
         for x and the second for y.
-    snake_order : bool
-        If `True`, tiles are arranged in a snake order (i.e. back and forth).
-        If `False`, tiles are arranged in a row-wise order.
+    order_mode : OrderMode
+        Define the ways of ordering the grid positions. Options are
+        row_wise, column_wise, snake_row_wise, snake_column_wise and spiral.
+        By default, snake_row_wise.
     """
 
     overlap: Tuple[float, float] = (0.0, 0.0)
@@ -147,12 +150,6 @@ class _TilePlan(FrozenModel):
             for r, c in list(_spiral_indices(rows, cols)):
                 # direction: first up and then clockwise
                 yield TilePosition(x0 + c * dx, y0 + r * dy, r, c, self.is_relative)
-                # direction: first down and then counter-clockwise
-                # yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
-                # direction: first up and then counter-clockwise
-                # yield TilePosition(x0 - c * dx, y0 + r * dy, r, c, self.is_relative)
-                # direction: first down and then clockwise
-                # yield TilePosition(x0 - c * dx, y0 - r * dy, r, c, self.is_relative)
 
     def __len__(self) -> int:
         return len(list(self.iter_tiles(1, 1)))
@@ -169,14 +166,15 @@ class TileFromCorners(_TilePlan):
     Attributes
     ----------
     corner1 : Coordinate
-        First bounding coordinate (e.g. "top left").
+        First bounding coordinate (e.g. "top left"). The position is considered
+        to be in the center of the image. 
     corner2 : Coordinate
-        Second bounding coordinate (e.g. "bottom right").
+        Second bounding coordinate (e.g. "bottom right"). The position is considered
+        to be in the center of the image. 
     """
 
     corner1: Coordinate
     corner2: Coordinate
-    order_mode: OrderMode = OrderMode.snake_row_wise
 
     def _nrows(self, dx: float) -> int:
         total_width = abs(self.corner1.x - self.corner2.x) + dx
@@ -208,7 +206,7 @@ class TileRelative(_TilePlan):
         Number of rows.
     cols: int
         Number of columns.
-    relative_to: Literal["center", "top_left"]:
+    relative_to : RelativeTo
         Point in the grid to which the coordinates are relative. If "center", the grid
         is centered around the origin. If "top_left", the grid is positioned such that
         the top left corner is at the origin.
@@ -217,7 +215,6 @@ class TileRelative(_TilePlan):
     rows: int
     cols: int
     relative_to: RelativeTo = RelativeTo.center
-    order_mode: OrderMode = OrderMode.snake_row_wise
 
     @property
     def is_relative(self) -> bool:
