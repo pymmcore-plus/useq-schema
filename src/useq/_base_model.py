@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import (
     IO,
@@ -39,7 +40,6 @@ class FrozenModel(BaseModel):
         """Validate kwargs for MDASequence."""
         extra_kwargs = set(values) - set(cls.__fields__)
         if extra_kwargs:
-            import warnings
 
             name = getattr(cls, "__name__", "")
             warnings.warn(f"{name} got unknown keyword arguments: {extra_kwargs}")
