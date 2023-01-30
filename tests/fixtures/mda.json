@@ -36,7 +36,7 @@
     {
       "name": null,
       "tile_plan": {
-        "order_mode": "row_wise_snake",
+        "mode": "row_wise_snake",
         "overlap": [
           0.0,
           0.0
@@ -52,7 +52,7 @@
     {
       "name": "test_name",
       "tile_plan": {
-        "order_mode": "row_wise_snake",
+        "mode": "row_wise_snake",
         "overlap": [
           0.0,
           0.0
@@ -71,7 +71,7 @@
   ],
   "tile_plan": {
     "columns": 1,
-    "order_mode": "row_wise_snake",
+    "mode": "row_wise_snake",
     "overlap": [
       0.0,
       0.0

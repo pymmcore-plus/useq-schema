@@ -1,10 +1,7 @@
-from typing import List, Tuple, Union
-
 import pytest
 
-from useq import TileFromCorners, TileRelative
-from useq._tile import _rect_indices, _spiral_indices, OrderMode, RelativeTo
-
+from useq import TileRelative
+from useq._tile import OrderMode, _rect_indices, _spiral_indices
 
 EXPECT = {
     (True, False): [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)],
@@ -42,19 +39,19 @@ def test_spiral_indices() -> None:
 
 def test_position_equality():
     """Order of tiles should only change the order in which they are yielded"""
-    t1 = TileRelative(rows=3, columns=3, order_mode=OrderMode.spiral)
+    t1 = TileRelative(rows=3, columns=3, mode=OrderMode.spiral)
     spiral_pos = set(t1.iter_tiles(1, 1))
 
-    t2 = TileRelative(rows=3, columns=3, order_mode=OrderMode.row_wise)
+    t2 = TileRelative(rows=3, columns=3, mode=OrderMode.row_wise)
     row_pos = set(t2.iter_tiles(1, 1))
 
-    t3 = TileRelative(rows=3, columns=3, order_mode="row_wise_snake")
+    t3 = TileRelative(rows=3, columns=3, mode="row_wise_snake")
     snake_row_pos = set(t3.iter_tiles(1, 1))
 
-    t4 = TileRelative(rows=3, columns=3, order_mode=OrderMode.column_wise)
+    t4 = TileRelative(rows=3, columns=3, mode=OrderMode.column_wise)
     col_pos = set(t4.iter_tiles(1, 1))
 
-    t5 = TileRelative(rows=3, columns=3, order_mode=OrderMode.column_wise_snake)
+    t5 = TileRelative(rows=3, columns=3, mode=OrderMode.column_wise_snake)
     snake_col_pos = set(t5.iter_tiles(1, 1))
 
     assert spiral_pos == row_pos == snake_row_pos == col_pos == snake_col_pos

@@ -1,11 +1,10 @@
-from functools import partial
-import numpy as np
 import math
 from enum import Enum
+from functools import partial
 from typing import Any, Callable, Iterator, NamedTuple, Sequence, Tuple, Union
 
+import numpy as np
 from pydantic import validator
-
 
 from useq._base_model import FrozenModel
 
@@ -67,6 +66,7 @@ def _spiral_indices(
 def _rect_indices(
     rows: int, columns: int, snake: bool = False, row_wise: bool = True
 ) -> Iterator[Tuple[int, int]]:
+    """Return a row or column-wise iterator over a 2D grid."""
     c, r = np.meshgrid(np.arange(columns), np.arange(rows))
     if snake:
         if row_wise:
@@ -76,7 +76,9 @@ def _rect_indices(
     return zip(r.ravel(), c.ravel()) if row_wise else zip(r.T.ravel(), c.T.ravel())
 
 
-_INDEX_GENERATORS: dict[OrderMode, Callable] = {
+# used in iter_indices below, to determine the order in which indices are yielded
+IndexGenerator = Callable[[int, int], Iterator[Tuple[int, int]]]
+_INDEX_GENERATORS: dict[OrderMode, IndexGenerator] = {
     OrderMode.row_wise: partial(_rect_indices, snake=False, row_wise=True),
     OrderMode.column_wise: partial(_rect_indices, snake=False, row_wise=False),
     OrderMode.row_wise_snake: partial(_rect_indices, snake=True, row_wise=True),
@@ -127,14 +129,14 @@ class _TilePlan(FrozenModel):
         Overlap between tiles in percent. If a single value is provided, it is
         used for both x and y. If a tuple is provided, the first value is used
         for x and the second for y.
-    order_mode : OrderMode
+    mode : OrderMode
         Define the ways of ordering the grid positions. Options are
         row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
         By default, row_wise_snake.
     """
 
     overlap: Tuple[float, float] = (0.0, 0.0)
-    order_mode: OrderMode = OrderMode.row_wise_snake
+    mode: OrderMode = OrderMode.row_wise_snake
 
     @validator("overlap", pre=True)
     def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
@@ -171,7 +173,7 @@ class _TilePlan(FrozenModel):
         cols = self._ncolumns(dy)
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
-        for r, c in _INDEX_GENERATORS[self.order_mode](rows, cols):
+        for r, c in _INDEX_GENERATORS[self.mode](rows, cols):
             yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
 
     def __len__(self) -> int:
