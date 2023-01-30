@@ -21,7 +21,7 @@ stage_positions:
     below: 0.0
     step: 1.0
 tile_plan:
-  cols: 1
+  columns: 1
   rows: 2
 time_plan:
   phases:
