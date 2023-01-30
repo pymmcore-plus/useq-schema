@@ -76,40 +76,40 @@ t_inputs = t_as_class + t_as_dict
 
 g_as_dict = [
     (
-        {"overlap": 10.0, "rows": 1, "cols": 2, "relative_to": "center"},
-        [(10.0, 10.0), OrderMode.snake_row_wise, 1, 2, RelativeTo.center],
+        {"overlap": 10.0, "rows": 1, "columns": 2, "relative_to": "center"},
+        [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.center],
     ),
     (
-        {"overlap": 10.0, "rows": 1, "cols": 2, "relative_to": "top_left"},
-        [(10.0, 10.0), OrderMode.snake_row_wise, 1, 2, RelativeTo.top_left],
+        {"overlap": 10.0, "rows": 1, "columns": 2, "relative_to": "top_left"},
+        [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.top_left],
     ),
     (
         {"overlap": 10.0, "corner1": {"x": 0, "y": 0}, "corner2": {"x": 2, "y": 2}},
         [
             (10.0, 10.0),
-            OrderMode.snake_row_wise,
+            OrderMode.row_wise_snake,
             Coordinate(x=0, y=0),
             Coordinate(x=2, y=2),
         ],
     ),
-    ({}, [(0.0, 0.0), OrderMode.snake_row_wise]),
+    ({}, [(0.0, 0.0), OrderMode.row_wise_snake]),
 ]
 
 g_as_class = [
     (
-        TileRelative(overlap=10.0, rows=1, cols=2, relative_to="center"),
-        [(10.0, 10.0), OrderMode.snake_row_wise, 1, 2, RelativeTo.center],
+        TileRelative(overlap=10.0, rows=1, columns=2, relative_to="center"),
+        [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.center],
     ),
     (
         TileFromCorners(overlap=10.0, corner1=(0, 0), corner2=(2, 2)),
         [
             (10.0, 10.0),
-            OrderMode.snake_row_wise,
+            OrderMode.row_wise_snake,
             Coordinate(x=0, y=0),
             Coordinate(x=2, y=2),
         ],
     ),
-    (NoTile(), [(0.0, 0.0), OrderMode.snake_row_wise]),
+    (NoTile(), [(0.0, 0.0), OrderMode.row_wise_snake]),
 ]
 g_inputs = g_as_class + g_as_dict
 
