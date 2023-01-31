@@ -279,3 +279,12 @@ def test_hashable(mda1: MDASequence) -> None:
 def test_mda_str_repr(mda1: MDASequence) -> None:
     assert str(mda1)
     assert repr(mda1)
+
+
+def test_mda_warns_extra() -> None:
+    with pytest.warns(UserWarning, match="got unknown keyword arguments"):
+        seq = MDASequence(random_key="random_value")
+    assert not hasattr(seq, "random_key")
+
+    with pytest.warns(UserWarning, match="got unknown keyword arguments"):
+        Position(random_key="random_value")

@@ -146,7 +146,9 @@ class MDASequence(UseqModel):
         sequence with only a few fields changed.  The uid of the new sequence will
         be different from the original
         """
-        kwargs = {k: v for k, v in locals().items() if v is not Undefined}
+        kwargs = {
+            k: v for k, v in locals().items() if v is not Undefined and k != "self"
+        }
         state = self.dict(exclude={"uid"})
         return type(self)(**{**state, **kwargs})
 
