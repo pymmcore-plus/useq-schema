@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import (
     IO,
     TYPE_CHECKING,
     Any,
+    Dict,
     Optional,
     Sequence,
     Tuple,
@@ -13,7 +15,7 @@ from typing import (
     Union,
 )
 
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 from pydantic.error_wrappers import ErrorWrapper, ValidationError
 from pydantic.types import StrBytes
 from pydantic.utils import ROOT_KEY
@@ -30,8 +32,20 @@ _Y = TypeVar("_Y", bound="UseqModel")
 class FrozenModel(BaseModel):
     class Config:
         allow_population_by_field_name = True
-        extra = "ignore"
+        extra = "allow"
         frozen = True
+
+    @root_validator(pre=False, skip_on_failure=True)
+    def _validate_kwargs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate kwargs for MDASequence."""
+        extra_kwargs = set(values) - set(cls.__fields__)
+        if extra_kwargs:
+
+            name = getattr(cls, "__name__", "")
+            warnings.warn(f"{name} got unknown keyword arguments: {extra_kwargs}")
+            for k in extra_kwargs:
+                values.pop(k)
+        return values
 
 
 class UseqModel(FrozenModel):
