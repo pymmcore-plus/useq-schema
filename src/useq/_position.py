@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
 
 import numpy as np
-from pydantic import Field
 
 from ._base_model import FrozenModel
-from ._tile import NoTile, TileRelative
-from ._z import AnyZPlan, NoZ
+
+if TYPE_CHECKING:
+    from useq import MDASequence
 
 
 class Position(FrozenModel):
@@ -27,12 +27,9 @@ class Position(FrozenModel):
         Z position in microns.
     name : str | None
         Optional name for the position.
-    z_plan : ZTopBottom | ZRangeAround | ZAboveBelow | ZRelativePositions | \
-        ZAbsolutePositions | NoZ | None
-        Z plan to execute at this position specifically. By default, [`NoZ`][useq.NoZ].
-    tile_plan : TileRelative, NoTile
-        TileRelative plan execute at this position specifically.
-        By default, [`NoTile`][useq.NoTile].
+    sequence : MDASequence | None
+        Optional MDASequence relative this position.
+        This MDASequence cannot have a 'stage_positions' attribute.
     """
 
     # if None, implies 'do not move this axis'
@@ -40,8 +37,7 @@ class Position(FrozenModel):
     y: Optional[float] = None
     z: Optional[float] = None
     name: Optional[str] = None
-    z_plan: AnyZPlan = Field(default_factory=NoZ)
-    tile_plan: Union[TileRelative, NoTile] = Field(default_factory=NoTile)
+    sequence: Optional[MDASequence] = None
 
     @classmethod
     def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
@@ -50,8 +46,17 @@ class Position(FrozenModel):
     @classmethod
     def validate(cls, value: Any) -> Position:
         if isinstance(value, Position):
+            if value.sequence and value.sequence.stage_positions:
+                raise ValueError(
+                    "'Position' 'sequence' cannot have a 'stage_positions' attribute."
+                )
             return value
         if isinstance(value, dict):
+            pos = Position(**value)
+            if pos.sequence and pos.sequence.stage_positions:
+                raise ValueError(
+                    "'Position' 'sequence' cannot have a 'stage_positions' attribute."
+                )
             return Position(**value)
         if isinstance(value, (np.ndarray, tuple)):
             x, *value = value

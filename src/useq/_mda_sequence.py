@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    no_type_check,
+)
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -206,7 +215,7 @@ class MDASequence(UseqModel):
             and POSITION in order
             and order.index(Z) < order.index(POSITION)
             and z_plan
-            and any(p.z_plan for p in stage_positions)
+            and any(p.sequence.z_plan for p in stage_positions if p.sequence)
         ):
             raise ValueError(
                 f"{Z!r} cannot precede {POSITION!r} in acquisition order if "
@@ -317,6 +326,7 @@ class MDASequence(UseqModel):
 
 
 MDAEvent.update_forward_refs(MDASequence=MDASequence)
+Position.update_forward_refs(MDASequence=MDASequence)
 
 
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
@@ -343,7 +353,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     order = sequence.used_axes
 
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
-    for global_index, item in enumerate(product(*event_iterator)):
+    global_index = 0
+    for item in product(*event_iterator):
         if not item:  # the case with no events
             continue  # pragma: no cover
 
@@ -359,17 +370,15 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         if channel and TIME in index and index[TIME] % channel.acquire_every:
             continue
 
-        if tile:
-            x_pos: Optional[float] = tile.x
-            y_pos: Optional[float] = tile.y
-            if tile.is_relative:
-                px = getattr(position, "x", 0) or 0
-                py = getattr(position, "y", 0) or 0
-                x_pos = x_pos + px if x_pos is not None else None
-                y_pos = y_pos + py if y_pos is not None else None
-        else:
-            x_pos = getattr(position, "x", None)
-            y_pos = getattr(position, "y", None)
+        if position and position.sequence and TILE in index and index[TILE] != 0:
+            continue
+
+        _channel = (
+            {"config": channel.config, "group": channel.group} if channel else None
+        )
+
+        x_pos = getattr(position, "x", None)
+        y_pos = getattr(position, "y", None)
 
         try:
             z_pos = (
@@ -382,9 +391,86 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         except sequence._SkipFrame:
             continue
 
-        _channel = (
-            {"config": channel.config, "group": channel.group} if channel else None
-        )
+        if position and position.sequence:
+            sub_seq = position.sequence
+            sub_order = sub_seq.used_axes
+            sub_event_iterator = (enumerate(sub_seq.iter_axis(ax)) for ax in sub_order)
+            for sub_item in product(*sub_event_iterator):
+                _sub_ev = dict(zip(sub_order, sub_item))
+
+                sub_index = {}
+                for k in INDICES:
+                    if k == "p":
+                        sub_index["p"] = index["p"]
+                    elif k in _sub_ev:
+                        sub_index[k] = _sub_ev[k][0]
+
+                sub_channel: Optional[Channel] = (
+                    _sub_ev[CHANNEL][1] if CHANNEL in _sub_ev else channel
+                )
+                sub_time: Optional[int] = _sub_ev[TIME][1] if TIME in _sub_ev else time
+                sub_tile: Optional[TilePosition] = (
+                    _sub_ev[TILE][1] if TILE in _sub_ev else tile
+                )
+
+                _sub_channel = (
+                    {"config": sub_channel.config, "group": sub_channel.group}
+                    if sub_channel
+                    else None
+                )
+
+                if sub_tile:
+                    x_tile_pos: Optional[float] = sub_tile.x
+                    y_tile_pos: Optional[float] = sub_tile.y
+                    if sub_tile.is_relative:
+                        px = getattr(position, "x", 0) or 0
+                        py = getattr(position, "y", 0) or 0
+                        x_pos = x_tile_pos + x_pos if x_pos is not None else None
+                        y_pos = y_tile_pos + y_pos if y_pos is not None else None
+                    else:
+                        x_pos = x_tile_pos
+                        y_pos = y_tile_pos
+
+                if not sub_seq.z_plan:
+                    z_pos = z_pos
+                else:
+                    try:
+                        z_pos = (
+                            sub_seq._combine_z(
+                                _sub_ev[Z][1], sub_index[Z], sub_channel, position
+                            )
+                            if Z in _ev
+                            else position.z
+                            if position
+                            else None
+                        )
+                    except sequence._SkipFrame:
+                        continue
+
+                yield MDAEvent(
+                    index=sub_index,
+                    min_start_time=sub_time,
+                    pos_name=getattr(position, "name", None),
+                    x_pos=x_pos,
+                    y_pos=y_pos,
+                    z_pos=z_pos,
+                    exposure=getattr(sub_channel, "exposure", None),
+                    channel=_sub_channel,
+                    sequence=sequence,
+                    global_index=global_index,
+                )
+                global_index += 1
+            continue
+
+        if tile:
+            x_pos = tile.x
+            y_pos = tile.y
+            if tile.is_relative:
+                px = getattr(position, "x", 0) or 0
+                py = getattr(position, "y", 0) or 0
+                x_pos = x_pos + px if x_pos is not None else None
+                y_pos = y_pos + py if y_pos is not None else None
+
         yield MDAEvent(
             index=index,
             min_start_time=time,
@@ -397,3 +483,4 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             sequence=sequence,
             global_index=global_index,
         )
+        global_index += 1
