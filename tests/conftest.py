@@ -1,6 +1,6 @@
 import pytest
 
-from useq import MDASequence
+from useq import MDASequence, TileRelative
 
 
 @pytest.fixture
@@ -15,7 +15,9 @@ def mda1() -> MDASequence:
                 "y": 20,
                 "z": 50,
                 "name": "test_name",
-                "z_plan": {"above": 10, "below": 0, "step": 1},
+                "sequence": MDASequence(
+                    z_plan={"above": 10, "below": 0, "step": 1},
+                    tile_plan=TileRelative(rows=2, columns=3))
             },
         ],
         channels=[

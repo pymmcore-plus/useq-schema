@@ -12,14 +12,19 @@ metadata:
 stage_positions:
 - x: 10.0
   y: 20.0
+  z: null
 - name: test_name
+  sequence:
+    tile_plan:
+      columns: 3
+      rows: 2
+    z_plan:
+      above: 10.0
+      below: 0.0
+      step: 1.0
   x: 10.0
   y: 20.0
   z: 50.0
-  z_plan:
-    above: 10.0
-    below: 0.0
-    step: 1.0
 tile_plan:
   columns: 1
   rows: 2

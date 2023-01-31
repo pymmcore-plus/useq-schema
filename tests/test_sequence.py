@@ -180,7 +180,7 @@ def test_axis_order_errors() -> None:
             z_plan={"top": 6, "bottom": 0, "step": 1},
             channels=["DAPI"],
             stage_positions=[
-                {"x": 0, "y": 0, "z": 0, "z_plan": {"range": 2, "step": 1}}
+                {"x": 0, "y": 0, "z": 0, "sequence": MDASequence(z_plan={"range": 2, "step": 1})}
             ],
         )
     # p before z ok
@@ -188,7 +188,7 @@ def test_axis_order_errors() -> None:
         axis_order="pzc",
         z_plan={"top": 6, "bottom": 0, "step": 1},
         channels=["DAPI"],
-        stage_positions=[{"x": 0, "y": 0, "z": 0, "z_plan": {"range": 2, "step": 1}}],
+        stage_positions=[{"x": 0, "y": 0, "z": 0, "sequence": MDASequence(z_plan={"range": 2, "step": 1})p}],
     )
 
     # c precedes t not ok if acquire_every > 1 in channels
