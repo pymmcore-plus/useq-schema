@@ -331,48 +331,111 @@ MDAEvent.update_forward_refs(MDASequence=MDASequence)
 Position.update_forward_refs(MDASequence=MDASequence)
 
 
+def _get_z(
+    sequence: MDASequence,
+    event: dict[str, tuple],
+    index: dict[str, int],
+    position: Position | None,
+    channel: Channel | None,
+) -> float | None:
+    return (
+        sequence._combine_z(event[Z][1], index[Z], channel, position)
+        if Z in event
+        else position.z
+        if position
+        else None
+    )
+
+
+def _get_event_and_index(
+    sequence: MDASequence,
+    item: tuple[Any, ...],
+    current_index: dict[str, int] = None,  # type: ignore
+) -> tuple[dict[str, tuple], dict[str, int]]:
+    if current_index is None:
+        current_index = {}
+    event = dict(zip(sequence.used_axes, item))
+    index = current_index or {}
+    for k in INDICES:
+        if k in event:
+            index[k] = event[k][0]
+    return event, index
+
+
+def _get_axis_info(
+    event: dict[str, tuple]
+) -> tuple[Position | None, Channel | None, float | None, TilePosition | None]:
+    position: Optional[Position] = event[POSITION][1] if POSITION in event else None
+    channel: Optional[Channel] = event[CHANNEL][1] if CHANNEL in event else None
+    time: Optional[int] = event[TIME][1] if TIME in event else None
+    tile: Optional[TilePosition] = event[TILE][1] if TILE in event else None
+    return position, channel, time, tile
+
+
+def _get_xy_from_tile(
+    position: Position | None, tile: TilePosition
+) -> tuple[float | None, float | None]:
+    x_pos = getattr(position, "x", 0.0) or 0.0
+    y_pos = getattr(position, "y", 0.0) or 0.0
+
+    x_tile_pos: Optional[float] = tile.x
+    y_tile_pos: Optional[float] = tile.y
+    if tile.is_relative:
+        x_pos = (
+            x_tile_pos + x_pos
+            if (x_pos is not None and x_tile_pos is not None)
+            else None
+        )
+        y_pos = (
+            y_tile_pos + y_pos
+            if (y_pos is not None and y_tile_pos is not None)
+            else None
+        )
+    else:
+        x_pos = x_tile_pos
+        y_pos = y_tile_pos
+    return x_pos, y_pos
+
+
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
-    """Iterate over all events in the MDA sequence.
-
-    !!! note
-
-        This method will usually be used via [`useq.MDASequence.iter_events`][], or by
-        simply iterating over the sequence.
-
-    This does the job of iterating over all the frames in the MDA sequence,
-    handling the logic of merging all z plans in channels and stage positions
-    defined in the plans for each axis.
-
-    The is the most "logic heavy" part of `useq-schema` (the rest of which is
-    almost entirely declarative).  This iterator is useful for consuming `MDASequence`
-    objects in a python runtime, but it isn't considered a "core" part of the schema.
-
-    Yields
-    ------
-    MDAEvent
-        Each event in the MDA sequence.
-    """
-    order = sequence.used_axes
-
-    event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
     global_index = 0
+    event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in sequence.used_axes)
     for item in product(*event_iterator):
         if not item:  # the case with no events
             continue  # pragma: no cover
 
-        _ev = dict(zip(order, item))
-        index = {k: _ev[k][0] for k in INDICES if k in _ev}
-
-        position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
-        channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
-        time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
-        tile: Optional[TilePosition] = _ev[TILE][1] if TILE in _ev else None
+        _ev, index = _get_event_and_index(sequence, item)
+        position, channel, time, tile = _get_axis_info(_ev)
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
             continue
-
+        # skip tile if tile_plan is in position sequence
         if position and position.sequence and TILE in index and index[TILE] != 0:
+            continue
+
+        try:
+            z_pos = _get_z(sequence, _ev, index, position, channel)
+        except sequence._SkipFrame:
+            continue
+
+        if position and position.sequence:
+            sub_event_iterator = (
+                enumerate(position.sequence.iter_axis(ax))
+                for ax in position.sequence.used_axes
+            )
+            for sub_item in product(*sub_event_iterator):
+                yield _iter_sub_sequence(
+                    position.sequence,
+                    index,
+                    sub_item,
+                    position,
+                    z_pos,
+                    channel,
+                    tile,
+                    global_index,
+                )
+                global_index += 1
             continue
 
         _channel = (
@@ -382,96 +445,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         x_pos = getattr(position, "x", None)
         y_pos = getattr(position, "y", None)
 
-        try:
-            z_pos = (
-                sequence._combine_z(_ev[Z][1], index[Z], channel, position)
-                if Z in _ev
-                else position.z
-                if position
-                else None
-            )
-        except sequence._SkipFrame:
-            continue
-
-        if position and position.sequence:
-            sub_seq = position.sequence
-            sub_order = sub_seq.used_axes
-            sub_event_iterator = (enumerate(sub_seq.iter_axis(ax)) for ax in sub_order)
-            for sub_item in product(*sub_event_iterator):
-                _sub_ev = dict(zip(sub_order, sub_item))
-
-                sub_index = {}
-                for k in INDICES:
-                    if k == "p":
-                        sub_index["p"] = index["p"]
-                    elif k in _sub_ev:
-                        sub_index[k] = _sub_ev[k][0]
-
-                sub_channel: Optional[Channel] = (
-                    _sub_ev[CHANNEL][1] if CHANNEL in _sub_ev else channel
-                )
-                sub_time: Optional[int] = _sub_ev[TIME][1] if TIME in _sub_ev else time
-                sub_tile: Optional[TilePosition] = (
-                    _sub_ev[TILE][1] if TILE in _sub_ev else tile
-                )
-
-                _sub_channel = (
-                    {"config": sub_channel.config, "group": sub_channel.group}
-                    if sub_channel
-                    else None
-                )
-
-                if sub_tile:
-                    x_tile_pos: Optional[float] = sub_tile.x
-                    y_tile_pos: Optional[float] = sub_tile.y
-                    if sub_tile.is_relative:
-                        px = getattr(position, "x", 0) or 0
-                        py = getattr(position, "y", 0) or 0
-                        x_pos = x_tile_pos + x_pos if x_pos is not None else None
-                        y_pos = y_tile_pos + y_pos if y_pos is not None else None
-                    else:
-                        x_pos = x_tile_pos
-                        y_pos = y_tile_pos
-
-                if not sub_seq.z_plan:
-                    z_pos = z_pos
-                else:
-                    try:
-                        z_pos = (
-                            sub_seq._combine_z(
-                                _sub_ev[Z][1], sub_index[Z], sub_channel, position
-                            )
-                            if Z in _ev
-                            else position.z
-                            if position
-                            else None
-                        )
-                    except sequence._SkipFrame:
-                        continue
-
-                yield MDAEvent(
-                    index=sub_index,
-                    min_start_time=sub_time,
-                    pos_name=getattr(position, "name", None),
-                    x_pos=x_pos,
-                    y_pos=y_pos,
-                    z_pos=z_pos,
-                    exposure=getattr(sub_channel, "exposure", None),
-                    channel=_sub_channel,
-                    sequence=sequence,
-                    global_index=global_index,
-                )
-                global_index += 1
-            continue
-
         if tile:
-            x_pos = tile.x
-            y_pos = tile.y
-            if tile.is_relative:
-                px = getattr(position, "x", 0) or 0
-                py = getattr(position, "y", 0) or 0
-                x_pos = x_pos + px if x_pos is not None else None
-                y_pos = y_pos + py if y_pos is not None else None
+            x_pos, y_pos = _get_xy_from_tile(position, tile)
 
         yield MDAEvent(
             index=index,
@@ -486,3 +461,51 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             global_index=global_index,
         )
         global_index += 1
+
+
+def _iter_sub_sequence(
+    sequence: MDASequence,
+    index: dict[str, int],
+    item: tuple[Any, ...],
+    position: Position | None,
+    z_pos: float | None,
+    channel: Channel | None,
+    tile: TilePosition | None,
+    global_index: int,
+) -> MDAEvent:
+    _sub_ev, sub_index = _get_event_and_index(sequence, item, index)
+    _, sub_channel, sub_time, sub_tile = _get_axis_info(_sub_ev)
+
+    sub_channel = channel if sub_channel is None else sub_channel
+    sub_tile = tile if sub_tile is None else sub_tile
+
+    _sub_channel = (
+        {"config": sub_channel.config, "group": sub_channel.group}
+        if sub_channel
+        else None
+    )
+
+    x_pos = getattr(position, "x", None)
+    y_pos = getattr(position, "y", None)
+
+    if sub_tile:
+        x_pos, y_pos = _get_xy_from_tile(position, sub_tile)
+
+    z_pos = (
+        _get_z(sequence, _sub_ev, sub_index, position, sub_channel)
+        if sequence.z_plan
+        else z_pos
+    )
+
+    return MDAEvent(
+        index=sub_index,
+        min_start_time=sub_time,
+        pos_name=getattr(position, "name", None),
+        x_pos=x_pos,
+        y_pos=y_pos,
+        z_pos=z_pos,
+        exposure=getattr(sub_channel, "exposure", None),
+        channel=_sub_channel,
+        sequence=sequence,
+        global_index=global_index,
+    )
