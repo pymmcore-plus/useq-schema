@@ -476,8 +476,8 @@ def _iter_sub_sequence(
     _sub_ev, sub_index = _get_event_and_index(sequence, item, index)
     _, sub_channel, sub_time, sub_tile = _get_axis_info(_sub_ev)
 
-    sub_channel = channel if sub_channel is None else sub_channel
-    sub_tile = tile if sub_tile is None else sub_tile
+    sub_channel = sub_channel or channel
+    sub_tile = sub_tile or tile
 
     _sub_channel = (
         {"config": sub_channel.config, "group": sub_channel.group}
