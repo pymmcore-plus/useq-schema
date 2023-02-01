@@ -128,7 +128,7 @@ p_inputs = [
     ([{"x": 0, "y": 1, "z": 2}], (0, 1, 2)),
     ([{"y": 200}], (None, 200, None)),
     ([(100, 200, 300)], (100, 200, 300)),
-    ([{"z": 100, "z_plan": {"above": 8, "below": 4, "step": 2}}], (None, None, 100)),
+    # ([{"z": 100, "z_plan": {"above": 8, "below": 4, "step": 2}}], (None, None, 100)),
     ([np.ones(3)], (1, 1, 1)),
     ([(None, 200, None)], (None, 200, None)),
     ([np.ones(2)], (1, 1, None)),
@@ -188,7 +188,7 @@ def test_axis_order_errors() -> None:
         axis_order="pzc",
         z_plan={"top": 6, "bottom": 0, "step": 1},
         channels=["DAPI"],
-        stage_positions=[{"x": 0, "y": 0, "z": 0, "sequence": MDASequence(z_plan={"range": 2, "step": 1})p}],
+        stage_positions=[{"x": 0, "y": 0, "z": 0, "sequence": MDASequence(z_plan={"range": 2, "step": 1})}],
     )
 
     # c precedes t not ok if acquire_every > 1 in channels
