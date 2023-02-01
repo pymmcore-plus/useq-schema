@@ -420,13 +420,13 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             continue
 
         if position and position.sequence:
+            sub_sequence = position.sequence
             sub_event_iterator = (
-                enumerate(position.sequence.iter_axis(ax))
-                for ax in position.sequence.used_axes
+                enumerate(sub_sequence.iter_axis(ax)) for ax in sub_sequence.used_axes
             )
             for sub_item in product(*sub_event_iterator):
                 yield _iter_sub_sequence(
-                    position.sequence,
+                    sub_sequence,
                     index,
                     sub_item,
                     position,
