@@ -123,12 +123,12 @@ class GridPosition(NamedTuple):
 
 
 class _GridPlan(FrozenModel):
-    """Base class for all tile plans.
+    """Base class for all grid plans.
 
     Attributes
     ----------
     overlap : float | Tuple[float, float]
-        Overlap between tiles in percent. If a single value is provided, it is
+        Overlap between grid positions in percent. If a single value is provided, it is
         used for both x and y. If a tuple is provided, the first value is used
         for x and the second for y.
     mode : OrderMode
@@ -171,7 +171,7 @@ class _GridPlan(FrozenModel):
     def iter_grid_positions(
         self, fov_width: float, fov_height: float
     ) -> Iterator[GridPosition]:
-        """Iterate over all tiles, given a field of view size."""
+        """Iterate over all grid positions, given a field of view size."""
         dx, dy = self._step_size(fov_width, fov_height)
         rows = self._nrows(dx)
         cols = self._ncolumns(dy)
@@ -190,7 +190,7 @@ class _GridPlan(FrozenModel):
 
 
 class GridFromCorners(_GridPlan):
-    """Define tile positions from two corners.
+    """Define grid positions from two corners.
 
     Attributes
     ----------
@@ -221,7 +221,7 @@ class GridFromCorners(_GridPlan):
 
 
 class GridRelative(_GridPlan):
-    """Yield relative delta increments to build a tile acquisition.
+    """Yield relative delta increments to build a grid acquisition.
 
     Attributes
     ----------
