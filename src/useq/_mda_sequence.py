@@ -19,9 +19,9 @@ from pydantic import Field, PrivateAttr, root_validator, validator
 
 from ._base_model import UseqModel
 from ._channel import Channel
+from ._grid import AnyGridPlan, GridPosition, NoGrid
 from ._mda_event import MDAEvent
 from ._position import Position
-from ._tile import AnyTilePlan, NoTile, TilePosition
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
 
@@ -29,8 +29,8 @@ TIME = "t"
 CHANNEL = "c"
 POSITION = "p"
 Z = "z"
-TILE = "g"
-INDICES = (TIME, POSITION, CHANNEL, Z, TILE)
+GRID = "g"
+INDICES = (TIME, POSITION, CHANNEL, Z, GRID)
 
 Undefined = object()
 
@@ -54,8 +54,8 @@ class MDASequence(UseqModel):
     stage_positions : tuple[Position, ...]
         The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `z_plan`,
         all of which are optional).
-    tile_plan : TileFromCorners, TileRelative, NoTile
-        The tile plan to follow. One of `TileFromCorners`, `TileRelative` or `NoTile`.
+    grid_plan : GridFromCorners, GridRelative, NoGrid
+        The grid plan to follow. One of `GridFromCorners`, `GridRelative` or `NoGrid`.
     channels : tuple[Channel, ...]
         The channels to acquire. see `Channel`.
     time_plan : MultiPhaseTimePlan | TIntervalDuration | TIntervalLoops \
@@ -76,7 +76,7 @@ class MDASequence(UseqModel):
     >>> seq = MDASequence(
     ...     time_plan={"interval": 0.1, "loops": 2},
     ...     stage_positions=[(1, 1, 1)],
-    ...     tile_plan={"rows": 2, "cols": 2},
+    ...     grid_plan={"rows": 2, "cols": 2},
     ...     z_plan={"range": 3, "step": 1},
     ...     channels=[{"config": "DAPI", "exposure": 1}]
     ... )
@@ -94,7 +94,7 @@ class MDASequence(UseqModel):
     - x: 1.0
       y: 1.0
       z: 1.0
-    tile_plan:
+    grid_plan:
       cols: 2
       rows: 2
     time_plan:
@@ -108,7 +108,7 @@ class MDASequence(UseqModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: str = "".join(INDICES)
     stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
-    tile_plan: AnyTilePlan = Field(default_factory=NoTile)
+    grid_plan: AnyGridPlan = Field(default_factory=NoGrid)
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
@@ -125,7 +125,7 @@ class MDASequence(UseqModel):
     def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
         """Set the field of view size.
 
-        This is used to calculate the number of tiles in a tile plan.
+        This is used to calculate the number of grid positions in a grid plan.
         """
         self._fov_size = fov_size
 
@@ -135,7 +135,7 @@ class MDASequence(UseqModel):
         metadata: Dict[str, Any] = Undefined,
         axis_order: str = Undefined,
         stage_positions: Tuple[Position, ...] = Undefined,
-        tile_plan: AnyTilePlan = Undefined,
+        grid_plan: AnyGridPlan = Undefined,
         channels: Tuple[Channel, ...] = Undefined,
         time_plan: AnyTimePlan = Undefined,
         z_plan: AnyZPlan = Undefined,
@@ -271,14 +271,16 @@ class MDASequence(UseqModel):
 
     def iter_axis(
         self, axis: str
-    ) -> Iterator[Position | Channel | float | TilePosition]:
+    ) -> Iterator[Position | Channel | float | GridPosition]:
         """Iterate over the events of a given axis."""
         yield from {
             TIME: self.time_plan,
             POSITION: self.stage_positions,
             Z: self.z_plan,
             CHANNEL: self.channels,
-            TILE: self.tile_plan.iter_tiles(self._fov_size[0], self._fov_size[1]),
+            GRID: self.grid_plan.iter_grid_positions(
+                self._fov_size[0], self._fov_size[1]
+            ),
         }[axis]
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
@@ -364,36 +366,36 @@ def _get_event_and_index(
 
 def _get_axis_info(
     event: dict[str, tuple]
-) -> tuple[Position | None, Channel | None, float | None, TilePosition | None]:
+) -> tuple[Position | None, Channel | None, float | None, GridPosition | None]:
     position: Optional[Position] = event[POSITION][1] if POSITION in event else None
     channel: Optional[Channel] = event[CHANNEL][1] if CHANNEL in event else None
     time: Optional[int] = event[TIME][1] if TIME in event else None
-    tile: Optional[TilePosition] = event[TILE][1] if TILE in event else None
-    return position, channel, time, tile
+    grid: Optional[GridPosition] = event[GRID][1] if GRID in event else None
+    return position, channel, time, grid
 
 
-def _get_xy_from_tile(
-    position: Position | None, tile: TilePosition
+def _get_xy_from_grid(
+    position: Position | None, grid: GridPosition
 ) -> tuple[float | None, float | None]:
     x_pos = getattr(position, "x", 0.0) or 0.0
     y_pos = getattr(position, "y", 0.0) or 0.0
 
-    x_tile_pos: Optional[float] = tile.x
-    y_tile_pos: Optional[float] = tile.y
-    if tile.is_relative:
+    x_grid_pos: Optional[float] = grid.x
+    y_grid_pos: Optional[float] = grid.y
+    if grid.is_relative:
         x_pos = (
-            x_tile_pos + x_pos
-            if (x_pos is not None and x_tile_pos is not None)
+            x_grid_pos + x_pos
+            if (x_pos is not None and x_grid_pos is not None)
             else None
         )
         y_pos = (
-            y_tile_pos + y_pos
-            if (y_pos is not None and y_tile_pos is not None)
+            y_grid_pos + y_pos
+            if (y_pos is not None and y_grid_pos is not None)
             else None
         )
     else:
-        x_pos = x_tile_pos
-        y_pos = y_tile_pos
+        x_pos = x_grid_pos
+        y_pos = y_grid_pos
     return x_pos, y_pos
 
 
@@ -405,13 +407,13 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             continue  # pragma: no cover
 
         _ev, index = _get_event_and_index(sequence, item)
-        position, channel, time, tile = _get_axis_info(_ev)
+        position, channel, time, grid = _get_axis_info(_ev)
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
             continue
-        # skip tile if tile_plan is in position sequence
-        if position and position.sequence and TILE in index and index[TILE] != 0:
+        # skip grid if grid_plan is in position sequence
+        if position and position.sequence and GRID in index and index[GRID] != 0:
             continue
 
         try:
@@ -432,7 +434,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                     position,
                     z_pos,
                     channel,
-                    tile,
+                    grid,
                     global_index,
                 )
                 global_index += 1
@@ -445,8 +447,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         x_pos = getattr(position, "x", None)
         y_pos = getattr(position, "y", None)
 
-        if tile:
-            x_pos, y_pos = _get_xy_from_tile(position, tile)
+        if grid:
+            x_pos, y_pos = _get_xy_from_grid(position, grid)
 
         yield MDAEvent(
             index=index,
@@ -470,14 +472,14 @@ def _iter_sub_sequence(
     position: Position | None,
     z_pos: float | None,
     channel: Channel | None,
-    tile: TilePosition | None,
+    grid: GridPosition | None,
     global_index: int,
 ) -> MDAEvent:
     _sub_ev, sub_index = _get_event_and_index(sequence, item, index)
-    _, sub_channel, sub_time, sub_tile = _get_axis_info(_sub_ev)
+    _, sub_channel, sub_time, sub_grid = _get_axis_info(_sub_ev)
 
     sub_channel = sub_channel or channel
-    sub_tile = sub_tile or tile
+    sub_grid = sub_grid or grid
 
     _sub_channel = (
         {"config": sub_channel.config, "group": sub_channel.group}
@@ -488,8 +490,8 @@ def _iter_sub_sequence(
     x_pos = getattr(position, "x", None)
     y_pos = getattr(position, "y", None)
 
-    if sub_tile:
-        x_pos, y_pos = _get_xy_from_tile(position, sub_tile)
+    if sub_grid:
+        x_pos, y_pos = _get_xy_from_grid(position, sub_grid)
 
     z_pos = (
         _get_z(sequence, _sub_ev, sub_index, position, sub_channel)

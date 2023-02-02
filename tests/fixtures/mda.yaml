@@ -7,6 +7,9 @@ channels:
 - acquire_every: 3
   config: DAPI
   do_stack: false
+grid_plan:
+  columns: 1
+  rows: 2
 metadata:
   some info: something
 stage_positions:
@@ -15,7 +18,7 @@ stage_positions:
   z: null
 - name: test_name
   sequence:
-    tile_plan:
+    grid_plan:
       columns: 3
       rows: 2
     z_plan:
@@ -25,9 +28,6 @@ stage_positions:
   x: 10.0
   y: 20.0
   z: 50.0
-tile_plan:
-  columns: 1
-  rows: 2
 time_plan:
   phases:
   - interval: 0:00:03
