@@ -412,8 +412,10 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
             continue
-        # skip grid if grid_plan is in position sequence
+        # skip if in position sequence
         if position and position.sequence and GRID in index and index[GRID] != 0:
+            continue
+        if position and position.sequence and Z in index and index[Z] != 0:
             continue
 
         try:
@@ -498,7 +500,6 @@ def _iter_sub_sequence(
         if sequence.z_plan
         else z_pos
     )
-
     return MDAEvent(
         index=sub_index,
         min_start_time=sub_time,
@@ -511,3 +512,25 @@ def _iter_sub_sequence(
         sequence=sequence,
         global_index=global_index,
     )
+
+
+
+s = MDASequence(
+    axis_order="tpgcz",
+    channels=[{"config": "Cy5", "exposure": 50}],
+    stage_positions=[
+        (20, 20),
+        {
+            "x": 10,
+            "y": 10,
+            "z": 10,
+            #"sequence": MDASequence(
+            #    axis_order="tpgcz",
+            #    tile_plan=TileRelative(rows=2, columns=2),
+                # z_plan={"range": 3, "step": 1}
+            #),
+        },
+    ],
+    z_plan={"range": 3, "step": 1},
+    time_plan={"interval": 3, "loops": 2},
+)
