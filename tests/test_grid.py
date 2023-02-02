@@ -38,7 +38,7 @@ def test_spiral_indices() -> None:
 
 
 def test_position_equality():
-    """Order of tiles should only change the order in which they are yielded"""
+    """Order of grid positions should only change the order in which they are yielded"""
     t1 = GridRelative(rows=3, columns=3, mode=OrderMode.spiral)
     spiral_pos = set(t1.iter_grid_positions(1, 1))
 
