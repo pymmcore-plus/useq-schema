@@ -52,7 +52,7 @@ class MDASequence(UseqModel):
         The order of the axes in the sequence. Must be a permutation of `"tpcz"`. The
         default is `"tpcz"`.
     stage_positions : tuple[Position, ...]
-        The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `z_plan`,
+        The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `sequence`,
         all of which are optional).
     grid_plan : GridFromCorners, GridRelative, NoGrid
         The grid plan to follow. One of `GridFromCorners`, `GridRelative` or `NoGrid`.
@@ -90,13 +90,13 @@ class MDASequence(UseqModel):
     channels:
     - config: DAPI
       exposure: 1.0
+    grid_plan:
+      columns: 2
+      rows: 2
     stage_positions:
     - x: 1.0
       y: 1.0
       z: 1.0
-    grid_plan:
-      cols: 2
-      rows: 2
     time_plan:
       interval: '0:00:00.100000'
       loops: 2
