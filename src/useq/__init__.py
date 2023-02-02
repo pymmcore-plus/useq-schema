@@ -1,8 +1,8 @@
 from ._channel import Channel
+from ._grid import AnyGridPlan, GridFromCorners, GridRelative, NoGrid
 from ._mda_event import MDAEvent, PropertyTuple
 from ._mda_sequence import MDASequence
 from ._position import Position
-from ._tile import AnyTilePlan, NoTile, TileFromCorners, TileRelative
 from ._time import (
     MultiPhaseTimePlan,
     NoT,
@@ -20,10 +20,10 @@ from ._z import (
 )
 
 __all__ = [
-    "AnyTilePlan",
-    "TileFromCorners",
-    "TileRelative",
-    "NoTile",
+    "AnyGridPlan",
+    "GridFromCorners",
+    "GridRelative",
+    "NoGrid",
     "Channel",
     "MDAEvent",
     "MDASequence",

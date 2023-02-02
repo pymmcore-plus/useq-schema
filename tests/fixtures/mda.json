@@ -35,7 +35,7 @@
   "stage_positions": [
     {
       "name": null,
-      "tile_plan": {
+      "grid_plan": {
         "mode": "row_wise_snake",
         "overlap": [
           0.0,
@@ -51,7 +51,7 @@
     },
     {
       "name": "test_name",
-      "tile_plan": {
+      "grid_plan": {
         "mode": "row_wise_snake",
         "overlap": [
           0.0,
@@ -69,7 +69,7 @@
       }
     }
   ],
-  "tile_plan": {
+  "grid_plan": {
     "columns": 1,
     "mode": "row_wise_snake",
     "overlap": [

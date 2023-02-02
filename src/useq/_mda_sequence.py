@@ -12,7 +12,7 @@ from ._base_model import UseqModel
 from ._channel import Channel
 from ._mda_event import MDAEvent
 from ._position import Position
-from ._tile import AnyTilePlan, NoTile, TilePosition
+from ._grid import AnyGridPlan, NoGrid, GridPosition
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
 
@@ -20,8 +20,8 @@ TIME = "t"
 CHANNEL = "c"
 POSITION = "p"
 Z = "z"
-TILE = "g"
-INDICES = (TIME, POSITION, CHANNEL, Z, TILE)
+GRID = "g"
+INDICES = (TIME, POSITION, CHANNEL, Z, GRID)
 
 Undefined = object()
 
@@ -45,8 +45,8 @@ class MDASequence(UseqModel):
     stage_positions : tuple[Position, ...]
         The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `z_plan`,
         all of which are optional).
-    tile_plan : TileFromCorners, TileRelative, NoTile
-        The tile plan to follow. One of `TileFromCorners`, `TileRelative` or `NoTile`.
+    grid_plan : GridFromCorners, GridRelative, NoGrid
+        The grid plan to follow. One of `GridFromCorners`, `GridRelative` or `NoGrid`.
     channels : tuple[Channel, ...]
         The channels to acquire. see `Channel`.
     time_plan : MultiPhaseTimePlan | TIntervalDuration | TIntervalLoops \
@@ -67,7 +67,7 @@ class MDASequence(UseqModel):
     >>> seq = MDASequence(
     ...     time_plan={"interval": 0.1, "loops": 2},
     ...     stage_positions=[(1, 1, 1)],
-    ...     tile_plan={"rows": 2, "cols": 2},
+    ...     grid_plan={"rows": 2, "cols": 2},
     ...     z_plan={"range": 3, "step": 1},
     ...     channels=[{"config": "DAPI", "exposure": 1}]
     ... )
@@ -85,7 +85,7 @@ class MDASequence(UseqModel):
     - x: 1.0
       y: 1.0
       z: 1.0
-    tile_plan:
+    grid_plan:
       cols: 2
       rows: 2
     time_plan:
@@ -99,7 +99,7 @@ class MDASequence(UseqModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: str = "".join(INDICES)
     stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
-    tile_plan: AnyTilePlan = Field(default_factory=NoTile)
+    grid_plan: AnyGridPlan = Field(default_factory=NoGrid)
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
@@ -116,7 +116,7 @@ class MDASequence(UseqModel):
     def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
         """Set the field of view size.
 
-        This is used to calculate the number of tiles in a tile plan.
+        This is used to calculate the number of positions in a grid plan.
         """
         self._fov_size = fov_size
 
@@ -126,7 +126,7 @@ class MDASequence(UseqModel):
         metadata: Dict[str, Any] = Undefined,
         axis_order: str = Undefined,
         stage_positions: Tuple[Position, ...] = Undefined,
-        tile_plan: AnyTilePlan = Undefined,
+        grid_plan: AnyGridPlan = Undefined,
         channels: Tuple[Channel, ...] = Undefined,
         time_plan: AnyTimePlan = Undefined,
         z_plan: AnyZPlan = Undefined,
@@ -262,14 +262,14 @@ class MDASequence(UseqModel):
 
     def iter_axis(
         self, axis: str
-    ) -> Iterator[Position | Channel | float | TilePosition]:
+    ) -> Iterator[Position | Channel | float | GridPosition]:
         """Iterate over the events of a given axis."""
         yield from {
             TIME: self.time_plan,
             POSITION: self.stage_positions,
             Z: self.z_plan,
             CHANNEL: self.channels,
-            TILE: self.tile_plan.iter_tiles(self._fov_size[0], self._fov_size[1]),
+            GRID: self.grid_plan.iter_grid_positions(self._fov_size[0], self._fov_size[1]),
         }[axis]
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
@@ -355,16 +355,16 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
         channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
         time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
-        tile: Optional[TilePosition] = _ev[TILE][1] if TILE in _ev else None
+        grid: Optional[GridPosition] = _ev[GRID][1] if GRID in _ev else None
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
             continue
 
-        if tile:
-            x_pos: Optional[float] = tile.x
-            y_pos: Optional[float] = tile.y
-            if tile.is_relative:
+        if grid:
+            x_pos: Optional[float] = grid.x
+            y_pos: Optional[float] = grid.y
+            if grid.is_relative:
                 px = getattr(position, "x", 0) or 0
                 py = getattr(position, "y", 0) or 0
                 x_pos = x_pos + px if x_pos is not None else None
