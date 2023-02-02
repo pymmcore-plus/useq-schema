@@ -171,10 +171,10 @@ class GridFromCorners(_GridPlan):
     ----------
     top : float
         y value of the top left bounding coordinate
-    bottom : float
-        y value of the bottom right bounding coordinate
     left : float
         x value of the top left bounding coordinate
+    bottom : float
+        y value of the bottom right bounding coordinate
     right : float
         x value of the bottom right bounding coordinate
 
