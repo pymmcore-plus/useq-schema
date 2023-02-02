@@ -178,38 +178,27 @@ class GridFromCorners(_GridPlan):
     right : float
         x value of the bottom right bounding coordinate
 
-    The values are considered to be in the center of the image.
+    Values are considered to be in the center of the image.
     """
 
-    top: float
-    left: float
-    bottom: float
-    right: float
-
-    def _get_corners(
-        self, top, left, bottom, right
-    ) -> Tuple[float, float, float, float]:
-        top_left_x, top_left_y = (min(left, right), max(top, bottom))
-        bottom_right_x, bottom_right_y = (max(left, right), min(top, bottom))
-        return top_left_x, top_left_y, bottom_right_x, bottom_right_y
+    top: float  # top_left y
+    left: float  # top_left x
+    bottom: float  # bottom_right y
+    right: float  # bottom_right x
 
     def _nrows(self, dx: float) -> int:
-        x0, x1, _, _ = self._get_corners(self.top, self.left, self.bottom, self.right)
-        total_width = abs(x0 - x1) + dx
+        total_width = abs(self.left - self.right) + dx
         return math.ceil(total_width / dx)
 
     def _ncolumns(self, dy: float) -> int:
-        _, _, y0, y1 = self._get_corners(self.top, self.left, self.bottom, self.right)
-        total_height = abs(y0 - y1) + dy
+        total_height = abs(self.top - self.bottom) + dy
         return math.ceil(total_height / dy)
 
     def _offset_x(self, dx: float) -> float:
-        x0, x1, _, _ = self._get_corners(self.top, self.left, self.bottom, self.right)
-        return abs(x0 - x1) / 2
+        return abs(self.left - self.right) / 2
 
     def _offset_y(self, dy: float) -> float:
-        _, _, y0, y1 = self._get_corners(self.top, self.left, self.bottom, self.right)
-        return abs(y0 - y1) / 2
+        return abs(self.top - self.bottom) / 2
 
 
 class GridRelative(_GridPlan):
