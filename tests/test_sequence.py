@@ -7,15 +7,15 @@ from pydantic import BaseModel
 
 from useq import (
     Channel,
+    GridFromCorners,
+    GridRelative,
     MDAEvent,
     MDASequence,
-    NoT,
     NoGrid,
+    NoT,
     NoZ,
     Position,
     TDurationLoops,
-    GridFromCorners,
-    GridRelative,
     TIntervalDuration,
     TIntervalLoops,
     ZAboveBelow,

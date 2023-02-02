@@ -6,7 +6,7 @@ import numpy as np
 from pydantic import Field
 
 from ._base_model import FrozenModel
-from ._grid import NoGrid, GridRelative
+from ._grid import GridRelative, NoGrid
 from ._z import AnyZPlan, NoZ
 
 

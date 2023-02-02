@@ -10,9 +10,9 @@ from pydantic import Field, PrivateAttr, root_validator, validator
 
 from ._base_model import UseqModel
 from ._channel import Channel
+from ._grid import AnyGridPlan, GridPosition, NoGrid
 from ._mda_event import MDAEvent
 from ._position import Position
-from ._grid import AnyGridPlan, NoGrid, GridPosition
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
 
@@ -269,7 +269,9 @@ class MDASequence(UseqModel):
             POSITION: self.stage_positions,
             Z: self.z_plan,
             CHANNEL: self.channels,
-            GRID: self.grid_plan.iter_grid_positions(self._fov_size[0], self._fov_size[1]),
+            GRID: self.grid_plan.iter_grid_positions(
+                self._fov_size[0], self._fov_size[1]
+            ),
         }[axis]
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
