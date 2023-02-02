@@ -512,25 +512,3 @@ def _iter_sub_sequence(
         sequence=sequence,
         global_index=global_index,
     )
-
-
-
-s = MDASequence(
-    axis_order="tpgcz",
-    channels=[{"config": "Cy5", "exposure": 50}],
-    stage_positions=[
-        (20, 20),
-        {
-            "x": 10,
-            "y": 10,
-            "z": 10,
-            #"sequence": MDASequence(
-            #    axis_order="tpgcz",
-            #    tile_plan=TileRelative(rows=2, columns=2),
-                # z_plan={"range": 3, "step": 1}
-            #),
-        },
-    ],
-    z_plan={"range": 3, "step": 1},
-    time_plan={"interval": 3, "loops": 2},
-)
