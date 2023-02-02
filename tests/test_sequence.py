@@ -23,7 +23,7 @@ from useq import (
     ZRangeAround,
     ZRelativePositions,
 )
-from useq._grid import Coordinate, OrderMode, RelativeTo
+from useq._grid import OrderMode, RelativeTo
 
 _T = List[Tuple[Any, Sequence[float]]]
 
@@ -84,13 +84,8 @@ g_as_dict = [
         [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.top_left],
     ),
     (
-        {"overlap": 10.0, "corner1": {"x": 0, "y": 0}, "corner2": {"x": 2, "y": 2}},
-        [
-            (10.0, 10.0),
-            OrderMode.row_wise_snake,
-            Coordinate(x=0, y=0),
-            Coordinate(x=2, y=2),
-        ],
+        {"overlap": 10.0, "top": 0.0, "left": 0.0, "bottom": 2.0, "right": 2.0},
+        [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
     ),
     ({}, [(0.0, 0.0), OrderMode.row_wise_snake]),
 ]
@@ -101,13 +96,8 @@ g_as_class = [
         [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.center],
     ),
     (
-        GridFromCorners(overlap=10.0, corner1=(0, 0), corner2=(2, 2)),
-        [
-            (10.0, 10.0),
-            OrderMode.row_wise_snake,
-            Coordinate(x=0, y=0),
-            Coordinate(x=2, y=2),
-        ],
+        GridFromCorners(overlap=10.0, top=0.0, left=0, bottom=2, right=2),
+        [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
     ),
     (NoGrid(), [(0.0, 0.0), OrderMode.row_wise_snake]),
 ]
