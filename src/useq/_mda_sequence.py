@@ -236,12 +236,24 @@ class MDASequence(UseqModel):
             )
 
         return order
-
+    
     def __str__(self) -> str:
-        shape = [
-            f"n{k.lower()}: {len(list(self.iter_axis(k)))}" for k in self.axis_order
+        shape = {
+            f"n{k.lower()}": f"{len(list(self.iter_axis(k)))}"
+            for k in self.axis_order
+        }
+        pos = list(self.iter_axis("p"))
+        pos_shape = {}
+        for p in pos:
+            if not p.sequence:
+                continue
+            for k in p.sequence.axis_order:
+                pos_shape[f"n{k.lower()}"] = f"{len(list(p.sequence.iter_axis(k)))}"
+        final_shape = [
+            f"{s.lower()}: {int(shape[s]) + int(pos_shape[s])}" for s in shape
         ]
-        return "Multi-Dimensional Acquisition ▶ " + ", ".join(shape)
+
+        return "Multi-Dimensional Acquisition ▶ " + ", ".join(final_shape)
 
     def __len__(self) -> int:
         """Return the number of events in this sequence."""
