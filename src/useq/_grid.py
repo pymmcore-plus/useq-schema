@@ -89,31 +89,6 @@ _INDEX_GENERATORS: dict[OrderMode, IndexGenerator] = {
 }
 
 
-class Coordinate(FrozenModel):
-    """Defines a position in 2D space.
-
-    Attributes
-    ----------
-    x : float
-        X position in microns.
-    y : float
-        Y position in microns.
-    """
-
-    x: float
-    y: float
-
-    @classmethod
-    def validate(cls, v: Any) -> "Coordinate":
-        if isinstance(v, Coordinate):  # pragma: no cover
-            return v
-        if isinstance(v, dict):
-            return Coordinate(**v)
-        if isinstance(v, (list, tuple)):
-            return Coordinate(x=v[0], y=v[1])
-        raise ValueError(f"Cannot convert to Coordinate: {v}")  # pragma: no cover
-
-
 class GridPosition(NamedTuple):
     x: float
     y: float
@@ -194,30 +169,47 @@ class GridFromCorners(_GridPlan):
 
     Attributes
     ----------
-    corner1 : Coordinate
-        First bounding coordinate (e.g. "top left"). The position is considered
-        to be in the center of the image.
-    corner2 : Coordinate
-        Second bounding coordinate (e.g. "bottom right"). The position is considered
-        to be in the center of the image.
+    top : float
+        y value of the top left bounding coordinate
+    bottom : float
+        y value of the bottom right bounding coordinate
+    left : float
+        x value of the top left bounding coordinate
+    right : float
+        x value of the bottom right bounding coordinate
+
+    The values are considered to be in the center of the image.
     """
 
-    corner1: Coordinate
-    corner2: Coordinate
+    top: float
+    left: float
+    bottom: float
+    right: float
+
+    def _get_corners(
+        self, top, left, bottom, right
+    ) -> Tuple[float, float, float, float]:
+        top_left_x, top_left_y = (min(left, right), max(top, bottom))
+        bottom_right_x, bottom_right_y = (max(left, right), min(top, bottom))
+        return top_left_x, top_left_y, bottom_right_x, bottom_right_y
 
     def _nrows(self, dx: float) -> int:
-        total_width = abs(self.corner1.x - self.corner2.x) + dx
+        x0, x1, _, _ = self._get_corners(self.top, self.left, self.bottom, self.right)
+        total_width = abs(x0 - x1) + dx
         return math.ceil(total_width / dx)
 
     def _ncolumns(self, dy: float) -> int:
-        total_height = abs(self.corner1.y - self.corner2.y) + dy
+        _, _, y0, y1 = self._get_corners(self.top, self.left, self.bottom, self.right)
+        total_height = abs(y0 - y1) + dy
         return math.ceil(total_height / dy)
 
     def _offset_x(self, dx: float) -> float:
-        return abs(self.corner1.x - self.corner2.x) / 2
+        x0, x1, _, _ = self._get_corners(self.top, self.left, self.bottom, self.right)
+        return abs(x0 - x1) / 2
 
     def _offset_y(self, dy: float) -> float:
-        return abs(self.corner1.y - self.corner2.y) / 2
+        _, _, y0, y1 = self._get_corners(self.top, self.left, self.bottom, self.right)
+        return abs(y0 - y1) / 2
 
 
 class GridRelative(_GridPlan):
