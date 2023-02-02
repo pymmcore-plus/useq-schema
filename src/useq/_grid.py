@@ -114,7 +114,7 @@ class Coordinate(FrozenModel):
         raise ValueError(f"Cannot convert to Coordinate: {v}")  # pragma: no cover
 
 
-class TilePosition(NamedTuple):
+class GridPosition(NamedTuple):
     x: float
     y: float
     row: int
@@ -122,13 +122,13 @@ class TilePosition(NamedTuple):
     is_relative: bool
 
 
-class _TilePlan(FrozenModel):
-    """Base class for all tile plans.
+class _GridPlan(FrozenModel):
+    """Base class for all grid plans.
 
     Attributes
     ----------
     overlap : float | Tuple[float, float]
-        Overlap between tiles in percent. If a single value is provided, it is
+        Overlap between grid positions in percent. If a single value is provided, it is
         used for both x and y. If a tuple is provided, the first value is used
         for x and the second for y.
     mode : OrderMode
@@ -168,18 +168,20 @@ class _TilePlan(FrozenModel):
         """Return the number of columns, given a grid step size."""
         raise NotImplementedError
 
-    def iter_tiles(self, fov_width: float, fov_height: float) -> Iterator[TilePosition]:
-        """Iterate over all tiles, given a field of view size."""
+    def iter_grid_positions(
+        self, fov_width: float, fov_height: float
+    ) -> Iterator[GridPosition]:
+        """Iterate over all grid positions, given a field of view size."""
         dx, dy = self._step_size(fov_width, fov_height)
         rows = self._nrows(dx)
         cols = self._ncolumns(dy)
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
         for r, c in _INDEX_GENERATORS[self.mode](rows, cols):
-            yield TilePosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
+            yield GridPosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
 
     def __len__(self) -> int:
-        return len(list(self.iter_tiles(1, 1)))
+        return len(list(self.iter_grid_positions(1, 1)))
 
     def _step_size(self, fov_width: float, fov_height: float) -> Tuple[float, float]:
         dx = fov_width - (fov_width * self.overlap[0]) / 100
@@ -187,8 +189,8 @@ class _TilePlan(FrozenModel):
         return dx, dy
 
 
-class TileFromCorners(_TilePlan):
-    """Define tile positions from two corners.
+class GridFromCorners(_GridPlan):
+    """Define grid positions from two corners.
 
     Attributes
     ----------
@@ -218,8 +220,8 @@ class TileFromCorners(_TilePlan):
         return abs(self.corner1.y - self.corner2.y) / 2
 
 
-class TileRelative(_TilePlan):
-    """Yield relative delta increments to build a tile acquisition.
+class GridRelative(_GridPlan):
+    """Yield relative delta increments to build a grid acquisition.
 
     Attributes
     ----------
@@ -260,9 +262,11 @@ class TileRelative(_TilePlan):
         )
 
 
-class NoTile(_TilePlan):
-    def iter_tiles(self, fov_width: float, fov_height: float) -> Iterator[TilePosition]:
+class NoGrid(_GridPlan):
+    def iter_grid_positions(
+        self, fov_width: float, fov_height: float
+    ) -> Iterator[GridPosition]:
         return iter([])
 
 
-AnyTilePlan = Union[TileFromCorners, TileRelative, NoTile]
+AnyGridPlan = Union[GridFromCorners, GridRelative, NoGrid]

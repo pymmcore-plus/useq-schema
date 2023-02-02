@@ -29,19 +29,29 @@
       "z_offset": 0.0
     }
   ],
+  "grid_plan": {
+    "columns": 1,
+    "mode": "row_wise_snake",
+    "overlap": [
+      0.0,
+      0.0
+    ],
+    "relative_to": "center",
+    "rows": 2
+  },
   "metadata": {
     "some info": "something"
   },
   "stage_positions": [
     {
-      "name": null,
-      "tile_plan": {
+      "grid_plan": {
         "mode": "row_wise_snake",
         "overlap": [
           0.0,
           0.0
         ]
       },
+      "name": null,
       "x": 10.0,
       "y": 20.0,
       "z": null,
@@ -50,14 +60,14 @@
       }
     },
     {
-      "name": "test_name",
-      "tile_plan": {
+      "grid_plan": {
         "mode": "row_wise_snake",
         "overlap": [
           0.0,
           0.0
         ]
       },
+      "name": "test_name",
       "x": 10.0,
       "y": 20.0,
       "z": 50.0,
@@ -69,16 +79,6 @@
       }
     }
   ],
-  "tile_plan": {
-    "columns": 1,
-    "mode": "row_wise_snake",
-    "overlap": [
-      0.0,
-      0.0
-    ],
-    "relative_to": "center",
-    "rows": 2
-  },
   "time_plan": {
     "phases": [
       {
