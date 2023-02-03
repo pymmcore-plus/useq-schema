@@ -238,7 +238,8 @@ class MDASequence(UseqModel):
         return order
     
     def __str__(self) -> str:
-        
+        # e.g. Multi-Dimensional Acquisition ▶ 
+        # nt: 5, np: 4 [p2: (nt: 2 ng: 4 nc: 0 nz: 4)], ng: 2, nc: 1, nz: 0
         shape = []
         p_shape = ""
         for k in self.axis_order:
