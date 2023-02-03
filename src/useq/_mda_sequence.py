@@ -445,22 +445,16 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             z_pos = _get_z(sequence, _ev, index, position, channel)
         except sequence._SkipFrame:
             continue
-
+        
+        # position sequence
         if position and position.sequence:
-            sub_sequence = position.sequence
-            sub_event_iterator = (
-                enumerate(sub_sequence.iter_axis(ax)) for ax in sub_sequence.used_axes
+            p_seq = position.sequence
+            p_event_iterator = (
+                enumerate(p_seq.iter_axis(ax)) for ax in p_seq.used_axes
             )
-            for sub_item in product(*sub_event_iterator):
-                yield _iter_sub_sequence(
-                    sub_sequence,
-                    index,
-                    sub_item,
-                    position,
-                    z_pos,
-                    channel,
-                    grid,
-                    global_index,
+            for p_item in product(*p_event_iterator):
+                yield _iter_position_sequence(
+                    p_seq, index, p_item, position, z_pos, channel, grid, global_index,
                 )
                 global_index += 1
             continue
@@ -490,7 +484,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         global_index += 1
 
 
-def _iter_sub_sequence(
+def _iter_position_sequence(
     sequence: MDASequence,
     index: dict[str, int],
     item: tuple[Any, ...],
@@ -500,38 +494,38 @@ def _iter_sub_sequence(
     grid: GridPosition | None,
     global_index: int,
 ) -> MDAEvent:
-    _sub_ev, sub_index = _get_event_and_index(sequence, item, index)
-    _, sub_channel, sub_time, sub_grid = _get_axis_info(_sub_ev)
+    _p_ev, p_index = _get_event_and_index(sequence, item, index)
+    _, p_channel, sub_time, p_grid = _get_axis_info(_p_ev)
 
-    sub_channel = sub_channel or channel
-    sub_grid = sub_grid or grid
+    p_channel = p_channel or channel
+    p_grid = p_grid or grid
 
-    _sub_channel = (
-        {"config": sub_channel.config, "group": sub_channel.group}
-        if sub_channel
+    _p_channel = (
+        {"config": p_channel.config, "group": p_channel.group}
+        if p_channel
         else None
     )
 
     x_pos = getattr(position, "x", None)
     y_pos = getattr(position, "y", None)
 
-    if sub_grid:
-        x_pos, y_pos = _get_xy_from_grid(position, sub_grid)
+    if p_grid:
+        x_pos, y_pos = _get_xy_from_grid(position, p_grid)
 
     z_pos = (
-        _get_z(sequence, _sub_ev, sub_index, position, sub_channel)
+        _get_z(sequence, _p_ev, p_index, position, p_channel)
         if sequence.z_plan
         else z_pos
     )
     return MDAEvent(
-        index=sub_index,
+        index=p_index,
         min_start_time=sub_time,
         pos_name=getattr(position, "name", None),
         x_pos=x_pos,
         y_pos=y_pos,
         z_pos=z_pos,
-        exposure=getattr(sub_channel, "exposure", None),
-        channel=_sub_channel,
+        exposure=getattr(p_channel, "exposure", None),
+        channel=_p_channel,
         sequence=sequence,
         global_index=global_index,
     )
