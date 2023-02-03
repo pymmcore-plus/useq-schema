@@ -423,6 +423,25 @@ def _get_xy_from_grid(
 
 
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
+    """Iterate over all events in the MDA sequence.
+
+    !!! note
+        This method will usually be used via [`useq.MDASequence.iter_events`][], or by
+        simply iterating over the sequence.
+
+    This does the job of iterating over all the frames in the MDA sequence,
+    handling the logic of merging all z plans in channels and stage positions
+    defined in the plans for each axis.
+
+    The is the most "logic heavy" part of `useq-schema` (the rest of which is
+    almost entirely declarative).  This iterator is useful for consuming `MDASequence`
+    objects in a python runtime, but it isn't considered a "core" part of the schema.
+
+    Yields
+    ------
+    MDAEvent
+        Each event in the MDA sequence.
+    """
     global_index = 0
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in sequence.used_axes)
     for item in product(*event_iterator):
