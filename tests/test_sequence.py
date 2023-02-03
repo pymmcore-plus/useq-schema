@@ -85,14 +85,7 @@ g_as_dict = [
     ),
     (
         {"overlap": 10.0, "top": 0.0, "left": 0.0, "bottom": 2.0, "right": 2.0},
-        [
-            (10.0, 10.0),
-            OrderMode.row_wise_snake,
-            0.0,
-            0.0,
-            2.0,
-            2.0
-        ],
+        [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
     ),
     ({}, [(0.0, 0.0), OrderMode.row_wise_snake]),
 ]
@@ -104,14 +97,7 @@ g_as_class = [
     ),
     (
         GridFromCorners(overlap=10.0, top=0.0, left=0, bottom=2, right=2),
-        [
-            (10.0, 10.0),
-            OrderMode.row_wise_snake,
-            0.0,
-            0.0,
-            2.0,
-            2.0
-        ],
+        [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
     ),
     (NoGrid(), [(0.0, 0.0), OrderMode.row_wise_snake]),
 ]
@@ -132,7 +118,15 @@ p_inputs = [
     ([{"x": 0, "y": 1, "z": 2}], (0, 1, 2)),
     ([{"y": 200}], (None, 200, None)),
     ([(100, 200, 300)], (100, 200, 300)),
-    # ([{"z": 100, "z_plan": {"above": 8, "below": 4, "step": 2}}], (None, None, 100)),
+    (
+        [
+            {
+                "z": 100,
+                "sequence": MDASequence(z_plan={"above": 8, "below": 4, "step": 2}),
+            }
+        ],
+        (None, None, 100),
+    ),
     ([np.ones(3)], (1, 1, 1)),
     ([(None, 200, None)], (None, 200, None)),
     ([np.ones(2)], (1, 1, None)),
@@ -184,7 +178,12 @@ def test_axis_order_errors() -> None:
             z_plan={"top": 6, "bottom": 0, "step": 1},
             channels=["DAPI"],
             stage_positions=[
-                {"x": 0, "y": 0, "z": 0, "sequence": MDASequence(z_plan={"range": 2, "step": 1})}
+                {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0,
+                    "sequence": MDASequence(z_plan={"range": 2, "step": 1}),
+                }
             ],
         )
     # p before z ok
@@ -192,7 +191,14 @@ def test_axis_order_errors() -> None:
         axis_order="pzc",
         z_plan={"top": 6, "bottom": 0, "step": 1},
         channels=["DAPI"],
-        stage_positions=[{"x": 0, "y": 0, "z": 0, "sequence": MDASequence(z_plan={"range": 2, "step": 1})}],
+        stage_positions=[
+            {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "sequence": MDASequence(z_plan={"range": 2, "step": 1}),
+            }
+        ],
     )
 
     # c precedes t not ok if acquire_every > 1 in channels
@@ -292,3 +298,17 @@ def test_mda_warns_extra() -> None:
 
     with pytest.warns(UserWarning, match="got unknown keyword arguments"):
         Position(random_key="random_value")
+
+
+def test_position_subsequence(mda1: MDASequence) -> None:
+    mda1 = mda1.replace(time_plan=[])
+    index_list = {}
+    for idx in [i.index for i in list(mda1.iter_events())]:
+        pos = f"Pos_{idx['p']}"
+        index_list[pos] = {}
+        for i in idx:
+            index = index_list[pos].get(i)
+            if not index or index > idx[i]:
+                index_list[pos][i] = idx[i]
+    assert index_list["Pos_0"] == {"t": 0, "p": 0, "c": 2, "z": 1, "g": 1}
+    assert index_list["Pos_1"] == {"t": 0, "p": 1, "c": 1, "z": 10, "g": 5}

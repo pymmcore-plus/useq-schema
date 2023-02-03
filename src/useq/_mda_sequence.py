@@ -9,6 +9,7 @@ from typing import (
     Sequence,
     Tuple,
     Union,
+    cast,
     no_type_check,
 )
 from uuid import UUID, uuid4
@@ -236,26 +237,31 @@ class MDASequence(UseqModel):
             )
 
         return order
-    
+
     def __str__(self) -> str:
-        # e.g. Multi-Dimensional Acquisition ▶ 
+        # e.g. Multi-Dimensional Acquisition ▶
         # nt: 5, np: 4 [p2: (nt: 2 ng: 4 nc: 0 nz: 4)], ng: 2, nc: 1, nz: 0
         shape = []
         p_shape = ""
         for k in self.axis_order:
             if k == "p":
                 p_shape = f"n{k.lower()}: {len(list(self.iter_axis(k)))} ["
-                pos = list(self.iter_axis("p"))
+                pos = cast(list[Position], list(self.iter_axis("p")))
                 for idx, p in enumerate(pos):
                     if not p.sequence:
                         continue
-                    p_shape = f"{p_shape}p{idx}: ("
+                    p_shape = f"{p_shape}p{idx + 1}: ("
                     for k1 in p.sequence.axis_order:
                         if k1 == "p":
                             continue
-                        p_shape = f"{p_shape}n{k1.lower()}: {len(list(p.sequence.iter_axis(k1)))} "
+                        p_shape = (
+                            f"{p_shape}n{k1.lower()}: "
+                            f"{len(list(p.sequence.iter_axis(k1)))} "
+                        )
                     p_shape = f"{p_shape[:-1]}), "
-                shape.append(f"{p_shape[:-2]}]")
+                shape.append(f"{p_shape[:-2]}]") if p.sequence else shape.append(
+                    f"{p_shape[:-2]}"
+                )
             else:
                 shape.append(f"n{k.lower()}: {len(list(self.iter_axis(k)))}")
         return "Multi-Dimensional Acquisition ▶ " + ", ".join(shape)
