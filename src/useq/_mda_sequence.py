@@ -238,22 +238,26 @@ class MDASequence(UseqModel):
         return order
     
     def __str__(self) -> str:
-        shape = {
-            f"n{k.lower()}": f"{len(list(self.iter_axis(k)))}"
-            for k in self.axis_order
-        }
-        pos = list(self.iter_axis("p"))
-        pos_shape = {}
-        for p in pos:
-            if not p.sequence:
-                continue
-            for k in p.sequence.axis_order:
-                pos_shape[f"n{k.lower()}"] = f"{len(list(p.sequence.iter_axis(k)))}"
-        final_shape = [
-            f"{s.lower()}: {int(shape[s]) + int(pos_shape[s])}" for s in shape
-        ]
-
-        return "Multi-Dimensional Acquisition ▶ " + ", ".join(final_shape)
+        
+        shape = []
+        p_shape = ""
+        for k in self.axis_order:
+            if k == "p":
+                p_shape = f"n{k.lower()}: {len(list(self.iter_axis(k)))} ["
+                pos = list(self.iter_axis("p"))
+                for idx, p in enumerate(pos):
+                    if not p.sequence:
+                        continue
+                    p_shape = f"{p_shape}p{idx}: ("
+                    for k1 in p.sequence.axis_order:
+                        if k1 == "p":
+                            continue
+                        p_shape = f"{p_shape}n{k1.lower()}: {len(list(p.sequence.iter_axis(k1)))} "
+                    p_shape = f"{p_shape[:-1]}), "
+                shape.append(f"{p_shape[:-2]}]")
+            else:
+                shape.append(f"n{k.lower()}: {len(list(self.iter_axis(k)))}")
+        return "Multi-Dimensional Acquisition ▶ " + ", ".join(shape)
 
     def __len__(self) -> int:
         """Return the number of events in this sequence."""
