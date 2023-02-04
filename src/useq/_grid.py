@@ -164,7 +164,7 @@ class _GridPlan(FrozenModel):
         return dx, dy
 
 
-class GridFromCorners(_GridPlan):
+class GridFromEdges(_GridPlan):
     """Define grid positions from two corners.
 
     Attributes
@@ -250,4 +250,4 @@ class NoGrid(_GridPlan):
         return iter([])
 
 
-AnyGridPlan = Union[GridFromCorners, GridRelative, NoGrid]
+AnyGridPlan = Union[GridFromEdges, GridRelative, NoGrid]
