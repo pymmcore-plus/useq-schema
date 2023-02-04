@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from useq import (
     Channel,
-    GridFromCorners,
+    GridFromEdges,
     GridRelative,
     MDAEvent,
     MDASequence,
@@ -96,7 +96,7 @@ g_as_class = [
         [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.center],
     ),
     (
-        GridFromCorners(overlap=10.0, top=0.0, left=0, bottom=2, right=2),
+        GridFromEdges(overlap=10.0, top=0.0, left=0, bottom=2, right=2),
         [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
     ),
     (NoGrid(), [(0.0, 0.0), OrderMode.row_wise_snake]),
