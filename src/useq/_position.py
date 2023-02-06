@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import contextlib
-import warnings
 from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
-from pydantic import ValidationError
 
 import numpy as np
 
@@ -32,7 +29,7 @@ class Position(FrozenModel):
         Optional name for the position.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
-        This MDASequence cannot have a 'stage_positions' attribute and, 
+        This MDASequence cannot have a 'stage_positions' attribute and,
         if given, it will be removed.
     """
 
