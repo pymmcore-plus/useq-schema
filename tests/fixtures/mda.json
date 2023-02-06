@@ -31,10 +31,6 @@
   ],
   "grid_plan": {
     "columns": 1,
-    "fov_size": [
-      1,
-      1
-    ],
     "mode": "row_wise_snake",
     "overlap": [
       0.0,
@@ -61,10 +57,6 @@
         "channels": [],
         "grid_plan": {
           "columns": 3,
-          "fov_size": [
-            1,
-            1
-          ],
           "mode": "row_wise_snake",
           "overlap": [
             0.0,

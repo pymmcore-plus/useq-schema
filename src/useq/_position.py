@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import contextlib
 import warnings
 from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
+from pydantic import ValidationError
 
 import numpy as np
 
@@ -30,7 +32,8 @@ class Position(FrozenModel):
         Optional name for the position.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
-        This MDASequence cannot have a 'stage_positions' attribute.
+        This MDASequence cannot have a 'stage_positions' attribute and, 
+        if given, it will be removed.
     """
 
     # if None, implies 'do not move this axis'
@@ -49,14 +52,11 @@ class Position(FrozenModel):
         if isinstance(value, dict):
             value = Position(**value)
         if isinstance(value, Position):
-            if value.sequence and value.sequence.stage_positions:
-                warnings.warn(
-                    "'Position' 'sequence' cannot have a 'stage_positions' attribute "
-                    "and it will be removed."
-                )
-                value_dict = value.dict()
-                value_dict["sequence"]["stage_positions"] = ()
-                value = Position(**value_dict)
+            # removing "stage_positions"
+            value_dict = value.dict()
+            if value_dict["sequence"]:
+                value_dict["sequence"]["stage_positions"] = []
+            value = Position(**value_dict)
             return value
         if isinstance(value, (np.ndarray, tuple)):
             x, *value = value

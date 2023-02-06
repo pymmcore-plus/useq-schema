@@ -110,13 +110,10 @@ class _GridPlan(FrozenModel):
         Define the ways of ordering the grid positions. Options are
         row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
         By default, row_wise_snake.
-    fov_size : Tuple[int, int]
-        Define the size of the a the filed of view along the x and y axis.
     """
 
     overlap: Tuple[float, float] = (0.0, 0.0)
     mode: OrderMode = OrderMode.row_wise_snake
-    fov_size: Tuple[int, int] = (1, 1)
 
     @validator("overlap", pre=True)
     def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
@@ -146,9 +143,11 @@ class _GridPlan(FrozenModel):
         """Return the number of columns, given a grid step size."""
         raise NotImplementedError
 
-    def iter_grid_positions(self) -> Iterator[GridPosition]:
+    def iter_grid_positions(
+        self, fov_width: float, fov_height: float
+    ) -> Iterator[GridPosition]:
         """Iterate over all grid positions, given a field of view size."""
-        dx, dy = self._step_size(self.fov_size[0], self.fov_size[1])
+        dx, dy = self._step_size(fov_width, fov_height)
         rows = self._nrows(dy)
         cols = self._ncolumns(dx)
         x0 = self._offset_x(dx)
@@ -157,7 +156,7 @@ class _GridPlan(FrozenModel):
             yield GridPosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
 
     def __len__(self) -> int:
-        return len(list(self.iter_grid_positions()))
+        return len(list(self.iter_grid_positions(1, 1)))
 
     def _step_size(self, fov_width: float, fov_height: float) -> Tuple[float, float]:
         dx = fov_width - (fov_width * self.overlap[0]) / 100
@@ -245,7 +244,9 @@ class GridRelative(_GridPlan):
 
 
 class NoGrid(_GridPlan):
-    def iter_grid_positions(self) -> Iterator[GridPosition]:
+    def iter_grid_positions(
+        self, fov_width: float, fov_height: float
+    ) -> Iterator[GridPosition]:
         return iter([])
 
 

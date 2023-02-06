@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from itertools import product
 from typing import (
     Any,
@@ -116,11 +117,25 @@ class MDASequence(UseqModel):
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _length: Optional[int] = PrivateAttr(default=None)
+    _fov_size: Tuple[float, float] = PrivateAttr(default=(1, 1))
 
     @property
     def uid(self) -> UUID:
         """A unique identifier for this sequence."""
         return self._uid
+
+    def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
+        """Set the field of view size.
+
+        This is used to calculate the number of positions in a grid plan.
+        """
+        self._fov_size = fov_size
+        # set the same fov also to any position sequence
+        for pos in self.stage_positions:
+            # using contextlib because if we use "if pos.sequence"
+            # we will start the MDASequence validation with a fov_size of (1,1)
+            with contextlib.suppress(AttributeError):
+                pos.sequence._fov_size = fov_size  # type: ignore
 
     @no_type_check
     def replace(
@@ -293,7 +308,9 @@ class MDASequence(UseqModel):
             POSITION: self.stage_positions,
             Z: self.z_plan,
             CHANNEL: self.channels,
-            GRID: self.grid_plan.iter_grid_positions(),
+            GRID: self.grid_plan.iter_grid_positions(
+                self._fov_size[0], self._fov_size[1]
+            ),
         }[axis]
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
