@@ -15,6 +15,12 @@ class RelativeTo(Enum):
     center = "center"
     top_left = "top_left"
 
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return self.value
+
 
 class OrderMode(Enum):
     """Different ways of ordering the grid positions."""
@@ -24,6 +30,12 @@ class OrderMode(Enum):
     row_wise_snake = "row_wise_snake"
     column_wise_snake = "column_wise_snake"
     spiral = "spiral"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return self.value
 
 
 def _spiral_indices(
