@@ -110,6 +110,8 @@ class _GridPlan(FrozenModel):
         Define the ways of ordering the grid positions. Options are
         row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
         By default, row_wise_snake.
+    fov_size : Tuple[int, int]
+        Define the size of the a the filed of view along the x and y axis.
     """
 
     overlap: Tuple[float, float] = (0.0, 0.0)
