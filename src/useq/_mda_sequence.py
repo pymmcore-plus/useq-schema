@@ -116,19 +116,11 @@ class MDASequence(UseqModel):
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _length: Optional[int] = PrivateAttr(default=None)
-    _fov_size: Tuple[float, float] = PrivateAttr(default=(1, 1))
 
     @property
     def uid(self) -> UUID:
         """A unique identifier for this sequence."""
         return self._uid
-
-    def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
-        """Set the field of view size.
-
-        This is used to calculate the number of grid positions in a grid plan.
-        """
-        self._fov_size = fov_size
 
     @no_type_check
     def replace(
@@ -301,9 +293,7 @@ class MDASequence(UseqModel):
             POSITION: self.stage_positions,
             Z: self.z_plan,
             CHANNEL: self.channels,
-            GRID: self.grid_plan.iter_grid_positions(
-                self._fov_size[0], self._fov_size[1]
-            ),
+            GRID: self.grid_plan.iter_grid_positions(),
         }[axis]
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
@@ -464,7 +454,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             z_pos = _get_z(sequence, _ev, index, position, channel)
         except sequence._SkipFrame:
             continue
-        
+
         # position sequence
         if position and position.sequence:
             p_seq = position.sequence
@@ -473,7 +463,14 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             )
             for p_item in product(*p_event_iterator):
                 yield _iter_position_sequence(
-                    p_seq, index, p_item, position, z_pos, channel, grid, global_index,
+                    p_seq,
+                    index,
+                    p_item,
+                    position,
+                    z_pos,
+                    channel,
+                    grid,
+                    global_index,
                 )
                 global_index += 1
             continue
@@ -520,9 +517,7 @@ def _iter_position_sequence(
     p_grid = p_grid or grid
 
     _p_channel = (
-        {"config": p_channel.config, "group": p_channel.group}
-        if p_channel
-        else None
+        {"config": p_channel.config, "group": p_channel.group} if p_channel else None
     )
 
     x_pos = getattr(position, "x", None)

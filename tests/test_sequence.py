@@ -77,29 +77,29 @@ t_inputs = t_as_class + t_as_dict
 g_as_dict = [
     (
         {"overlap": 10.0, "rows": 1, "columns": 2, "relative_to": "center"},
-        [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.center],
+        [(10.0, 10.0), OrderMode.row_wise_snake, (1.0, 1.0), 1, 2, RelativeTo.center],
     ),
     (
         {"overlap": 10.0, "rows": 1, "columns": 2, "relative_to": "top_left"},
-        [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.top_left],
+        [(10.0, 10.0), OrderMode.row_wise_snake, (1.0, 1.0), 1, 2, RelativeTo.top_left],
     ),
     (
         {"overlap": 10.0, "top": 0.0, "left": 0.0, "bottom": 2.0, "right": 2.0},
-        [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
+        [(10.0, 10.0), OrderMode.row_wise_snake, (1.0, 1.0), 0.0, 0.0, 2.0, 2.0],
     ),
-    ({}, [(0.0, 0.0), OrderMode.row_wise_snake]),
+    ({}, [(0.0, 0.0), OrderMode.row_wise_snake, (1.0, 1.0)]),
 ]
 
 g_as_class = [
     (
         GridRelative(overlap=10.0, rows=1, columns=2, relative_to="center"),
-        [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.center],
+        [(10.0, 10.0), OrderMode.row_wise_snake, (1.0, 1.0), 1, 2, RelativeTo.center],
     ),
     (
         GridFromEdges(overlap=10.0, top=0.0, left=0, bottom=2, right=2),
-        [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
+        [(10.0, 10.0), OrderMode.row_wise_snake, (1.0, 1.0), 0.0, 0.0, 2.0, 2.0],
     ),
-    (NoGrid(), [(0.0, 0.0), OrderMode.row_wise_snake]),
+    (NoGrid(), [(0.0, 0.0), OrderMode.row_wise_snake, (1.0, 1.0)]),
 ]
 g_inputs = g_as_class + g_as_dict
 

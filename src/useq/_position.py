@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
 
 import numpy as np
@@ -45,19 +46,18 @@ class Position(FrozenModel):
 
     @classmethod
     def validate(cls, value: Any) -> Position:
+        if isinstance(value, dict):
+            value = Position(**value)
         if isinstance(value, Position):
             if value.sequence and value.sequence.stage_positions:
-                raise ValueError(
-                    "'Position' 'sequence' cannot have a 'stage_positions' attribute."
+                warnings.warn(
+                    "'Position' 'sequence' cannot have a 'stage_positions' attribute "
+                    "and it will be removed."
                 )
+                value_dict = value.dict()
+                value_dict["sequence"]["stage_positions"] = ()
+                value = Position(**value_dict)
             return value
-        if isinstance(value, dict):
-            pos = Position(**value)
-            if pos.sequence and pos.sequence.stage_positions:
-                raise ValueError(
-                    "'Position' 'sequence' cannot have a 'stage_positions' attribute."
-                )
-            return Position(**value)
         if isinstance(value, (np.ndarray, tuple)):
             x, *value = value
             y, *value = value or (None,)
