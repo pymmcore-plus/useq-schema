@@ -67,7 +67,7 @@ def test_grid_type():
         (0.0, -0.5),
         (-1.0, -0.5),
     ]
-    g2 = GridFromEdges(overlap=0.0, top=1, left=-1, bottom=-1, right=2)
+    g2 = GridFromEdges(top=1, left=-1, bottom=-1, right=2)
     assert [(g.x, g.y) for g in g2.iter_grid_positions(1, 1)] == [
         (-1.0, 1.0),
         (0.0, 1.0),

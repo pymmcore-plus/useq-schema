@@ -224,11 +224,9 @@ class GridRelative(_GridPlan):
     def is_relative(self) -> bool:
         return True
 
-    # def _nrows(self, dx: float) -> int:
     def _nrows(self, dy: float) -> int:
         return self.rows
 
-    # def _ncolumns(self, dy: float) -> int:
     def _ncolumns(self, dx: float) -> int:
         return self.columns
 
