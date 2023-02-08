@@ -10,7 +10,6 @@ from typing import (
     Sequence,
     Tuple,
     Union,
-    cast,
     no_type_check,
 )
 from uuid import UUID, uuid4
@@ -311,6 +310,44 @@ class MDASequence(UseqModel):
         """
         return iter_sequence(self)
 
+    def _get_event_and_index(
+        self,
+        item: tuple[Any, ...],
+        current_index: dict[str, int] = None,  # type: ignore
+    ) -> tuple[dict[str, tuple], dict[str, int]]:
+        if current_index is None:
+            current_index = {}
+        event = dict(zip(self.used_axes, item))
+        index = current_index or {}
+        for k in INDICES:
+            if k in event:
+                index[k] = event[k][0]
+        return event, index
+
+    def _get_axis_info(
+        self, event: dict[str, tuple]
+    ) -> tuple[Position | None, Channel | None, float | None, GridPosition | None]:
+        position: Optional[Position] = event[POSITION][1] if POSITION in event else None
+        channel: Optional[Channel] = event[CHANNEL][1] if CHANNEL in event else None
+        time: Optional[int] = event[TIME][1] if TIME in event else None
+        grid: Optional[GridPosition] = event[GRID][1] if GRID in event else None
+        return position, channel, time, grid
+
+    def _get_z(
+        self,
+        event: dict[str, tuple],
+        index: dict[str, int],
+        position: Position | None,
+        channel: Channel | None,
+    ) -> float | None:
+        return (
+            self._combine_z(event[Z][1], index[Z], channel, position)
+            if Z in event
+            else position.z
+            if position
+            else None
+        )
+
     def _combine_z(
         self,
         z_pos: float,
@@ -329,6 +366,30 @@ class MDASequence(UseqModel):
             z_pos += getattr(position, Z, None) or 0
         return z_pos
 
+    def _get_xy_from_grid(
+        self, position: Position | None, grid: GridPosition
+    ) -> tuple[float | None, float | None]:
+        x_pos = getattr(position, "x", 0.0) or 0.0
+        y_pos = getattr(position, "y", 0.0) or 0.0
+
+        x_grid_pos: Optional[float] = grid.x
+        y_grid_pos: Optional[float] = grid.y
+        if grid.is_relative:
+            x_pos = (
+                x_grid_pos + x_pos
+                if (x_pos is not None and x_grid_pos is not None)
+                else None
+            )
+            y_pos = (
+                y_grid_pos + y_pos
+                if (y_pos is not None and y_grid_pos is not None)
+                else None
+            )
+        else:
+            x_pos = x_grid_pos
+            y_pos = y_grid_pos
+        return x_pos, y_pos
+
     def to_pycromanager(self) -> list[dict]:
         """Convenience to convert this sequence to a list of pycro-manager events.
 
@@ -339,72 +400,6 @@ class MDASequence(UseqModel):
 
 MDAEvent.update_forward_refs(MDASequence=MDASequence)
 Position.update_forward_refs(MDASequence=MDASequence)
-
-
-def _get_z(
-    sequence: MDASequence,
-    event: dict[str, tuple],
-    index: dict[str, int],
-    position: Position | None,
-    channel: Channel | None,
-) -> float | None:
-    return (
-        sequence._combine_z(event[Z][1], index[Z], channel, position)
-        if Z in event
-        else position.z
-        if position
-        else None
-    )
-
-
-def _get_event_and_index(
-    sequence: MDASequence,
-    item: tuple[Any, ...],
-    current_index: dict[str, int] = None,  # type: ignore
-) -> tuple[dict[str, tuple], dict[str, int]]:
-    if current_index is None:
-        current_index = {}
-    event = dict(zip(sequence.used_axes, item))
-    index = current_index or {}
-    for k in INDICES:
-        if k in event:
-            index[k] = event[k][0]
-    return event, index
-
-
-def _get_axis_info(
-    event: dict[str, tuple]
-) -> tuple[Position | None, Channel | None, float | None, GridPosition | None]:
-    position: Optional[Position] = event[POSITION][1] if POSITION in event else None
-    channel: Optional[Channel] = event[CHANNEL][1] if CHANNEL in event else None
-    time: Optional[int] = event[TIME][1] if TIME in event else None
-    grid: Optional[GridPosition] = event[GRID][1] if GRID in event else None
-    return position, channel, time, grid
-
-
-def _get_xy_from_grid(
-    position: Position | None, grid: GridPosition
-) -> tuple[float | None, float | None]:
-    x_pos = getattr(position, "x", 0.0) or 0.0
-    y_pos = getattr(position, "y", 0.0) or 0.0
-
-    x_grid_pos: Optional[float] = grid.x
-    y_grid_pos: Optional[float] = grid.y
-    if grid.is_relative:
-        x_pos = (
-            x_grid_pos + x_pos
-            if (x_pos is not None and x_grid_pos is not None)
-            else None
-        )
-        y_pos = (
-            y_grid_pos + y_pos
-            if (y_pos is not None and y_grid_pos is not None)
-            else None
-        )
-    else:
-        x_pos = x_grid_pos
-        y_pos = y_grid_pos
-    return x_pos, y_pos
 
 
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
@@ -433,8 +428,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         if not item:  # the case with no events
             continue  # pragma: no cover
 
-        _ev, index = _get_event_and_index(sequence, item)
-        position, channel, time, grid = _get_axis_info(_ev)
+        _ev, index = sequence._get_event_and_index(item)
+        position, channel, time, grid = sequence._get_axis_info(_ev)
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
@@ -446,7 +441,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             continue
 
         try:
-            z_pos = _get_z(sequence, _ev, index, position, channel)
+            z_pos = sequence._get_z(_ev, index, position, channel)
         except sequence._SkipFrame:
             continue
 
@@ -478,7 +473,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         y_pos = getattr(position, "y", None)
 
         if grid:
-            x_pos, y_pos = _get_xy_from_grid(position, grid)
+            x_pos, y_pos = sequence._get_xy_from_grid(position, grid)
 
         yield MDAEvent(
             index=index,
@@ -505,8 +500,9 @@ def _iter_position_sequence(
     grid: GridPosition | None,
     global_index: int,
 ) -> MDAEvent:
-    _p_ev, p_index = _get_event_and_index(sequence, item, index)
-    _, p_channel, sub_time, p_grid = _get_axis_info(_p_ev)
+    """Iterate over all events in the Position MDA sequence."""
+    _p_ev, p_index = sequence._get_event_and_index(item, index)
+    _, p_channel, sub_time, p_grid = sequence._get_axis_info(_p_ev)
 
     p_channel = p_channel or channel
     p_grid = p_grid or grid
@@ -519,10 +515,10 @@ def _iter_position_sequence(
     y_pos = getattr(position, "y", None)
 
     if p_grid:
-        x_pos, y_pos = _get_xy_from_grid(position, p_grid)
+        x_pos, y_pos = sequence._get_xy_from_grid(position, p_grid)
 
     z_pos = (
-        _get_z(sequence, _p_ev, p_index, position, p_channel)
+        sequence._get_z(_p_ev, p_index, position, p_channel)
         if sequence.z_plan
         else z_pos
     )

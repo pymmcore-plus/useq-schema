@@ -53,7 +53,7 @@
     {
       "name": "test_name",
       "sequence": {
-        "axis_order": "tpczg",
+        "axis_order": "tpgcz",
         "channels": [],
         "grid_plan": {
           "columns": 3,
