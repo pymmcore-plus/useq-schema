@@ -347,7 +347,6 @@ class MDASequence(UseqModel):
             if position
             else None
         )
-
     def _combine_z(
         self,
         z_pos: float,
