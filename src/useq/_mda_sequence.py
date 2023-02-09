@@ -347,6 +347,7 @@ class MDASequence(UseqModel):
             if position
             else None
         )
+
     def _combine_z(
         self,
         z_pos: float,
@@ -447,19 +448,15 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         # position sequence
         if position and position.sequence:
             p_seq = position.sequence
+            # use main sequence z_plan if p_seq doesn't have one
+            if isinstance(p_seq.z_plan, NoZ):
+                p_seq = p_seq.replace(z_plan=sequence.z_plan)
             p_event_iterator = (
                 enumerate(p_seq.iter_axis(ax)) for ax in p_seq.used_axes
             )
             for p_item in product(*p_event_iterator):
                 yield _iter_position_sequence(
-                    p_seq,
-                    index,
-                    p_item,
-                    position,
-                    z_pos,
-                    channel,
-                    grid,
-                    global_index,
+                    p_seq, index, p_item, position, channel, grid, global_index
                 )
                 global_index += 1
             continue
@@ -490,18 +487,17 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
 
 def _iter_position_sequence(
-    sequence: MDASequence,
+    pos_sequence: MDASequence,
     index: dict[str, int],
     item: tuple[Any, ...],
     position: Position | None,
-    z_pos: float | None,
     channel: Channel | None,
     grid: GridPosition | None,
     global_index: int,
 ) -> MDAEvent:
     """Iterate over all events in the Position MDA sequence."""
-    _p_ev, p_index = sequence._get_event_and_index(item, index)
-    _, p_channel, sub_time, p_grid = sequence._get_axis_info(_p_ev)
+    _p_ev, p_index = pos_sequence._get_event_and_index(item, index)
+    _, p_channel, sub_time, p_grid = pos_sequence._get_axis_info(_p_ev)
 
     p_channel = p_channel or channel
     p_grid = p_grid or grid
@@ -514,13 +510,10 @@ def _iter_position_sequence(
     y_pos = getattr(position, "y", None)
 
     if p_grid:
-        x_pos, y_pos = sequence._get_xy_from_grid(position, p_grid)
+        x_pos, y_pos = pos_sequence._get_xy_from_grid(position, p_grid)
 
-    z_pos = (
-        sequence._get_z(_p_ev, p_index, position, p_channel)
-        if sequence.z_plan
-        else z_pos
-    )
+    z_pos = pos_sequence._get_z(_p_ev, index, position, channel)
+
     return MDAEvent(
         index=p_index,
         min_start_time=sub_time,
@@ -530,6 +523,6 @@ def _iter_position_sequence(
         z_pos=z_pos,
         exposure=getattr(p_channel, "exposure", None),
         channel=_p_channel,
-        sequence=sequence,
+        sequence=pos_sequence,
         global_index=global_index,
     )
