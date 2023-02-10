@@ -165,7 +165,7 @@ class _GridPlan(FrozenModel):
 
 
 class GridFromEdges(_GridPlan):
-    """Define grid positions from two corners.
+    """Yield grid positions to cover an area defined by top/left/bottom/right edges.
 
     Attributes
     ----------
@@ -177,8 +177,6 @@ class GridFromEdges(_GridPlan):
         value of the bottom bounding coordinate
     right : float
         value of the right bounding coordinate
-
-    Values are considered to be in the center of the image.
     """
 
     top: float
