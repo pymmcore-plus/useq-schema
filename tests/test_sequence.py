@@ -217,7 +217,6 @@ def test_combinations(
     grid: Any,
     gexpectation: list,
 ) -> None:
-
     mda = MDASequence(
         time_plan=tplan,
         z_plan=zplan,
