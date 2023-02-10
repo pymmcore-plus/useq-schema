@@ -374,6 +374,7 @@ class MDASequence(UseqModel):
 
         x_grid_pos: Optional[float] = grid.x
         y_grid_pos: Optional[float] = grid.y
+
         if grid.is_relative:
             x_pos = (
                 x_grid_pos + x_pos
@@ -388,6 +389,7 @@ class MDASequence(UseqModel):
         else:
             x_pos = x_grid_pos
             y_pos = y_grid_pos
+
         return x_pos, y_pos
 
     def to_pycromanager(self) -> list[dict]:
@@ -435,6 +437,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         if channel and TIME in index and index[TIME] % channel.acquire_every:
             continue
         # skip if in position sequence
+        if position and position.sequence and CHANNEL in index and index[CHANNEL] != 0:
+            continue
         if position and position.sequence and GRID in index and index[GRID] != 0:
             continue
         if position and position.sequence and Z in index and index[Z] != 0:
@@ -447,16 +451,14 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
         # position sequence
         if position and position.sequence:
-            p_seq = position.sequence
-            # use main sequence z_plan if p_seq doesn't have one
-            if isinstance(p_seq.z_plan, NoZ):
-                p_seq = p_seq.replace(z_plan=sequence.z_plan)
+            p_sequence = position.sequence
+
             p_event_iterator = (
-                enumerate(p_seq.iter_axis(ax)) for ax in p_seq.used_axes
+                enumerate(p_sequence.iter_axis(ax)) for ax in p_sequence.used_axes
             )
             for p_item in product(*p_event_iterator):
                 yield _iter_position_sequence(
-                    p_seq, index, p_item, position, channel, grid, global_index
+                    p_sequence, index, p_item, position, global_index
                 )
                 global_index += 1
             continue
@@ -491,16 +493,11 @@ def _iter_position_sequence(
     index: dict[str, int],
     item: tuple[Any, ...],
     position: Position | None,
-    channel: Channel | None,
-    grid: GridPosition | None,
     global_index: int,
 ) -> MDAEvent:
     """Iterate over all events in the Position MDA sequence."""
     _p_ev, p_index = pos_sequence._get_event_and_index(item, index)
     _, p_channel, sub_time, p_grid = pos_sequence._get_axis_info(_p_ev)
-
-    p_channel = p_channel or channel
-    p_grid = p_grid or grid
 
     _p_channel = (
         {"config": p_channel.config, "group": p_channel.group} if p_channel else None
@@ -512,7 +509,7 @@ def _iter_position_sequence(
     if p_grid:
         x_pos, y_pos = pos_sequence._get_xy_from_grid(position, p_grid)
 
-    z_pos = pos_sequence._get_z(_p_ev, index, position, channel)
+    z_pos = pos_sequence._get_z(_p_ev, index, position, p_channel)
 
     return MDAEvent(
         index=p_index,

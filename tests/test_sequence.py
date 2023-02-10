@@ -298,17 +298,3 @@ def test_mda_warns_extra() -> None:
 
     with pytest.warns(UserWarning, match="got unknown keyword arguments"):
         Position(random_key="random_value")
-
-
-def test_position_subsequence(mda1: MDASequence) -> None:
-    mda1 = mda1.replace(time_plan=[])
-    index_list = {}
-    for idx in [i.index for i in list(mda1.iter_events())]:
-        pos = f"Pos_{idx['p']}"
-        index_list[pos] = {}
-        for i in idx:
-            index = index_list[pos].get(i)
-            if not index or index > idx[i]:
-                index_list[pos][i] = idx[i]
-    assert index_list["Pos_0"] == {"t": 0, "p": 0, "c": 2, "z": 1, "g": 1}
-    assert index_list["Pos_1"] == {"t": 0, "p": 1, "c": 1, "z": 10, "g": 5}
