@@ -170,21 +170,21 @@ class GridFromEdges(_GridPlan):
     Attributes
     ----------
     top : float
-        y value of the top left bounding coordinate
+        value of the top bounding coordinate
     left : float
-        x value of the top left bounding coordinate
+        value of the left bounding coordinate
     bottom : float
-        y value of the bottom right bounding coordinate
+        value of the bottom bounding coordinate
     right : float
-        x value of the bottom right bounding coordinate
+        value of the right bounding coordinate
 
     Values are considered to be in the center of the image.
     """
 
-    top: float  # top_left y
-    left: float  # top_left x
-    bottom: float  # bottom_right y
-    right: float  # bottom_right x
+    top: float
+    left: float
+    bottom: float
+    right: float
 
     def _nrows(self, dy: float) -> int:
         total_height = abs(self.top - self.bottom) + dy
