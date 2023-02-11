@@ -177,26 +177,27 @@ class _GridPlan(FrozenModel):
 
 
 class GridFromEdges(_GridPlan):
-    """Define grid positions from two corners.
+    """Yield absolute stage positions to cover a bounded area...
+
+    ...defined by setting the stage coordinates of the top, left,
+    bottom and right edges.
 
     Attributes
     ----------
     top : float
-        y value of the top left bounding coordinate
+       top stage position of the bounding area
     left : float
-        x value of the top left bounding coordinate
+        left stage position of the bounding area
     bottom : float
-        y value of the bottom right bounding coordinate
+        bottom stage position of the bounding area
     right : float
-        x value of the bottom right bounding coordinate
-
-    Values are considered to be in the center of the image.
+        right stage position of the bounding area
     """
 
-    top: float  # top_left y
-    left: float  # top_left x
-    bottom: float  # bottom_right y
-    right: float  # bottom_right x
+    top: float
+    left: float
+    bottom: float
+    right: float
 
     def _nrows(self, dy: float) -> int:
         total_height = abs(self.top - self.bottom) + dy
