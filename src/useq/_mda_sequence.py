@@ -315,8 +315,6 @@ class MDASequence(UseqModel):
         item: tuple[Any, ...],
         current_index: dict[str, int] = None,  # type: ignore
     ) -> tuple[dict[str, tuple], dict[str, int]]:
-        if current_index is None:
-            current_index = {}
         event = dict(zip(self.used_axes, item))
         index = current_index or {}
         for k in INDICES:
