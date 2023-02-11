@@ -167,19 +167,19 @@ class _GridPlan(FrozenModel):
 class GridFromEdges(_GridPlan):
     """Yield absolute stage positions to cover a bounded area...
     
-    ...defined by setting the stage coordinates of the top, left,
+    ...defined by setting the stage coordinates of its top, left,
     bottom and right edges.
 
     Attributes
     ----------
     top : float
-        stage position of the top bounding area
+       top stage position of the bounding area
     left : float
-        stage position of the left bounding area
+        left stage position of the bounding area
     bottom : float
-        stage position of the bottom bounding area
+        bottom stage position of the bounding area
     right : float
-        stage position of the right bounding area
+        right stage position of the bounding area
     """
 
     top: float
