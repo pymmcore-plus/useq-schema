@@ -15,6 +15,7 @@ class Position(FrozenModel):
     Any of the attributes can be `None` to indicate that the position is not
     defined. This is useful for defining a position relative to the current
     position.
+
     Attributes
     ----------
     x : float | None

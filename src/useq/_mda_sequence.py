@@ -67,6 +67,7 @@ class MDASequence(UseqModel):
     uid : UUID
         A read-only unique identifier (uuid version 4) for the sequence. This will be
         generated, do not set.
+
     Examples
     --------
     >>> from useq import MDASequence, Position, Channel, TIntervalDuration
@@ -97,7 +98,7 @@ class MDASequence(UseqModel):
       loops: 2
     z_plan:
       range: 3.0
-      step: 1.0
+      step: 1.0.
     """
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -143,7 +144,7 @@ class MDASequence(UseqModel):
         """Return a new `MDAsequence` replacing specified kwargs with new values.
         MDASequences are immutable, so this method is useful for creating a new
         sequence with only a few fields changed.  The uid of the new sequence will
-        be different from the original
+        be different from the original.
         """
         kwargs = {
             k: v for k, v in locals().items() if v is not Undefined and k != "self"
@@ -291,6 +292,7 @@ class MDASequence(UseqModel):
         """Iterate over all events in the MDA sequence.
         See source of [useq._mda_sequence.iter_sequence][] for details on how
         events are constructed and yielded.
+
         Yields
         ------
         MDAEvent
@@ -380,7 +382,7 @@ class MDASequence(UseqModel):
 
     def to_pycromanager(self) -> list[dict]:
         """Convenience to convert this sequence to a list of pycro-manager events.
-        See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
+        See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>.
         """
         return [event.to_pycromanager() for event in self]
 
@@ -400,6 +402,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     The is the most "logic heavy" part of `useq-schema` (the rest of which is
     almost entirely declarative).  This iterator is useful for consuming `MDASequence`
     objects in a python runtime, but it isn't considered a "core" part of the schema.
+
     Yields
     ------
     MDAEvent

@@ -17,7 +17,8 @@ def mda1() -> MDASequence:
                 "name": "test_name",
                 "sequence": MDASequence(
                     z_plan={"above": 10, "below": 0, "step": 1},
-                    grid_plan=GridRelative(rows=2, columns=3))
+                    grid_plan=GridRelative(rows=2, columns=3),
+                ),
             },
         ],
         channels=[
