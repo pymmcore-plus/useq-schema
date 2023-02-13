@@ -38,10 +38,12 @@ Undefined = object()
 
 class MDASequence(UseqModel):
     """A sequence of MDA (Multi-Dimensional Acquisition) events.
+
     This is the core object in the `useq` library, and is used define a sequence of
     events to be run on a microscope. It object may be constructed manually, or from
     file (e.g. json or yaml).
     The object itself acts as an iterator for [`useq.MDAEvent`][] objects:
+
     Attributes
     ----------
     metadata : dict
@@ -67,6 +69,7 @@ class MDASequence(UseqModel):
     uid : UUID
         A read-only unique identifier (uuid version 4) for the sequence. This will be
         generated, do not set.
+
     Examples
     --------
     >>> from useq import MDASequence, Position, Channel, TIntervalDuration
@@ -119,6 +122,7 @@ class MDASequence(UseqModel):
 
     def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
         """Set the field of view size.
+
         This is used to calculate the number of positions in a grid plan.
         """
         self._fov_size = fov_size
@@ -141,6 +145,7 @@ class MDASequence(UseqModel):
         z_plan: AnyZPlan = Undefined,
     ) -> MDASequence:
         """Return a new `MDAsequence` replacing specified kwargs with new values.
+
         MDASequences are immutable, so this method is useful for creating a new
         sequence with only a few fields changed.  The uid of the new sequence will
         be different from the original
@@ -251,6 +256,7 @@ class MDASequence(UseqModel):
     @property
     def shape(self) -> Tuple[int, ...]:
         """Return the shape of this sequence.
+
         !!! note
             This doesn't account for jagged arrays, like skipped Z or channel frames.
         """
@@ -289,8 +295,10 @@ class MDASequence(UseqModel):
 
     def iter_events(self) -> Iterator[MDAEvent]:
         """Iterate over all events in the MDA sequence.
+
         See source of [useq._mda_sequence.iter_sequence][] for details on how
         events are constructed and yielded.
+
         Yields
         ------
         MDAEvent
@@ -380,6 +388,7 @@ class MDASequence(UseqModel):
 
     def to_pycromanager(self) -> list[dict]:
         """Convenience to convert this sequence to a list of pycro-manager events.
+
         See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
         """
         return [event.to_pycromanager() for event in self]
@@ -391,15 +400,19 @@ Position.update_forward_refs(MDASequence=MDASequence)
 
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     """Iterate over all events in the MDA sequence.
+
     !!! note
         This method will usually be used via [`useq.MDASequence.iter_events`][], or by
         simply iterating over the sequence.
+
     This does the job of iterating over all the frames in the MDA sequence,
     handling the logic of merging all z plans in channels and stage positions
     defined in the plans for each axis.
+
     The is the most "logic heavy" part of `useq-schema` (the rest of which is
     almost entirely declarative).  This iterator is useful for consuming `MDASequence`
     objects in a python runtime, but it isn't considered a "core" part of the schema.
+
     Yields
     ------
     MDAEvent
