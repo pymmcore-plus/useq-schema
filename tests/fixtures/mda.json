@@ -1,101 +1,101 @@
 {
-  "metadata": {
-    "some info": "something"
-  },
   "axis_order": "tpgcz",
-  "stage_positions": [
+  "channels": [
     {
-      "x": 10.0,
-      "y": 20.0,
-      "z": null,
-      "name": null,
-      "sequence": null
+      "acquire_every": 1,
+      "camera": null,
+      "config": "Cy5",
+      "do_stack": true,
+      "exposure": 50.0,
+      "group": "Channel",
+      "z_offset": 0.0
     },
     {
-      "x": 10.0,
-      "y": 20.0,
-      "z": 50.0,
-      "name": "test_name",
-      "sequence": {
-        "axis_order": "tpgcz",
-        "metadata": {},
-        "stage_positions": [],
-        "grid_plan": {
-          "overlap": [
-            0.0,
-            0.0
-          ],
-          "mode": "row_wise_snake",
-          "rows": 2,
-          "columns": 3,
-          "relative_to": "center"
-        },
-        "channels": [],
-        "time_plan": {
-          "prioritize_duration": false
-        },
-        "z_plan": {
-          "go_up": true,
-          "above": 10.0,
-          "below": 0.0,
-          "step": 1.0
-        }
-      }
+      "acquire_every": 1,
+      "camera": null,
+      "config": "FITC",
+      "do_stack": true,
+      "exposure": 100.0,
+      "group": "Channel",
+      "z_offset": 0.0
+    },
+    {
+      "acquire_every": 3,
+      "camera": null,
+      "config": "DAPI",
+      "do_stack": false,
+      "exposure": null,
+      "group": "Channel",
+      "z_offset": 0.0
     }
   ],
   "grid_plan": {
+    "columns": 1,
+    "mode": "row_wise_snake",
     "overlap": [
       0.0,
       0.0
     ],
-    "mode": "row_wise_snake",
-    "rows": 2,
-    "columns": 1,
-    "relative_to": "center"
+    "relative_to": "center",
+    "rows": 2
   },
-  "channels": [
+  "metadata": {
+    "some info": "something"
+  },
+  "stage_positions": [
     {
-      "config": "Cy5",
-      "group": "Channel",
-      "exposure": 50.0,
-      "do_stack": true,
-      "z_offset": 0.0,
-      "acquire_every": 1,
-      "camera": null
+      "name": null,
+      "sequence": null,
+      "x": 10.0,
+      "y": 20.0,
+      "z": null
     },
     {
-      "config": "FITC",
-      "group": "Channel",
-      "exposure": 100.0,
-      "do_stack": true,
-      "z_offset": 0.0,
-      "acquire_every": 1,
-      "camera": null
-    },
-    {
-      "config": "DAPI",
-      "group": "Channel",
-      "exposure": null,
-      "do_stack": false,
-      "z_offset": 0.0,
-      "acquire_every": 3,
-      "camera": null
+      "name": "test_name",
+      "sequence": {
+        "axis_order": "tpgcz",
+        "channels": [],
+        "grid_plan": {
+          "columns": 3,
+          "mode": "row_wise_snake",
+          "overlap": [
+            0.0,
+            0.0
+          ],
+          "relative_to": "center",
+          "rows": 2
+        },
+        "metadata": {},
+        "stage_positions": [],
+        "time_plan": {
+          "prioritize_duration": false
+        },
+        "z_plan": {
+          "above": 10.0,
+          "below": 0.0,
+          "go_up": true,
+          "step": 1.0
+        }
+      },
+      "x": 10.0,
+      "y": 20.0,
+      "z": 50.0
     }
   ],
   "time_plan": {
-    "prioritize_duration": false,
     "phases": [
       {
-        "prioritize_duration": false,
         "interval": 3.0,
-        "loops": 3
+        "loops": 3,
+        "prioritize_duration": false
       },
       {
-        "prioritize_duration": true,
+        "duration": 2400.0,
         "interval": 10.0,
-        "duration": 2400.0
+        "prioritize_duration": true
       }
-    ]
+    ],
+    "prioritize_duration": false
   },
   "z_plan": {
     "go_up": true,

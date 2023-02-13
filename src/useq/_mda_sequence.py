@@ -100,7 +100,7 @@ class MDASequence(UseqModel):
       loops: 2
     z_plan:
       range: 3.0
-      step: 1.0
+      step: 1.0.
     """
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -148,7 +148,7 @@ class MDASequence(UseqModel):
 
         MDASequences are immutable, so this method is useful for creating a new
         sequence with only a few fields changed.  The uid of the new sequence will
-        be different from the original
+        be different from the original.
         """
         kwargs = {
             k: v for k, v in locals().items() if v is not Undefined and k != "self"
