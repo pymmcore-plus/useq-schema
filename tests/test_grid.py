@@ -1,6 +1,6 @@
 import pytest
 
-from useq import GridRelative
+from useq import GridFromEdges, GridRelative
 from useq._grid import OrderMode, _rect_indices, _spiral_indices
 
 EXPECT = {
@@ -55,3 +55,30 @@ def test_position_equality():
     snake_col_pos = set(t5.iter_grid_positions(1, 1))
 
     assert spiral_pos == row_pos == snake_row_pos == col_pos == snake_col_pos
+
+
+def test_grid_type():
+    g1 = GridRelative(rows=2, columns=3)
+    assert [(g.x, g.y) for g in g1.iter_grid_positions(1, 1)] == [
+        (-1.0, 0.5),
+        (0.0, 0.5),
+        (1.0, 0.5),
+        (1.0, -0.5),
+        (0.0, -0.5),
+        (-1.0, -0.5),
+    ]
+    g2 = GridFromEdges(top=1, left=-1, bottom=-1, right=2)
+    assert [(g.x, g.y) for g in g2.iter_grid_positions(1, 1)] == [
+        (-1.0, 1.0),
+        (0.0, 1.0),
+        (1.0, 1.0),
+        (2.0, 1.0),
+        (2.0, 0.0),
+        (1.0, 0.0),
+        (0.0, 0.0),
+        (-1.0, 0.0),
+        (-1.0, -1.0),
+        (0.0, -1.0),
+        (1.0, -1.0),
+        (2.0, -1.0),
+    ]

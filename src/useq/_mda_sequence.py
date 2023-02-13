@@ -21,7 +21,7 @@ CHANNEL = "c"
 POSITION = "p"
 Z = "z"
 GRID = "g"
-INDICES = (TIME, POSITION, CHANNEL, Z, GRID)
+INDICES = (TIME, POSITION, GRID, CHANNEL, Z)
 
 Undefined = object()
 
@@ -40,8 +40,8 @@ class MDASequence(UseqModel):
     metadata : dict
         A dictionary of user metadata to be stored with the sequence.
     axis_order : str
-        The order of the axes in the sequence. Must be a permutation of `"tpcz"`. The
-        default is `"tpcz"`.
+        The order of the axes in the sequence. Must be a permutation of `"tpgcz"`. The
+        default is `"tpgcz"`.
     stage_positions : tuple[Position, ...]
         The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `z_plan`,
         all of which are optional).

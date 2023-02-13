@@ -1,5 +1,5 @@
 from ._channel import Channel
-from ._grid import AnyGridPlan, GridFromCorners, GridRelative, NoGrid
+from ._grid import AnyGridPlan, GridFromEdges, GridRelative, NoGrid
 from ._mda_event import MDAEvent, PropertyTuple
 from ._mda_sequence import MDASequence
 from ._position import Position
@@ -21,7 +21,7 @@ from ._z import (
 
 __all__ = [
     "AnyGridPlan",
-    "GridFromCorners",
+    "GridFromEdges",
     "GridRelative",
     "NoGrid",
     "Channel",

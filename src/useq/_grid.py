@@ -89,31 +89,6 @@ _INDEX_GENERATORS: dict[OrderMode, IndexGenerator] = {
 }
 
 
-class Coordinate(FrozenModel):
-    """Defines a position in 2D space.
-
-    Attributes
-    ----------
-    x : float
-        X position in microns.
-    y : float
-        Y position in microns.
-    """
-
-    x: float
-    y: float
-
-    @classmethod
-    def validate(cls, v: Any) -> "Coordinate":
-        if isinstance(v, Coordinate):  # pragma: no cover
-            return v
-        if isinstance(v, dict):
-            return Coordinate(**v)
-        if isinstance(v, (list, tuple)):
-            return Coordinate(x=v[0], y=v[1])
-        raise ValueError(f"Cannot convert to Coordinate: {v}")  # pragma: no cover
-
-
 class GridPosition(NamedTuple):
     x: float
     y: float
@@ -160,11 +135,11 @@ class _GridPlan(FrozenModel):
     def _offset_y(self, dy: float) -> float:
         raise NotImplementedError
 
-    def _nrows(self, dx: float) -> int:
+    def _nrows(self, dy: float) -> int:
         """Return the number of rows, given a grid step size."""
         raise NotImplementedError
 
-    def _ncolumns(self, dy: float) -> int:
+    def _ncolumns(self, dx: float) -> int:
         """Return the number of columns, given a grid step size."""
         raise NotImplementedError
 
@@ -173,8 +148,8 @@ class _GridPlan(FrozenModel):
     ) -> Iterator[GridPosition]:
         """Iterate over all grid positions, given a field of view size."""
         dx, dy = self._step_size(fov_width, fov_height)
-        rows = self._nrows(dx)
-        cols = self._ncolumns(dy)
+        rows = self._nrows(dy)
+        cols = self._ncolumns(dx)
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
         for r, c in _INDEX_GENERATORS[self.mode](rows, cols):
@@ -189,35 +164,42 @@ class _GridPlan(FrozenModel):
         return dx, dy
 
 
-class GridFromCorners(_GridPlan):
-    """Define grid positions from two corners.
+class GridFromEdges(_GridPlan):
+    """Yield absolute stage positions to cover a bounded area...
+
+    ...defined by setting the stage coordinates of the top, left,
+    bottom and right edges.
 
     Attributes
     ----------
-    corner1 : Coordinate
-        First bounding coordinate (e.g. "top left"). The position is considered
-        to be in the center of the image.
-    corner2 : Coordinate
-        Second bounding coordinate (e.g. "bottom right"). The position is considered
-        to be in the center of the image.
+    top : float
+       top stage position of the bounding area
+    left : float
+        left stage position of the bounding area
+    bottom : float
+        bottom stage position of the bounding area
+    right : float
+        right stage position of the bounding area
     """
 
-    corner1: Coordinate
-    corner2: Coordinate
+    top: float
+    left: float
+    bottom: float
+    right: float
 
-    def _nrows(self, dx: float) -> int:
-        total_width = abs(self.corner1.x - self.corner2.x) + dx
-        return math.ceil(total_width / dx)
-
-    def _ncolumns(self, dy: float) -> int:
-        total_height = abs(self.corner1.y - self.corner2.y) + dy
+    def _nrows(self, dy: float) -> int:
+        total_height = abs(self.top - self.bottom) + dy
         return math.ceil(total_height / dy)
 
+    def _ncolumns(self, dx: float) -> int:
+        total_width = abs(self.right - self.left) + dx
+        return math.ceil(total_width / dx)
+
     def _offset_x(self, dx: float) -> float:
-        return abs(self.corner1.x - self.corner2.x) / 2
+        return min(self.left, self.right)
 
     def _offset_y(self, dy: float) -> float:
-        return abs(self.corner1.y - self.corner2.y) / 2
+        return max(self.top, self.bottom)
 
 
 class GridRelative(_GridPlan):
@@ -243,10 +225,10 @@ class GridRelative(_GridPlan):
     def is_relative(self) -> bool:
         return True
 
-    def _nrows(self, dx: float) -> int:
+    def _nrows(self, dy: float) -> int:
         return self.rows
 
-    def _ncolumns(self, dy: float) -> int:
+    def _ncolumns(self, dx: float) -> int:
         return self.columns
 
     def _offset_x(self, dx: float) -> float:
@@ -269,4 +251,4 @@ class NoGrid(_GridPlan):
         return iter([])
 
 
-AnyGridPlan = Union[GridFromCorners, GridRelative, NoGrid]
+AnyGridPlan = Union[GridFromEdges, GridRelative, NoGrid]
