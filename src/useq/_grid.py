@@ -18,9 +18,6 @@ class RelativeTo(Enum):
     def __str__(self) -> str:
         return self.value
 
-    def __repr__(self) -> str:
-        return self.value
-
 
 class OrderMode(Enum):
     """Different ways of ordering the grid positions."""
@@ -32,9 +29,6 @@ class OrderMode(Enum):
     spiral = "spiral"
 
     def __str__(self) -> str:
-        return self.value
-
-    def __repr__(self) -> str:
         return self.value
 
 
