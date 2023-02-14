@@ -452,7 +452,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             )
             for p_item in product(*p_event_iterator):
                 yield _iter_position_sequence(
-                    p_sequence, index, p_item, position, global_index
+                    sequence, p_sequence, index, p_item, position, global_index
                 )
                 global_index += 1
             continue
@@ -483,6 +483,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
 
 def _iter_position_sequence(
+    main_sequence: MDASequence,
     pos_sequence: MDASequence,
     index: dict[str, int],
     item: tuple[Any, ...],
@@ -514,6 +515,6 @@ def _iter_position_sequence(
         z_pos=z_pos,
         exposure=getattr(p_channel, "exposure", None),
         channel=_p_channel,
-        sequence=pos_sequence,
+        sequence=main_sequence,
         global_index=global_index,
     )
