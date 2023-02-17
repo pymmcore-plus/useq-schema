@@ -122,7 +122,7 @@ p_inputs = [
         [
             {
                 "z": 100,
-                "sequence": MDASequence(z_plan={"above": 8, "below": 4, "step": 2}),
+                "sequence": {"z_plan": {"above": 8, "below": 4, "step": 2}},
             }
         ],
         (None, None, 100),
@@ -182,7 +182,7 @@ def test_axis_order_errors() -> None:
                     "x": 0,
                     "y": 0,
                     "z": 0,
-                    "sequence": MDASequence(z_plan={"range": 2, "step": 1}),
+                    "sequence": {"z_plan": {"range": 2, "step": 1}},
                 }
             ],
         )
@@ -196,7 +196,7 @@ def test_axis_order_errors() -> None:
                 "x": 0,
                 "y": 0,
                 "z": 0,
-                "sequence": MDASequence(z_plan={"range": 2, "step": 1}),
+                "sequence": {"z_plan": {"range": 2, "step": 1}},
             }
         ],
     )
