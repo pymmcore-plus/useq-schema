@@ -431,12 +431,9 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         if channel and TIME in index and index[TIME] % channel.acquire_every:
             continue
         # skip if in position sequence
-        if position and position.sequence and CHANNEL in index and index[CHANNEL] != 0:
-            continue
-        if position and position.sequence and GRID in index and index[GRID] != 0:
-            continue
-        if position and position.sequence and Z in index and index[Z] != 0:
-            continue
+        if position and position.sequence:
+            if any(_ax in index and index[_ax] != 0 for _ax in (CHANNEL, GRID, Z)):
+                continue
 
         try:
             z_pos = sequence._get_z(_ev, index, position, channel)
