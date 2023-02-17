@@ -420,8 +420,6 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     """
     order = sequence.used_axes
     global_index = 0
-    pos_sequence: bool = False
-    pos_sequence_stage_pos: bool = False
 
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in sequence.used_axes)
     for item in product(*event_iterator):
@@ -472,20 +470,10 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             y_pos = getattr(position, "y", None)
 
         if position and position.sequence:
-            pos_sequence = True
 
             p_sequence = position.sequence
 
             for sub_event in iter_sequence(p_sequence):
-                # increase position index of 1 if main sequence had a position before
-                if position.sequence.stage_positions and index["p"] > 0:
-                    pos_sequence_stage_pos = True
-                    new_index = {
-                        i: sub_event.index[i] if i != "p" else sub_event.index[i] + 1
-                        for i in sub_event.index
-                    }
-                else:
-                    new_index = sub_event.index  # type: ignore
 
                 if (
                     position.sequence.grid_plan
@@ -499,21 +487,15 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 yield sub_event.copy(
                     update={
                         "global_index": global_index,
-                        "index": {**index, **new_index},
+                        "index": {**index, **sub_event.index},
                         "sequence": sequence,
                     }
                 )
                 global_index += 1
             continue
 
-        if pos_sequence and pos_sequence_stage_pos:
-            # increase position index of 1
-            new_index = {i: index[i] if i != "p" else index[i] + 1 for i in index}
-        else:
-            new_index = index
-
         yield MDAEvent(
-            index=new_index,
+            index=index,
             min_start_time=time,
             pos_name=getattr(position, "name", None),
             x_pos=x_pos,
