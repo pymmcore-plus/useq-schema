@@ -470,11 +470,9 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             y_pos = getattr(position, "y", None)
 
         if position and position.sequence:
-
             p_sequence = position.sequence
 
             for sub_event in iter_sequence(p_sequence):
-
                 if (
                     position.sequence.grid_plan
                     and position.sequence.grid_plan.is_relative
