@@ -140,6 +140,39 @@ class MDAEvent(UseqModel):
         d.pop("sequence")
         return list(d.items())
 
+    def shifted(
+        self,
+        x_pos: float | None = None,
+        y_pos: float | None = None,
+        z_pos: float | None = None,
+    ) -> MDAEvent:
+        """Return a new event instance, shifted relative to this one."""
+        new_z = (
+            None
+            if z_pos is None and self.z_pos is None
+            else (z_pos or 0) + self.z_pos
+            if self.z_pos is not None
+            else z_pos
+        )
+
+        new_x = (
+            None
+            if x_pos is None and self.x_pos is None
+            else (x_pos or 0) + self.x_pos
+            if self.x_pos is not None
+            else x_pos
+        )
+
+        new_y = (
+            None
+            if y_pos is None and self.y_pos is None
+            else (y_pos or 0) + self.y_pos
+            if self.y_pos is not None
+            else y_pos
+        )
+
+        return self.copy(update={"x_pos": new_x, "y_pos": new_y, "z_pos": new_z})
+
     def to_pycromanager(self) -> dict:
         """Convenience method to convert this event to a pycro-manager events.
 

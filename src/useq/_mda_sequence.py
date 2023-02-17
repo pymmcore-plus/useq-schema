@@ -418,14 +418,23 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     MDAEvent
         Each event in the MDA sequence.
     """
+    order = sequence.used_axes
     global_index = 0
+    pos_sequence: bool = False
+    pos_sequence_stage_pos: bool = False
+
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in sequence.used_axes)
     for item in product(*event_iterator):
         if not item:  # the case with no events
             continue  # pragma: no cover
 
-        _ev, index = sequence._get_event_and_index(item)
-        position, channel, time, grid = sequence._get_axis_info(_ev)
+        _ev = dict(zip(order, item))
+        index = {k: _ev[k][0] for k in INDICES if k in _ev}
+
+        position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
+        channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
+        time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
+        grid: Optional[GridPosition] = _ev[GRID][1] if GRID in _ev else None
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
@@ -435,37 +444,76 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             if any(_ax in index and index[_ax] != 0 for _ax in (CHANNEL, GRID, Z)):
                 continue
 
-        try:
-            z_pos = sequence._get_z(_ev, index, position, channel)
-        except sequence._SkipFrame:
-            continue
-
-        # position sequence
-        if position and position.sequence:
-            p_sequence = position.sequence
-
-            p_event_iterator = (
-                enumerate(p_sequence.iter_axis(ax)) for ax in p_sequence.used_axes
-            )
-            for p_item in product(*p_event_iterator):
-                yield _iter_position_sequence(
-                    sequence, p_sequence, index, p_item, position, global_index
-                )
-                global_index += 1
-            continue
-
         _channel = (
             {"config": channel.config, "group": channel.group} if channel else None
         )
 
-        x_pos = getattr(position, "x", None)
-        y_pos = getattr(position, "y", None)
+        try:
+            z_pos = (
+                sequence._combine_z(_ev[Z][1], index[Z], channel, position)
+                if Z in _ev
+                else position.z
+                if position
+                else None
+            )
+        except sequence._SkipFrame:
+            continue
 
         if grid:
-            x_pos, y_pos = sequence._get_xy_from_grid(position, grid)
+            x_pos: Optional[float] = grid.x
+            y_pos: Optional[float] = grid.y
+            if grid.is_relative:
+                px = getattr(position, "x", 0) or 0
+                py = getattr(position, "y", 0) or 0
+                x_pos = x_pos + px if x_pos is not None else None
+                y_pos = y_pos + py if y_pos is not None else None
+        else:
+            x_pos = getattr(position, "x", None)
+            y_pos = getattr(position, "y", None)
+
+        if position and position.sequence:
+            pos_sequence = True
+
+            p_sequence = position.sequence
+
+            for sub_event in iter_sequence(p_sequence):
+                # increase position index of 1 if main sequence had a position before
+                if position.sequence.stage_positions and index["p"] > 0:
+                    pos_sequence_stage_pos = True
+                    new_index = {
+                        i: sub_event.index[i] if i != "p" else sub_event.index[i] + 1
+                        for i in sub_event.index
+                    }
+                else:
+                    new_index = sub_event.index  # type: ignore
+
+                if (
+                    position.sequence.grid_plan
+                    and position.sequence.grid_plan.is_relative
+                ):
+                    sub_event = sub_event.shifted(x_pos=x_pos, y_pos=y_pos)
+
+                if position.sequence.z_plan and position.sequence.z_plan.is_relative:
+                    sub_event = sub_event.shifted(z_pos=z_pos)
+
+                yield sub_event.copy(
+                    update={
+                        "global_index": global_index,
+                        "index": {**index, **new_index},
+                        "sequence": sequence,
+                    }
+                )
+                global_index += 1
+            continue
+
+        if pos_sequence and pos_sequence_stage_pos:
+            # increase position index of 1
+            new_index = {i: index[i] if i != "p" else index[i] + 1 for i in index}
+        else:
+            new_index = index
 
         yield MDAEvent(
-            index=index,
+            index=new_index,
             min_start_time=time,
             pos_name=getattr(position, "name", None),
             x_pos=x_pos,
@@ -477,41 +525,3 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             global_index=global_index,
         )
         global_index += 1
-
-
-def _iter_position_sequence(
-    main_sequence: MDASequence,
-    pos_sequence: MDASequence,
-    index: dict[str, int],
-    item: tuple[Any, ...],
-    position: Position | None,
-    global_index: int,
-) -> MDAEvent:
-    """Iterate over all events in the Position MDA sequence."""
-    _p_ev, p_index = pos_sequence._get_event_and_index(item, index)
-    _, p_channel, sub_time, p_grid = pos_sequence._get_axis_info(_p_ev)
-
-    _p_channel = (
-        {"config": p_channel.config, "group": p_channel.group} if p_channel else None
-    )
-
-    x_pos = getattr(position, "x", None)
-    y_pos = getattr(position, "y", None)
-
-    if p_grid:
-        x_pos, y_pos = pos_sequence._get_xy_from_grid(position, p_grid)
-
-    z_pos = pos_sequence._get_z(_p_ev, index, position, p_channel)
-
-    return MDAEvent(
-        index=p_index,
-        min_start_time=sub_time,
-        pos_name=getattr(position, "name", None),
-        x_pos=x_pos,
-        y_pos=y_pos,
-        z_pos=z_pos,
-        exposure=getattr(p_channel, "exposure", None),
-        channel=_p_channel,
-        sequence=main_sequence,
-        global_index=global_index,
-    )

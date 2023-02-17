@@ -45,16 +45,12 @@ class Position(FrozenModel):
         yield cls.validate
 
     @classmethod
+    @classmethod
     def validate(cls, value: Any) -> Position:
-        if isinstance(value, dict):
-            value = Position(**value)
         if isinstance(value, Position):
-            # removing "stage_positions"
-            value_dict = value.dict()
-            if value_dict["sequence"]:
-                value_dict["sequence"]["stage_positions"] = []
-            value = Position(**value_dict)
             return value
+        if isinstance(value, dict):
+            return Position(**value)
         if isinstance(value, (np.ndarray, tuple)):
             x, *value = value
             y, *value = value or (None,)
