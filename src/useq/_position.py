@@ -29,8 +29,6 @@ class Position(FrozenModel):
         Optional name for the position.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
-        This MDASequence cannot have a 'stage_positions' attribute and,
-        if given, it will be removed.
     """
 
     # if None, implies 'do not move this axis'
