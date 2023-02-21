@@ -120,7 +120,7 @@ class MDASequence(UseqModel):
         for pos in self.stage_positions:
             if pos.sequence is None:
                 continue
-            pos.sequence._fov_size = fov_size  # type: ignore
+            pos.sequence._fov_size = fov_size
 
     @no_type_check
     def replace(
