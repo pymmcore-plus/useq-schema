@@ -116,11 +116,6 @@ class MDASequence(UseqModel):
         This is used to calculate the number of positions in a grid plan.
         """
         self._fov_size = fov_size
-        # set the same fov also to any position sequence
-        for pos in self.stage_positions:
-            if pos.sequence is None:
-                continue
-            pos.sequence._fov_size = fov_size
 
     @no_type_check
     def replace(
