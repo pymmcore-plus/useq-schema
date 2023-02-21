@@ -93,3 +93,8 @@ def test_position_sequence_gridplan(mda: MDASequence) -> None:
         {"p": 1, "g": 2, "c": 0},
         {"p": 1, "g": 3, "c": 0},
     ]
+
+    assert mda2._fov_size == (1, 1)
+    assert mda2.stage_positions[1].sequence._fov_size == (1, 1)
+    mda2.set_fov_size((100, 100))
+    assert mda2.stage_positions[1].sequence._fov_size == (100, 100)
