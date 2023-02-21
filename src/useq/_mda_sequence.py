@@ -128,10 +128,9 @@ class MDASequence(UseqModel):
         self._fov_size = fov_size
         # set the same fov also to any position sequence
         for pos in self.stage_positions:
-            # using contextlib because if we use "if pos.sequence"
-            # we will start the MDASequence validation with a fov_size of (1,1)
-            with contextlib.suppress(AttributeError):
-                pos.sequence._fov_size = fov_size  # type: ignore
+            if pos.sequence is None:
+                continue
+            pos.sequence._fov_size = fov_size  # type: ignore
 
     @no_type_check
     def replace(
@@ -306,42 +305,6 @@ class MDASequence(UseqModel):
         """
         return iter_sequence(self)
 
-    def _get_event_and_index(
-        self,
-        item: tuple[Any, ...],
-        current_index: dict[str, int] = None,  # type: ignore
-    ) -> tuple[dict[str, tuple], dict[str, int]]:
-        event = dict(zip(self.used_axes, item))
-        index = current_index or {}
-        for k in INDICES:
-            if k in event:
-                index[k] = event[k][0]
-        return event, index
-
-    def _get_axis_info(
-        self, event: dict[str, tuple]
-    ) -> tuple[Position | None, Channel | None, float | None, GridPosition | None]:
-        position: Optional[Position] = event[POSITION][1] if POSITION in event else None
-        channel: Optional[Channel] = event[CHANNEL][1] if CHANNEL in event else None
-        time: Optional[int] = event[TIME][1] if TIME in event else None
-        grid: Optional[GridPosition] = event[GRID][1] if GRID in event else None
-        return position, channel, time, grid
-
-    def _get_z(
-        self,
-        event: dict[str, tuple],
-        index: dict[str, int],
-        position: Position | None,
-        channel: Channel | None,
-    ) -> float | None:
-        return (
-            self._combine_z(event[Z][1], index[Z], channel, position)
-            if Z in event
-            else position.z
-            if position
-            else None
-        )
-
     def _combine_z(
         self,
         z_pos: float,
@@ -359,32 +322,6 @@ class MDASequence(UseqModel):
             # TODO: either disallow without position z, or add concept of "current"
             z_pos += getattr(position, Z, None) or 0
         return z_pos
-
-    def _get_xy_from_grid(
-        self, position: Position | None, grid: GridPosition
-    ) -> tuple[float | None, float | None]:
-        x_pos = getattr(position, "x", 0.0) or 0.0
-        y_pos = getattr(position, "y", 0.0) or 0.0
-
-        x_grid_pos: Optional[float] = grid.x
-        y_grid_pos: Optional[float] = grid.y
-
-        if grid.is_relative:
-            x_pos = (
-                x_grid_pos + x_pos
-                if (x_pos is not None and x_grid_pos is not None)
-                else None
-            )
-            y_pos = (
-                y_grid_pos + y_pos
-                if (y_pos is not None and y_grid_pos is not None)
-                else None
-            )
-        else:
-            x_pos = x_grid_pos
-            y_pos = y_grid_pos
-
-        return x_pos, y_pos
 
     def to_pycromanager(self) -> list[dict]:
         """Convenience to convert this sequence to a list of pycro-manager events.
