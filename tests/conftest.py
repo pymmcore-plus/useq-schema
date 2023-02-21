@@ -1,6 +1,6 @@
 import pytest
 
-from useq import GridRelative, MDASequence
+from useq import MDASequence
 
 
 @pytest.fixture
