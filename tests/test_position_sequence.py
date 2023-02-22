@@ -22,7 +22,9 @@ def _update_pos_sequence(mda: MDASequence, axis: str):
     if "z" in axis:
         p_seq = p_seq.replace(z_plan={"range": 2, "step": 0.5})
     if "g" in axis:
-        p_seq = p_seq.replace(grid_plan=GridRelative(rows=2, columns=2))
+        p_seq = p_seq.replace(grid_plan={"rows": 2, "columns": 2})
+    if "t" in axis:
+        p_seq = p_seq.replace(time_plan=[{"interval": 1, "loops": 2}])
     new_pos = [(10, 20), {"x": 10, "y": 20, "z": 50, "sequence": p_seq}]
     return mda.replace(stage_positions=new_pos)
 
@@ -92,4 +94,35 @@ def test_position_sequence_gridplan(mda: MDASequence) -> None:
         {"p": 1, "g": 1, "c": 0},
         {"p": 1, "g": 2, "c": 0},
         {"p": 1, "g": 3, "c": 0},
+    ]
+
+
+def test_position_sequence_time(mda: MDASequence) -> None:
+    mda1 = mda.replace(time_plan=[{"interval": 1, "loops": 4}])
+    mda2 = _update_pos_sequence(mda1, "t")
+
+    assert [i.index for i in list(mda1.iter_events())] == [
+        {"t": 0, "p": 0, "c": 0},
+        {"t": 0, "p": 1, "c": 0},
+        {"t": 1, "p": 0, "c": 0},
+        {"t": 1, "p": 1, "c": 0},
+        {"t": 2, "p": 0, "c": 0},
+        {"t": 2, "p": 1, "c": 0},
+        {"t": 3, "p": 0, "c": 0},
+        {"t": 3, "p": 1, "c": 0},
+    ]
+
+    assert [i.index for i in list(mda2.iter_events())] == [
+        {"t": 0, "p": 0, "c": 0},
+        {"t": 0, "p": 1, "c": 0},
+        {"t": 1, "p": 1, "c": 0},
+        {"t": 1, "p": 0, "c": 0},
+        {"t": 0, "p": 1, "c": 0},
+        {"t": 1, "p": 1, "c": 0},
+        {"t": 2, "p": 0, "c": 0},
+        {"t": 0, "p": 1, "c": 0},
+        {"t": 1, "p": 1, "c": 0},
+        {"t": 3, "p": 0, "c": 0},
+        {"t": 0, "p": 1, "c": 0},
+        {"t": 1, "p": 1, "c": 0},
     ]
