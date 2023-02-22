@@ -340,7 +340,6 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     MDAEvent
         Each event in the MDA sequence.
     """
-    order = sequence.used_axes
     global_index = 0
 
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in sequence.used_axes)
@@ -348,7 +347,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         if not item:  # the case with no events
             continue  # pragma: no cover
 
-        _ev = dict(zip(order, item))
+        _ev = dict(zip(sequence.used_axes, item))
         index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
         position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
