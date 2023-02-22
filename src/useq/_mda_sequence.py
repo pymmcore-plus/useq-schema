@@ -32,6 +32,7 @@ class MDASequence(UseqModel):
     This is the core object in the `useq` library, and is used define a sequence of
     events to be run on a microscope. It object may be constructed manually, or from
     file (e.g. json or yaml).
+
     The object itself acts as an iterator for [`useq.MDAEvent`][] objects:
 
     Attributes
@@ -72,8 +73,10 @@ class MDASequence(UseqModel):
     ... )
     >>> print(seq)
     Multi-Dimensional Acquisition ▶ nt: 2, np: 1, nc: 1, nz: 4, ng: 4
+
     >>> for event in seq:
     ...     print(event)
+
     >>> print(seq.yaml())
     channels:
     - config: DAPI
@@ -90,7 +93,7 @@ class MDASequence(UseqModel):
       loops: 2
     z_plan:
       range: 3.0
-      step: 1.0.
+      step: 1.0
     """
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
