@@ -43,7 +43,6 @@ class Position(FrozenModel):
         yield cls.validate
 
     @classmethod
-    @classmethod
     def validate(cls, value: Any) -> Position:
         if isinstance(value, Position):
             return value
