@@ -13,28 +13,18 @@ grid_plan:
 metadata:
   some info: something
 stage_positions:
-- name: null
-  sequence: null
-  x: 10.0
+- x: 10.0
   y: 20.0
-  z: null
 - name: test_name
   sequence:
     axis_order: tpgcz
     grid_plan:
       columns: 3
       mode: row_wise_snake
-      overlap:
-      - 0.0
-      - 0.0
-      relative_to: center
       rows: 2
-    time_plan:
-      prioritize_duration: false
     z_plan:
       above: 10.0
       below: 0.0
-      go_up: true
       step: 1.0
   x: 10.0
   y: 20.0
