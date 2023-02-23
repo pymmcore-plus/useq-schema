@@ -1,7 +1,17 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+    no_type_check,
+)
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -353,10 +363,12 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         _ev = dict(zip(sequence.used_axes, item))
         index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
-        position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
-        channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
-        time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
-        grid: Optional[GridPosition] = _ev[GRID][1] if GRID in _ev else None
+        position = cast(
+            "Position | None", _ev[POSITION][1] if POSITION in _ev else None
+        )
+        channel = cast("Channel | None", _ev[CHANNEL][1] if CHANNEL in _ev else None)
+        time = cast("int | None", _ev[TIME][1] if TIME in _ev else None)
+        grid = cast("GridPosition | None", _ev[GRID][1] if GRID in _ev else None)
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
@@ -369,6 +381,9 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         _channel = (
             {"config": channel.config, "group": channel.group} if channel else None
         )
+        _exposure = getattr(channel, "exposure", None)
+
+        pos_name = getattr(position, "name", None)
 
         try:
             z_pos = (
@@ -395,33 +410,51 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
         if position and position.sequence:
             for sub_event in iter_sequence(position.sequence):
+                update: dict[str, Any] = {
+                    "global_index": global_index,
+                    "index": {**index, **sub_event.index},
+                    "sequence": sequence,
+                    "pos_name": position.name or pos_name,
+                }
+
+                if not sub_event.channel:
+                    update["channel"] = _channel
+
+                if sub_event.exposure is None:
+                    update["exposure"] = _exposure
+
+                if sub_event.min_start_time is None:
+                    update["min_start_time"] = time
+
                 if (
                     position.sequence.grid_plan
                     and position.sequence.grid_plan.is_relative
                 ):
                     sub_event = sub_event.shifted(x_pos=x_pos, y_pos=y_pos)
+                else:
+                    update["x_pos"] = x_pos
+                    update["y_pos"] = y_pos
 
-                if position.sequence.z_plan and position.sequence.z_plan.is_relative:
-                    sub_event = sub_event.shifted(z_pos=z_pos)
+                if position.sequence.z_plan:
+                    if position.sequence.z_plan.is_relative:
+                        sub_event = sub_event.shifted(z_pos=z_pos)
+                else:
+                    update["z_pos"] = z_pos
 
-                yield sub_event.copy(
-                    update={
-                        "global_index": global_index,
-                        "index": {**index, **sub_event.index},
-                        "sequence": sequence,
-                    }
-                )
+                yield sub_event.copy(update=update)
+
                 global_index += 1
+
             continue
 
         yield MDAEvent(
             index=index,
             min_start_time=time,
-            pos_name=getattr(position, "name", None),
+            pos_name=pos_name,
             x_pos=x_pos,
             y_pos=y_pos,
             z_pos=z_pos,
-            exposure=getattr(channel, "exposure", None),
+            exposure=_exposure,
             channel=_channel,
             sequence=sequence,
             global_index=global_index,
