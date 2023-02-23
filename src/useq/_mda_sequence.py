@@ -417,8 +417,10 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                     "pos_name": position.name or pos_name,
                 }
 
-                if not sub_event.channel:
-                    update["channel"] = _channel
+                if not sub_event.channel and channel:
+                    update["channel"] = Channel(
+                        config=channel.config, group=channel.group
+                    )
 
                 if sub_event.exposure is None:
                     update["exposure"] = _exposure
