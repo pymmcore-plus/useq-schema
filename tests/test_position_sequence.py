@@ -1,25 +1,4 @@
-from __future__ import annotations
-
-from typing import Literal
-
 from useq import MDASequence
-
-
-def event_list(sequence: MDASequence, axes: Literal["c", "z", "g", "t"]) -> list:
-    if axes == "c":
-        return [
-            (i.global_index, i.index, i.channel.config, i.exposure)
-            for i in sequence.iter_events()
-        ]
-    elif axes in ["z", "g"]:
-        return [
-            (i.global_index, i.index, i.pos_name, i.x_pos, i.y_pos, i.z_pos)
-            for i in sequence.iter_events()
-        ]
-    elif axes == "t":
-        return [
-            (i.global_index, i.index, i.min_start_time) for i in sequence.iter_events()
-        ]
 
 
 def test_position_sequence_channels() -> None:
@@ -53,8 +32,10 @@ def test_position_sequence_channels() -> None:
         ],
     )
 
-    assert event_list(mda, "c") == [
-        # global_index, index, channel.config, exposure
+    assert [
+        (i.global_index, i.index, i.channel.config, i.exposure)
+        for i in mda.iter_events()
+    ] == [
         (0, {"p": 0, "c": 0}, "Cy5", 50.0),
         (1, {"p": 0, "c": 1}, "FITC", 100.0),
         (2, {"p": 1, "c": 0}, "DAPI", 200.0),
@@ -93,8 +74,10 @@ def test_position_sequence_zplan() -> None:
         z_plan={"range": 1.0, "step": 0.5},
     )
 
-    assert event_list(mda, "z") == [
-        # global_index, index, pos_name, x_pos, y_pos, z_pos
+    assert [
+        (i.global_index, i.index, i.pos_name, i.x_pos, i.y_pos, i.z_pos)
+        for i in mda.iter_events()
+    ] == [
         (0, {"p": 0, "c": 0, "z": 0}, None, 10.0, 20.0, -0.5),
         (1, {"p": 0, "c": 0, "z": 1}, None, 10.0, 20.0, 0.0),
         (2, {"p": 0, "c": 0, "z": 2}, None, 10.0, 20.0, 0.5),
@@ -143,8 +126,10 @@ def test_position_sequence_gridplan() -> None:
         grid_plan={"rows": 1, "columns": 2},
     )
 
-    assert event_list(mda, "g") == [
-        # global_index, index, pos_name, x_pos, y_pos, z_pos
+    assert [
+        (i.global_index, i.index, i.pos_name, i.x_pos, i.y_pos, i.z_pos)
+        for i in mda.iter_events()
+    ] == [
         (0, {"p": 0, "g": 0, "c": 0}, None, 9.5, 20.0, 0.0),
         (1, {"p": 0, "g": 1, "c": 0}, None, 10.5, 20.0, 0.0),
         (2, {"p": 1, "g": 0, "c": 0}, "test", 9.0, 20.5, 50.0),
@@ -174,8 +159,7 @@ def test_position_sequence_time() -> None:
         time_plan=[{"interval": 1, "loops": 2}],
     )
 
-    assert event_list(mda, "t") == [
-        # global_index, index, min_start_time
+    assert [(i.global_index, i.index, i.min_start_time) for i in mda.iter_events()] == [
         (0, {"t": 0, "p": 0, "c": 0}, 0.0),
         (1, {"t": 0, "p": 1, "c": 0}, 0.0),
         (2, {"t": 1, "p": 1, "c": 0}, 1.0),
