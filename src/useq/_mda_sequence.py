@@ -409,45 +409,54 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             y_pos = getattr(position, "y", None)
 
         if position and position.sequence:
-            for sub_event in iter_sequence(position.sequence):
-                update: dict[str, Any] = {
-                    "global_index": global_index,
-                    "index": {**index, **sub_event.index},
-                    "sequence": sequence,
-                    "pos_name": position.name or pos_name,
-                }
+            p_seq = position.sequence
 
-                if not sub_event.channel and channel:
-                    update["channel"] = Channel(
-                        config=channel.config, group=channel.group
-                    )
+            if p_seq.stage_positions:
+                p_seq = p_seq.replace(stage_positions=[])
+                warn(
+                    "Currently, 'Position' sequence cannot have a 'stage_positons' "
+                    "argument and it will be ignored."
+                )
 
-                if sub_event.exposure is None:
-                    update["exposure"] = _exposure
+            # if there are only stage_positions in the Position sequence,
+            # skip iter_sequence end directly emit MDAEvent
+            if len(p_seq) > 0:
+                for sub_event in iter_sequence(p_seq):
+                    update: dict[str, Any] = {
+                        "global_index": global_index,
+                        "index": {**index, **sub_event.index},
+                        "sequence": sequence,
+                        "pos_name": position.name or pos_name,
+                    }
 
-                if sub_event.min_start_time is None:
-                    update["min_start_time"] = time
+                    if not sub_event.channel and channel:
+                        update["channel"] = Channel(
+                            config=channel.config, group=channel.group
+                        )
 
-                if (
-                    position.sequence.grid_plan
-                    and position.sequence.grid_plan.is_relative
-                ):
-                    sub_event = sub_event.shifted(x_pos=x_pos, y_pos=y_pos)
-                else:
-                    update["x_pos"] = x_pos
-                    update["y_pos"] = y_pos
+                    if sub_event.exposure is None:
+                        update["exposure"] = _exposure
 
-                if position.sequence.z_plan:
-                    if position.sequence.z_plan.is_relative:
-                        sub_event = sub_event.shifted(z_pos=z_pos)
-                else:
-                    update["z_pos"] = z_pos
+                    if sub_event.min_start_time is None:
+                        update["min_start_time"] = time
 
-                yield sub_event.copy(update=update)
+                    if p_seq.grid_plan and p_seq.grid_plan.is_relative:
+                        sub_event = sub_event.shifted(x_pos=x_pos, y_pos=y_pos)
+                    else:
+                        update["x_pos"] = x_pos
+                        update["y_pos"] = y_pos
 
-                global_index += 1
+                    if p_seq.z_plan:
+                        if p_seq.z_plan.is_relative:
+                            sub_event = sub_event.shifted(z_pos=z_pos)
+                    else:
+                        update["z_pos"] = z_pos
 
-            continue
+                    yield sub_event.copy(update=update)
+
+                    global_index += 1
+
+                continue
 
         yield MDAEvent(
             index=index,

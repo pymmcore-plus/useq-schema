@@ -1,3 +1,5 @@
+import pytest
+
 from useq import MDASequence
 
 
@@ -173,3 +175,31 @@ def test_position_sequence_time() -> None:
         (10, {"t": 3, "p": 1, "c": 0}, 3.0),
         (11, {"t": 4, "p": 1, "c": 0}, 4.0),
     ]
+
+
+def test_position_sequence_warning():
+    mda = MDASequence(
+        axis_order="tpgcz",
+        stage_positions=[
+            {
+                "name": "test",
+                "x": 10,
+                "y": 20,
+                "z": 50,
+                "sequence": {"stage_positions": [(50, 60, 3), (70, 80, 8)]},
+            },
+        ],
+        channels=[
+            {"config": "Cy5", "exposure": 50},
+        ],
+    )
+
+    warning_string = (
+        "Currently, 'Position' sequence cannot have a 'stage_positons' "
+        "argument and it will be ignored."
+    )
+    with pytest.warns(UserWarning, match=warning_string):
+        assert [
+            (i.global_index, i.index, i.pos_name, i.x_pos, i.y_pos, i.z_pos)
+            for i in mda.iter_events()
+        ] == [(0, {"p": 0, "c": 0}, "test", 10.0, 20.0, 50.0)]
