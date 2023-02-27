@@ -378,19 +378,10 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         if position and position.sequence:
             if CHANNEL in index and index[CHANNEL] != 0:
                 continue
-            if Z in index and index[Z] != 0:
-                if not position.sequence.z_plan and not sequence.z_plan.is_relative:
-                    continue
-                if position.sequence.z_plan:
-                    continue
-            if GRID in index and index[GRID] != 0:
-                if (
-                    not position.sequence.grid_plan
-                    and not sequence.grid_plan.is_relative
-                ):
-                    continue
-                if position.sequence.grid_plan:
-                    continue
+            if Z in index and index[Z] != 0 and position.sequence.z_plan:
+                continue
+            if GRID in index and index[GRID] != 0 and position.sequence.grid_plan:
+                continue
 
         _channel = (
             {"config": channel.config, "group": channel.group} if channel else None
@@ -436,6 +427,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                         config=channel.config, group=channel.group
                     )
 
+                # z_plan
                 if sub_event.exposure is None:
                     update["exposure"] = _exposure
 
@@ -444,25 +436,19 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
                 if position.sequence.z_plan and position.sequence.z_plan.is_relative:
                     sub_event = sub_event.shifted(z_pos=position.z)
-                elif not position.sequence.z_plan and sequence.z_plan.is_relative:
-                    update["z_pos"] = z_pos
                 elif not position.sequence.z_plan:
-                    update["z_pos"] = position.z
+                    update["z_pos"] = z_pos
 
+                # grid_plan
                 if (
                     position.sequence.grid_plan
                     and position.sequence.grid_plan.is_relative
                 ):
                     sub_event = sub_event.shifted(x_pos=position.x, y_pos=position.y)
-                elif not position.sequence.grid_plan and sequence.grid_plan.is_relative:
+
+                elif not position.sequence.grid_plan:
                     update["x_pos"] = x_pos
                     update["y_pos"] = y_pos
-                elif (
-                    not position.sequence.grid_plan
-                    and not position.sequence.stage_positions
-                ):
-                    update["x_pos"] = position.x
-                    update["y_pos"] = position.y
 
                 yield sub_event.copy(update=update)
 
