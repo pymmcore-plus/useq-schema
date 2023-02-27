@@ -427,13 +427,13 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                         config=channel.config, group=channel.group
                     )
 
-                # z_plan
                 if sub_event.exposure is None:
                     update["exposure"] = _exposure
 
                 if sub_event.min_start_time is None:
                     update["min_start_time"] = time
 
+                # z_plan
                 if position.sequence.z_plan and position.sequence.z_plan.is_relative:
                     sub_event = sub_event.shifted(z_pos=position.z)
                 elif not position.sequence.z_plan:
