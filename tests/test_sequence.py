@@ -209,6 +209,27 @@ def test_axis_order_errors() -> None:
             channels=[{"config": "DAPI", "acquire_every": 3}],
         )
 
+    # absolute grid_plan with multiple stage positions
+    warning_string = (
+        "A MDASequence with an absloute grid_plan "
+        "cannot have multiple stage positions!"
+    )
+    with pytest.raises(ValueError, match=warning_string):
+        MDASequence(
+            stage_positions=[(0, 0, 0), (10, 10, 10)],
+            grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
+        )
+    
+    # if all but one sub-position has a grid plan , is ok
+    MDASequence(
+        stage_positions=[
+            (0, 0, 0),
+            {"sequence": {"grid_plan": {"rows": 2, "columns": 2}}},
+            {"sequence": {"grid_plan": {"top": 1, "bottom": -1, "left": 0, "right": 0}}},
+        ],
+        grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
+    )
+
 
 @pytest.mark.parametrize("tplan, texpectation", t_as_dict[1:3])
 @pytest.mark.parametrize("zplan, zexpectation", z_as_dict[:2])

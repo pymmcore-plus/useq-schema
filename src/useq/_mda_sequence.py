@@ -197,6 +197,7 @@ class MDASequence(UseqModel):
                 z_plan=values.get("z_plan"),
                 stage_positions=values.get("stage_positions", ()),
                 channels=values.get("channels", ()),
+                grid_plan=values.get("grid_plan"),
             )
         return values
 
@@ -213,6 +214,7 @@ class MDASequence(UseqModel):
         z_plan: Optional[AnyZPlan] = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
+        grid_plan: Optional[AnyGridPlan] = None,
     ) -> str:
         if (
             Z in order
@@ -236,6 +238,23 @@ class MDASequence(UseqModel):
                 f"Channels with skipped frames detected, but {CHANNEL!r} precedes "
                 "{TIME!r} in the acquisition order: may not yield intended results."
             )
+
+        if (
+            GRID in order
+            and POSITION in order
+            and grid_plan
+            and not grid_plan.is_relative
+            and len(stage_positions) > 1
+            and len(stage_positions) - len([p for p in stage_positions if p.sequence and p.sequence.grid_plan]) > 1
+        ):
+            sub_position_grid_plans = [
+                p for p in stage_positions if p.sequence and p.sequence.grid_plan
+            ]
+            if len(stage_positions) - len(sub_position_grid_plans) > 1:
+                raise ValueError(
+                    "A MDASequence with an absloute grid_plan "
+                    "cannot have multiple stage positions!"
+                )
 
         return order
 
