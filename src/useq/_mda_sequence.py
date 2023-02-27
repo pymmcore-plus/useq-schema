@@ -18,6 +18,7 @@ from warnings import warn
 import numpy as np
 from pydantic import Field, PrivateAttr, root_validator, validator
 
+from . import _mda_event
 from ._base_model import UseqModel
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridPosition, NoGrid
@@ -373,10 +374,23 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
             continue
-        # skip if in position sequence
+        # skip if also in position.sequence
         if position and position.sequence:
-            if any(_ax in index and index[_ax] != 0 for _ax in (CHANNEL, GRID, Z)):
+            if CHANNEL in index and index[CHANNEL] != 0:
                 continue
+            if Z in index and index[Z] != 0:
+                if not position.sequence.z_plan and not sequence.z_plan.is_relative:
+                    continue
+                if position.sequence.z_plan:
+                    continue
+            if GRID in index and index[GRID] != 0:
+                if (
+                    not position.sequence.grid_plan
+                    and not sequence.grid_plan.is_relative
+                ):
+                    continue
+                if position.sequence.grid_plan:
+                    continue
 
         _channel = (
             {"config": channel.config, "group": channel.group} if channel else None
@@ -409,54 +423,52 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             y_pos = getattr(position, "y", None)
 
         if position and position.sequence:
-            p_seq = position.sequence
+            for sub_event in iter_sequence(position.sequence):
+                update: dict[str, Any] = {
+                    "global_index": global_index,
+                    "index": {**index, **sub_event.index},
+                    "sequence": sequence,
+                    "pos_name": position.name or pos_name,
+                }
 
-            if p_seq.stage_positions:
-                p_seq = p_seq.replace(stage_positions=[])
-                warn(
-                    "Currently, 'Position' sequence cannot have a 'stage_positons' "
-                    "argument and it will be ignored."
-                )
+                if not sub_event.channel and channel:
+                    update["channel"] = _mda_event.Channel(
+                        config=channel.config, group=channel.group
+                    )
 
-            # if there are only stage_positions in the Position sequence,
-            # skip iter_sequence end directly emit MDAEvent
-            if len(p_seq) > 0:
-                for sub_event in iter_sequence(p_seq):
-                    update: dict[str, Any] = {
-                        "global_index": global_index,
-                        "index": {**index, **sub_event.index},
-                        "sequence": sequence,
-                        "pos_name": position.name or pos_name,
-                    }
+                if sub_event.exposure is None:
+                    update["exposure"] = _exposure
 
-                    if not sub_event.channel and channel:
-                        update["channel"] = Channel(
-                            config=channel.config, group=channel.group
-                        )
+                if sub_event.min_start_time is None:
+                    update["min_start_time"] = time
 
-                    if sub_event.exposure is None:
-                        update["exposure"] = _exposure
+                if position.sequence.z_plan and position.sequence.z_plan.is_relative:
+                    sub_event = sub_event.shifted(z_pos=position.z)
+                elif not position.sequence.z_plan and sequence.z_plan.is_relative:
+                    update["z_pos"] = z_pos
+                elif not position.sequence.z_plan:
+                    update["z_pos"] = position.z
 
-                    if sub_event.min_start_time is None:
-                        update["min_start_time"] = time
+                if (
+                    position.sequence.grid_plan
+                    and position.sequence.grid_plan.is_relative
+                ):
+                    sub_event = sub_event.shifted(x_pos=position.x, y_pos=position.y)
+                elif not position.sequence.grid_plan and sequence.grid_plan.is_relative:
+                    update["x_pos"] = x_pos
+                    update["y_pos"] = y_pos
+                elif (
+                    not position.sequence.grid_plan
+                    and not position.sequence.stage_positions
+                ):
+                    update["x_pos"] = position.x
+                    update["y_pos"] = position.y
 
-                    if p_seq.grid_plan and p_seq.grid_plan.is_relative:
-                        sub_event = sub_event.shifted(x_pos=x_pos, y_pos=y_pos)
-                    else:
-                        update["x_pos"] = x_pos
-                        update["y_pos"] = y_pos
+                yield sub_event.copy(update=update)
 
-                    if p_seq.z_plan:
-                        if p_seq.z_plan.is_relative:
-                            sub_event = sub_event.shifted(z_pos=z_pos)
-                    else:
-                        update["z_pos"] = z_pos
+                global_index += 1
 
-                    yield sub_event.copy(update=update)
-
-                    global_index += 1
-
-                continue
+            continue
 
         yield MDAEvent(
             index=index,
