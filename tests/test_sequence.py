@@ -219,13 +219,17 @@ def test_axis_order_errors() -> None:
             stage_positions=[(0, 0, 0), (10, 10, 10)],
             grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
         )
-    
+
     # if all but one sub-position has a grid plan , is ok
     MDASequence(
         stage_positions=[
             (0, 0, 0),
             {"sequence": {"grid_plan": {"rows": 2, "columns": 2}}},
-            {"sequence": {"grid_plan": {"top": 1, "bottom": -1, "left": 0, "right": 0}}},
+            {
+                "sequence": {
+                    "grid_plan": {"top": 1, "bottom": -1, "left": 0, "right": 0}
+                }
+            },
         ],
         grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
     )

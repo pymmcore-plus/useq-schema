@@ -245,7 +245,9 @@ class MDASequence(UseqModel):
             and grid_plan
             and not grid_plan.is_relative
             and len(stage_positions) > 1
-            and len(stage_positions) - len([p for p in stage_positions if p.sequence and p.sequence.grid_plan]) > 1
+            and len(stage_positions)
+            - len([p for p in stage_positions if p.sequence and p.sequence.grid_plan])
+            > 1
         ):
             sub_position_grid_plans = [
                 p for p in stage_positions if p.sequence and p.sequence.grid_plan
