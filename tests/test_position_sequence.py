@@ -1,7 +1,4 @@
-import pytest
-
 from useq import MDASequence
-
 
 # def test_position_sequence_channels() -> None:
 #     mda = MDASequence(
@@ -196,8 +193,6 @@ from useq import MDASequence
 #     #     print(p)
 
 
-
-
 # def test_position_sequence_time() -> None:
 #     mda = MDASequence(
 #         axis_order="tpgcz",
@@ -273,7 +268,7 @@ g_mda1 = MDASequence(
         },
     ],
     channels=[{"config": "Cy5", "exposure": 50}],
-    grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0}
+    grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
 )
 
 g_mda2 = MDASequence(
@@ -308,7 +303,7 @@ g_mda3 = MDASequence(
         },
     ],
     channels=[{"config": "Cy5", "exposure": 50}],
-    grid_plan= {"rows": 2, "columns": 2}
+    grid_plan={"rows": 2, "columns": 2},
 )
 
 g_mda4 = MDASequence(
@@ -322,7 +317,7 @@ g_mda4 = MDASequence(
             "z": 50,
             "sequence": {
                 "channels": [{"config": "488", "exposure": 200}],
-                "grid_plan": {"top": 2, "bottom": -1, "left": 0, "right": 0}
+                "grid_plan": {"top": 2, "bottom": -1, "left": 0, "right": 0},
             },
         },
         {
@@ -332,12 +327,12 @@ g_mda4 = MDASequence(
             "z": 50,
             "sequence": {
                 "channels": [{"config": "488", "exposure": 200}],
-                "grid_plan":{"top": 1, "bottom": -1, "left": 0, "right": 0}
+                "grid_plan": {"top": 1, "bottom": -1, "left": 0, "right": 0},
             },
         },
     ],
     channels=[{"config": "Cy5", "exposure": 50}],
-    grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0}
+    grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
 )
 
 g_mda5 = MDASequence(
@@ -356,7 +351,7 @@ g_mda5 = MDASequence(
         },
     ],
     channels=[{"config": "Cy5", "exposure": 50}],
-    grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0}
+    grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
 )
 
 mdas = [g_mda1, g_mda2, g_mda3, g_mda4, g_mda5]
@@ -375,15 +370,12 @@ c_mda1 = MDASequence(
             "sequence": {
                 "channels": [
                     {"config": "488", "exposure": 200},
-                    {"config": "561", "exposure": 200}
+                    {"config": "561", "exposure": 200},
                 ],
             },
         },
     ],
-    channels=[
-        {"config": "Cy5", "exposure": 50},
-        {"config": "488", "exposure": 200}
-    ],
+    channels=[{"config": "Cy5", "exposure": 50}, {"config": "488", "exposure": 200}],
 )
 
 c_mda2 = MDASequence(
@@ -398,7 +390,7 @@ c_mda2 = MDASequence(
             "sequence": {
                 "channels": [
                     {"config": "488", "exposure": 200},
-                    {"config": "561", "exposure": 200}
+                    {"config": "561", "exposure": 200},
                 ],
             },
         },
@@ -417,7 +409,7 @@ c_mda3 = MDASequence(
             "sequence": {
                 "channels": [
                     {"config": "488", "exposure": 200},
-                    {"config": "561", "exposure": 200}
+                    {"config": "561", "exposure": 200},
                 ],
             },
         },
@@ -425,8 +417,7 @@ c_mda3 = MDASequence(
     channels=[
         {"config": "Cy5", "exposure": 50},
     ],
-    z_plan= {"range": 2, "step": 1},
-
+    z_plan={"range": 2, "step": 1},
 )
 
 mdas.extend([c_mda1, c_mda2, c_mda3])
@@ -443,12 +434,16 @@ z_mda1 = MDASequence(
             "y": 10,
             "z": 50,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
-    z_plan= {"range": 2, "step": 1},
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
+    z_plan={"range": 2, "step": 1},
 )
 
 z_mda2 = MDASequence(
@@ -461,12 +456,16 @@ z_mda2 = MDASequence(
             "y": 10,
             "z": 50,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
-    z_plan = {"top": 60, "bottom": 55, "step": 1},
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
+    z_plan={"top": 60, "bottom": 55, "step": 1},
 )
 
 z_mda3 = MDASequence(
@@ -479,12 +478,16 @@ z_mda3 = MDASequence(
             "y": 10,
             "z": 50,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
                 "z_plan": {"top": 60, "bottom": 55, "step": 1},
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
 )
 
 z_mda4 = MDASequence(
@@ -497,12 +500,16 @@ z_mda4 = MDASequence(
             "y": 10,
             "z": 50,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
                 "z_plan": {"range": 2, "step": 1},
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
 )
 
 z_mda5 = MDASequence(
@@ -515,12 +522,16 @@ z_mda5 = MDASequence(
             "y": 10,
             "z": 50,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
                 "z_plan": {"range": 2, "step": 1},
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
     z_plan={"range": 2, "step": 1},
 )
 
@@ -534,12 +545,16 @@ z_mda6 = MDASequence(
             "y": 10,
             "z": 50,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
                 "z_plan": {"top": 30, "bottom": 25, "step": 1},
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
     z_plan={"top": 60, "bottom": 55, "step": 1},
 )
 
@@ -553,12 +568,16 @@ z_mda7 = MDASequence(
             "y": 10,
             "z": 30,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
                 "z_plan": {"range": 2, "step": 1},
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
     z_plan={"top": 60, "bottom": 55, "step": 1},
 )
 
@@ -572,12 +591,16 @@ z_mda8 = MDASequence(
             "y": 10,
             "z": 30,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
-                "z_plan": {"top": 60, "bottom": 55, "step": 1}, 
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
+                "z_plan": {"top": 60, "bottom": 55, "step": 1},
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
     z_plan={"range": 2, "step": 1},
 )
 
@@ -594,13 +617,17 @@ zg_mda1 = MDASequence(
             "y": 10,
             "z": 30,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
                 "grid_plan": {"rows": 2, "columns": 1},
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
-    z_plan = {"top": 100, "bottom": 96, "step": 1},
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
+    z_plan={"top": 100, "bottom": 96, "step": 1},
 )
 mdas.append(zg_mda1)
 
@@ -614,12 +641,16 @@ zg_mda2 = MDASequence(
             "y": 10,
             "z": 30,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
-                "grid_plan":{"top": 1, "bottom": -1, "left": 0, "right": 0}
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
+                "grid_plan": {"top": 1, "bottom": -1, "left": 0, "right": 0},
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
     z_plan={"range": 2, "step": 1},
 )
 
@@ -635,13 +666,17 @@ zg_mda3 = MDASequence(
             "y": 10,
             "z": 30,
             "sequence": {
-                "channels": [{"config": "488", "exposure": 200},],
+                "channels": [
+                    {"config": "488", "exposure": 200},
+                ],
                 "z_plan": {"range": 2, "step": 1},
             },
         },
     ],
-    channels=[{"config": "Cy5", "exposure": 50},],
-    grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0}
+    channels=[
+        {"config": "Cy5", "exposure": 50},
+    ],
+    grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
 )
 
 mdas.append(zg_mda3)
@@ -649,14 +684,13 @@ mdas.append(zg_mda3)
 
 def test_all():
     for mda in mdas:
-
         print(" ")
-        print('____________')
+        print("____________")
         print(mda.channels)
         print(mda.stage_positions)
         print(mda.z_plan)
         print(mda.grid_plan)
-        for p in  [
+        for p in [
             (i.global_index, i.index, i.pos_name, i.x_pos, i.y_pos, i.z_pos, i.channel)
             for i in mda.iter_events()
         ]:
