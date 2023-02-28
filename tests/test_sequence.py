@@ -210,11 +210,8 @@ def test_axis_order_errors() -> None:
         )
 
     # absolute grid_plan with multiple stage positions
-    error_string = (
-        "A MDASequence with an absloute grid_plan "
-        "cannot have multiple stage positions!"
-    )
-    with pytest.raises(ValueError, match=error_string):
+
+    with pytest.warns(UserWarning, match="Global grid plan will override"):
         MDASequence(
             stage_positions=[(0, 0, 0), (10, 10, 10)],
             grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
@@ -241,10 +238,7 @@ def test_axis_order_errors() -> None:
     )
 
     # multi positions in position sub-sequence
-    error_string = (
-        "Currently, a Position sequence cannot have multiple stage positions!"
-    )
-    with pytest.raises(ValueError, match=error_string):
+    with pytest.raises(ValueError, match="Currently, a Position sequence cannot"):
         MDASequence(
             stage_positions=[
                 {"sequence": {"stage_positions": [(10, 10, 10), (20, 20, 20)]}}
@@ -256,7 +250,6 @@ def test_axis_order_errors() -> None:
 @pytest.mark.parametrize("zplan, zexpectation", z_as_dict[:2])
 @pytest.mark.parametrize("channel, cexpectation", c_inputs[:3])
 @pytest.mark.parametrize("positions, pexpectation", p_inputs[:3])
-@pytest.mark.parametrize("grid, gexpectation", g_as_class[1:3])
 def test_combinations(
     tplan: Any,
     texpectation: Sequence[float],
@@ -266,15 +259,9 @@ def test_combinations(
     cexpectation: Sequence[str],
     positions: Any,
     pexpectation: Sequence[float],
-    grid: Any,
-    gexpectation: list,
 ) -> None:
     mda = MDASequence(
-        time_plan=tplan,
-        z_plan=zplan,
-        channels=[channel],
-        stage_positions=positions,
-        grid_plan=grid,
+        time_plan=tplan, z_plan=zplan, channels=[channel], stage_positions=positions
     )
 
     assert list(mda.z_plan) == zexpectation
@@ -282,7 +269,6 @@ def test_combinations(
     assert (mda.channels[0].group, mda.channels[0].config) == cexpectation
     position = mda.stage_positions[0]
     assert (position.x, position.y, position.z) == pexpectation
-    assert [i[1] for i in list(mda.grid_plan)] == gexpectation
 
     assert mda.to_pycromanager()
 
