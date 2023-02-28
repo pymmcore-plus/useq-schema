@@ -372,6 +372,31 @@ def test_z_relative_in_main_and_z_absolute_in_position_sub_sequence():
     ]
 
 
+def test_multi_z_in_position_sub_sequence():
+    mda = MDASequence(
+        stage_positions=[
+            {"sequence": {"z_plan": {"top": 60, "bottom": 58, "step": 1}}},
+            {"sequence": {"z_plan": {"range": 3, "step": 1}}},
+            {"sequence": {"z_plan": {"top": 30, "bottom": 28, "step": 1}}},
+        ],
+    )
+
+    assert [
+        (i.global_index, i.index, i.z_pos) for i in mda.iter_events()
+    ] == [
+        (0, {"p": 0, "z": 0}, 58.0),
+        (1, {"p": 0, "z": 1}, 59.0),
+        (2, {"p": 0, "z": 2}, 60.0),
+        (3, {"p": 1, "z": 0}, -1.5),
+        (4, {"p": 1, "z": 1}, -0.5),
+        (5, {"p": 1, "z": 2}, 0.5),
+        (6, {"p": 1, "z": 3}, 1.5),
+        (7, {"p": 2, "z": 0}, 28.0),
+        (8, {"p": 2, "z": 1}, 29.0),
+        (9, {"p": 2, "z": 2}, 30.0),
+    ]
+
+
 # test time_plan
 def test_t_with_multi_stage_positions() -> None:
     mda = MDASequence(
