@@ -210,12 +210,14 @@ def test_multi_g_in_position_sub_sequence():
         stage_positions=[
             {"sequence": {"grid_plan": {"rows": 1, "columns": 2}}},
             {"sequence": {"grid_plan": {"rows": 2, "columns": 2}}},
-            {"sequence": {"grid_plan": {"top": 1, "bottom": -1, "left": 0, "right": 0}}}
+            {
+                "sequence": {
+                    "grid_plan": {"top": 1, "bottom": -1, "left": 0, "right": 0}
+                }
+            },
         ]
     )
-    assert [
-        (i.global_index, i.index, i.x_pos, i.y_pos) for i in mda.iter_events()
-    ] == [
+    assert [(i.global_index, i.index, i.x_pos, i.y_pos) for i in mda.iter_events()] == [
         (0, {"p": 0, "g": 0}, -0.5, 0.0),
         (1, {"p": 0, "g": 1}, 0.5, 0.0),
         (2, {"p": 1, "g": 0}, -0.5, 0.5),
