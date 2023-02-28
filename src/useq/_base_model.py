@@ -169,11 +169,15 @@ class UseqModel(FrozenModel):
             YAML output ... If `stream` is provided, returns `None`.
         """
         from datetime import timedelta
+        from enum import Enum
 
         import yaml
 
         yaml.SafeDumper.add_multi_representer(
             timedelta, lambda dumper, data: dumper.represent_str(str(data))
+        )
+        yaml.SafeDumper.add_multi_representer(
+            Enum, lambda dumper, data: dumper.represent_str(str(data.value))
         )
 
         data = self.dict(

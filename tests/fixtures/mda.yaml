@@ -16,13 +16,19 @@ stage_positions:
 - x: 10.0
   y: 20.0
 - name: test_name
+  sequence:
+    axis_order: tpgcz
+    grid_plan:
+      columns: 3
+      mode: row_wise_snake
+      rows: 2
+    z_plan:
+      above: 10.0
+      below: 0.0
+      step: 1.0
   x: 10.0
   y: 20.0
   z: 50.0
-  z_plan:
-    above: 10.0
-    below: 0.0
-    step: 1.0
 time_plan:
   phases:
   - interval: 0:00:03

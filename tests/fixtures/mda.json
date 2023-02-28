@@ -44,39 +44,42 @@
   },
   "stage_positions": [
     {
-      "grid_plan": {
-        "mode": "row_wise_snake",
-        "overlap": [
-          0.0,
-          0.0
-        ]
-      },
       "name": null,
+      "sequence": null,
       "x": 10.0,
       "y": 20.0,
-      "z": null,
-      "z_plan": {
-        "go_up": true
-      }
+      "z": null
     },
     {
-      "grid_plan": {
-        "mode": "row_wise_snake",
-        "overlap": [
-          0.0,
-          0.0
-        ]
-      },
       "name": "test_name",
+      "sequence": {
+        "axis_order": "tpgcz",
+        "channels": [],
+        "grid_plan": {
+          "columns": 3,
+          "mode": "row_wise_snake",
+          "overlap": [
+            0.0,
+            0.0
+          ],
+          "relative_to": "center",
+          "rows": 2
+        },
+        "metadata": {},
+        "stage_positions": [],
+        "time_plan": {
+          "prioritize_duration": false
+        },
+        "z_plan": {
+          "above": 10.0,
+          "below": 0.0,
+          "go_up": true,
+          "step": 1.0
+        }
+      },
       "x": 10.0,
       "y": 20.0,
-      "z": 50.0,
-      "z_plan": {
-        "above": 10.0,
-        "below": 0.0,
-        "go_up": true,
-        "step": 1.0
-      }
+      "z": 50.0
     }
   ],
   "time_plan": {

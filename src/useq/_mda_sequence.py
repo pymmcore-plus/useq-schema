@@ -1,13 +1,24 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union, no_type_check
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+    no_type_check,
+)
 from uuid import UUID, uuid4
 from warnings import warn
 
 import numpy as np
 from pydantic import Field, PrivateAttr, root_validator, validator
 
+from . import _mda_event
 from ._base_model import UseqModel
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridPosition, NoGrid
@@ -43,7 +54,7 @@ class MDASequence(UseqModel):
         The order of the axes in the sequence. Must be a permutation of `"tpgcz"`. The
         default is `"tpgcz"`.
     stage_positions : tuple[Position, ...]
-        The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `z_plan`,
+        The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `sequence`,
         all of which are optional).
     grid_plan : GridFromCorners, GridRelative, NoGrid
         The grid plan to follow. One of `GridFromCorners`, `GridRelative` or `NoGrid`.
@@ -81,13 +92,13 @@ class MDASequence(UseqModel):
     channels:
     - config: DAPI
       exposure: 1.0
+    grid_plan:
+      columns: 2
+      rows: 2
     stage_positions:
     - x: 1.0
       y: 1.0
       z: 1.0
-    grid_plan:
-      cols: 2
-      rows: 2
     time_plan:
       interval: '0:00:00.100000'
       loops: 2
@@ -135,7 +146,7 @@ class MDASequence(UseqModel):
 
         MDASequences are immutable, so this method is useful for creating a new
         sequence with only a few fields changed.  The uid of the new sequence will
-        be different from the original
+        be different from the original.
         """
         kwargs = {
             k: v for k, v in locals().items() if v is not Undefined and k != "self"
@@ -186,6 +197,7 @@ class MDASequence(UseqModel):
                 z_plan=values.get("z_plan"),
                 stage_positions=values.get("stage_positions", ()),
                 channels=values.get("channels", ()),
+                grid_plan=values.get("grid_plan"),
             )
         return values
 
@@ -202,13 +214,14 @@ class MDASequence(UseqModel):
         z_plan: Optional[AnyZPlan] = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
+        grid_plan: Optional[AnyGridPlan] = None,
     ) -> str:
         if (
             Z in order
             and POSITION in order
             and order.index(Z) < order.index(POSITION)
             and z_plan
-            and any(p.z_plan for p in stage_positions)
+            and any(p.sequence.z_plan for p in stage_positions if p.sequence)
         ):
             raise ValueError(
                 f"{Z!r} cannot precede {POSITION!r} in acquisition order if "
@@ -224,6 +237,28 @@ class MDASequence(UseqModel):
             warn(
                 f"Channels with skipped frames detected, but {CHANNEL!r} precedes "
                 "{TIME!r} in the acquisition order: may not yield intended results."
+            )
+
+        if (
+            GRID in order
+            and POSITION in order
+            and grid_plan
+            and not grid_plan.is_relative
+            and len(stage_positions) > 1
+        ):
+            sub_position_grid_plans = [
+                p for p in stage_positions if p.sequence and p.sequence.grid_plan
+            ]
+            if len(stage_positions) - len(sub_position_grid_plans) > 1:
+                warn("Global grid plan will override sub-position grid plans.")
+
+        if (
+            POSITION in order
+            and stage_positions
+            and any(p.sequence.stage_positions for p in stage_positions if p.sequence)
+        ):
+            raise ValueError(
+                "Currently, a Position sequence cannot have multiple stage positions!"
             )
 
         return order
@@ -245,7 +280,6 @@ class MDASequence(UseqModel):
         """Return the shape of this sequence.
 
         !!! note
-
             This doesn't account for jagged arrays, like skipped Z or channel frames.
         """
         return tuple(s for s in self.sizes.values() if s)
@@ -321,13 +355,13 @@ class MDASequence(UseqModel):
 
 
 MDAEvent.update_forward_refs(MDASequence=MDASequence)
+Position.update_forward_refs(MDASequence=MDASequence)
 
 
-def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
-    """Iterate over all events in the MDA sequence.
+def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:  # noqa: C901
+    """Iterate over all events in the MDA sequence.'.
 
     !!! note
-
         This method will usually be used via [`useq.MDASequence.iter_events`][], or by
         simply iterating over the sequence.
 
@@ -344,23 +378,55 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     MDAEvent
         Each event in the MDA sequence.
     """
+    global_index = 0
     order = sequence.used_axes
 
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
-    for global_index, item in enumerate(product(*event_iterator)):
+    for item in product(*event_iterator):
         if not item:  # the case with no events
             continue  # pragma: no cover
 
         _ev = dict(zip(order, item))
         index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
-        position: Optional[Position] = _ev[POSITION][1] if POSITION in _ev else None
-        channel: Optional[Channel] = _ev[CHANNEL][1] if CHANNEL in _ev else None
-        time: Optional[int] = _ev[TIME][1] if TIME in _ev else None
-        grid: Optional[GridPosition] = _ev[GRID][1] if GRID in _ev else None
+        position = cast(
+            "Position | None", _ev[POSITION][1] if POSITION in _ev else None
+        )
+        channel = cast("Channel | None", _ev[CHANNEL][1] if CHANNEL in _ev else None)
+        time = cast("int | None", _ev[TIME][1] if TIME in _ev else None)
+        grid = cast("GridPosition | None", _ev[GRID][1] if GRID in _ev else None)
 
         # skip channels
         if channel and TIME in index and index[TIME] % channel.acquire_every:
+            continue
+        # skip if also in position.sequence
+        if position and position.sequence:
+            if CHANNEL in index and index[CHANNEL] != 0:
+                continue
+            if Z in index and index[Z] != 0 and position.sequence.z_plan:
+                continue
+            if GRID in index and index[GRID] != 0 and position.sequence.grid_plan:
+                continue
+
+        _channel = (
+            _mda_event.Channel(config=channel.config, group=channel.group)
+            if channel
+            else None
+        )
+
+        _exposure = getattr(channel, "exposure", None)
+
+        pos_name = getattr(position, "name", None)
+
+        try:
+            z_pos = (
+                sequence._combine_z(_ev[Z][1], index[Z], channel, position)
+                if Z in _ev
+                else position.z
+                if position
+                else None
+            )
+        except sequence._SkipFrame:
             continue
 
         if grid:
@@ -375,29 +441,97 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             x_pos = getattr(position, "x", None)
             y_pos = getattr(position, "y", None)
 
-        try:
-            z_pos = (
-                sequence._combine_z(_ev[Z][1], index[Z], channel, position)
-                if Z in _ev
-                else position.z
-                if position
-                else None
-            )
-        except sequence._SkipFrame:
+        if position and position.sequence:
+            for sub_event in iter_sequence(position.sequence):
+                # we're going to create a modified sub-event, inheriting some of the
+                # values from the parent event, and shifting the position of the
+                # event to account for global position offsets (or override if the
+                # sub-event has an absolute XYZ position plan.)
+                update_kwargs = dict(
+                    global_index=global_index,
+                    index={**index, **sub_event.index},
+                    sequence=sequence,
+                    pos_name=position.name or pos_name,
+                    **_maybe_shifted_positions(
+                        sub_event=sub_event,
+                        position=position,
+                        z_pos=z_pos,
+                        x_pos=x_pos,
+                        y_pos=y_pos,
+                    ),
+                )
+
+                # time, exposure, and channel are inherited from the parent event
+                # if they are not present on the sub-event.
+                for val, name in [
+                    (time, "min_start_time"),
+                    (_exposure, "exposure"),
+                    (_channel, "channel"),
+                ]:
+                    subval = getattr(sub_event, name)
+                    update_kwargs[name] = subval if subval is not None else val
+
+                yield sub_event.copy(update=update_kwargs)
+                global_index += 1
+
             continue
 
-        _channel = (
-            {"config": channel.config, "group": channel.group} if channel else None
-        )
         yield MDAEvent(
             index=index,
             min_start_time=time,
-            pos_name=getattr(position, "name", None),
+            pos_name=pos_name,
             x_pos=x_pos,
             y_pos=y_pos,
             z_pos=z_pos,
-            exposure=getattr(channel, "exposure", None),
+            exposure=_exposure,
             channel=_channel,
             sequence=sequence,
             global_index=global_index,
         )
+        global_index += 1
+
+
+def _maybe_shifted_positions(
+    sub_event: MDAEvent,  # the event we just created in the position sequence
+    position: Position,  # the position we are iterating
+    z_pos: float | None,  # global z position
+    x_pos: float | None,  # global x position
+    y_pos: float | None,  # global y position
+) -> dict:
+    kwargs = {}
+    # this function should only be called inside the sub-iteration loop
+    # so we can assume that position.sequence is not None
+    pos_seq = cast("MDASequence", position.sequence)
+
+    # if the position sequence has no z_plan, then we can use the global z_pos
+    # elif the position has a relative z_plan, then we need to shift the sub_event
+    if not pos_seq.z_plan:
+        kwargs["z_pos"] = z_pos
+    elif pos_seq.z_plan.is_relative:
+        kwargs["z_pos"] = _shift_axis("z", position.z, sub_event)
+
+    # if the position sequence has no grid_plane, then we can use the global z_pos
+    # elif the position has a relative grid_plan, then we need to shift the sub_event
+    if not pos_seq.grid_plan:
+        kwargs["x_pos"] = x_pos
+        kwargs["y_pos"] = y_pos
+    elif pos_seq.grid_plan.is_relative:
+        kwargs["x_pos"] = _shift_axis("x", position.x, sub_event)
+        kwargs["y_pos"] = _shift_axis("y", position.y, sub_event)
+    return kwargs
+
+
+def _shift_axis(axis: str, new_val: float | None, event: MDAEvent) -> float | None:
+    """Return a new value for the axis, accounting for the sub_event's position.
+
+    If both new_val and the corresponding axis position for the sub_event are None,
+    return None, otherwise return the sum of the two.
+    """
+    sub_pos = getattr(event, f"{axis}_pos")
+    return (
+        None
+        if new_val is None and sub_pos is None
+        else (new_val or 0) + sub_pos
+        if sub_pos is not None
+        else new_val
+    )

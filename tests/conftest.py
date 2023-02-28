@@ -15,7 +15,10 @@ def mda1() -> MDASequence:
                 "y": 20,
                 "z": 50,
                 "name": "test_name",
-                "z_plan": {"above": 10, "below": 0, "step": 1},
+                "sequence": MDASequence(
+                    z_plan={"above": 10, "below": 0, "step": 1},
+                    grid_plan={"rows": 2, "columns": 3},
+                ),
             },
         ],
         channels=[

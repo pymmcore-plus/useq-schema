@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
 
 import numpy as np
-from pydantic import Field
 
 from ._base_model import FrozenModel
-from ._grid import GridRelative, NoGrid
-from ._z import AnyZPlan, NoZ
+
+if TYPE_CHECKING:
+    from useq import MDASequence
 
 
 class Position(FrozenModel):
@@ -27,12 +27,8 @@ class Position(FrozenModel):
         Z position in microns.
     name : str | None
         Optional name for the position.
-    z_plan : ZTopBottom | ZRangeAround | ZAboveBelow | ZRelativePositions | \
-        ZAbsolutePositions | NoZ | None
-        Z plan to execute at this position specifically. By default, [`NoZ`][useq.NoZ].
-    grid_plan : GridRelative, NoGrid
-        GridRelative plan execute at this position specifically.
-        By default, [`NoGrid`][useq.NoGrid].
+    sequence : MDASequence | None
+        Optional MDASequence relative this position.
     """
 
     # if None, implies 'do not move this axis'
@@ -40,8 +36,7 @@ class Position(FrozenModel):
     y: Optional[float] = None
     z: Optional[float] = None
     name: Optional[str] = None
-    z_plan: AnyZPlan = Field(default_factory=NoZ)
-    grid_plan: Union[GridRelative, NoGrid] = Field(default_factory=NoGrid)
+    sequence: Optional[MDASequence] = None
 
     @classmethod
     def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
