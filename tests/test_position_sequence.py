@@ -381,9 +381,7 @@ def test_multi_z_in_position_sub_sequence():
         ],
     )
 
-    assert [
-        (i.global_index, i.index, i.z_pos) for i in mda.iter_events()
-    ] == [
+    assert [(i.global_index, i.index, i.z_pos) for i in mda.iter_events()] == [
         (0, {"p": 0, "z": 0}, 58.0),
         (1, {"p": 0, "z": 1}, 59.0),
         (2, {"p": 0, "z": 2}, 60.0),
