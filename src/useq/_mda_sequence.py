@@ -359,7 +359,7 @@ Position.update_forward_refs(MDASequence=MDASequence)
 
 
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:  # noqa: C901
-    """Iterate over all events in the MDA sequence.
+    """Iterate over all events in the MDA sequence.'.
 
     !!! note
         This method will usually be used via [`useq.MDASequence.iter_events`][], or by
@@ -379,13 +379,14 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:  # noqa: C901
         Each event in the MDA sequence.
     """
     global_index = 0
+    order = sequence.used_axes
 
-    event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in sequence.used_axes)
+    event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
     for item in product(*event_iterator):
         if not item:  # the case with no events
             continue  # pragma: no cover
 
-        _ev = dict(zip(sequence.used_axes, item))
+        _ev = dict(zip(order, item))
         index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
         position = cast(
