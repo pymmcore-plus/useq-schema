@@ -210,11 +210,11 @@ def test_axis_order_errors() -> None:
         )
 
     # absolute grid_plan with multiple stage positions
-    warning_string = (
+    error_string = (
         "A MDASequence with an absloute grid_plan "
         "cannot have multiple stage positions!"
     )
-    with pytest.raises(ValueError, match=warning_string):
+    with pytest.raises(ValueError, match=error_string):
         MDASequence(
             stage_positions=[(0, 0, 0), (10, 10, 10)],
             grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
@@ -239,6 +239,17 @@ def test_axis_order_errors() -> None:
         ],
         grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
     )
+
+    # multi positions in position sub-sequence
+    error_string = (
+        "Currently, a Position sequence cannot have multiple stage positions!"
+    )
+    with pytest.raises(ValueError, match=error_string):
+        MDASequence(
+            stage_positions=[
+                {"sequence": {"stage_positions": [(10, 10, 10), (20, 20, 20)]}}
+            ]
+        )
 
 
 @pytest.mark.parametrize("tplan, texpectation", t_as_dict[1:3])

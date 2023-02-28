@@ -255,6 +255,15 @@ class MDASequence(UseqModel):
                     "cannot have multiple stage positions!"
                 )
 
+        if (
+            POSITION in order
+            and stage_positions
+            and any(p.sequence.stage_positions for p in stage_positions if p.sequence)
+        ):
+            raise ValueError(
+                "Currently, a Position sequence cannot have multiple stage positions!"
+            )
+
         return order
 
     def __str__(self) -> str:
