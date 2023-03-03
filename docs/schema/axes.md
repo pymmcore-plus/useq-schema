@@ -58,3 +58,19 @@ Ways to describe a z-stack acquisition sequence.
     options:
         heading_level: 2
         members: []
+
+## Grid Plans
+
+Ways to describe a grid acquisition sequence.
+
+::: useq.GridRelative
+    options:
+        members: []
+
+::: useq.GridFromEdges
+    options:
+        members: []
+
+::: useq.NoGrid
+    options:
+        members: []

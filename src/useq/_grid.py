@@ -245,6 +245,8 @@ class GridRelative(_GridPlan):
 
 
 class NoGrid(_GridPlan):
+    """Don't acquire a grid."""
+
     def iter_grid_positions(
         self, fov_width: float, fov_height: float
     ) -> Iterator[GridPosition]:
