@@ -56,8 +56,8 @@ class MDASequence(UseqModel):
     stage_positions : tuple[Position, ...]
         The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `sequence`,
         all of which are optional).
-    grid_plan : GridFromCorners, GridRelative, NoGrid
-        The grid plan to follow. One of `GridFromCorners`, `GridRelative` or `NoGrid`.
+    grid_plan : GridFromEdges, GridRelative, NoGrid
+        The grid plan to follow. One of `GridFromEdges`, `GridRelative` or `NoGrid`.
     channels : tuple[Channel, ...]
         The channels to acquire. see `Channel`.
     time_plan : MultiPhaseTimePlan | TIntervalDuration | TIntervalLoops \
