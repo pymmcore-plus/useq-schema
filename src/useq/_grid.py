@@ -173,7 +173,7 @@ class GridFromEdges(_GridPlan):
     Attributes
     ----------
     top : float
-       top stage position of the bounding area
+        top stage position of the bounding area
     left : float
         left stage position of the bounding area
     bottom : float
@@ -245,6 +245,8 @@ class GridRelative(_GridPlan):
 
 
 class NoGrid(_GridPlan):
+    """Don't acquire a grid."""
+
     def iter_grid_positions(
         self, fov_width: float, fov_height: float
     ) -> Iterator[GridPosition]:

@@ -3,6 +3,16 @@
 The following objects may be used to describe iteration over specific
 types of dimensions.
 
+::: useq.Position
+    options:
+        heading_level: 2
+        members: []
+
+::: useq.Channel
+    options:
+        heading_level: 2
+        members: []
+
 ## Time Plans
 
 Ways to describe a temporal acquisition sequence.
@@ -49,12 +59,18 @@ Ways to describe a z-stack acquisition sequence.
     options:
         members: []
 
-::: useq.Position
+## Grid Plans
+
+Ways to describe a grid acquisition sequence.
+
+::: useq.GridRelative
     options:
-        heading_level: 2
         members: []
 
-::: useq.Channel
+::: useq.GridFromEdges
     options:
-        heading_level: 2
+        members: []
+
+::: useq.NoGrid
+    options:
         members: []
