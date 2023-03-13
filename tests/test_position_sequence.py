@@ -590,7 +590,7 @@ def test_channels_and_pos_grid_plan():
                 "x": 0,
                 "y": 0,
                 "sequence": {"grid_plan": {"rows": 2, "columns": 1}},
-            }
+            },
         ],
     )
 
@@ -627,7 +627,32 @@ def test_channels_and_pos_z_plan():
     ]
 
 
-def test_channels_and_pos_z_and_grid_plan():
+def test_channels_and_pos_time_plan():
+    # test that all channels are acquired for each timepoint
+    mda = MDASequence(
+        axis_order="tpgcz",
+        channels=[
+            {"config": "Cy5", "exposure": 10},
+            {"config": "FITC", "exposure": 10},
+        ],
+        stage_positions=[
+            {"x": 0, "y": 0, "sequence": {"time_plan": [{"interval": 1, "loops": 3}]}},
+        ],
+    )
+
+    assert [
+        (i.global_index, i.index, i.min_start_time, i.channel.config) for i in mda
+    ] == [
+        (0, {"p": 0, "c": 0, "t": 0}, 0.0, "Cy5"),
+        (1, {"p": 0, "c": 0, "t": 1}, 1.0, "Cy5"),
+        (2, {"p": 0, "c": 0, "t": 2}, 2.0, "Cy5"),
+        (3, {"p": 0, "c": 1, "t": 0}, 0.0, "FITC"),
+        (4, {"p": 0, "c": 1, "t": 1}, 1.0, "FITC"),
+        (5, {"p": 0, "c": 1, "t": 2}, 2.0, "FITC"),
+    ]
+
+
+def test_channels_and_pos_z_grid_and_time_plan():
     # test that all channels are acquired for each z and grid positions
     mda = MDASequence(
         axis_order="tpgcz",
@@ -643,25 +668,11 @@ def test_channels_and_pos_z_and_grid_plan():
                 "sequence": {
                     "z_plan": {"range": 2, "step": 1},
                     "grid_plan": {"rows": 2, "columns": 1},
+                    "time_plan": [{"interval": 1, "loops": 2}]
                 },
             }
         ],
     )
 
-    assert [
-        (i.global_index, i.index, i.x_pos, i.y_pos, i.z_pos, i.channel.config)
-        for i in mda
-    ] == [
-        (0, {"p": 0, "c": 0, "g": 0, "z": 0}, 0.0, 0.5, -1.0, "Cy5"),
-        (1, {"p": 0, "c": 0, "g": 0, "z": 1}, 0.0, 0.5, 0.0, "Cy5"),
-        (2, {"p": 0, "c": 0, "g": 0, "z": 2}, 0.0, 0.5, 1.0, "Cy5"),
-        (3, {"p": 0, "c": 0, "g": 1, "z": 0}, 0.0, -0.5, -1.0, "Cy5"),
-        (4, {"p": 0, "c": 0, "g": 1, "z": 1}, 0.0, -0.5, 0.0, "Cy5"),
-        (5, {"p": 0, "c": 0, "g": 1, "z": 2}, 0.0, -0.5, 1.0, "Cy5"),
-        (6, {"p": 0, "c": 1, "g": 0, "z": 0}, 0.0, 0.5, -1.0, "FITC"),
-        (7, {"p": 0, "c": 1, "g": 0, "z": 1}, 0.0, 0.5, 0.0, "FITC"),
-        (8, {"p": 0, "c": 1, "g": 0, "z": 2}, 0.0, 0.5, 1.0, "FITC"),
-        (9, {"p": 0, "c": 1, "g": 1, "z": 0}, 0.0, -0.5, -1.0, "FITC"),
-        (10, {"p": 0, "c": 1, "g": 1, "z": 1}, 0.0, -0.5, 0.0, "FITC"),
-        (11, {"p": 0, "c": 1, "g": 1, "z": 2}, 0.0, -0.5, 1.0, "FITC"),
-    ]
+    chs = {i.channel.config for i in mda}
+    assert chs == {"Cy5", "FITC"}

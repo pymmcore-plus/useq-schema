@@ -402,7 +402,11 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:  # noqa: C901
         # skip if also in position.sequence
         if position and position.sequence:
             if CHANNEL in index and index[CHANNEL] != 0:
-                if not position.sequence.grid_plan and not position.sequence.z_plan:
+                if (
+                    not position.sequence.grid_plan
+                    and not position.sequence.z_plan
+                    and not position.sequence.time_plan
+                ):
                     continue
             if Z in index and index[Z] != 0 and position.sequence.z_plan:
                 continue
