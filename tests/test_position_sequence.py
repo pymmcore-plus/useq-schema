@@ -668,7 +668,7 @@ def test_channels_and_pos_z_grid_and_time_plan():
                 "sequence": {
                     "z_plan": {"range": 2, "step": 1},
                     "grid_plan": {"rows": 2, "columns": 1},
-                    "time_plan": [{"interval": 1, "loops": 2}]
+                    "time_plan": [{"interval": 1, "loops": 2}],
                 },
             }
         ],
