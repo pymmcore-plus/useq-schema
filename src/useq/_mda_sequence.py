@@ -358,7 +358,7 @@ MDAEvent.update_forward_refs(MDASequence=MDASequence)
 Position.update_forward_refs(MDASequence=MDASequence)
 
 
-def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:  # noqa: C901
+def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     """Iterate over all events in the MDA sequence.'.
 
     !!! note
