@@ -401,7 +401,22 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             continue
         # skip if also in position.sequence
         if position and position.sequence:
-            if CHANNEL in index and index[CHANNEL] != 0:
+            if (
+                # if a position specifies channels, then the *global* channel index
+                # is no longer relevant... so we skip all but the first "global" channel
+                CHANNEL in index
+                and index[CHANNEL] != 0
+                # UNLESS the position specifies any other plan.
+                # NOTE: if we ever add more plans, they will need to be explicitly added
+                # https://github.com/pymmcore-plus/useq-schema/pull/85
+                and not any(
+                    (
+                        position.sequence.grid_plan,
+                        position.sequence.z_plan,
+                        position.sequence.time_plan,
+                    )
+                )
+            ):
                 continue
             if Z in index and index[Z] != 0 and position.sequence.z_plan:
                 continue
