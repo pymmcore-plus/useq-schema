@@ -242,7 +242,7 @@ class MDASequence(UseqModel):
         if (
             GRID in order
             and POSITION in order
-            and grid_plan
+            and grid_plan is not None
             and not grid_plan.is_relative
             and len(stage_positions) > 1
         ):
