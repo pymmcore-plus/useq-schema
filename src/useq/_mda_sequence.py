@@ -236,7 +236,8 @@ class MDASequence(UseqModel):
         ):
             warn(
                 f"Channels with skipped frames detected, but {CHANNEL!r} precedes "
-                "{TIME!r} in the acquisition order: may not yield intended results."
+                "{TIME!r} in the acquisition order: may not yield intended results.",
+                stacklevel=2,
             )
 
         if (
@@ -251,7 +252,10 @@ class MDASequence(UseqModel):
                 p for p in stage_positions if p.sequence and p.sequence.grid_plan
             ]
             if len(stage_positions) - len(sub_position_grid_plans) > 1:
-                warn("Global grid plan will override sub-position grid plans.")
+                warn(
+                    "Global grid plan will override sub-position grid plans.",
+                    stacklevel=2,
+                )
 
         if (
             POSITION in order

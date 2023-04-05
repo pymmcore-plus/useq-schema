@@ -45,11 +45,7 @@ dev = [
     "ruff",
     "PyYaml",
 ]
-docs = [
-    "mkdocs >=1.4",
-    "mkdocs-material",
-    "mkdocstrings-python",
-]
+docs = ["mkdocs >=1.4", "mkdocs-material", "mkdocstrings-python"]
 
 [project.urls]
 Source = "https://github.com/pymmcore-plus/useq-schema"
@@ -74,14 +70,13 @@ select = [
     "D",    # pydocstyle
     "I",    # isort
     "UP",   # pyupgrade
-    # "N",  # pep8-naming
     "S",    # bandit
-    "C",    # comprehensions
+    "C4",   # comprehensions
     "B",    # bugbear
     "A001", # Variable shadowing a python builtin
     "RUF",  # ruff-specific rules
 ]
-extend-ignore = [
+ignore = [
     "D100", # Missing docstring in public module
     "D104", # Missing docstring in public package
     "D107", # Missing docstring in __init__
@@ -114,7 +109,7 @@ disallow_any_generics = false
 disallow_subclassing_any = false
 show_error_codes = true
 pretty = true
-
+plugins = ["pydantic.mypy"]
 
 # https://coverage.readthedocs.io/en/6.4/config.html
 [tool.coverage.report]
@@ -134,5 +129,5 @@ ignore = [
     ".ruff_cache/**/*",
     "tests/**/*",
     "tox.ini",
-    "setup.py"
+    "setup.py",
 ]

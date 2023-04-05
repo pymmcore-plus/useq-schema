@@ -41,7 +41,9 @@ class FrozenModel(BaseModel):
         extra_kwargs = set(values) - set(cls.__fields__)
         if extra_kwargs:
             name = getattr(cls, "__name__", "")
-            warnings.warn(f"{name} got unknown keyword arguments: {extra_kwargs}")
+            warnings.warn(
+                f"{name} got unknown keyword arguments: {extra_kwargs}", stacklevel=2
+            )
             for k in extra_kwargs:
                 values.pop(k)
         return values
