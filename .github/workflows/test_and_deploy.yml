@@ -71,7 +71,7 @@ jobs:
           pip install -e .[test]
 
       - name: Install Micro-Manager
-        run: python -m pymmcore_plus.install
+        run: mmcore install
 
       - name: Test
         run: pytest -v --color=yes
