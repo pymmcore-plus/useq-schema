@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
+from typing import TYPE_CHECKING, Any, Callable, Generator, List, Optional, Tuple
 
 import numpy as np
 
@@ -29,6 +29,8 @@ class Position(FrozenModel):
         Optional name for the position.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
+    autofocus : tuple[str, float] | None
+        Optional tuple with autofocus z device name and autofocus z position.
     """
 
     # if None, implies 'do not move this axis'
@@ -37,6 +39,7 @@ class Position(FrozenModel):
     z: Optional[float] = None
     name: Optional[str] = None
     sequence: Optional[MDASequence] = None
+    autofocus: Optional[Tuple[str, float]] = None
 
     @classmethod
     def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:

@@ -35,10 +35,16 @@ class Channel(UseqModel):
     group : str
         Optional name of the group to which this channel belongs. By default,
         `"Channel"`.
+    do_stack : bool
+        If `True`, include this channel in any z stacks acquired. By default, `True`.
+    z_offset : float
+        Relative Z offset from z position, in microns. By default, `0`.
     """
 
     config: str
     group: str = "Channel"
+    do_stack: bool = True
+    z_offset: float = 0.0
 
 
 class PropertyTuple(NamedTuple):
@@ -98,6 +104,8 @@ class MDAEvent(UseqModel):
     z_pos : float | None
         Z position in microns. If not provided, implies use current position. By
         default, `None`.
+    autofocus : tuple[str, float] | None
+        Optional tuple with autofocus z device name and autofocus z position.  
     properties : Sequence[PropertyTuple] | None
         List of [`useq.PropertyTuple`][] to set before starting this event. Where each
         item in the list is a 3-member named tuple of `(device_name, property_name,
@@ -127,6 +135,7 @@ class MDAEvent(UseqModel):
     sequence: Optional[MDASequence] = Field(default=None, repr=False)
     global_index: int = Field(default=0, repr=False)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    autofocus: Optional[Tuple[str, float]] = None
 
     # action
     # keep shutter open between channels/steps
