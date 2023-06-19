@@ -676,3 +676,39 @@ def test_channels_and_pos_z_grid_and_time_plan():
 
     chs = {i.channel.config for i in mda}
     assert chs == {"Cy5", "FITC"}
+
+
+def test_autofocus():
+    mda = MDASequence(
+        stage_positions=[
+            {"x": 0, "y": 0, "z": 0, "autofocus": ("Z1", 100)},
+            {"x": 0, "y": 0, "z": 0}
+        ],
+    )
+
+    assert mda.stage_positions[0].autofocus == ("Z1", 100)
+    assert mda.stage_positions[1].autofocus is None
+
+
+def test_autofocus_and_sub_sequence():
+    # test that a sub-positions inherit autofocus
+    mda = MDASequence(
+        stage_positions=[
+            {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "autofocus": ("Z1", 100),
+                "sequence": {"z_plan": {"range": 2, "step": 1}}
+            }
+        ],
+    )
+
+    assert mda.stage_positions[0].autofocus == ("Z1", 100)
+    af = [e.autofocus for e in mda]
+    assert len([e.autofocus for e in mda]) == 3
+    assert ('Z1', 100.0) in af
+
+
+
+
