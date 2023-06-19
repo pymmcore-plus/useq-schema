@@ -15,7 +15,10 @@ metadata:
 stage_positions:
 - x: 10.0
   y: 20.0
-- name: test_name
+- autofocus:
+  - Z1
+  - 100.0
+  name: test_name
   sequence:
     axis_order: tpgcz
     grid_plan:

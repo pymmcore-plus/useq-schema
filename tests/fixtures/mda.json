@@ -48,7 +48,8 @@
       "sequence": null,
       "x": 10.0,
       "y": 20.0,
-      "z": null
+      "z": null,
+      "autofocus": null
     },
     {
       "name": "test_name",
@@ -79,7 +80,8 @@
       },
       "x": 10.0,
       "y": 20.0,
-      "z": 50.0
+      "z": 50.0,
+      "autofocus": ["Z1", 100.0]
     }
   ],
   "time_plan": {
