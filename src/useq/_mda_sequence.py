@@ -515,7 +515,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             x_pos=x_pos,
             y_pos=y_pos,
             z_pos=z_pos,
-            autofocus=position.autofocus or autofocus,
+            autofocus=autofocus,
             exposure=_exposure,
             channel=_channel,
             sequence=sequence,
