@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Generator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Generator, Optional, Tuple
 
 import numpy as np
 

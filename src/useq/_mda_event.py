@@ -105,7 +105,7 @@ class MDAEvent(UseqModel):
         Z position in microns. If not provided, implies use current position. By
         default, `None`.
     autofocus : tuple[str, float] | None
-        Optional tuple with autofocus z device name and autofocus z position.  
+        Optional tuple with autofocus z device name and autofocus z position.
     properties : Sequence[PropertyTuple] | None
         List of [`useq.PropertyTuple`][] to set before starting this event. Where each
         item in the list is a 3-member named tuple of `(device_name, property_name,

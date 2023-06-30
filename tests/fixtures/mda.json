@@ -44,14 +44,18 @@
   },
   "stage_positions": [
     {
+      "autofocus": null,
       "name": null,
       "sequence": null,
       "x": 10.0,
       "y": 20.0,
-      "z": null,
-      "autofocus": null
+      "z": null
     },
     {
+      "autofocus": [
+        "Z1",
+        100.0
+      ],
       "name": "test_name",
       "sequence": {
         "axis_order": "tpgcz",
@@ -80,8 +84,7 @@
       },
       "x": 10.0,
       "y": 20.0,
-      "z": 50.0,
-      "autofocus": ["Z1", 100.0]
+      "z": 50.0
     }
   ],
   "time_plan": {

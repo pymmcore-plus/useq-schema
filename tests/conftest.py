@@ -19,7 +19,7 @@ def mda1() -> MDASequence:
                     z_plan={"above": 10, "below": 0, "step": 1},
                     grid_plan={"rows": 2, "columns": 3},
                 ),
-                "autofocus": ("Z1", 100)
+                "autofocus": ("Z1", 100),
             },
         ],
         channels=[

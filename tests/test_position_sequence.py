@@ -682,7 +682,7 @@ def test_autofocus():
     mda = MDASequence(
         stage_positions=[
             {"x": 0, "y": 0, "z": 0, "autofocus": ("Z1", 100)},
-            {"x": 0, "y": 0, "z": 0}
+            {"x": 0, "y": 0, "z": 0},
         ],
     )
 
@@ -699,7 +699,7 @@ def test_autofocus_and_sub_sequence():
                 "y": 0,
                 "z": 0,
                 "autofocus": ("Z1", 100),
-                "sequence": {"z_plan": {"range": 2, "step": 1}}
+                "sequence": {"z_plan": {"range": 2, "step": 1}},
             }
         ],
     )
@@ -707,8 +707,4 @@ def test_autofocus_and_sub_sequence():
     assert mda.stage_positions[0].autofocus == ("Z1", 100)
     af = [e.autofocus for e in mda]
     assert len([e.autofocus for e in mda]) == 3
-    assert ('Z1', 100.0) in af
-
-
-
-
+    assert ("Z1", 100.0) in af
