@@ -40,6 +40,7 @@ class Channel(UseqModel):
     config: str
     group: str = "Channel"
 
+
 class PropertyTuple(NamedTuple):
     """Three-tuple capturing a device, property, and value.
 

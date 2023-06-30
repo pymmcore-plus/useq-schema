@@ -428,10 +428,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 continue
 
         _channel = (
-            _mda_event.Channel(
-                config=channel.config,
-                group=channel.group
-            )
+            _mda_event.Channel(config=channel.config, group=channel.group)
             if channel
             else None
         )
