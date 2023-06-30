@@ -430,9 +430,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         _channel = (
             _mda_event.Channel(
                 config=channel.config,
-                group=channel.group,
-                z_offset=channel.z_offset,
-                do_stack=channel.do_stack,
+                group=channel.group
             )
             if channel
             else None
