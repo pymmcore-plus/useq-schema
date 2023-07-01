@@ -19,6 +19,7 @@ import numpy as np
 from pydantic import Field, PrivateAttr, root_validator, validator
 
 from . import MDAEvent, _mda_event
+from ._autofocus import AutoFocusPlan, NoAF
 from ._base_model import UseqModel
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridPosition, NoGrid
@@ -67,6 +68,8 @@ class MDASequence(UseqModel):
         ZAbsolutePositions | NoZ
         The z plan to follow. One of `ZTopBottom`, `ZRangeAround`, `ZAboveBelow`,
         `ZRelativePositions`, `ZAbsolutePositions`, or `NoZ`.
+    autofocus_plan : AutoFocusPlan | NoAF
+        The autofocus plan to follow. One of `AutoFocusPlan` or `NoAF`.
     uid : UUID
         A read-only unique identifier (uuid version 4) for the sequence. This will be
         generated, do not set.
@@ -113,6 +116,7 @@ class MDASequence(UseqModel):
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
+    autofocus_plan: AutoFocusPlan = Field(default_factory=NoAF)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _length: Optional[int] = PrivateAttr(default=None)
@@ -385,6 +389,15 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     global_index = 0
     order = sequence.used_axes
 
+    # get the axes that have autofocus plans and set them to None to make sure that
+    # autofocus will be executed at the first event
+    # example: autofocus_axes {'t': None, 'p': None}
+    autofocus_axes = (
+        {ax: None for ax in sequence.autofocus_plan.axes if ax in sequence.used_axes}
+        if sequence.autofocus_plan.axes is not None
+        else {}
+    )
+
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
     for item in product(*event_iterator):
         if not item:  # the case with no events
@@ -435,7 +448,6 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
         _exposure = getattr(channel, "exposure", None)
         pos_name = getattr(position, "name", None)
-        autofocus = getattr(position, "autofocus", None)
 
         try:
             z_pos = (
@@ -467,6 +479,11 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             x_pos = getattr(position, "x", None)
             y_pos = getattr(position, "y", None)
 
+        # if autofocus plan is defined for the sequence, check if it should be executed
+        autofocus, autofocus_axes = _setup_autofocus(
+            sequence, autofocus_axes, index, position, z_pos
+        )
+
         if position and position.sequence:
             for sub_event in iter_sequence(position.sequence):
                 # we're going to create a modified sub-event, inheriting some of the
@@ -478,7 +495,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                     index={**index, **sub_event.index},
                     sequence=sequence,
                     pos_name=position.name or pos_name,
-                    autofocus=position.autofocus or autofocus,
+                    autofocus=autofocus,
                     **_maybe_shifted_positions(
                         sub_event=sub_event,
                         position=position,
@@ -517,6 +534,61 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             global_index=global_index,
         )
         global_index += 1
+
+
+def _setup_autofocus(
+    sequence: MDASequence,
+    autofocus_axes: dict[str, Any],
+    index: dict[str, Any],
+    position: Position | None,
+    z_pos: float | None,
+) -> tuple[AutoFocusPlan | NoAF, dict[str, Any]]:
+    """Return the autofocus plan for the current event and update autofocus_axes.
+
+    Example:
+    -------
+    INPUTS:
+      autofocus_axes {'t': None, 'p': None}
+      index = {'t': 0, 'p': 0, 'z': 0}
+    OUTPUTS:
+      autofocus {
+          'autofocus_z_device_name': 'z',
+          'z_focus_position': 0.0,
+          'z_autofocus_position': 0.0
+          'axes': ('t', 'p')}
+      autofocus_axes {'t': 0, 'p': 0}.
+    """
+    autofocus: AutoFocusPlan | NoAF = NoAF()
+
+    if (
+        z_pos is None
+        or position is None
+        or not autofocus_axes
+        or position.z_autofocus is None
+    ):
+        return autofocus, autofocus_axes
+
+    for ax in autofocus_axes:
+        if autofocus_axes[ax] is None or autofocus_axes[ax] != index[ax]:
+            # update the autofocus "z_focus_position" and "z_autofocus_position"
+            # with info from z_pos and the Position object
+            update_af_kwargs = {
+                "z_focus_position": (
+                    z_pos
+                    if "z" not in index
+                    # z_pos from the center of the z_stack
+                    else z_pos - list(sequence.z_plan)[index["z"]]
+                ),
+                "z_autofocus_position": position.z_autofocus,
+            }
+            autofocus = sequence.autofocus_plan.copy(update=update_af_kwargs)
+            break
+    # update the autofocus_axes dict with the current index if autofocus != NoAF
+    if not isinstance(autofocus, NoAF):
+        for ax in cast(Tuple[str, ...], autofocus.axes):
+            autofocus_axes[ax] = index[ax]
+
+    return autofocus, autofocus_axes
 
 
 def _maybe_shifted_positions(

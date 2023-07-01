@@ -1,3 +1,4 @@
+from ._autofocus import AutoFocusPlan, NoAF
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridFromEdges, GridRelative, NoGrid
 from ._mda_event import MDAEvent, PropertyTuple
@@ -21,6 +22,7 @@ from ._z import (
 
 __all__ = [
     "AnyGridPlan",
+    "AutoFocusPlan",
     "GridFromEdges",
     "GridRelative",
     "NoGrid",
@@ -28,6 +30,7 @@ __all__ = [
     "MDAEvent",
     "MDASequence",
     "MultiPhaseTimePlan",
+    "NoAF",
     "NoT",
     "NoZ",
     "Position",
