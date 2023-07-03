@@ -15,7 +15,7 @@ from typing import (
 from pydantic import Field, validator
 from pydantic.types import PositiveFloat
 
-from ._autofocus import AutoFocusPlan, NoAF
+from ._autofocus import AnyAF
 from ._base_model import UseqModel
 from ._utils import ReadOnlyDict
 
@@ -99,8 +99,6 @@ class MDAEvent(UseqModel):
     z_pos : float | None
         Z position in microns. If not provided, implies use current position. By
         default, `None`.
-    autofocus : AutoFocusPlan | None
-        Autofocus plan to use for this event. By default, `None`.
     properties : Sequence[PropertyTuple] | None
         List of [`useq.PropertyTuple`][] to set before starting this event. Where each
         item in the list is a 3-member named tuple of `(device_name, property_name,
@@ -116,7 +114,9 @@ class MDAEvent(UseqModel):
         event will be an integer from 0 to 9.  By default, `0`.
     metadata : dict
         Optional metadata to be associated with this event.
-
+    autofocus : PerformAF | NoAF | None
+        Optional hardware autofocus plan to use for this event, one between
+        [`useq.PerformAF`][] or [`useq.NoAF`][]. By default, `None`.
     """
 
     index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)
@@ -131,7 +131,7 @@ class MDAEvent(UseqModel):
     sequence: Optional[MDASequence] = Field(default=None, repr=False)
     global_index: int = Field(default=0, repr=False)
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    autofocus: Optional[AutoFocusPlan] = Field(default_factory=NoAF)
+    autofocus: Optional[AnyAF] = None
 
     # action
     # keep shutter open between channels/steps
