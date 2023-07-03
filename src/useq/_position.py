@@ -54,6 +54,7 @@ class Position(FrozenModel):
         if isinstance(value, (np.ndarray, tuple)):
             x, *value = value
             y, *value = value or (None,)
-            z = value[0] if value else None
-            return Position(x=x, y=y, z=z)
+            z, *value = value or (None,)
+            z_autofocus = value[0] if value else None
+            return Position(x=x, y=y, z=z, z_autofocus=z_autofocus)
         raise TypeError(f"Cannot coerce {value!r} to Position")
