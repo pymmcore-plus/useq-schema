@@ -74,3 +74,15 @@ Ways to describe a grid acquisition sequence.
 ::: useq.NoGrid
     options:
         members: []
+
+## Autofocus Plans
+
+Ways to describe a hardware-based autofocus plan.
+
+::: useq.PerformAF
+    options:
+        members: []
+
+::: useq.NoAF
+    options:
+        members: []

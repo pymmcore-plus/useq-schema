@@ -1,10 +1,19 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 from ._base_model import FrozenModel
 
 
 class AutoFocusPlan(FrozenModel):
-    """Base class for autofocus plans.
+    """Base class for hardware autofocus plans."""
+
+    autofocus_z_device_name: Optional[str]
+    z_autofocus_position: Optional[float]
+    z_focus_position: Optional[float]
+    axes: Optional[Tuple[str, ...]]
+
+
+class PerformAF(AutoFocusPlan):
+    """Perform hardware autofocus plan.
 
     Attributes
     ----------
@@ -15,19 +24,22 @@ class AutoFocusPlan(FrozenModel):
     z_focus_position : float | None
         Optional focus z motor position.
     axes : Tuple[str, ...] | None
-        Optional tuple of axes to that will use autofocus.
+        Tuple of axis to use for hardware autofocus.
     """
 
     autofocus_z_device_name: str
     z_autofocus_position: Optional[float]
     z_focus_position: Optional[float]
-    axes: Optional[Tuple[str, ...]]
+    axes: Tuple[str, ...]
 
 
 class NoAF(AutoFocusPlan):
-    """No autofocus plan."""
+    """No hardware autofocus plan."""
 
-    autofocus_z_device_name: str = ""
+    autofocus_z_device_name: Optional[str] = None
     z_autofocus_position: Optional[float] = None
     z_focus_position: Optional[float] = None
     axes: Optional[Tuple[str, ...]] = None
+
+
+AnyAF = Union[PerformAF, NoAF]
