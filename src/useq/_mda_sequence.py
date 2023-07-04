@@ -502,16 +502,19 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
         # if autofocus plan is defined for the sequence, check if it should be executed
         autofocus, autofocus_axes = _setup_autofocus(
-            sequence, sequence.autofocus_plan, autofocus_axes, index, position, z_pos
+            sequence, autofocus_axes, index, position, z_pos
         )
 
         if position and position.sequence:
-            # reset autofocus_axes to None
-            if autofocus.axes:
-                for ax in autofocus.axes:
-                    autofocus_axes[ax] = None
-
             pos_seq = position.sequence
+
+            # reset autofocus_axes to None
+            # if autofocus.axes:
+            #     for ax in autofocus.axes:
+            #         autofocus_axes[ax] = None
+            if pos_seq.autofocus_plan.axes:
+                for ax in pos_seq.autofocus_plan.axes:
+                    autofocus_axes[ax] = None
 
             if isinstance(pos_seq.autofocus_plan, NoAF):
                 pos_seq = pos_seq.replace(autofocus_plan=sequence.autofocus_plan)
@@ -547,7 +550,6 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
                 autofocus, autofocus_axes = _setup_autofocus(
                     pos_seq,
-                    pos_seq.autofocus_plan,
                     autofocus_axes,
                     update_kwargs["index"],
                     position,
@@ -579,7 +581,6 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
 def _setup_autofocus(
     sequence: MDASequence,
-    autofocus: AnyAF,
     autofocus_axes: dict[str, Any],
     index: dict[str, Any],
     position: Position | None,
@@ -601,8 +602,9 @@ def _setup_autofocus(
           'axes': ('t', 'p')}
       autofocus_axes {'t': 0, 'p': 0}.
     """
+    autofocus = sequence.autofocus_plan
     if not autofocus_axes:
-        return autofocus, autofocus_axes
+        return NoAF(), autofocus_axes
 
     for ax in autofocus_axes:
         with contextlib.suppress(KeyError):

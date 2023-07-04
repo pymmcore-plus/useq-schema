@@ -1,4 +1,6 @@
-from useq import MDASequence
+import pytest
+
+from useq import MDASequence, NoAF, PerformAF
 
 
 # test channels
@@ -693,33 +695,51 @@ def test_sub_channels_and_any_plan():
     assert len(list(mda.iter_events())) == 3
 
 
-def test_autofocus():
+# fmt: off
+def _assert_autofocus(
+    sequence: MDASequence, expected_event_indexes: tuple[int], pos_and_z: dict[str, tuple[float, float]]  # noqa: E501
+):
+    """Helper function to assert autofocus events in a sequence."""
+    # example of pos_and_z: {pos_index: (z, z_af)} = {0: (10, 30), 1: (50, 300)}
+    for idx, e in enumerate(sequence):
+        if idx in expected_event_indexes:
+            assert isinstance(e.autofocus, PerformAF)
+            assert e.autofocus.z_focus_position == pos_and_z[e.index["p"]][0]
+            assert e.autofocus.z_autofocus_position == pos_and_z[e.index["p"]][1]
+        else:
+            assert isinstance(e.autofocus, NoAF)
+
+mdas = [
+    # order, af axis, channels, pos_plan, z_plan, grid_plan, time_plan, expected_af_event_indexes  # noqa: E501
+    ("tpgcz", ("c",), ["DAPI", "FITC"], [{"z": None, "z_autofocus": None}], {"range": 2, "step": 1}, {}, {}, ()),  # noqa: E501
+    ("tpgcz", ("c",), [], [{"z": 30, "z_autofocus": 40}], {"range": 2, "step": 1}, {}, {}, ()),  # noqa: E501
+    ("tpgcz", ("c",), ["DAPI", "FITC"], [{"z": 30, "z_autofocus": 40}], {"range": 2, "step": 1}, {}, {}, (0, 3)),  # noqa: E501
+    ("tpgzc", ("c",), ["DAPI", "FITC"], [{"z": 30, "z_autofocus": 40}], {"range": 2, "step": 1}, {}, {}, tuple(range(6))),  # noqa: E501
+    ("tpgcz", ("z",), ["DAPI", "FITC"], [{"z": 30, "z_autofocus": 40}], {"range": 2, "step": 1}, {}, {}, tuple(range(6))),  # noqa: E501
+    ("tpgzc", ("z",), ["DAPI", "FITC"], [{"z": 30, "z_autofocus": 40}], {"range": 2, "step": 1}, {}, {}, (0, 2, 4)),  # noqa: E501
+    ("tpgcz", ("g",), ["DAPI", "FITC"], [{"z": 30, "z_autofocus": 40}], {}, {"rows": 2, "columns": 1}, {}, (0, 2)),  # noqa: E501
+    ("tpgcz", ("g",), ["DAPI", "FITC"], [{"z": 30, "z_autofocus": 40}, {"z": 20, "z_autofocus": 50}], {}, {}, {}, ()),  # noqa: E501
+    ("tpgcz", ("g",), ["DAPI", "FITC"], [{"z": 30, "z_autofocus": 40}, {"z": 200, "z_autofocus": 45}], {}, {"rows": 2, "columns": 1}, {}, (0, 2, 4, 6)),  # noqa: E501
+    ("tpgcz", ("p",), ["DAPI", "FITC"], [{"z": 30, "z_autofocus": 40}, {"z": 200, "z_autofocus": 45}], {}, {"rows": 2, "columns": 1}, {}, (0, 4)),  # noqa: E501
+    ("tpgcz", ("t",), ["DAPI", "FITC"], [{"z": 30, "z_autofocus": 40}, {"z": 200, "z_autofocus": 45}], {}, {}, {"interval": 1, "loops": 2}, (0, 4)),  # noqa: E501
+    ("tpgcz", ("t", "p"), ["DAPI", "FITC"], [{"z": 30, "z_autofocus": 40}, {"z": 200, "z_autofocus": 45}], {}, {}, {"interval": 1, "loops": 2}, (0, 2, 4, 6)),  # noqa: E501
+]
+
+@pytest.mark.parametrize("order, axis, ch, pplan, zplan, gplan, tplan, expected_event_indexes", mdas)  # noqa: E501
+def test_autofocus(
+    order: str, axis: tuple[str, ...], ch: list, pplan: list, zplan: dict, gplan: dict, tplan: dict, expected_event_indexes: int  # noqa: E501
+):
     mda = MDASequence(
-        stage_positions=[
-            {"x": 0, "y": 0, "z": 0, "autofocus": ("Z1", 100)},
-            {"x": 0, "y": 0, "z": 0},
-        ],
+        axis_order=order,
+        channels=ch,
+        stage_positions=pplan,
+        z_plan=zplan,
+        grid_plan=gplan,
+        time_plan=tplan,
+        autofocus_plan={"autofocus_z_device_name": "Z", "axes": axis},
     )
 
-    assert mda.stage_positions[0].autofocus == ("Z1", 100)
-    assert mda.stage_positions[1].autofocus is None
-
-
-def test_autofocus_and_sub_sequence():
-    # test that a sub-positions inherit autofocus
-    mda = MDASequence(
-        stage_positions=[
-            {
-                "x": 0,
-                "y": 0,
-                "z": 0,
-                "autofocus": ("Z1", 100),
-                "sequence": {"z_plan": {"range": 2, "step": 1}},
-            }
-        ],
-    )
-
-    assert mda.stage_positions[0].autofocus == ("Z1", 100)
-    af = [e.autofocus for e in mda]
-    assert len([e.autofocus for e in mda]) == 3
-    assert ("Z1", 100.0) in af
+    # get dict with p index and repextive z an z_af
+    pos_and_z = {p: (pplan[p]["z"], pplan[p]["z_autofocus"]) for p in range(len(pplan))}
+    # assert autofocus events
+    _assert_autofocus(mda, expected_event_indexes, pos_and_z)
