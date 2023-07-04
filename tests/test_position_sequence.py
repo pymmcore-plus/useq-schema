@@ -682,20 +682,9 @@ def test_sub_channels_and_any_plan():
     # test that only specified sub-channels are acquired for each z plan
     mda = MDASequence(
         axis_order="tpgcz",
-        channels=[
-            {"config": "Cy5", "exposure": 10},
-            {"config": "FITC", "exposure": 10},
-        ],
+        channels=["Cy5", "FITC"],
         stage_positions=[
-            {
-                "x": 0,
-                "y": 0,
-                "z": 0,
-                "sequence": {
-                    "channels": ["DAPI"],
-                    "z_plan": {"range": 2, "step": 1},
-                },
-            }
+            {"sequence": {"channels": ["DAPI"], "z_plan": {"range": 2, "step": 1}}}
         ],
     )
 
