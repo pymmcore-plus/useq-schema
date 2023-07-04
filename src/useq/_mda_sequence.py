@@ -252,7 +252,7 @@ class MDASequence(UseqModel):
             GRID in order
             and POSITION in order
             and grid_plan is not None
-            and isinstance(grid_plan, PerformAF)
+            and not isinstance(grid_plan, NoGrid)
             and not grid_plan.is_relative
             and len(stage_positions) > 1
         ):
