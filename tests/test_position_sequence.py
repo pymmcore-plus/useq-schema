@@ -676,3 +676,29 @@ def test_channels_and_pos_z_grid_and_time_plan():
 
     chs = {i.channel.config for i in mda}
     assert chs == {"Cy5", "FITC"}
+
+
+def test_sub_channels_and_any_plan():
+    # test that only specified sub-channels are acquired for each z plan
+    mda = MDASequence(
+        axis_order="tpgcz",
+        channels=[
+            {"config": "Cy5", "exposure": 10},
+            {"config": "FITC", "exposure": 10},
+        ],
+        stage_positions=[
+            {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "sequence": {
+                    "channels": ["DAPI"],
+                    "z_plan": {"range": 2, "step": 1},
+                },
+            }
+        ],
+    )
+
+    chs = {i.channel.config for i in mda}
+    assert chs == {"DAPI"}
+    assert len(list(mda.iter_events())) == 3
