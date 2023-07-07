@@ -759,6 +759,7 @@ def test_autofocus(
 
 
 def _af_seq(axis: tuple[str, ...] | None, gplan: bool = False, zplan: bool = False):
+    # sourcery skip: use-dictionary-union
     """Helper function to create a sub-sequence with autofocus."""
     af = {
         "autofocus_plan": {
@@ -770,7 +771,7 @@ def _af_seq(axis: tuple[str, ...] | None, gplan: bool = False, zplan: bool = Fal
     gp = {"grid_plan": {"rows": 2, "columns": 1}} if gplan else {}
     zp = {"z_plan": {"range": 2, "step": 1}} if zplan else {}
 
-    return af | gp | zp
+    return {**af, **gp, **zp}
 
 
 def _get_autofocus_z(mda: MDASequence):
