@@ -1,8 +1,7 @@
 {
   "autofocus_plan": {
     "af_motor_offset": null,
-    "autofocus_z_device_name": null,
-    "axes": null,
+    "autofocus_z_device_name": "__no_autofocus__",
     "z_stage_position": null
   },
   "axis_order": "tpgcz",
@@ -61,8 +60,7 @@
       "sequence": {
         "autofocus_plan": {
           "af_motor_offset": null,
-          "autofocus_z_device_name": null,
-          "axes": null,
+          "autofocus_z_device_name": "__no_autofocus__",
           "z_stage_position": null
         },
         "axis_order": "tpgcz",
