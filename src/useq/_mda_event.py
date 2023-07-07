@@ -114,9 +114,9 @@ class MDAEvent(UseqModel):
         event will be an integer from 0 to 9.  By default, `0`.
     metadata : dict
         Optional metadata to be associated with this event.
-    autofocus : PerformAF | NoAF | None
+    autofocus : AxesBasedAF | NoAF | None
         Optional hardware autofocus plan to use for this event, one between
-        [`useq.PerformAF`][] or [`useq.NoAF`][]. By default, `None`.
+        [`useq.AxesBasedAF`][] or [`useq.NoAF`][]. By default, `None`.
     """
 
     index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)

@@ -1,4 +1,4 @@
-from ._autofocus import AnyAF, NoAF, PerformAF
+from ._autofocus import AnyAF, AxesBasedAF, NoAF
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridFromEdges, GridRelative, NoGrid
 from ._mda_event import MDAEvent, PropertyTuple
@@ -22,6 +22,7 @@ from ._z import (
 
 __all__ = [
     "AnyAF",
+    "AxesBasedAF",
     "AnyGridPlan",
     "GridFromEdges",
     "GridRelative",
@@ -33,7 +34,6 @@ __all__ = [
     "NoAF",
     "NoT",
     "NoZ",
-    "PerformAF",
     "Position",
     "PropertyTuple",
     "TDurationLoops",

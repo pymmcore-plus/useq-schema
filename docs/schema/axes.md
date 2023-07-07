@@ -79,7 +79,7 @@ Ways to describe a grid acquisition sequence.
 
 Ways to describe a hardware-based autofocus plan.
 
-::: useq.PerformAF
+::: useq.AxesBasedAF
     options:
         members: []
 

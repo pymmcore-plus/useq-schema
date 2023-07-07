@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from useq import MDASequence, NoAF, PerformAF
+from useq import AxesBasedAF, MDASequence, NoAF
 
 
 # test channels
@@ -705,9 +705,9 @@ def _assert_autofocus(
     # example of pos_and_z: {pos_index: (z, z_af)} = {0: (10, 30), 1: (50, 300)}
     for idx, e in enumerate(sequence):
         if idx in expected_event_indexes:
-            assert isinstance(e.autofocus, PerformAF)
-            assert e.autofocus.z_focus_position == pos_and_z[e.index["p"]][0]
-            assert e.autofocus.z_autofocus_position == pos_and_z[e.index["p"]][1]
+            assert isinstance(e.autofocus, AxesBasedAF)
+            assert e.autofocus.z_stage_position == pos_and_z[e.index["p"]][0]
+            assert e.autofocus.af_motor_offset == pos_and_z[e.index["p"]][1]
         else:
             assert isinstance(e.autofocus, NoAF)
 
@@ -739,12 +739,12 @@ def test_autofocus(
         time_plan=tplan,
         autofocus_plan={
             "autofocus_z_device_name": "Z",
-            "z_autofocus_position": 40,
+            "af_motor_offset": 40,
             "axes": axis},
     )
 
     # get dict with p index and repextive z an z_af
-    pos_and_z = {p: (mda.stage_positions[p].z, mda.autofocus_plan.z_autofocus_position) for p in range(len(pplan))}  # noqa: E501
+    pos_and_z = {p: (mda.stage_positions[p].z, mda.autofocus_plan.af_motor_offset) for p in range(len(pplan))}  # noqa: E501
     # assert autofocus events
     _assert_autofocus(mda, expected_event_indexes, pos_and_z)
 
@@ -753,8 +753,8 @@ def test_autofocus(
     #     print(
     #         e.index,
     #         type(e.autofocus),
-    #         e.autofocus.z_autofocus_position,
-    #         e.autofocus.z_focus_position,
+    #         e.autofocus.af_motor_offset,
+    #         e.autofocus.z_stage_position,
     #     )
 
 
@@ -764,7 +764,7 @@ def _af_seq(axis: tuple[str, ...] | None, gplan: bool = False, zplan: bool = Fal
     af = {
         "autofocus_plan": {
             "autofocus_z_device_name": "Z",
-            "z_autofocus_position": 100,
+            "af_motor_offset": 100,
             "axes": axis
         } if axis else {}
     }
@@ -781,11 +781,11 @@ def _get_autofocus_z(mda: MDASequence):
         z = mda.stage_positions[p].z
         try:
             z_af = (
-                mda.stage_positions[p].sequence.autofocus_plan.z_autofocus_position
-                or mda.autofocus_plan.z_autofocus_position
+                mda.stage_positions[p].sequence.autofocus_plan.af_motor_offset
+                or mda.autofocus_plan.af_motor_offset
             )
         except AttributeError:
-            z_af = mda.autofocus_plan.z_autofocus_position
+            z_af = mda.autofocus_plan.af_motor_offset
         pos_and_z[p] = (z, z_af)
     return pos_and_z
 
@@ -821,7 +821,7 @@ def test_autofocus_sub_sequence(order: str, axis: tuple[str, ...], ch: list, ppl
         time_plan=tplan,
         autofocus_plan={
             "autofocus_z_device_name": "Z",
-            "z_autofocus_position": 50,
+            "af_motor_offset": 50,
             "axes": axis
         } if axis else NoAF()
     )
@@ -836,6 +836,6 @@ def test_autofocus_sub_sequence(order: str, axis: tuple[str, ...], ch: list, ppl
     #     print(
     #         e.index,
     #         type(e.autofocus),
-    #         e.autofocus.z_autofocus_position,
-    #         e.autofocus.z_focus_position,
+    #         e.autofocus.af_motor_offset,
+    #         e.autofocus.z_stage_position,
     #     )

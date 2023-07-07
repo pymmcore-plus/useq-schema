@@ -20,7 +20,7 @@ import numpy as np
 from pydantic import Field, PrivateAttr, root_validator, validator
 
 from . import MDAEvent, _mda_event
-from ._autofocus import AnyAF, NoAF, PerformAF
+from ._autofocus import AnyAF, AxesBasedAF, NoAF
 from ._base_model import UseqModel
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridPosition, NoGrid
@@ -69,8 +69,8 @@ class MDASequence(UseqModel):
         ZAbsolutePositions | NoZ
         The z plan to follow. One of `ZTopBottom`, `ZRangeAround`, `ZAboveBelow`,
         `ZRelativePositions`, `ZAbsolutePositions`, or `NoZ`.
-    autofocus_plan : PerformAF | NoAF
-        The hardware autofocus plan to follow. One of `PerformAF` or `NoAF`.
+    autofocus_plan : AxesBasedAF | NoAF
+        The hardware autofocus plan to follow. One of `AxesBasedAF` or `NoAF`.
         TODO: write info...
     uid : UUID
         A read-only unique identifier (uuid version 4) for the sequence. This will be
@@ -278,7 +278,7 @@ class MDASequence(UseqModel):
             Z in order
             and z_plan is not None
             and not z_plan.is_relative
-            and isinstance(autofocus_plan, PerformAF)
+            and isinstance(autofocus_plan, AxesBasedAF)
         ):
             raise ValueError("Autofocus plan cannot be used with absolute Z positions!")
 
@@ -384,7 +384,7 @@ def _get_autofocus_axes(sequence: MDASequence) -> dict[str, Union[str, None]]:
     return (
         # {ax: None for ax in sequence.autofocus_plan.axes if ax in sequence.used_axes}
         {ax: None for ax in sequence.autofocus_plan.axes}
-        if isinstance(sequence.autofocus_plan, PerformAF)
+        if isinstance(sequence.autofocus_plan, AxesBasedAF)
         and sequence.autofocus_plan.axes is not None
         and sequence.autofocus_plan.autofocus_z_device_name
         else {}
@@ -488,12 +488,12 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             y_pos = getattr(position, "y", None)
 
         # if autofocus plan is defined for the sequence, check if it should be executed
-        if sequence.autofocus_plan and not sequence.autofocus_plan.axes:
-            autofocus = NoAF()
-        else:
-            autofocus, autofocus_axes = _setup_autofocus(  # type: ignore
+        if isinstance(sequence.autofocus_plan, AxesBasedAF):
+            autofocus, autofocus_axes = _setup_autofocus(
                 sequence, autofocus_axes, index, z_pos
             )
+        else:
+            autofocus = NoAF()
 
         # if position has a sequence containing ONLY an autofocus plan, using
         # 'position.sequence' will return None. So we need to check directly
@@ -510,7 +510,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             if isinstance(pos_seq.autofocus_plan, NoAF):
                 pos_seq = pos_seq.replace(autofocus_plan=sequence.autofocus_plan)
 
-            if autofocus.axes:
+            if isinstance(autofocus, AxesBasedAF) and autofocus.axes:
                 # reset autofocus_axes to None
                 for ax in autofocus.axes:
                     autofocus_axes[ax] = None
@@ -559,13 +559,13 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 elif any(
                     ax
                     for ax in autofocus_axes
-                    if pos_seq.autofocus_plan.axes
+                    if isinstance(pos_seq.autofocus_plan, AxesBasedAF)
                     and ax not in pos_seq.autofocus_plan.axes
                 ):
                     autofocus_axes = _get_autofocus_axes(pos_seq)
 
                 # update sub_event autofocus plan
-                autofocus, autofocus_axes = _setup_autofocus(  # type: ignore
+                autofocus, autofocus_axes = _setup_autofocus(
                     pos_seq,
                     autofocus_axes,
                     update_kwargs["index"],
@@ -687,8 +687,8 @@ def _setup_autofocus(
     OUTPUTS:
         autofocus {
             'autofocus_z_device_name': 'z',
-            'z_focus_position': 0.0,
-            'z_autofocus_position': 0.0
+            'z_stage_position': 0.0,
+            'af_motor_offset': 0.0
             'axes': ('t', 'p')}
         autofocus_axes {'t': 0, 'p': 0}.
     """
@@ -705,7 +705,7 @@ def _setup_autofocus(
     for ax in autofocus_axes:
         with contextlib.suppress(KeyError):
             if autofocus_axes[ax] is None or autofocus_axes[ax] != index[ax]:
-                # update the autofocus "z_focus_position" with z_pos
+                # update the autofocus "z_stage_position" with z_pos
                 update_af_kwargs = {}
                 if z_pos is not None:
                     if "z" not in index:
@@ -722,16 +722,16 @@ def _setup_autofocus(
                                 if main_sequence is not None
                                 else None
                             )
-                    update_af_kwargs["z_focus_position"] = z
+                    update_af_kwargs["z_stage_position"] = z
                 autofocus = sequence.autofocus_plan.copy(update=update_af_kwargs)
                 break
 
-    # if doesn't have z_focus_position or z_autofocus_position, then set to NoAF
-    if autofocus.z_focus_position is None or autofocus.z_autofocus_position is None:
+    # if doesn't have z_stage_position or af_motor_offset, then set to NoAF
+    if autofocus.z_stage_position is None or autofocus.af_motor_offset is None:
         autofocus = NoAF()
 
-    # update the autofocus_axes dict with the current index if PerformAF
-    if isinstance(autofocus, PerformAF):
+    # update the autofocus_axes dict with the current index if AxesBasedAF
+    if isinstance(autofocus, AxesBasedAF):
         with contextlib.suppress(KeyError):
             for ax in autofocus.axes:
                 autofocus_axes[ax] = index[ax]
