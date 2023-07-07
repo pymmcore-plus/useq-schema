@@ -29,8 +29,6 @@ class Position(FrozenModel):
         Optional name for the position.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
-    z_autofocus : float | None
-        Optional autofocus z position.
     """
 
     # if None, implies 'do not move this axis'
@@ -39,7 +37,6 @@ class Position(FrozenModel):
     z: Optional[float] = None
     name: Optional[str] = None
     sequence: Optional[MDASequence] = None
-    z_autofocus: Optional[float] = None
 
     @classmethod
     def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
@@ -54,7 +51,6 @@ class Position(FrozenModel):
         if isinstance(value, (np.ndarray, tuple)):
             x, *value = value
             y, *value = value or (None,)
-            z, *value = value or (None,)
-            z_autofocus = value[0] if value else None
-            return Position(x=x, y=y, z=z, z_autofocus=z_autofocus)
+            z = value[0] if value else None
+            return Position(x=x, y=y, z=z)
         raise TypeError(f"Cannot coerce {value!r} to Position")

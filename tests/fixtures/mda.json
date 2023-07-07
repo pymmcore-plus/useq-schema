@@ -1,4 +1,10 @@
 {
+  "autofocus_plan": {
+    "autofocus_z_device_name": null,
+    "axes": null,
+    "z_autofocus_position": null,
+    "z_focus_position": null
+  },
   "axis_order": "tpgcz",
   "channels": [
     {
@@ -44,7 +50,6 @@
   },
   "stage_positions": [
     {
-      "autofocus": null,
       "name": null,
       "sequence": null,
       "x": 10.0,
@@ -52,12 +57,14 @@
       "z": null
     },
     {
-      "autofocus": [
-        "Z1",
-        100.0
-      ],
       "name": "test_name",
       "sequence": {
+        "autofocus_plan": {
+          "autofocus_z_device_name": null,
+          "axes": null,
+          "z_autofocus_position": null,
+          "z_focus_position": null
+        },
         "axis_order": "tpgcz",
         "channels": [],
         "grid_plan": {
