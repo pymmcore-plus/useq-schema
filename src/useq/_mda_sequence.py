@@ -24,6 +24,7 @@ from ._autofocus import AnyAF, AxesBasedAF, NoAF
 from ._base_model import UseqModel
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridPosition, NoGrid
+from ._mda_event import AutoFocusParams
 from ._position import Position
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
@@ -519,7 +520,13 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             # because it will yield an empty list. So we need to create a new MDAEvent
             # with the autofocus plan.
             events_list = list(iter_sequence(pos_seq)) or [
-                MDAEvent(autofocus=pos_seq_af)
+                MDAEvent(
+                    autofocus=(
+                        autofocus.autofocus_z_device_name,
+                        autofocus.af_motor_offset or None,
+                        autofocus.z_stage_position or None,
+                    )
+                )
             ]
 
             for sub_event in events_list:
@@ -572,12 +579,22 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                     update_kwargs.get("z_pos"),
                     sequence,
                 )
-                update_kwargs["autofocus"] = autofocus
+                update_kwargs["autofocus"] = AutoFocusParams(
+                    autofocus.autofocus_z_device_name,
+                    autofocus.af_motor_offset or None,
+                    autofocus.z_stage_position or None,
+                )
 
                 yield sub_event.copy(update=update_kwargs)
                 global_index += 1
 
             continue
+
+        af = AutoFocusParams(
+            autofocus.autofocus_z_device_name,
+            autofocus.af_motor_offset or None,
+            autofocus.z_stage_position or None,
+        )
 
         yield MDAEvent(
             index=index,
@@ -586,7 +603,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             x_pos=x_pos,
             y_pos=y_pos,
             z_pos=z_pos,
-            autofocus=autofocus,
+            autofocus=af,
             exposure=_exposure,
             channel=_channel,
             sequence=sequence,

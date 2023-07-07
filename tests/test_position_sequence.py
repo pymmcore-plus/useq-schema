@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from useq import AxesBasedAF, MDASequence, NoAF
+from useq import MDASequence, NoAF
 
 
 # test channels
@@ -705,11 +705,11 @@ def _assert_autofocus(
     # example of pos_and_z: {pos_index: (z, z_af)} = {0: (10, 30), 1: (50, 300)}
     for idx, e in enumerate(sequence):
         if idx in expected_event_indexes:
-            assert isinstance(e.autofocus, AxesBasedAF)
+            assert e.autofocus.autofocus_z_device_name == "Z"
             assert e.autofocus.z_stage_position == pos_and_z[e.index["p"]][0]
             assert e.autofocus.af_motor_offset == pos_and_z[e.index["p"]][1]
         else:
-            assert isinstance(e.autofocus, NoAF)
+            assert e.autofocus.autofocus_z_device_name == "__no_autofocus__"
 
 mdas = [
     # order, af axis, channels, pos_plan, z_plan, grid_plan, time_plan, expected_af_event_indexes  # noqa: E501
@@ -752,9 +752,9 @@ def test_autofocus(
     # for e in mda:
     #     print(
     #         e.index,
-    #         type(e.autofocus),
+    #         e.autofocus.autofocus_z_device_name,
     #         e.autofocus.af_motor_offset,
-    #         e.autofocus.z_stage_position,
+    #         e.autofocus.z_stage_position
     #     )
 
 
@@ -835,7 +835,7 @@ def test_autofocus_sub_sequence(order: str, axis: tuple[str, ...], ch: list, ppl
     # for e in mda:
     #     print(
     #         e.index,
-    #         type(e.autofocus),
+    #         e.autofocus.autofocus_z_device_name,
     #         e.autofocus.af_motor_offset,
-    #         e.autofocus.z_stage_position,
+    #         e.autofocus.z_stage_position
     #     )

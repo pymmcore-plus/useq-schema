@@ -57,7 +57,6 @@ class NoAF(AutoFocusPlan):
     """No hardware autofocus plan."""
 
     autofocus_z_device_name: str = "__no_autofocus__"
-    # axes: Optional[Tuple[str, ...]] = None
 
     def __bool__(self) -> bool:
         return False
