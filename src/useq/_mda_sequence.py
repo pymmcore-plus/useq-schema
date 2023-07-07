@@ -71,7 +71,7 @@ class MDASequence(UseqModel):
         `ZRelativePositions`, `ZAbsolutePositions`, or `NoZ`.
     autofocus_plan : PerformAF | NoAF
         The hardware autofocus plan to follow. One of `PerformAF` or `NoAF`.
-        ...TODO: write info...
+        TODO: write info...
     uid : UUID
         A read-only unique identifier (uuid version 4) for the sequence. This will be
         generated, do not set.
@@ -588,8 +588,9 @@ def _skip(
         )
         # overwriting the *global* channel index since it is no longer relevant.
         # if channel IS SPECIFIED in the position.sequence WITH any plan,
-        # we skip otherwise the channel will be acquired twice. Same happens if
-        # the channel IS NOT SPECIFIED but ANY plan is.
+        # we skip otherwise the channel will be acquired twice (see PR
+        # https://github.com/pymmcore-plus/useq-schema/pull/93).
+        # Same happens if the channel IS NOT SPECIFIED but ANY plan is.
         if (
             CHANNEL in index
             and index[CHANNEL] != 0
@@ -610,6 +611,7 @@ def _get_z(
     position: Position | None,
     channel: Channel | None,
 ) -> float | None:
+    """Return the z position for the current event."""
     return (
         sequence._combine_z(_ev[Z][1], index[Z], channel, position)
         if Z in _ev
@@ -629,6 +631,7 @@ def _get_z(
 def _get_grid_xy(
     position: Position | None, grid: GridPosition
 ) -> tuple[float | None, float | None]:
+    """Return the x and y position for the current event based on a grid_plan."""
     x_pos: Optional[float] = grid.x
     y_pos: Optional[float] = grid.y
     if grid.is_relative:
@@ -715,6 +718,7 @@ def _maybe_shifted_positions(
     x_pos: float | None,  # global x position
     y_pos: float | None,  # global y position
 ) -> dict:
+    """Return a dict of kwargs for the sub_event, accounting for position shifts."""
     kwargs = {}
     # this function should only be called inside the sub-iteration loop
     # so we can assume that position.sequence is not None
