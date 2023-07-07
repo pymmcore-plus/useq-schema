@@ -425,81 +425,35 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             continue  # pragma: no cover
 
         _ev = dict(zip(order, item))
-        index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
+        index = {k: _ev[k][0] for k in INDICES if k in _ev}
         position = cast(
             "Position | None", _ev[POSITION][1] if POSITION in _ev else None
         )
         channel = cast("Channel | None", _ev[CHANNEL][1] if CHANNEL in _ev else None)
+
+        # check if we should skip this event
+        if _skip(channel, position, index):
+            continue
+
+        pos_name = getattr(position, "name", None)
         time = cast("int | None", _ev[TIME][1] if TIME in _ev else None)
         grid = cast("GridPosition | None", _ev[GRID][1] if GRID in _ev else None)
-
-        # skip channels
-        if channel and TIME in index and index[TIME] % channel.acquire_every:
-            continue
-        # skip if also in position.sequence
-        if position and position.sequence:
-            # NOTE: if we ever add more plans, they will need to be explicitly added
-            # https://github.com/pymmcore-plus/useq-schema/pull/85
-
-            # get if sub-sequence has any plan
-            plans = any(
-                (
-                    position.sequence.grid_plan,
-                    position.sequence.z_plan,
-                    position.sequence.time_plan,
-                )
-            )
-            # overwriting the *global* channel index since it is no longer relevant.
-            # if channel IS SPECIFIED in the position.sequence WITH any plan,
-            # we skip otherwise the channel will be acquired twice. Same happens if
-            # the channel IS NOT SPECIFIED but ANY plan is.
-            if (
-                CHANNEL in index
-                and index[CHANNEL] != 0
-                and ((position.sequence.channels and plans) or not plans)
-            ):
-                continue
-            if Z in index and index[Z] != 0 and position.sequence.z_plan:
-                continue
-            if GRID in index and index[GRID] != 0 and position.sequence.grid_plan:
-                continue
-
+        _exposure = getattr(channel, "exposure", None)
         _channel = (
             _mda_event.Channel(config=channel.config, group=channel.group)
             if channel
             else None
         )
 
-        _exposure = getattr(channel, "exposure", None)
-        pos_name = getattr(position, "name", None)
-
+        # get the z position
         try:
-            z_pos = (
-                sequence._combine_z(_ev[Z][1], index[Z], channel, position)
-                if Z in _ev
-                else position.z + channel.z_offset
-                if (
-                    position
-                    and position.z is not None
-                    and channel
-                    and channel.z_offset is not None
-                )
-                else position.z
-                if position
-                else None
-            )
+            z_pos = _get_z(sequence, _ev, index, position, channel)
         except sequence._SkipFrame:
             continue
 
-        if grid:
-            x_pos: Optional[float] = grid.x
-            y_pos: Optional[float] = grid.y
-            if grid.is_relative:
-                px = getattr(position, "x", 0) or 0
-                py = getattr(position, "y", 0) or 0
-                x_pos = x_pos + px if x_pos is not None else None
-                y_pos = y_pos + py if y_pos is not None else None
+        if grid is not None:
+            x_pos, y_pos = _get_grid_xy(position, grid)
         else:
             x_pos = getattr(position, "x", None)
             y_pos = getattr(position, "y", None)
@@ -610,6 +564,78 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             global_index=global_index,
         )
         global_index += 1
+
+
+def _skip(
+    channel: Channel | None, position: Position | None, index: dict[str, Any]
+) -> bool:
+    # skip channels
+    if channel and TIME in index and index[TIME] % channel.acquire_every:
+        return True
+    # skip if also in position.sequence
+    if position and position.sequence:
+        # NOTE: if we ever add more plans, they will need to be explicitly added
+        # https://github.com/pymmcore-plus/useq-schema/pull/85
+
+        # get if sub-sequence has any plan
+        plans = any(
+            (
+                position.sequence.grid_plan,
+                position.sequence.z_plan,
+                position.sequence.time_plan,
+            )
+        )
+        # overwriting the *global* channel index since it is no longer relevant.
+        # if channel IS SPECIFIED in the position.sequence WITH any plan,
+        # we skip otherwise the channel will be acquired twice. Same happens if
+        # the channel IS NOT SPECIFIED but ANY plan is.
+        if (
+            CHANNEL in index
+            and index[CHANNEL] != 0
+            and ((position.sequence.channels and plans) or not plans)
+        ):
+            return True
+        if Z in index and index[Z] != 0 and position.sequence.z_plan:
+            return True
+        if GRID in index and index[GRID] != 0 and position.sequence.grid_plan:
+            return True
+    return False
+
+
+def _get_z(
+    sequence: MDASequence,
+    _ev: dict[str, Any],
+    index: dict[str, Any],
+    position: Position | None,
+    channel: Channel | None,
+) -> float | None:
+    return (
+        sequence._combine_z(_ev[Z][1], index[Z], channel, position)
+        if Z in _ev
+        else position.z + channel.z_offset
+        if (
+            position
+            and position.z is not None
+            and channel
+            and channel.z_offset is not None
+        )
+        else position.z
+        if position
+        else None
+    )
+
+
+def _get_grid_xy(
+    position: Position | None, grid: GridPosition
+) -> tuple[float | None, float | None]:
+    x_pos: Optional[float] = grid.x
+    y_pos: Optional[float] = grid.y
+    if grid.is_relative:
+        px = getattr(position, "x", 0) or 0
+        py = getattr(position, "y", 0) or 0
+        x_pos = x_pos + px if x_pos is not None else None
+        y_pos = y_pos + py if y_pos is not None else None
+    return x_pos, y_pos
 
 
 def _setup_autofocus(
