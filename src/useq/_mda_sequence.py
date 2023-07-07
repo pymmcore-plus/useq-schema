@@ -452,6 +452,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         except sequence._SkipFrame:
             continue
 
+        # get the x and y position
         if grid is not None:
             x_pos, y_pos = _get_grid_xy(position, grid)
         else:
