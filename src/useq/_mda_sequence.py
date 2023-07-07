@@ -505,19 +505,23 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             y_pos = getattr(position, "y", None)
 
         # if autofocus plan is defined for the sequence, check if it should be executed
-        autofocus, autofocus_axes = _setup_autofocus(
-            sequence, autofocus_axes, index, z_pos
-        )
+        if sequence.autofocus_plan and not sequence.autofocus_plan.axes:
+            autofocus = NoAF()
+        else:
+            autofocus, autofocus_axes = _setup_autofocus(  # type: ignore
+                sequence, autofocus_axes, index, z_pos
+            )
 
         # if position has a sequence containing ONLY an autofocus plan, using
         # 'position.sequence' will return None. So we need to check directly
         # 'position.sequence.autofocus_plan'.
         try:
-            af_seq = position.sequence.autofocus_plan  # type: ignore
+            pos_seq_af = position.sequence.autofocus_plan  # type: ignore
         except AttributeError:
-            af_seq = None
+            pos_seq_af = None
 
-        if position and (position.sequence or af_seq):
+        # if position has a sequence or has a sequence containing ONLY an autofocus plan
+        if position and (position.sequence or pos_seq_af):
             pos_seq = cast(MDASequence, position.sequence)
 
             if isinstance(pos_seq.autofocus_plan, NoAF):
@@ -531,7 +535,9 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             # if the sub-sequence has ONLY autofocus plan, 'iter_sequence' will not work
             # because it will yield an empty list. So we need to create a new MDAEvent
             # with the autofocus plan.
-            events_list = list(iter_sequence(pos_seq)) or [MDAEvent(autofocus=af_seq)]
+            events_list = list(iter_sequence(pos_seq)) or [
+                MDAEvent(autofocus=pos_seq_af)
+            ]
 
             for sub_event in events_list:
                 # we're going to create a modified sub-event, inheriting some of the
@@ -564,6 +570,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
                 if not autofocus_axes:
                     autofocus_axes = _get_autofocus_axes(pos_seq)
+
                 # in case each position sequence has a different autofocus plan we
                 # need to reset the autofocus_axes
                 elif any(
@@ -574,7 +581,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 ):
                     autofocus_axes = _get_autofocus_axes(pos_seq)
 
-                autofocus, autofocus_axes = _setup_autofocus(
+                # update sub_event autofocus plan
+                autofocus, autofocus_axes = _setup_autofocus(  # type: ignore
                     pos_seq,
                     autofocus_axes,
                     update_kwargs["index"],
@@ -616,15 +624,15 @@ def _setup_autofocus(
     Example:
     -------
     INPUTS:
-      autofocus_axes {'t': None, 'p': None}
-      index = {'t': 0, 'p': 0, 'z': 0}
+        autofocus_axes {'t': None, 'p': None}
+        index = {'t': 0, 'p': 0, 'z': 0}
     OUTPUTS:
-      autofocus {
-          'autofocus_z_device_name': 'z',
-          'z_focus_position': 0.0,
-          'z_autofocus_position': 0.0
-          'axes': ('t', 'p')}
-      autofocus_axes {'t': 0, 'p': 0}.
+        autofocus {
+            'autofocus_z_device_name': 'z',
+            'z_focus_position': 0.0,
+            'z_autofocus_position': 0.0
+            'axes': ('t', 'p')}
+        autofocus_axes {'t': 0, 'p': 0}.
     """
     autofocus = sequence.autofocus_plan
 

@@ -804,6 +804,10 @@ mdas = [
     ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("c",))}, {"z": 10, "sequence": _af_seq(("g",), True)}], {}, {}, {}, tuple(range(6))),  # noqa: E501
     ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("c",), False, True)}, {"z": 10, "sequence": _af_seq(("g",), True)}], {}, {}, {}, (0, 3, 6, 7, 8, 9)),  # noqa: E501
     ("tpgcz", ("z",), ["DAPI", "FITC"], [{"z": 30}, {"z": 10, "sequence": _af_seq(None, False, True)}], {}, {}, {}, tuple(range(2, 8))),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30}, {"z": 30, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (2, 3, 4, 5)),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p",), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (0, 4, 5, 6, 7)),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p","g"), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, tuple(range(8))),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p","c"), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (0, 2, 4, 5, 6, 7)),  # noqa: E501
 ]
 
 @pytest.mark.parametrize("order, axis, ch, pplan, zplan, gplan, tplan, expected_event_indexes", mdas)  # noqa: E501
