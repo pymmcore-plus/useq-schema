@@ -759,7 +759,7 @@ def test_autofocus(
     #     )
 
 
-def _af_seq(axis: tuple[str, ...] | None, gplan: bool = False, zplan: bool = False):
+def _af_seq(axis: tuple[str, ...] | None, gplan: bool = False, zplan: bool = False, tplan: bool = False):  # noqa: E501
     import numpy as np
     # sourcery skip: use-dictionary-union
     """Helper function to create a sub-sequence with autofocus."""
@@ -773,8 +773,9 @@ def _af_seq(axis: tuple[str, ...] | None, gplan: bool = False, zplan: bool = Fal
     }
     gp = {"grid_plan": {"rows": 2, "columns": 1}} if gplan else {}
     zp = {"z_plan": {"range": 2, "step": 1}} if zplan else {}
+    tplan = {"time_plan": [{"interval": 1, "loops": 2}]} if tplan else {}
 
-    return {**af, **gp, **zp}
+    return {**af, **gp, **zp, **tplan}
 
 
 def _get_autofocus_z(mda: MDASequence):
@@ -811,6 +812,16 @@ mdas = [
     ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p",), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (0, 4, 5, 6, 7)),  # noqa: E501
     ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p","g"), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, tuple(range(8))),  # noqa: E501
     ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p","c"), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (0, 2, 4, 5, 6, 7)),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [
+        {"z": 30, "sequence": _af_seq(("t","p"), True)},
+        {"z": 10, "sequence": _af_seq(("t","p"), True)},
+        {"z": 10, "sequence": _af_seq(("t","p"), True)},
+        ], {}, {}, {"interval": 1, "loops": 2}, tuple(range(0, 24, 4))),
+    ("tpgcz", (), ["DAPI", "FITC"], [
+        {"z": 30, "sequence": _af_seq(("t","p","g"), True)},
+        {"z": 10, "sequence": _af_seq(("t","p","g"), True)},
+        {"z": 10, "sequence": _af_seq(("t","p","g"), True)},
+        ], {}, {}, {"interval": 1, "loops": 2}, tuple(range(24))),
 ]
 
 @pytest.mark.parametrize("order, axis, ch, pplan, zplan, gplan, tplan, expected_event_indexes", mdas)  # noqa: E501
