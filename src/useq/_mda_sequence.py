@@ -381,18 +381,6 @@ MDAEvent.update_forward_refs(MDASequence=MDASequence)
 Position.update_forward_refs(MDASequence=MDASequence)
 
 
-def _get_autofocus_axes(sequence: MDASequence) -> dict[str, Union[str, None]]:
-    """Return the axes that have autofocus plans and set them to 'None'."""
-    return (
-        # {ax: None for ax in sequence.autofocus_plan.axes if ax in sequence.used_axes}
-        {ax: None for ax in sequence.autofocus_plan.axes}
-        if isinstance(sequence.autofocus_plan, AxesBasedAF)
-        and sequence.autofocus_plan.axes is not None
-        and sequence.autofocus_plan.autofocus_z_device_name
-        else {}
-    )
-
-
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     """Iterate over all events in the MDA sequence.'.
 
