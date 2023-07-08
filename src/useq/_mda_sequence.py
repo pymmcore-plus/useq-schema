@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import contextlib
 from itertools import product
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterator,
     Optional,
@@ -35,6 +35,7 @@ POSITION = "p"
 Z = "z"
 GRID = "g"
 INDICES = (TIME, POSITION, GRID, CHANNEL, Z)
+NOAF = AutoFocusParams("__no_autofocus__")
 
 Undefined = object()
 
@@ -414,11 +415,13 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     """
     global_index = 0
     order = sequence.used_axes
+    previous_af_index: dict[str, int] = {}
+    autofocus = sequence.autofocus_plan
 
-    # get the axes that have autofocus plans and set them to 'None' to make sure that
-    # autofocus will be executed at the first event
-    # example: autofocus_axes {'t': None, 'p': None}
-    autofocus_axes = _get_autofocus_axes(sequence)
+    should_autofocus = make_autofocus_predicate(
+        () if isinstance(autofocus, NoAF) else autofocus.axes
+    )
+    # should_autofocus = AFPicker(() if isinstance(autofocus, NoAF) else autofocus.axes)
 
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
     for item in product(*event_iterator):
@@ -436,34 +439,6 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         # check if we should skip this event
         if _skip(channel, position, index):
             continue
-
-        # skip if also in position.sequence
-        if position and position.sequence:
-            # NOTE: if we ever add more plans, they will need to be explicitly added
-            # https://github.com/pymmcore-plus/useq-schema/pull/85
-
-            # get if sub-sequence has any plan
-            plans = any(
-                (
-                    position.sequence.grid_plan,
-                    position.sequence.z_plan,
-                    position.sequence.time_plan,
-                )
-            )
-            # overwriting the *global* channel index since it is no longer relevant.
-            # if channel IS SPECIFIED in the position.sequence WITH any plan,
-            # we skip otherwise the channel will be acquired twice. Same happens if
-            # the channel IS NOT SPECIFIED but ANY plan is.
-            if (
-                CHANNEL in index
-                and index[CHANNEL] != 0
-                and ((position.sequence.channels and plans) or not plans)
-            ):
-                continue
-            if Z in index and index[Z] != 0 and position.sequence.z_plan:
-                continue
-            if GRID in index and index[GRID] != 0 and position.sequence.grid_plan:
-                continue
 
         pos_name = getattr(position, "name", None)
         time = cast("int | None", _ev[TIME][1] if TIME in _ev else None)
@@ -488,13 +463,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             x_pos = getattr(position, "x", None)
             y_pos = getattr(position, "y", None)
 
-        # if autofocus plan is defined for the sequence, check if it should be executed
-        if isinstance(sequence.autofocus_plan, AxesBasedAF):
-            autofocus, autofocus_axes = _setup_autofocus(
-                sequence, autofocus_axes, index, z_pos
-            )
-        else:
-            autofocus = NoAF()
+        # get the autofocus plan
+        autofocus = sequence.autofocus_plan
 
         # if position has a sequence containing ONLY an autofocus plan, using
         # 'position.sequence' will return None. So we need to check directly
@@ -511,10 +481,11 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             if isinstance(pos_seq.autofocus_plan, NoAF):
                 pos_seq = pos_seq.replace(autofocus_plan=sequence.autofocus_plan)
 
-            if isinstance(autofocus, AxesBasedAF) and autofocus.axes:
-                # reset autofocus_axes to None
-                for ax in autofocus.axes:
-                    autofocus_axes[ax] = None
+            autofocus = pos_seq.autofocus_plan
+            should_autofocus = make_autofocus_predicate(
+                () if isinstance(autofocus, NoAF) else autofocus.axes
+            )
+            # should_autofocus = AFPicker(autofocus.axes if autofocus else ())
 
             # if the sub-sequence has ONLY autofocus plan, 'iter_sequence' will not work
             # because it will yield an empty list. So we need to create a new MDAEvent
@@ -523,8 +494,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 MDAEvent(
                     autofocus=(
                         autofocus.autofocus_z_device_name,
-                        autofocus.af_motor_offset or None,
-                        autofocus.z_stage_position or None,
+                        autofocus.af_motor_offset,
+                        _get_autofocus_z(z_pos, index, pos_seq, sequence),
                     )
                 )
             ]
@@ -558,57 +529,56 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                     subval = getattr(sub_event, name)
                     update_kwargs[name] = subval if subval is not None else val
 
-                if not autofocus_axes:
-                    autofocus_axes = _get_autofocus_axes(pos_seq)
+                # update event with the new kwargs
+                _event = sub_event.copy(update=update_kwargs)
 
-                # in case each position sequence has a different autofocus plan we
-                # need to reset the autofocus_axes
-                elif any(
-                    ax
-                    for ax in autofocus_axes
-                    if isinstance(pos_seq.autofocus_plan, AxesBasedAF)
-                    and ax not in pos_seq.autofocus_plan.axes
-                ):
-                    autofocus_axes = _get_autofocus_axes(pos_seq)
-
-                # update sub_event autofocus plan
-                autofocus, autofocus_axes = _setup_autofocus(
-                    pos_seq,
-                    autofocus_axes,
-                    update_kwargs["index"],
-                    update_kwargs.get("z_pos"),
-                    sequence,
+                # check if we should autofocus
+                use_af, previous_af_index = should_autofocus(_event, previous_af_index)
+                # update the event with the autofocus plan
+                _update_af = (
+                    {
+                        "autofocus": AutoFocusParams(
+                            autofocus.autofocus_z_device_name,
+                            autofocus.af_motor_offset,
+                            _get_autofocus_z(
+                                _event.z_pos, dict(_event.index), pos_seq, sequence
+                            ),
+                        )
+                    }
+                    if use_af
+                    else {"autofocus": NOAF}
                 )
-                update_kwargs["autofocus"] = AutoFocusParams(
-                    autofocus.autofocus_z_device_name,
-                    autofocus.af_motor_offset or None,
-                    autofocus.z_stage_position or None,
-                )
+                _event = _event.copy(update=_update_af)
 
-                yield sub_event.copy(update=update_kwargs)
+                yield _event
                 global_index += 1
 
             continue
 
-        af = AutoFocusParams(
-            autofocus.autofocus_z_device_name,
-            autofocus.af_motor_offset or None,
-            autofocus.z_stage_position or None,
-        )
-
-        yield MDAEvent(
+        _event = MDAEvent(
             index=index,
             min_start_time=time,
             pos_name=pos_name,
             x_pos=x_pos,
             y_pos=y_pos,
             z_pos=z_pos,
-            autofocus=af,
+            autofocus=NOAF,
             exposure=_exposure,
             channel=_channel,
             sequence=sequence,
             global_index=global_index,
         )
+
+        use_af, _ = should_autofocus(_event)  # type: ignore
+        yield _event.copy(
+            update={
+                "autofocus": AutoFocusParams(
+                    autofocus.autofocus_z_device_name,
+                    autofocus.af_motor_offset,
+                    _get_autofocus_z(z_pos, index, sequence),
+                )
+            }
+        ) if use_af else _event
         global_index += 1
 
 
@@ -687,73 +657,82 @@ def _get_grid_xy(
     return x_pos, y_pos
 
 
-def _setup_autofocus(
-    sequence: MDASequence,
-    autofocus_axes: dict[str, Union[str, None]],
-    index: dict[str, Any],
-    z_pos: float | None,
-    main_sequence: Optional[MDASequence] = None,
-) -> tuple[AnyAF, dict[str, Union[str, None]]]:
-    """Return the autofocus plan for the current event and update autofocus_axes.
+def make_autofocus_predicate(
+    af_axes: tuple[str, ...]
+) -> Callable[[MDAEvent, Optional[dict[str, int]]], tuple[bool, dict[str, int]]]:
+    # closure to keep track of previous indices
+    previous_indices: dict[str, int] = {}
 
-    Example:
-    -------
-    INPUTS:
-        autofocus_axes {'t': None, 'p': None}
-        index = {'t': 0, 'p': 0, 'z': 0}
-    OUTPUTS:
-        autofocus {
-            'autofocus_z_device_name': 'z',
-            'z_stage_position': 0.0,
-            'af_motor_offset': 0.0
-            'axes': ('t', 'p')}
-        autofocus_axes {'t': 0, 'p': 0}.
-    """
-    autofocus = sequence.autofocus_plan
-
-    # remove autofocus axes that are not in the current index
-    for key in list(autofocus_axes):
-        if key not in index:
-            autofocus_axes.pop(key)
-
-    if not autofocus_axes:
-        return NoAF(), autofocus_axes
-
-    for ax in autofocus_axes:
-        with contextlib.suppress(KeyError):
-            if autofocus_axes[ax] is None or autofocus_axes[ax] != index[ax]:
-                # update the autofocus "z_stage_position" with z_pos
-                update_af_kwargs = {}
-                if z_pos is not None:
-                    if "z" not in index:
-                        z = z_pos
-                    else:
-                        # if z_plan, get the z from the center of the stack
-                        try:
-                            z = z_pos - list(sequence.z_plan)[index["z"]]
-                        # if the z_plan is not defined in the sub_sequence, then use
-                        # the z_plan from the main_sequence
-                        except IndexError:
-                            z = (
-                                (z_pos - list(main_sequence.z_plan)[index["z"]])
-                                if main_sequence is not None
-                                else None
-                            )
-                    update_af_kwargs["z_stage_position"] = z
-                autofocus = sequence.autofocus_plan.copy(update=update_af_kwargs)
+    def predicate(
+        event: MDAEvent, previous_index: Optional[dict[str, int]] = None
+    ) -> tuple[bool, dict[str, int]]:
+        # use the global previous_indices if we don't specify a previous index
+        prev_idx = previous_index or previous_indices
+        # loop through the axes of this current index
+        for axis, index in event.index.items():
+            # and if any of them are in the af_axes and the index has changed
+            if axis in af_axes and prev_idx.get(axis) != index:
+                # then we should be doing autofocus
+                should_autofocus = True
                 break
+        else:
+            # otherwise, we shouldn't
+            should_autofocus = False
 
-    # if doesn't have z_stage_position or af_motor_offset, then set to NoAF
-    if autofocus.z_stage_position is None or autofocus.af_motor_offset is None:
-        autofocus = NoAF()
+        # now, update the closed over previous_indices state.
+        previous_indices.update(event.index)
+        return should_autofocus, previous_indices
 
-    # update the autofocus_axes dict with the current index if AxesBasedAF
-    if isinstance(autofocus, AxesBasedAF):
-        with contextlib.suppress(KeyError):
-            for ax in autofocus.axes:
-                autofocus_axes[ax] = index[ax]
+    return predicate
 
-    return autofocus, autofocus_axes
+
+def _get_autofocus_z(
+    z_pos: float | None,
+    index: dict[str, int],
+    sequence: MDASequence,
+    main_sequence: MDASequence | None = None,
+) -> float | None:
+    if z_pos is None:
+        return None
+    if "z" not in index:
+        return z_pos
+
+    zplan = (
+        sequence.z_plan
+        if sequence.z_plan is not None and not isinstance(sequence.z_plan, NoZ)
+        else main_sequence.z_plan
+        if main_sequence is not None and main_sequence.z_plan
+        else None
+    )
+
+    return z_pos if zplan is None else z_pos - list(zplan)[index["z"]]
+
+
+# alternative to 'make_autofocus_predicate'
+# class AFPicker:
+#     def __init__(self, af_axes: tuple[str, ...]) -> None:
+#         self.af_axes = af_axes
+#         self.previous_indices: dict[str, int] = {}
+
+#     def __call__(
+#         self, event: MDAEvent, previous_index: Optional[dict[str, int]] = None
+#     ) -> tuple[bool, dict[str, int]]:
+#         # if we specify a previous index, use that, otherwise use the global one
+#         prev_idx = previous_index or self.previous_indices
+#         # loop through the axes of this current index
+#         for axis, index in event.index.items():
+#             # and if any of them are in the af_axes and the index has changed
+#             if axis in self.af_axes and prev_idx.get(axis) != index:
+#                 # then we should be doing autofocus
+#                 should_autofocus = True
+#                 break
+#         else:
+#             # otherwise, we shouldn't
+#             should_autofocus = False
+
+#         # now, update the closed over previous_indices state.
+#         self.previous_indices.update(event.index)
+#         return should_autofocus, self.previous_indices
 
 
 def _maybe_shifted_positions(

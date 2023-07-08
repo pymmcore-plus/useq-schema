@@ -748,7 +748,6 @@ def test_autofocus(
     # assert autofocus events
     _assert_autofocus(mda, expected_event_indexes, pos_and_z)
 
-    # print()
     # for e in mda:
     #     print(
     #         e.index,
@@ -759,12 +758,14 @@ def test_autofocus(
 
 
 def _af_seq(axis: tuple[str, ...] | None, gplan: bool = False, zplan: bool = False):
+    import numpy as np
     # sourcery skip: use-dictionary-union
     """Helper function to create a sub-sequence with autofocus."""
     af = {
         "autofocus_plan": {
             "autofocus_z_device_name": "Z",
-            "af_motor_offset": 100,
+            # "af_motor_offset": 100,
+            "af_motor_offset": np.random.randint(1, 100),
             "axes": axis
         } if axis else {}
     }
