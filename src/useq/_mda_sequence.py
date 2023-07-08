@@ -421,7 +421,6 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     should_autofocus = make_autofocus_predicate(
         () if isinstance(autofocus, NoAF) else autofocus.axes
     )
-    # should_autofocus = AFPicker(() if isinstance(autofocus, NoAF) else autofocus.axes)
 
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
     for item in product(*event_iterator):
@@ -485,7 +484,6 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             should_autofocus = make_autofocus_predicate(
                 () if isinstance(autofocus, NoAF) else autofocus.axes
             )
-            # should_autofocus = AFPicker(autofocus.axes if autofocus else ())
 
             # if the sub-sequence has ONLY autofocus plan, 'iter_sequence' will not work
             # because it will yield an empty list. So we need to create a new MDAEvent
