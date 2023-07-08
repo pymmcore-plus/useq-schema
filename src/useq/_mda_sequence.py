@@ -495,7 +495,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                     autofocus=(
                         autofocus.autofocus_z_device_name,
                         autofocus.af_motor_offset,
-                        _get_autofocus_z(z_pos, index, pos_seq, sequence),
+                        None,
                     )
                 )
             ]
@@ -540,7 +540,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                         "autofocus": AutoFocusParams(
                             autofocus.autofocus_z_device_name,
                             autofocus.af_motor_offset,
-                            _get_autofocus_z(
+                            _get_updated_autofocus_z(
                                 _event.z_pos, dict(_event.index), pos_seq, sequence
                             ),
                         )
@@ -575,7 +575,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 "autofocus": AutoFocusParams(
                     autofocus.autofocus_z_device_name,
                     autofocus.af_motor_offset,
-                    _get_autofocus_z(z_pos, index, sequence),
+                    _get_updated_autofocus_z(z_pos, index, sequence),
                 )
             }
         ) if use_af else _event
@@ -686,7 +686,7 @@ def make_autofocus_predicate(
     return predicate
 
 
-def _get_autofocus_z(
+def _get_updated_autofocus_z(
     z_pos: float | None,
     index: dict[str, int],
     sequence: MDASequence,

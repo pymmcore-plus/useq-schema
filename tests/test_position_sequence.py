@@ -707,7 +707,9 @@ def _assert_autofocus(
         if idx in expected_event_indexes:
             assert e.autofocus.autofocus_z_device_name == "Z"
             assert e.autofocus.z_stage_position == pos_and_z[e.index["p"]][0]
+            assert e.autofocus.z_stage_position is not None
             assert e.autofocus.af_motor_offset == pos_and_z[e.index["p"]][1]
+            assert e.autofocus.af_motor_offset is not None
         else:
             assert e.autofocus.autofocus_z_device_name == "__no_autofocus__"
 
