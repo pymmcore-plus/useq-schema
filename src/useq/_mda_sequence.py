@@ -519,6 +519,9 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 _event = sub_event.copy(update=update_kwargs)
 
                 # check if we should autofocus
+                # here we need to pass the previous autofocus index to the predicate
+                # because we are iterating over a sub-sequence and if we don't, the
+                # previous index will always be None and "use_af" always True.
                 use_af, previous_af_index = should_autofocus(_event, previous_af_index)
                 # update the event with the autofocus plan
                 _update_af = (
