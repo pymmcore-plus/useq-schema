@@ -7,7 +7,7 @@ from useq import MDASequence
 
 
 @pytest.mark.parametrize("ext", ["json", "yaml"])
-def p(mda1: MDASequence, ext: str) -> None:
+def test_serialization(mda1: MDASequence, ext: str) -> None:
     FILE = Path(__file__).parent / "fixtures" / f"mda.{ext}"
     text = FILE.read_text()
     mda = MDASequence.parse_file(str(FILE))

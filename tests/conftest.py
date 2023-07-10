@@ -18,6 +18,12 @@ def mda1() -> MDASequence:
                 "sequence": MDASequence(
                     z_plan={"above": 10, "below": 0, "step": 1},
                     grid_plan={"rows": 2, "columns": 3},
+                    autofocus_plan={
+                        "axes": ("p",),
+                        "af_motor_offset": 10,
+                        "z_stage_position": 20,
+                        "autofocus_z_device_name": "Z",
+                    },
                 ),
             },
         ],

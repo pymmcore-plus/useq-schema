@@ -59,9 +59,12 @@
       "name": "test_name",
       "sequence": {
         "autofocus_plan": {
-          "af_motor_offset": null,
-          "autofocus_z_device_name": "__no_autofocus__",
-          "z_stage_position": null
+          "af_motor_offset": 10.0,
+          "autofocus_z_device_name": "Z",
+          "axes": [
+            "p"
+          ],
+          "z_stage_position": 20.0
         },
         "axis_order": "tpgcz",
         "channels": [],

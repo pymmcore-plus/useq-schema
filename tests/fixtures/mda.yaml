@@ -17,6 +17,12 @@ stage_positions:
   y: 20.0
 - name: test_name
   sequence:
+    autofocus_plan:
+      af_motor_offset: 10.0
+      autofocus_z_device_name: Z
+      axes:
+      - p
+      z_stage_position: 20.0
     axis_order: tpgcz
     grid_plan:
       columns: 3
