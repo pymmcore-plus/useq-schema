@@ -72,7 +72,6 @@ class MDASequence(UseqModel):
         `ZRelativePositions`, `ZAbsolutePositions`, or `NoZ`.
     autofocus_plan : AxesBasedAF | NoAF
         The hardware autofocus plan to follow. One of `AxesBasedAF` or `NoAF`.
-        TODO: write info...
     uid : UUID
         A read-only unique identifier (uuid version 4) for the sequence. This will be
         generated, do not set.
