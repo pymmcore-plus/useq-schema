@@ -35,7 +35,6 @@ POSITION = "p"
 Z = "z"
 GRID = "g"
 INDICES = (TIME, POSITION, GRID, CHANNEL, Z)
-NOAF = AutoFocusParams("__no_autofocus__")
 
 Undefined = object()
 
@@ -276,6 +275,7 @@ class MDASequence(UseqModel):
                 "Currently, a Position sequence cannot have multiple stage positions!"
             )
 
+        # Cannot use autofocus plan with absolute z_plan
         if (
             Z in order
             and z_plan is not None
@@ -283,6 +283,25 @@ class MDASequence(UseqModel):
             and isinstance(autofocus_plan, AxesBasedAF)
         ):
             raise ValueError("Autofocus plan cannot be used with absolute Z positions!")
+
+        # TODO: find a better way. If a (sub-)sequence has only the autofocus plan,
+        # checking 'if p.sequence' will return False. So we cannot use
+        # if 'p.sequence and p.sequence.autofocus_plan'
+        # but we need to check only 'p.sequence.autofocus_plan' with try/except
+        # to avoid the AttributeError error.
+        try:
+            if (
+                Z in order
+                and z_plan is not None
+                and not z_plan.is_relative
+                and stage_positions
+                and any(p for p in stage_positions if p.sequence.autofocus_plan)  # type: ignore  # noqa: E501
+            ):
+                raise ValueError(
+                    "Autofocus plan cannot be used with absolute Z positions!"
+                )
+        except AttributeError:
+            pass
 
         return order
 
@@ -535,7 +554,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                         )
                     }
                     if use_af
-                    else {"autofocus": NOAF}
+                    else {"autofocus": None}  # type: ignore
                 )
                 _event = _event.copy(update=_update_af)
 
@@ -551,7 +570,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             x_pos=x_pos,
             y_pos=y_pos,
             z_pos=z_pos,
-            autofocus=NOAF,
+            autofocus=None,
             exposure=_exposure,
             channel=_channel,
             sequence=sequence,

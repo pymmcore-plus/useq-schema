@@ -711,7 +711,7 @@ def _assert_autofocus(
             assert e.autofocus.af_motor_offset == pos_and_z[e.index["p"]][1]
             assert e.autofocus.af_motor_offset is not None
         else:
-            assert e.autofocus.autofocus_z_device_name == "__no_autofocus__"
+            assert e.autofocus is None
 
 mdas = [
     # order, af axis, channels, pos_plan, z_plan, grid_plan, time_plan, expected_af_event_indexes  # noqa: E501
