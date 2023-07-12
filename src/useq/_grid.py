@@ -155,6 +155,9 @@ class _GridPlan(FrozenModel):
         for r, c in _INDEX_GENERATORS[self.mode](rows, cols):
             yield GridPosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
 
+    def __bool__(self) -> bool:
+        return True
+
     def __len__(self) -> int:
         return len(list(self.iter_grid_positions(1, 1)))
 
@@ -200,6 +203,9 @@ class GridFromEdges(_GridPlan):
 
     def _offset_y(self, dy: float) -> float:
         return max(self.top, self.bottom)
+
+    def __len__(self) -> int:
+        raise ValueError("GridFromEdges does not support len(grid)")
 
 
 class GridRelative(_GridPlan):
@@ -251,6 +257,9 @@ class NoGrid(_GridPlan):
         self, fov_width: float, fov_height: float
     ) -> Iterator[GridPosition]:
         return iter([])
+
+    def __bool__(self) -> bool:
+        return False
 
 
 AnyGridPlan = Union[GridFromEdges, GridRelative, NoGrid]
