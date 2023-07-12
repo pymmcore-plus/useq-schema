@@ -204,9 +204,6 @@ class GridFromEdges(_GridPlan):
     def _offset_y(self, dy: float) -> float:
         return max(self.top, self.bottom)
 
-    def __len__(self) -> int:
-        raise ValueError("GridFromEdges does not support len(grid)")
-
 
 class GridRelative(_GridPlan):
     """Yield relative delta increments to build a grid acquisition.

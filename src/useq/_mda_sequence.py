@@ -483,7 +483,10 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         if position and (position.sequence or pos_seq_af):
             pos_seq = cast(MDASequence, position.sequence)
 
-            if isinstance(pos_seq.autofocus_plan, NoAF):
+            # use global autofocus plan (if defined) if the sub-sequence has no one
+            if isinstance(pos_seq.autofocus_plan, NoAF) and not isinstance(
+                sequence.autofocus_plan, NoAF
+            ):
                 pos_seq = pos_seq.replace(autofocus_plan=sequence.autofocus_plan)
 
             autofocus = pos_seq.autofocus_plan
