@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Union
 
 from ._base_model import UseqModel
 
@@ -44,3 +44,6 @@ class HardwareAutofocus(Action):
     type: Literal["hardware_autofocus"] = "hardware_autofocus"
     autofocus_z_device_name: str
     autofocus_motor_offset: float
+
+
+AnyAction = Union[HardwareAutofocus, Snap]
