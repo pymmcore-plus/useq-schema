@@ -15,7 +15,7 @@ from typing import (
 from pydantic import Field, validator
 from pydantic.types import PositiveFloat
 
-from ._actions import Action, Snap
+from ._actions import AnyAction, Snap
 from ._base_model import UseqModel
 from ._utils import ReadOnlyDict
 
@@ -114,7 +114,7 @@ class MDAEvent(UseqModel):
         event will be an integer from 0 to 9.  By default, `0`.
     metadata : dict
         Optional metadata to be associated with this event.
-    action : Action
+    action : AnyAction
         The action to perform for this event.  By default, [`useq.Snap`][].
         Example of another action is [`useq.HardwareAutofocus`][] which could be used
         to perform a hardware autofocus.
@@ -132,7 +132,7 @@ class MDAEvent(UseqModel):
     sequence: Optional[MDASequence] = Field(default=None, repr=False)
     global_index: int = Field(default=0, repr=False)
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    action: Action = Field(default_factory=Snap)
+    action: AnyAction = Field(default_factory=Snap)
 
     @validator("index", pre=True)
     def validate_index(cls, v: dict) -> ReadOnlyDict[str, int]:
