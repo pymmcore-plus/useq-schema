@@ -41,6 +41,6 @@ class HardwareAutofocus(Action):
         offset.
     """
 
-    type: Literal["autofocus"] = "autofocus"
+    type: Literal["hardware_autofocus"] = "hardware_autofocus"
     autofocus_z_device_name: str
     autofocus_motor_offset: float
