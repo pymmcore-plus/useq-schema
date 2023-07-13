@@ -12,14 +12,14 @@
     options:
         members: []
 
-::: useq._actions.Action
+::: useq.Action
     options:
         members: []
 
-::: useq._actions.Snap
+::: useq.Snap
     options:
         members: []
 
-::: useq._actions.HardwareAutofocus
+::: useq.HardwareAutofocus
     options:
         members: []
