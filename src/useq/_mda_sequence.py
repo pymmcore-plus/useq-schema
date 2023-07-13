@@ -513,6 +513,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 # event to account for global position offsets (or override if the
                 # sub-event has an absolute XYZ position plan.)
                 update_kwargs = dict(
+                    autofocus=None,
                     global_index=global_index,
                     index={**index, **sub_event.index},
                     sequence=sequence,
@@ -545,8 +546,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 # previous index will always be None and "use_af" always True.
                 use_af, previous_af_index = should_autofocus(_event, previous_af_index)
                 # update the event with the autofocus plan
-                _update_af = (
-                    {
+                if use_af:
+                    _update_af = {
                         "autofocus": AutoFocusParams(
                             autofocus.autofocus_z_device_name,
                             autofocus.af_motor_offset,
@@ -555,10 +556,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                             ),
                         )
                     }
-                    if use_af
-                    else {"autofocus": None}  # type: ignore
-                )
-                _event = _event.copy(update=_update_af)
+                    _event = _event.copy(update=_update_af)
 
                 yield _event
                 global_index += 1
@@ -580,15 +578,17 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         )
 
         use_af, _ = should_autofocus(_event)  # type: ignore
-        yield _event.copy(
-            update={
+        if use_af:
+            update = {
                 "autofocus": AutoFocusParams(
                     autofocus.autofocus_z_device_name,
                     autofocus.af_motor_offset,
                     _get_updated_autofocus_z(z_pos, index, sequence),
                 )
             }
-        ) if use_af else _event
+            _event = _event.copy(update=update)
+
+        yield _event
         global_index += 1
 
 
