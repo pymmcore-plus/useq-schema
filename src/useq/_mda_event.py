@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -125,11 +126,18 @@ class MDAEvent(UseqModel):
     z_pos: Optional[float] = None
     properties: Optional[List[PropertyTuple]] = None
     sequence: Optional[MDASequence] = Field(default=None, repr=False)
-    global_index: int = Field(default=0, repr=False)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     # action
     # keep shutter open between channels/steps
+    @property
+    def global_index(self) -> int:
+        warnings.warn(
+            "global_index is no longer functional.  Use `enumerate()` "
+            "on an iterable of events instead.",
+            stacklevel=2,
+        )
+        return 0
 
     @validator("index", pre=True)
     def validate_index(cls, v: dict) -> ReadOnlyDict[str, int]:

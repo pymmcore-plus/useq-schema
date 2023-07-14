@@ -363,7 +363,21 @@ MDAEvent.update_forward_refs(MDASequence=MDASequence)
 Position.update_forward_refs(MDASequence=MDASequence)
 
 
-def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
+def iter_sequence(
+    sequence: MDASequence,
+    pos_name_override: str | None = None,
+    parent_sequence: MDASequence | None = None,
+    parent_indices: dict | None = None,
+    channel_fallback: Any = None,
+    start_time_fallback: Any = None,
+    exposure_fallback: Any = None,
+    x_pos_override: float | None = None,
+    x_pos_shift: float = 0,
+    y_pos_override: float | None = None,
+    y_pos_shift: float = 0,
+    z_pos_override: float | None = None,
+    z_pos_shift: float = 0,
+) -> Iterator[MDAEvent]:
     """Iterate over all events in the MDA sequence.'.
 
     !!! note
@@ -383,7 +397,6 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     MDAEvent
         Each event in the MDA sequence.
     """
-    global_index = 0
     order = sequence.used_axes
 
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
@@ -440,16 +453,19 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
         _exposure = getattr(channel, "exposure", None)
 
-        pos_name = getattr(position, "name", None)
+        pos_name = pos_name_override or getattr(position, "name", None)
 
         try:
-            z_pos = (
-                sequence._combine_z(_ev[Z][1], index[Z], channel, position)
-                if Z in _ev
-                else position.z
-                if position
-                else None
-            )
+            if z_pos_override is not None:
+                z_pos: float | None = z_pos_override
+            else:
+                z_pos = (
+                    sequence._combine_z(_ev[Z][1], index[Z], channel, position)
+                    if Z in _ev
+                    else position.z
+                    if position
+                    else None
+                )
         except sequence._SkipFrame:
             continue
 
@@ -465,97 +481,63 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             x_pos = getattr(position, "x", None)
             y_pos = getattr(position, "y", None)
 
+        if x_pos_override is not None:
+            x_pos = x_pos_override
+        if y_pos_override is not None:
+            y_pos = y_pos_override
+
         if position and position.sequence:
-            for sub_event in iter_sequence(position.sequence):
-                # we're going to create a modified sub-event, inheriting some of the
-                # values from the parent event, and shifting the position of the
-                # event to account for global position offsets (or override if the
-                # sub-event has an absolute XYZ position plan.)
-                update_kwargs = dict(
-                    global_index=global_index,
-                    index={**index, **sub_event.index},
-                    sequence=sequence,
-                    pos_name=position.name or pos_name,
-                    **_maybe_shifted_positions(
-                        sub_event=sub_event,
-                        position=position,
-                        z_pos=z_pos,
-                        x_pos=x_pos,
-                        y_pos=y_pos,
-                    ),
-                )
-
-                # time, exposure, and channel are inherited from the parent event
-                # if they are not present on the sub-event.
-                for val, name in [
-                    (time, "min_start_time"),
-                    (_exposure, "exposure"),
-                    (_channel, "channel"),
-                ]:
-                    subval = getattr(sub_event, name)
-                    update_kwargs[name] = subval if subval is not None else val
-
-                yield sub_event.copy(update=update_kwargs)
-                global_index += 1
-
+            yield from iter_sequence(
+                position.sequence,
+                pos_name_override=position.name,
+                parent_sequence=sequence,
+                parent_indices=index,
+                channel_fallback=_channel,
+                exposure_fallback=_exposure,
+                start_time_fallback=time,
+                **get_position_offsets(position, z_pos, x_pos, y_pos),
+            )
             continue
 
         yield MDAEvent(
-            index=index,
-            min_start_time=time,
+            index={**(parent_indices or {}), **index},
+            min_start_time=time if time is not None else start_time_fallback,
             pos_name=pos_name,
-            x_pos=x_pos,
-            y_pos=y_pos,
-            z_pos=z_pos,
-            exposure=_exposure,
-            channel=_channel,
-            sequence=sequence,
-            global_index=global_index,
+            x_pos=(x_pos + x_pos_shift) if x_pos is not None else x_pos_shift,
+            y_pos=(y_pos + y_pos_shift) if y_pos is not None else y_pos_shift,
+            z_pos=(z_pos + z_pos_shift) if z_pos is not None else z_pos_shift,
+            exposure=_exposure if _exposure is not None else exposure_fallback,
+            channel=_channel if _channel is not None else channel_fallback,
+            sequence=sequence if parent_sequence is None else parent_sequence,
         )
-        global_index += 1
 
 
-def _maybe_shifted_positions(
-    sub_event: MDAEvent,  # the event we just created in the position sequence
-    position: Position,  # the position we are iterating
-    z_pos: float | None,  # global z position
-    x_pos: float | None,  # global x position
-    y_pos: float | None,  # global y position
+def get_position_offsets(
+    position: Position, z_pos: float | None, x_pos: float | None, y_pos: float | None
 ) -> dict:
-    kwargs = {}
-    # this function should only be called inside the sub-iteration loop
-    # so we can assume that position.sequence is not None
     pos_seq = cast("MDASequence", position.sequence)
 
-    # if the position sequence has no z_plan, then we can use the global z_pos
-    # elif the position has a relative z_plan, then we need to shift the sub_event
+    z_pos_shift = 0.0
+    z_pos_override = None
     if not pos_seq.z_plan:
-        kwargs["z_pos"] = z_pos
+        z_pos_override = z_pos
     elif pos_seq.z_plan.is_relative:
-        kwargs["z_pos"] = _shift_axis("z", position.z, sub_event)
+        z_pos_shift = position.z or 0.0
 
-    # if the position sequence has no grid_plane, then we can use the global z_pos
-    # elif the position has a relative grid_plan, then we need to shift the sub_event
+    x_pos_shift = y_pos_shift = 0.0
+    x_pos_override = y_pos_override = None
     if not pos_seq.grid_plan:
-        kwargs["x_pos"] = x_pos
-        kwargs["y_pos"] = y_pos
+        x_pos_override = x_pos
+        y_pos_override = y_pos
     elif pos_seq.grid_plan.is_relative:
-        kwargs["x_pos"] = _shift_axis("x", position.x, sub_event)
-        kwargs["y_pos"] = _shift_axis("y", position.y, sub_event)
-    return kwargs
+        x_pos_shift = position.x or 0.0
+        y_pos_shift = position.y or 0.0
 
-
-def _shift_axis(axis: str, new_val: float | None, event: MDAEvent) -> float | None:
-    """Return a new value for the axis, accounting for the sub_event's position.
-
-    If both new_val and the corresponding axis position for the sub_event are None,
-    return None, otherwise return the sum of the two.
-    """
-    sub_pos = getattr(event, f"{axis}_pos")
-    return (
-        None
-        if new_val is None and sub_pos is None
-        else (new_val or 0) + sub_pos
-        if sub_pos is not None
-        else new_val
-    )
+    return {
+        "x_pos_override": x_pos_override,
+        "x_pos_shift": x_pos_shift,
+        "y_pos_override": y_pos_override,
+        "y_pos_shift": y_pos_shift,
+        "z_pos_override": z_pos_override,
+        "z_pos_shift": z_pos_shift,
+    }
