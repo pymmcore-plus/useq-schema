@@ -28,6 +28,7 @@ from ._hardware_autofocus import AnyAF, AxesBasedAF, NoAF
 from ._mda_event import MDAEvent
 from ._position import Position
 from ._time import AnyTimePlan, NoT
+from ._utils import ReadOnlyDict
 from ._z import AnyZPlan, NoZ
 
 TIME = "t"
@@ -436,7 +437,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
         _ev = dict(zip(order, item))
 
-        index = {k: _ev[k][0] for k in INDICES if k in _ev}
+        index: dict[str, int] = {k: _ev[k][0] for k in INDICES if k in _ev}
 
         position = cast(
             "Position | None", _ev[POSITION][1] if POSITION in _ev else None
@@ -542,11 +543,12 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 # update the event with the autofocus plan
                 if use_af:
                     yield _event.replace(
+                        z_pos=_get_updated_z_pos(_event.z_pos, _event.index, sequence),
                         action={
                             "type": "hardware_autofocus",
                             "autofocus_z_device_name": autofocus.autofocus_z_device_name,  # noqa: E501
                             "autofocus_motor_offset": autofocus.autofocus_motor_offset,
-                        }
+                        },
                     )
                 yield _event
                 global_index += 1
@@ -570,11 +572,12 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         use_af, _ = should_autofocus(_event)  # type: ignore
         if use_af:
             yield _event.replace(
+                z_pos=_get_updated_z_pos(_event.z_pos, _event.index, sequence),
                 action={
                     "type": "hardware_autofocus",
                     "autofocus_z_device_name": autofocus.autofocus_z_device_name,
                     "autofocus_motor_offset": autofocus.autofocus_motor_offset,
-                }
+                },
             )
         yield _event
         global_index += 1
@@ -684,12 +687,17 @@ def make_predicate(
     return predicate
 
 
-def _get_updated_autofocus_z(
+def _get_updated_z_pos(
     z_pos: float | None,
-    index: dict[str, int],
+    index: ReadOnlyDict[str, int],
     sequence: MDASequence,
     main_sequence: MDASequence | None = None,
 ) -> float | None:
+    """Return an updated z position for the autofocus event.
+
+    This is necessary in case there is a relative z plan in the sequence since
+    the autofocus event should be performed at the middle of the z range.
+    """
     if z_pos is None:
         return None
     if "z" not in index:
