@@ -1,9 +1,8 @@
 from __future__ import annotations
-from enum import auto
 
 import pytest
 
-from useq import MDASequence, NoAF, AxesBasedAF, HardwareAutofocus
+from useq import AxesBasedAF, HardwareAutofocus, MDASequence, NoAF
 
 
 # fmt: off
@@ -19,7 +18,7 @@ def _assert_autofocus(
             assert action.type == "hardware_autofocus"
             assert action.autofocus_device_name == "Z"
             # assert action.autofocus_motor_offset == pos_and_z[e.index["p"]][1]
-            
+
         else:
             assert e.action.type == 'acquire_image'
 
@@ -57,7 +56,7 @@ def test_autofocus(
     )
 
     # get dict with p index and repextive z an z_af
-    pos_and_z = {p: (mda.stage_positions[p].z, mda.autofocus_plan.autofocus_motor_offset) for p in range(len(pplan))}  # noqa: E501
+    {p: (mda.stage_positions[p].z, mda.autofocus_plan.autofocus_motor_offset) for p in range(len(pplan))}  # noqa: E501
     # assert autofocus events
     # _assert_autofocus(mda, expected_event_indexes, pos_and_z)
 
