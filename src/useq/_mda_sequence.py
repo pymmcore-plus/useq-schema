@@ -450,7 +450,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
         # get the x and y position
         if grid is not None:
-            x_pos, y_pos = _get_grid_xy(position, grid)
+            x_pos, y_pos = _get_xy_position(position, grid)
         else:
             x_pos = getattr(position, "x", None)
             y_pos = getattr(position, "y", None)
@@ -523,12 +523,13 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 # because we are iterating over a sub-sequence and if we don't, the
                 # previous index will always be None and "use_af" always True.
                 use_af, previous_af_index = should_autofocus(_event, previous_af_index)
-                # update the event with the autofocus plan
                 if use_af:
+                    # update the event with the autofocus plan
                     yield _event.replace(
                         z_pos=_get_updated_z_pos(_event.z_pos, _event.index, sequence),
                         action=autofocus.as_action(),
                     )
+
                 yield _event
                 global_index += 1
 
@@ -618,7 +619,7 @@ def _get_z(
     )
 
 
-def _get_grid_xy(
+def _get_xy_position(
     position: Position | None, grid: GridPosition
 ) -> tuple[float | None, float | None]:
     """Return the x and y position for the current event based on a grid_plan."""
