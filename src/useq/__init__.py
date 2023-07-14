@@ -1,6 +1,7 @@
 from ._actions import Action, AnyAction, HardwareAutofocus, Snap
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridFromEdges, GridRelative, NoGrid
+from ._hardware_autofocus import AnyAF, AxesBasedAF, NoAF
 from ._mda_event import MDAEvent, PropertyTuple
 from ._mda_sequence import MDASequence
 from ._position import Position
@@ -23,7 +24,9 @@ from ._z import (
 __all__ = [
     "Action",
     "AnyAction",
+    "AnyAF",
     "AnyGridPlan",
+    "AxesBasedAF",
     "GridFromEdges",
     "GridRelative",
     "NoGrid",
@@ -32,6 +35,7 @@ __all__ = [
     "MDAEvent",
     "MDASequence",
     "MultiPhaseTimePlan",
+    "NoAF",
     "NoT",
     "NoZ",
     "Position",
