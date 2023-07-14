@@ -3,6 +3,7 @@ from __future__ import annotations
 from itertools import product
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterator,
     Optional,
@@ -23,6 +24,7 @@ from ._actions import Snap
 from ._base_model import UseqModel
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridPosition, NoGrid
+from ._hardware_autofocus import AnyAF, AxesBasedAF, NoAF
 from ._mda_event import MDAEvent
 from ._position import Position
 from ._time import AnyTimePlan, NoT
@@ -72,6 +74,8 @@ class MDASequence(UseqModel):
     uid : UUID
         A read-only unique identifier (uuid version 4) for the sequence. This will be
         generated, do not set.
+    autofocus_plan : AxesBasedAF | NoAF
+        The hardware autofocus plan to follow. One of `AxesBasedAF` or `NoAF`.
 
     Examples
     --------
@@ -115,6 +119,7 @@ class MDASequence(UseqModel):
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
+    autofocus_plan: AnyAF = Field(default_factory=NoAF)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _length: Optional[int] = PrivateAttr(default=None)
@@ -142,6 +147,7 @@ class MDASequence(UseqModel):
         channels: Tuple[Channel, ...] = Undefined,
         time_plan: AnyTimePlan = Undefined,
         z_plan: AnyZPlan = Undefined,
+        autofocus_plan: AnyAF = Undefined,
     ) -> MDASequence:
         """Return a new `MDAsequence` replacing specified kwargs with new values.
 
@@ -199,6 +205,7 @@ class MDASequence(UseqModel):
                 stage_positions=values.get("stage_positions", ()),
                 channels=values.get("channels", ()),
                 grid_plan=values.get("grid_plan"),
+                autofocus_plan=values.get("autofocus_plan"),
             )
         return values
 
@@ -216,6 +223,7 @@ class MDASequence(UseqModel):
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
         grid_plan: Optional[AnyGridPlan] = None,
+        autofocus_plan: Optional[AnyAF] = None,
     ) -> str:
         if (
             Z in order
@@ -266,6 +274,34 @@ class MDASequence(UseqModel):
             raise ValueError(
                 "Currently, a Position sequence cannot have multiple stage positions!"
             )
+
+        # Cannot use autofocus plan with absolute z_plan
+        if (
+            Z in order
+            and z_plan is not None
+            and not z_plan.is_relative
+            and isinstance(autofocus_plan, AxesBasedAF)
+        ):
+            raise ValueError("Autofocus plan cannot be used with absolute Z positions!")
+
+        # TODO: find a better way. If a (sub-)sequence has only the autofocus plan,
+        # checking 'if p.sequence' will return False. So we cannot use
+        # if 'p.sequence and p.sequence.autofocus_plan'
+        # but we need to check only 'p.sequence.autofocus_plan' with try/except
+        # to avoid the AttributeError error.
+        try:
+            if (
+                Z in order
+                and z_plan is not None
+                and not z_plan.is_relative
+                and stage_positions
+                and any(p for p in stage_positions if p.sequence.autofocus_plan)  # type: ignore  # noqa: E501
+            ):
+                raise ValueError(
+                    "Autofocus plan cannot be used with absolute Z positions!"
+                )
+        except AttributeError:
+            pass
 
         return order
 
@@ -386,6 +422,12 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     """
     global_index = 0
     order = sequence.used_axes
+    previous_af_index: dict[str, int] = {}
+    autofocus = sequence.autofocus_plan
+
+    should_autofocus = make_predicate(
+        () if isinstance(autofocus, NoAF) else autofocus.axes
+    )
 
     event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
     for item in product(*event_iterator):
@@ -393,45 +435,22 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             continue  # pragma: no cover
 
         _ev = dict(zip(order, item))
+
         index = {k: _ev[k][0] for k in INDICES if k in _ev}
 
         position = cast(
             "Position | None", _ev[POSITION][1] if POSITION in _ev else None
         )
         channel = cast("Channel | None", _ev[CHANNEL][1] if CHANNEL in _ev else None)
+
+        # check if we should skip this event
+        if _skip(channel, position, index):
+            continue
+
+        pos_name = getattr(position, "name", None)
         time = cast("int | None", _ev[TIME][1] if TIME in _ev else None)
         grid = cast("GridPosition | None", _ev[GRID][1] if GRID in _ev else None)
-
-        # skip channels
-        if channel and TIME in index and index[TIME] % channel.acquire_every:
-            continue
-        # skip if also in position.sequence
-        if position and position.sequence:
-            # NOTE: if we ever add more plans, they will need to be explicitly added
-            # https://github.com/pymmcore-plus/useq-schema/pull/85
-
-            # get if sub-sequence has any plan
-            plans = any(
-                (
-                    position.sequence.grid_plan,
-                    position.sequence.z_plan,
-                    position.sequence.time_plan,
-                )
-            )
-            # overwriting the *global* channel index since it is no longer relevant.
-            # if channel IS SPECIFIED in the position.sequence WITH any plan,
-            # we skip otherwise the channel will be acquired twice. Same happens if
-            # the channel IS NOT SPECIFIED but ANY plan is.
-            if (
-                CHANNEL in index
-                and index[CHANNEL] != 0
-                and ((position.sequence.channels and plans) or not plans)
-            ):
-                continue
-            if Z in index and index[Z] != 0 and position.sequence.z_plan:
-                continue
-            if GRID in index and index[GRID] != 0 and position.sequence.grid_plan:
-                continue
+        _exposure = getattr(channel, "exposure", None)
 
         _channel = (
             _mda_event.Channel(config=channel.config, group=channel.group)
@@ -439,35 +458,51 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             else None
         )
 
-        _exposure = getattr(channel, "exposure", None)
-
-        pos_name = getattr(position, "name", None)
-
+        # get the z position
         try:
-            z_pos = (
-                sequence._combine_z(_ev[Z][1], index[Z], channel, position)
-                if Z in _ev
-                else position.z
-                if position
-                else None
-            )
+            z_pos = _get_z(sequence, _ev, index, position, channel)
         except sequence._SkipFrame:
             continue
 
-        if grid:
-            x_pos: Optional[float] = grid.x
-            y_pos: Optional[float] = grid.y
-            if grid.is_relative:
-                px = getattr(position, "x", 0) or 0
-                py = getattr(position, "y", 0) or 0
-                x_pos = x_pos + px if x_pos is not None else None
-                y_pos = y_pos + py if y_pos is not None else None
+        # get the x and y position
+        if grid is not None:
+            x_pos, y_pos = _get_grid_xy(position, grid)
         else:
             x_pos = getattr(position, "x", None)
             y_pos = getattr(position, "y", None)
 
-        if position and position.sequence:
-            for sub_event in iter_sequence(position.sequence):
+        # get the autofocus plan
+        autofocus = sequence.autofocus_plan
+
+        # if position has a sequence containing ONLY an autofocus plan, using
+        # 'position.sequence' will return None. So we need to check directly
+        # 'position.sequence.autofocus_plan'.
+        try:
+            pos_seq_af = position.sequence.autofocus_plan  # type: ignore
+        except AttributeError:
+            pos_seq_af = None
+
+        # if position has a sequence or has a sequence containing ONLY an autofocus plan
+        if position and (position.sequence or pos_seq_af):
+            pos_seq = cast(MDASequence, position.sequence)
+
+            # use global autofocus plan (if defined) if the sub-sequence has no one
+            if isinstance(pos_seq.autofocus_plan, NoAF) and not isinstance(
+                sequence.autofocus_plan, NoAF
+            ):
+                pos_seq = pos_seq.replace(autofocus_plan=sequence.autofocus_plan)
+
+            autofocus = pos_seq.autofocus_plan
+            should_autofocus = make_predicate(
+                () if isinstance(autofocus, NoAF) else autofocus.axes
+            )
+
+            # if the sub-sequence has ONLY autofocus plan, 'iter_sequence' will not work
+            # because it will yield an empty list. So we need to create a new MDAEvent
+            # (using for example the 'index' of the parent event)
+            events_list = list(iter_sequence(pos_seq)) or [MDAEvent(index=index)]
+
+            for sub_event in events_list:
                 # we're going to create a modified sub-event, inheriting some of the
                 # values from the parent event, and shifting the position of the
                 # event to account for global position offsets (or override if the
@@ -477,13 +512,12 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                     index={**index, **sub_event.index},
                     sequence=sequence,
                     pos_name=position.name or pos_name,
-                    action=Snap(),
                     **_maybe_shifted_positions(
                         sub_event=sub_event,
                         position=position,
-                        z_pos=z_pos,
                         x_pos=x_pos,
                         y_pos=y_pos,
+                        z_pos=z_pos,
                     ),
                 )
 
@@ -497,12 +531,29 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                     subval = getattr(sub_event, name)
                     update_kwargs[name] = subval if subval is not None else val
 
-                yield sub_event.copy(update=update_kwargs)
+                    # update event with the new kwargs
+                _event = sub_event.copy(update=update_kwargs)
+
+                # check if we should autofocus
+                # here we need to pass the previous autofocus index to the predicate
+                # because we are iterating over a sub-sequence and if we don't, the
+                # previous index will always be None and "use_af" always True.
+                use_af, previous_af_index = should_autofocus(_event, previous_af_index)
+                # update the event with the autofocus plan
+                if use_af:
+                    yield _event.replace(
+                        action={
+                            "type": "hardware_autofocus",
+                            "autofocus_z_device_name": autofocus.autofocus_z_device_name,  # noqa: E501
+                            "autofocus_motor_offset": autofocus.autofocus_motor_offset,
+                        }
+                    )
+                yield _event
                 global_index += 1
 
             continue
 
-        yield MDAEvent(
+        _event = MDAEvent(
             index=index,
             min_start_time=time,
             pos_name=pos_name,
@@ -515,7 +566,144 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             global_index=global_index,
             action=Snap(),
         )
+
+        use_af, _ = should_autofocus(_event)  # type: ignore
+        if use_af:
+            yield _event.replace(
+                action={
+                    "type": "hardware_autofocus",
+                    "autofocus_z_device_name": autofocus.autofocus_z_device_name,
+                    "autofocus_motor_offset": autofocus.autofocus_motor_offset,
+                }
+            )
+        yield _event
         global_index += 1
+
+
+def _skip(
+    channel: Channel | None, position: Position | None, index: dict[str, Any]
+) -> bool:
+    # skip channels
+    if channel and TIME in index and index[TIME] % channel.acquire_every:
+        return True
+    # skip if also in position.sequence
+    if position and position.sequence:
+        # NOTE: if we ever add more plans, they will need to be explicitly added
+        # https://github.com/pymmcore-plus/useq-schema/pull/85
+
+        # get if sub-sequence has any plan
+        plans = any(
+            (
+                position.sequence.grid_plan,
+                position.sequence.z_plan,
+                position.sequence.time_plan,
+            )
+        )
+        # overwriting the *global* channel index since it is no longer relevant.
+        # if channel IS SPECIFIED in the position.sequence WITH any plan,
+        # we skip otherwise the channel will be acquired twice (see PR
+        # https://github.com/pymmcore-plus/useq-schema/pull/93).
+        # Same happens if the channel IS NOT SPECIFIED but ANY plan is.
+        if (
+            CHANNEL in index
+            and index[CHANNEL] != 0
+            and ((position.sequence.channels and plans) or not plans)
+        ):
+            return True
+        if Z in index and index[Z] != 0 and position.sequence.z_plan:
+            return True
+        if GRID in index and index[GRID] != 0 and position.sequence.grid_plan:
+            return True
+    return False
+
+
+def _get_z(
+    sequence: MDASequence,
+    _ev: dict[str, Any],
+    index: dict[str, Any],
+    position: Position | None,
+    channel: Channel | None,
+) -> float | None:
+    """Return the z position for the current event."""
+    return (
+        sequence._combine_z(_ev[Z][1], index[Z], channel, position)
+        if Z in _ev
+        else position.z + channel.z_offset
+        if (
+            position
+            and position.z is not None
+            and channel
+            and channel.z_offset is not None
+        )
+        else position.z
+        if position
+        else None
+    )
+
+
+def _get_grid_xy(
+    position: Position | None, grid: GridPosition
+) -> tuple[float | None, float | None]:
+    """Return the x and y position for the current event based on a grid_plan."""
+    x_pos: Optional[float] = grid.x
+    y_pos: Optional[float] = grid.y
+    if grid.is_relative:
+        px = getattr(position, "x", 0) or 0
+        py = getattr(position, "y", 0) or 0
+        x_pos = x_pos + px if x_pos is not None else None
+        y_pos = y_pos + py if y_pos is not None else None
+    return x_pos, y_pos
+
+
+def make_predicate(
+    af_axes: tuple[str, ...]
+) -> Callable[[MDAEvent, Optional[dict[str, int]]], tuple[bool, dict[str, int]]]:
+    # closure to keep track of previous indices
+    previous_indices: dict[str, int] = {}
+
+    def predicate(
+        event: MDAEvent, previous_index: Optional[dict[str, int]] = None
+    ) -> tuple[bool, dict[str, int]]:
+        # use the global previous_indices if we don't specify a previous index
+        prev_idx = previous_index or previous_indices
+        # loop through the axes of this current index
+        for axis, index in event.index.items():
+            # and if any of them are in the af_axes and the index has changed
+            if axis in af_axes and prev_idx.get(axis) != index:
+                # then _bool is true
+                _bool = True
+                break
+        else:
+            # otherwise, _bool is false
+            _bool = False
+
+        # now, update the closed over previous_indices state.
+        previous_indices.update(event.index)
+        return _bool, previous_indices
+
+    return predicate
+
+
+def _get_updated_autofocus_z(
+    z_pos: float | None,
+    index: dict[str, int],
+    sequence: MDASequence,
+    main_sequence: MDASequence | None = None,
+) -> float | None:
+    if z_pos is None:
+        return None
+    if "z" not in index:
+        return z_pos
+
+    zplan = (
+        sequence.z_plan
+        if sequence.z_plan is not None and not isinstance(sequence.z_plan, NoZ)
+        else main_sequence.z_plan
+        if main_sequence is not None and main_sequence.z_plan
+        else None
+    )
+
+    return z_pos if zplan is None else z_pos - list(zplan)[index["z"]]
 
 
 def _maybe_shifted_positions(
@@ -525,6 +713,7 @@ def _maybe_shifted_positions(
     x_pos: float | None,  # global x position
     y_pos: float | None,  # global y position
 ) -> dict:
+    """Return a dict of kwargs for the sub_event, accounting for position shifts."""
     kwargs = {}
     # this function should only be called inside the sub-iteration loop
     # so we can assume that position.sequence is not None

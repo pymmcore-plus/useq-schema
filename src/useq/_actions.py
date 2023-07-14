@@ -1,9 +1,9 @@
 from typing import Literal, Union
 
-from ._base_model import UseqModel
+from ._base_model import FrozenModel
 
 
-class Action(UseqModel):
+class Action(FrozenModel):
     """Base class for all [`useq.MDAEvent`][] actions.
 
     Parameters
