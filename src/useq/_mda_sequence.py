@@ -529,8 +529,8 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                         z_pos=_get_updated_z_pos(_event.z_pos, _event.index, sequence),
                         action=autofocus.as_action(),
                     )
-
-                yield _event
+                if _event.action.type != 'hardware_autofocus':
+                    yield _event
                 global_index += 1
 
             continue
