@@ -455,20 +455,9 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             x_pos = getattr(position, "x", None)
             y_pos = getattr(position, "y", None)
 
-        # get the autofocus plan
-        autofocus = sequence.autofocus_plan
-
-        # if position has a sequence containing ONLY an autofocus plan, using
-        # 'position.sequence' will return None. So we need to check directly
-        # 'position.sequence.autofocus_plan'.
-        try:
-            pos_seq_af = position.sequence.autofocus_plan  # type: ignore
-        except AttributeError:
-            pos_seq_af = None
-
-        # if position has a sequence or has a sequence containing ONLY an autofocus plan
-        if position and (position.sequence or pos_seq_af):
-            pos_seq = cast(MDASequence, position.sequence)
+        # sub-sequence
+        if position and position.sequence is not None:
+            pos_seq = position.sequence
 
             # use global autofocus plan (if defined) if the sub-sequence has no one
             if isinstance(pos_seq.autofocus_plan, NoAF) and not isinstance(

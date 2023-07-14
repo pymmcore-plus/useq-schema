@@ -98,24 +98,23 @@ mdas = [
     ("tpgcz", ("p",), ["DAPI", "FITC"], [{"z": 30}, {"z": 10, "sequence": _af_seq(("z",))}], {"range": 2, "step": 1}, {}, {}, (0, *tuple(range(7, 18, 2)))),  # noqa: E501
     ("tpgcz", ("c",), ["DAPI", "FITC"], [{"z": 30}, {"z": 10, "sequence": _af_seq(("c",))}], {"range": 2, "step": 1}, {"rows": 2, "columns": 1}, {}, (tuple(range(0, 29, 4)))),  # noqa: E501
     ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30}, {"z": 10, "sequence": _af_seq(("c",), True)}], {}, {}, {}, (2, 5)),  # noqa: E501
-
-    # ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("c",))}, {"z": 10, "sequence": _af_seq(("g",), True)}], {}, {}, {}, tuple(range(0, 11, 2))),  # noqa: E501
-    # ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("c",), False, True)}, {"z": 10, "sequence": _af_seq(("g",), True)}], {}, {}, {}, tuple(range(0, 11, 2))),  # noqa: E501
-    # ("tpgcz", ("z",), ["DAPI", "FITC"], [{"z": 30}, {"z": 10, "sequence": _af_seq(None, False, True)}], {}, {}, {}, tuple(range(2, 13, 2))),  # noqa: E501
-    # ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30}, {"z": 30, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (2, 3, 4, 5)),  # noqa: E501
-    # ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p",), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (0, 4, 5, 6, 7)),  # noqa: E501
-    # ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p","g"), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, tuple(range(8))),  # noqa: E501
-    # ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p","c"), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (0, 2, 4, 5, 6, 7)),  # noqa: E501
-    # ("tpgcz", (), ["DAPI", "FITC"], [
-    #     {"z": 30, "sequence": _af_seq(("t","p","g"), True)},
-    #     {"z": 10, "sequence": _af_seq(("t","p","g"), True)},
-    #     {"z": 10, "sequence": _af_seq(("t","p","g"), True)},
-    #     ], {}, {}, {"interval": 1, "loops": 2}, tuple(range(24))),
-    # ("tpgcz", (), ["DAPI", "FITC"], [
-    #     {"z": 30, "sequence": _af_seq(("t","p"), True)},
-    #     {"z": 10, "sequence": _af_seq(("t","p"), True)},
-    #     {"z": 10, "sequence": _af_seq(("t","p"), True)},
-    #     ], {}, {}, {"interval": 1, "loops": 2}, tuple(range(0, 26, 5))),
+    ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("c",))}, {"z": 10, "sequence": _af_seq(("g",), True)}], {}, {}, {}, tuple(range(0, 11, 2))),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("c",), False, True)}, {"z": 10, "sequence": _af_seq(("g",), True)}], {}, {}, {}, (0, 4, *tuple(range(8, 15, 2)))),  # noqa: E501
+    ("tpgcz", ("z",), ["DAPI", "FITC"], [{"z": 30}, {"z": 10, "sequence": _af_seq(None, False, True)}], {}, {}, {}, tuple(range(2, 13, 2))),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30}, {"z": 30, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (2, 4, 6, 8)),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p",), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (0, 5, 7, 9, 11)),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p","g"), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, tuple(range(0, 15, 2))),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [{"z": 30, "sequence": _af_seq(("p","c"), True)}, {"z": 10, "sequence": _af_seq(("p", "g"), True)},], {}, {}, {}, (0, 3, 6, 8, 10, 12)),  # noqa: E501
+    ("tpgcz", (), ["DAPI", "FITC"], [
+        {"z": 30, "sequence": _af_seq(("t","p","g"), True)},
+        {"z": 10, "sequence": _af_seq(("t","p","g"), True)},
+        {"z": 10, "sequence": _af_seq(("t","p","g"), True)},
+        ], {}, {}, {"interval": 1, "loops": 2}, tuple(range(0, 47, 2))),
+    ("tpgcz", (), ["DAPI", "FITC"], [
+        {"z": 30, "sequence": _af_seq(("t","p"), True)},
+        {"z": 10, "sequence": _af_seq(("t","p"), True)},
+        {"z": 10, "sequence": _af_seq(("t","p"), True)},
+        ], {}, {}, {"interval": 1, "loops": 2}, tuple(range(0, 26, 5))),
 ]
 
 @pytest.mark.parametrize("order, axis, ch, pplan, zplan, gplan, tplan, expected_event_indexes", mdas)  # noqa: E501
