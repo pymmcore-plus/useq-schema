@@ -414,36 +414,8 @@ def iter_sequence(
         time = cast("int | None", _ev[TIME][1] if TIME in _ev else None)
         grid = cast("GridPosition | None", _ev[GRID][1] if GRID in _ev else None)
 
-        # skip channels
-        if channel and TIME in index and index[TIME] % channel.acquire_every:
+        if should_skip(position, channel, index):
             continue
-        # skip if also in position.sequence
-        if position and position.sequence:
-            # NOTE: if we ever add more plans, they will need to be explicitly added
-            # https://github.com/pymmcore-plus/useq-schema/pull/85
-
-            # get if sub-sequence has any plan
-            plans = any(
-                (
-                    position.sequence.grid_plan,
-                    position.sequence.z_plan,
-                    position.sequence.time_plan,
-                )
-            )
-            # overwriting the *global* channel index since it is no longer relevant.
-            # if channel IS SPECIFIED in the position.sequence WITH any plan,
-            # we skip otherwise the channel will be acquired twice. Same happens if
-            # the channel IS NOT SPECIFIED but ANY plan is.
-            if (
-                CHANNEL in index
-                and index[CHANNEL] != 0
-                and ((position.sequence.channels and plans) or not plans)
-            ):
-                continue
-            if Z in index and index[Z] != 0 and position.sequence.z_plan:
-                continue
-            if GRID in index and index[GRID] != 0 and position.sequence.grid_plan:
-                continue
 
         _channel = (
             _mda_event.Channel(config=channel.config, group=channel.group)
@@ -541,3 +513,41 @@ def get_position_offsets(
         "z_pos_override": z_pos_override,
         "z_pos_shift": z_pos_shift,
     }
+
+
+def should_skip(
+    position: Position | None, channel: Channel | None, index: dict[str, int]
+) -> bool:
+    # skip channels
+    if channel and TIME in index and index[TIME] % channel.acquire_every:
+        return True
+
+    if not position or not position.sequence:
+        return False
+
+    # NOTE: if we ever add more plans, they will need to be explicitly added
+    # https://github.com/pymmcore-plus/useq-schema/pull/85
+
+    # get if sub-sequence has any plan
+    plans = any(
+        (
+            position.sequence.grid_plan,
+            position.sequence.z_plan,
+            position.sequence.time_plan,
+        )
+    )
+    # overwriting the *global* channel index since it is no longer relevant.
+    # if channel IS SPECIFIED in the position.sequence WITH any plan,
+    # we skip otherwise the channel will be acquired twice. Same happens if
+    # the channel IS NOT SPECIFIED but ANY plan is.
+    if (
+        CHANNEL in index
+        and index[CHANNEL] != 0
+        and ((position.sequence.channels and plans) or not plans)
+    ):
+        return True
+    if Z in index and index[Z] != 0 and position.sequence.z_plan:
+        return True
+    if GRID in index and index[GRID] != 0 and position.sequence.grid_plan:
+        return True
+    return False
