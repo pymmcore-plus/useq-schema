@@ -1,5 +1,6 @@
 from typing import Optional, Tuple, Union
 
+from ._actions import HardwareAutofocus
 from ._base_model import FrozenModel
 
 
@@ -8,15 +9,21 @@ class AutoFocusPlan(FrozenModel):
 
     Attributes
     ----------
-    autofocus_z_device_name : str
+    autofocus_device_name : str
         Name of the hardware autofocus z device.
-    af_motor_offset : float | None
+    autofocus_motor_offset : float | None
         Before autofocus is performed, the autofocus motor should be moved to this
         offset.
     """
 
-    autofocus_z_device_name: str
+    autofocus_device_name: str
     autofocus_motor_offset: Optional[float] = None
+
+    def as_action(self) -> HardwareAutofocus:
+        return HardwareAutofocus(
+            autofocus_device_name=self.autofocus_device_name,
+            autofocus_motor_offset=self.autofocus_motor_offset,
+        )
 
 
 class AxesBasedAF(AutoFocusPlan):
@@ -37,7 +44,7 @@ class AxesBasedAF(AutoFocusPlan):
 class NoAF(AutoFocusPlan):
     """No hardware autofocus plan."""
 
-    autofocus_z_device_name: str = "__no_autofocus__"
+    autofocus_device_name: str = "__no_autofocus__"
 
     def __bool__(self) -> bool:
         return False

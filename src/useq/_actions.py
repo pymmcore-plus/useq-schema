@@ -1,4 +1,4 @@
-from typing import Literal, Union
+from typing import Literal
 
 from ._base_model import FrozenModel
 
@@ -15,16 +15,16 @@ class Action(FrozenModel):
     type: str
 
 
-class Snap(Action):
-    """Action to snap an image.
+class AcquireImage(Action):
+    """Action to acquire an image.
 
     Attributes
     ----------
-    type : Literal["snap"]
-        This action can be used to snap an image.
+    type : Literal["acquire_image"]
+        This action can be used to acquire an image.
     """
 
-    type: Literal["snap"] = "snap"
+    type: Literal["acquire_image"] = "acquire_image"
 
 
 class HardwareAutofocus(Action):
@@ -32,18 +32,15 @@ class HardwareAutofocus(Action):
 
     Attributes
     ----------
-    type : Literal["autofocus"]
+    type : Literal["hardware_autofocus"]
         This action can be used to trigger hardware autofocus.
-    autofocus_z_device_name : str
-        The name of the hardware autofocus z device.
+    autofocus_device_name : str
+        The name of the hardware autofocus device.
     autofocus_motor_offset: float
         Before autofocus is performed, the autofocus motor should be moved to this
         offset.
     """
 
     type: Literal["hardware_autofocus"] = "hardware_autofocus"
-    autofocus_z_device_name: str
+    autofocus_device_name: str
     autofocus_motor_offset: float
-
-
-AnyAction = Union[HardwareAutofocus, Snap]

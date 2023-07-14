@@ -20,7 +20,6 @@ import numpy as np
 from pydantic import Field, PrivateAttr, root_validator, validator
 
 from . import _mda_event
-from ._actions import Snap
 from ._base_model import UseqModel
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridPosition, NoGrid
@@ -277,32 +276,16 @@ class MDASequence(UseqModel):
             )
 
         # Cannot use autofocus plan with absolute z_plan
-        if (
-            Z in order
-            and z_plan is not None
-            and not z_plan.is_relative
-            and isinstance(autofocus_plan, AxesBasedAF)
-        ):
-            raise ValueError("Autofocus plan cannot be used with absolute Z positions!")
-
-        # TODO: find a better way. If a (sub-)sequence has only the autofocus plan,
-        # checking 'if p.sequence' will return False. So we cannot use
-        # if 'p.sequence and p.sequence.autofocus_plan'
-        # but we need to check only 'p.sequence.autofocus_plan' with try/except
-        # to avoid the AttributeError error.
-        try:
-            if (
-                Z in order
-                and z_plan is not None
-                and not z_plan.is_relative
-                and stage_positions
-                and any(p for p in stage_positions if p.sequence.autofocus_plan)  # type: ignore  # noqa: E501
-            ):
+        if Z in order and z_plan is not None and not z_plan.is_relative:
+            if isinstance(autofocus_plan, AxesBasedAF):
                 raise ValueError(
                     "Autofocus plan cannot be used with absolute Z positions!"
                 )
-        except AttributeError:
-            pass
+            for p in stage_positions:
+                if p.sequence is not None and p.sequence.autofocus_plan:
+                    raise ValueError(
+                        "Autofocus plan cannot be used with absolute Z positions!"
+                    )
 
         return order
 
@@ -544,11 +527,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 if use_af:
                     yield _event.replace(
                         z_pos=_get_updated_z_pos(_event.z_pos, _event.index, sequence),
-                        action={
-                            "type": "hardware_autofocus",
-                            "autofocus_z_device_name": autofocus.autofocus_z_device_name,  # noqa: E501
-                            "autofocus_motor_offset": autofocus.autofocus_motor_offset,
-                        },
+                        action=autofocus.as_action(),
                     )
                 yield _event
                 global_index += 1
@@ -566,18 +545,13 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             channel=_channel,
             sequence=sequence,
             global_index=global_index,
-            action=Snap(),
         )
 
         use_af, _ = should_autofocus(_event)  # type: ignore
         if use_af:
             yield _event.replace(
                 z_pos=_get_updated_z_pos(_event.z_pos, _event.index, sequence),
-                action={
-                    "type": "hardware_autofocus",
-                    "autofocus_z_device_name": autofocus.autofocus_z_device_name,
-                    "autofocus_motor_offset": autofocus.autofocus_motor_offset,
-                },
+                action=autofocus.as_action(),
             )
         yield _event
         global_index += 1

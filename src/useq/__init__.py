@@ -1,4 +1,4 @@
-from ._actions import Action, AnyAction, HardwareAutofocus, Snap
+from ._actions import AcquireImage, Action, HardwareAutofocus
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridFromEdges, GridRelative, NoGrid
 from ._hardware_autofocus import AnyAF, AxesBasedAF, NoAF
@@ -22,25 +22,24 @@ from ._z import (
 )
 
 __all__ = [
+    "AcquireImage",
     "Action",
-    "AnyAction",
     "AnyAF",
     "AnyGridPlan",
     "AxesBasedAF",
+    "Channel",
     "GridFromEdges",
     "GridRelative",
-    "NoGrid",
-    "Channel",
     "HardwareAutofocus",
     "MDAEvent",
     "MDASequence",
     "MultiPhaseTimePlan",
     "NoAF",
+    "NoGrid",
     "NoT",
     "NoZ",
     "Position",
     "PropertyTuple",
-    "Snap",
     "TDurationLoops",
     "TIntervalDuration",
     "TIntervalLoops",
