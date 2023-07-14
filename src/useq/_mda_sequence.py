@@ -454,12 +454,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         _exposure = getattr(channel, "exposure", None)
 
         _channel = (
-            _mda_event.Channel(
-                config=channel.config,
-                group=channel.group,
-                z_offset=channel.z_offset,
-                do_stack=channel.do_stack,
-            )
+            _mda_event.Channel(config=channel.config, group=channel.group)
             if channel
             else None
         )
