@@ -161,7 +161,7 @@ class MDAEvent(UseqModel):
         sequence: Optional[MDASequence] = Undefined,
         global_index: int = Undefined,
         metadata: Dict[str, Any] = Undefined,
-        action: AnyAction = Undefined,
+        action: Action = Undefined,
     ) -> MDAEvent:
         """Return a new `MDAEvent` replacing specified kwargs with new values.
 
