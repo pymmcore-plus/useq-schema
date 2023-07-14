@@ -404,40 +404,18 @@ def iter_sequence(
         if not item:  # the case with no events
             continue  # pragma: no cover
 
-        _ev = dict(zip(order, item))
-        index = {k: _ev[k][0] for k in INDICES if k in _ev}
-
-        position = cast(
-            "Position | None", _ev[POSITION][1] if POSITION in _ev else None
-        )
-        channel = cast("Channel | None", _ev[CHANNEL][1] if CHANNEL in _ev else None)
-        time = cast("int | None", _ev[TIME][1] if TIME in _ev else None)
-        grid = cast("GridPosition | None", _ev[GRID][1] if GRID in _ev else None)
+        index, position, channel, time, grid, z_pos = parse_axes(dict(zip(order, item)))
 
         if should_skip(position, channel, index):
             continue
 
-        _channel = (
-            _mda_event.Channel(config=channel.config, group=channel.group)
-            if channel
-            else None
-        )
-
-        _exposure = getattr(channel, "exposure", None)
-
-        pos_name = pos_name_override or getattr(position, "name", None)
-
         try:
             if z_pos_override is not None:
-                z_pos: float | None = z_pos_override
-            else:
-                z_pos = (
-                    sequence._combine_z(_ev[Z][1], index[Z], channel, position)
-                    if Z in _ev
-                    else position.z
-                    if position
-                    else None
-                )
+                z_pos = z_pos_override
+            elif z_pos is not None:
+                z_pos = sequence._combine_z(z_pos, index[Z], channel, position)
+            elif position:
+                z_pos = position.z
         except sequence._SkipFrame:
             continue
 
@@ -457,7 +435,17 @@ def iter_sequence(
             x_pos = x_pos_override
         if y_pos_override is not None:
             y_pos = y_pos_override
+        xpos = (x_pos + x_pos_shift) if x_pos is not None else x_pos_shift
+        ypos = (y_pos + y_pos_shift) if y_pos is not None else y_pos_shift
+        zpos = (z_pos + z_pos_shift) if z_pos is not None else z_pos_shift
 
+        pos_name = pos_name_override or getattr(position, "name", None)
+        _exposure = getattr(channel, "exposure", None)
+        _channel = (
+            _mda_event.Channel(config=channel.config, group=channel.group)
+            if channel
+            else None
+        )
         if position and position.sequence:
             yield from iter_sequence(
                 position.sequence,
@@ -475,13 +463,33 @@ def iter_sequence(
             index={**(parent_indices or {}), **index},
             min_start_time=time if time is not None else start_time_fallback,
             pos_name=pos_name,
-            x_pos=(x_pos + x_pos_shift) if x_pos is not None else x_pos_shift,
-            y_pos=(y_pos + y_pos_shift) if y_pos is not None else y_pos_shift,
-            z_pos=(z_pos + z_pos_shift) if z_pos is not None else z_pos_shift,
+            x_pos=xpos,
+            y_pos=ypos,
+            z_pos=zpos,
             exposure=_exposure if _exposure is not None else exposure_fallback,
             channel=_channel if _channel is not None else channel_fallback,
             sequence=sequence if parent_sequence is None else parent_sequence,
         )
+
+
+def parse_axes(
+    event: dict,
+) -> tuple[
+    dict[str, int],
+    Position | None,
+    Channel | None,
+    float | None,
+    GridPosition | None,
+    float | None,
+]:
+    index = {k: event[k][0] for k in INDICES if k in event}
+
+    position = event[POSITION][1] if POSITION in event else None
+    channel = event[CHANNEL][1] if CHANNEL in event else None
+    time = event[TIME][1] if TIME in event else None
+    grid = event[GRID][1] if GRID in event else None
+    z_pos = event[Z][1] if Z in event else None
+    return index, position, channel, time, grid, z_pos
 
 
 def get_position_offsets(
@@ -518,6 +526,7 @@ def get_position_offsets(
 def should_skip(
     position: Position | None, channel: Channel | None, index: dict[str, int]
 ) -> bool:
+    """Return True if this event should be skipped."""
     # skip channels
     if channel and TIME in index and index[TIME] % channel.acquire_every:
         return True
