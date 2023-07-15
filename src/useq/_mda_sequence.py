@@ -514,10 +514,15 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
                 use_af, previous_af_index = should_autofocus(_event, previous_af_index)
                 if use_af:
                     # update the event with the autofocus plan
-                    yield _event.replace(
-                        z_pos=_get_updated_z_pos(_event.z_pos, _event.index, sequence),
-                        action=autofocus.as_action(),
+                    yield _event.copy(
+                        update={
+                            "action": autofocus.as_action(),
+                            "z_pos": _get_updated_z_pos(
+                                _event.z_pos, _event.index, sequence
+                            ),
+                        }
                     )
+
                 if _event.action.type != "hardware_autofocus":
                     yield _event
                 global_index += 1
@@ -539,9 +544,11 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
         use_af, _ = should_autofocus(_event)  # type: ignore
         if use_af:
-            yield _event.replace(
-                z_pos=_get_updated_z_pos(_event.z_pos, _event.index, sequence),
-                action=autofocus.as_action(),
+            yield _event.copy(
+                update={
+                    "action": autofocus.as_action(),
+                    "z_pos": _get_updated_z_pos(_event.z_pos, _event.index, sequence),
+                }
             )
         yield _event
         global_index += 1

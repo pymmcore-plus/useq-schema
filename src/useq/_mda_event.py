@@ -10,7 +10,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    no_type_check,
 )
 
 from pydantic import Field, validator
@@ -145,33 +144,6 @@ class MDAEvent(UseqModel):
         d = self.__dict__.copy()
         d.pop("sequence")
         return list(d.items())
-
-    @no_type_check
-    def replace(
-        self,
-        index: ReadOnlyDict[str, int] = Undefined,
-        channel: Optional[Channel] = Undefined,
-        exposure: Optional[PositiveFloat] = Undefined,
-        min_start_time: Optional[float] = Undefined,
-        pos_name: Optional[str] = Undefined,
-        x_pos: Optional[float] = Undefined,
-        y_pos: Optional[float] = Undefined,
-        z_pos: Optional[float] = Undefined,
-        properties: Optional[List[PropertyTuple]] = Undefined,
-        sequence: Optional[MDASequence] = Undefined,
-        global_index: int = Undefined,
-        metadata: Dict[str, Any] = Undefined,
-        action: Action = Undefined,
-    ) -> MDAEvent:
-        """Return a new `MDAEvent` replacing specified kwargs with new values.
-
-        MDAEvent are immutable, so this method is useful for creating a new
-        sequence with only a few fields changed.
-        """
-        kwargs = {
-            k: v for k, v in locals().items() if v is not Undefined and k != "self"
-        }
-        return type(self)(**{**self.dict(), **kwargs})
 
     def to_pycromanager(self) -> dict:
         """Convenience method to convert this event to a pycro-manager events.
