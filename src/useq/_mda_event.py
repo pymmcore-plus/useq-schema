@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -98,19 +99,15 @@ class MDAEvent(UseqModel):
     z_pos : float | None
         Z position in microns. If not provided, implies use current position. By
         default, `None`.
+    sequence : MDASequence | None
+        A reference to the [`useq.MDASequence`][] this event belongs to. This is a
+        read-only attribute. By default, `None`.
     properties : Sequence[PropertyTuple] | None
         List of [`useq.PropertyTuple`][] to set before starting this event. Where each
         item in the list is a 3-member named tuple of `(device_name, property_name,
         property_value)`.  This is inspired by micro-manager's Device Adapter API, but
         could be used to set arbitrary properties in any backend that supports the
         concept of devices that have properties with values. By default, `None`.
-    sequence : MDASequence | None
-        A reference to the [`useq.MDASequence`][] this event belongs to. This is a
-        read-only attribute. By default, `None`.
-    global_index : int
-        The global index of this event in the sequence. For example, in an
-        `MDASequence` with 2 channels and 5 time points, the global index of each
-        event will be an integer from 0 to 9.  By default, `0`.
     metadata : dict
         Optional metadata to be associated with this event.
     """
@@ -123,13 +120,20 @@ class MDAEvent(UseqModel):
     x_pos: Optional[float] = None
     y_pos: Optional[float] = None
     z_pos: Optional[float] = None
-    properties: Optional[List[PropertyTuple]] = None
     sequence: Optional[MDASequence] = Field(default=None, repr=False)
-    global_index: int = Field(default=0, repr=False)
+    properties: Optional[List[PropertyTuple]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     # action
     # keep shutter open between channels/steps
+    @property
+    def global_index(self) -> int:
+        warnings.warn(
+            "global_index is no longer functional.  Use `enumerate()` "
+            "on an iterable of events instead.",
+            stacklevel=2,
+        )
+        return 0
 
     @validator("index", pre=True)
     def validate_index(cls, v: dict) -> ReadOnlyDict[str, int]:
