@@ -512,7 +512,7 @@ def _parse_axes(
     _ev = dict(event)
     index = {ax: _ev[ax][0] for ax in INDICES if ax in _ev}
     axes = (_ev[ax][1] if ax in _ev else None for ax in INDICES)
-    return index, *axes  # type: ignore [return-value]
+    return (index, *axes)  # type: ignore[return-value]
 
 
 def _should_skip(
