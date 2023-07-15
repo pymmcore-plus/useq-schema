@@ -1,3 +1,8 @@
+autofocus_plan:
+  autofocus_device_name: Z
+  autofocus_motor_offset: 50.0
+  axes:
+  - c
 axis_order: tpgcz
 channels:
 - config: Cy5

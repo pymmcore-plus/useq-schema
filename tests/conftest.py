@@ -32,4 +32,9 @@ def mda1() -> MDASequence:
         ],
         z_plan={"range": 1.0, "step": 0.5},
         grid_plan={"rows": 2, "columns": 1},
+        autofocus_plan={
+            "autofocus_device_name": "Z",
+            "autofocus_motor_offset": 50,
+            "axes": ("c",),
+        },
     )
