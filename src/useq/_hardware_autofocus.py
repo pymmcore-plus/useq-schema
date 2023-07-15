@@ -38,7 +38,7 @@ class AutoFocusPlan(FrozenModel):
             new_z: Optional[float] = None
             if event.z_pos is None:
                 new_z = None
-            elif "z" not in event.index or zplan is None or isinstance(zplan, NoZ):
+            elif "z" not in event.index or isinstance(zplan, NoZ):
                 new_z = event.z_pos
             else:
                 new_z = event.z_pos - list(zplan)[event.index["z"]]
