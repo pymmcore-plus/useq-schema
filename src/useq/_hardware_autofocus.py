@@ -28,7 +28,7 @@ class AutoFocusPlan(FrozenModel):
             autofocus_motor_offset=self.autofocus_motor_offset,
         )
 
-    def event(self, event: MDAEvent) -> MDAEvent | None:
+    def event(self, event: MDAEvent) -> Optional[MDAEvent]:
         """Return a new autofocus event if autofocus should be performed."""
         if self.should_autofocus(event):
             return event.copy(update={"action": self.as_action()})
