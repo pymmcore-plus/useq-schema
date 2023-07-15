@@ -1,7 +1,10 @@
 from typing import Optional, Tuple, Union
 
+from pydantic import PrivateAttr
+
 from ._actions import HardwareAutofocus
 from ._base_model import FrozenModel
+from ._mda_event import MDAEvent
 
 
 class AutoFocusPlan(FrozenModel):
@@ -25,6 +28,15 @@ class AutoFocusPlan(FrozenModel):
             autofocus_motor_offset=self.autofocus_motor_offset,
         )
 
+    def event(self, event: MDAEvent) -> MDAEvent | None:
+        """Return a new autofocus event if autofocus should be performed."""
+        if self.should_autofocus(event):
+            return event.copy(update={"action": self.as_action()})
+        return None
+
+    def should_autofocus(self, event: MDAEvent) -> bool:
+        raise NotImplementedError("should_autofocus() must be implemented by subclass.")
+
 
 class AxesBasedAF(AutoFocusPlan):
     """Autofocus plan that performs autofocus when any of the specified axes change.
@@ -39,6 +51,16 @@ class AxesBasedAF(AutoFocusPlan):
     """
 
     axes: Tuple[str, ...]
+    _previous: dict = PrivateAttr(default_factory=dict)
+
+    def should_autofocus(self, event: MDAEvent) -> bool:
+        # If any of the axes specified in self.axes have changed from the previous
+        # event, then return True.
+        self._previous, previous = dict(event.index), self._previous
+        for axis, index in event.index.items():
+            if axis in self.axes and previous.get(axis) != index:
+                return True
+        return False
 
 
 class NoAF(AutoFocusPlan):
@@ -49,5 +71,8 @@ class NoAF(AutoFocusPlan):
     def __bool__(self) -> bool:
         return False
 
+    def should_autofocus(self, event: MDAEvent) -> bool:
+        return False
 
-AnyAF = Union[AxesBasedAF, NoAF]
+
+AnyAutofocusPlan = Union[AxesBasedAF, NoAF]

@@ -23,7 +23,7 @@ from . import _mda_event
 from ._base_model import UseqModel
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridPosition, NoGrid
-from ._hardware_autofocus import AnyAF, AxesBasedAF, NoAF
+from ._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF, NoAF
 from ._mda_event import MDAEvent
 from ._position import Position
 from ._time import AnyTimePlan, NoT
@@ -118,7 +118,7 @@ class MDASequence(UseqModel):
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
-    autofocus_plan: AnyAF = Field(default_factory=NoAF)
+    autofocus_plan: AnyAutofocusPlan = Field(default_factory=NoAF)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _length: Optional[int] = PrivateAttr(default=None)
@@ -146,7 +146,7 @@ class MDASequence(UseqModel):
         channels: Tuple[Channel, ...] = Undefined,
         time_plan: AnyTimePlan = Undefined,
         z_plan: AnyZPlan = Undefined,
-        autofocus_plan: AnyAF = Undefined,
+        autofocus_plan: AnyAutofocusPlan = Undefined,
     ) -> MDASequence:
         """Return a new `MDAsequence` replacing specified kwargs with new values.
 
@@ -222,7 +222,7 @@ class MDASequence(UseqModel):
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
         grid_plan: Optional[AnyGridPlan] = None,
-        autofocus_plan: Optional[AnyAF] = None,
+        autofocus_plan: Optional[AnyAutofocusPlan] = None,
     ) -> str:
         if (
             Z in order
@@ -437,7 +437,6 @@ def iter_sequence(
 
         # get axes objects for this event
         index, time, position, grid, channel, z_pos = _parse_axes(zip(order, item))
-
         # skip if necessary
         if _should_skip(position, channel, index, sequence.z_plan):
             continue
@@ -449,8 +448,9 @@ def iter_sequence(
         # determine x, y, z positions
         event_kwargs.update(_xyzpos(position, channel, sequence.z_plan, grid, z_pos))
 
-        if position and position.name:
-            event_kwargs["pos_name"] = position.name
+        if position:
+            if position.name:
+                event_kwargs["pos_name"] = position.name
         if channel:
             event_kwargs["channel"] = channel.to_event_channel()
             if channel.exposure is not None:
@@ -469,24 +469,38 @@ def iter_sequence(
                 if event_kwargs[k] is not None:  # type: ignore[literal-required]
                     event_kwargs[k] += v  # type: ignore[literal-required]
 
-        # if a position has been declared with a sub-sequence, we recurse into it
-        if position and position.sequence:
-            # determine any relative position shifts or global overrides
-            _pos, _offsets = _position_offsets(position, event_kwargs)
-            # build overrides for this position
-            pos_overrides = MDAEventDict(sequence=sequence, **_pos)  # type: ignore
-            if position.name:
-                pos_overrides["pos_name"] = position.name
-            # recurse into the sub-sequence
-            yield from iter_sequence(
-                position.sequence,
-                base_event_kwargs=event_kwargs.copy(),
-                event_kwarg_overrides=pos_overrides,
-                position_offsets=_offsets,
-            )
-            continue
+        # grab global autofocus plan (may be overridden by position-specific plan below)
+        autofocus_plan = sequence.autofocus_plan
 
-        yield MDAEvent(**event_kwargs)
+        # if a position has been declared with a sub-sequence, we recurse into it
+        if position:
+            if position.sequence:
+                # determine any relative position shifts or global overrides
+                _pos, _offsets = _position_offsets(position, event_kwargs)
+                # build overrides for this position
+                pos_overrides = MDAEventDict(sequence=sequence, **_pos)  # type: ignore
+                if position.name:
+                    pos_overrides["pos_name"] = position.name
+                # recurse into the sub-sequence
+                yield from iter_sequence(
+                    position.sequence,
+                    base_event_kwargs=event_kwargs.copy(),
+                    event_kwarg_overrides=pos_overrides,
+                    position_offsets=_offsets,
+                )
+                continue
+            # note that position.sequence may be Falsey even if not None, for example
+            # if all it has is an autofocus plan.  In that case, we don't recurse.
+            # and we don't hit the continue statement, but we can use the autofocus plan
+            elif position.sequence is not None and position.sequence.autofocus_plan:
+                autofocus_plan = position.sequence.autofocus_plan
+
+        event = MDAEvent(**event_kwargs)
+        if autofocus_plan:
+            af_event = autofocus_plan.event(event)
+            if af_event is not None:
+                yield af_event
+        yield event
 
 
 def _position_offsets(
