@@ -448,9 +448,8 @@ def iter_sequence(
         # determine x, y, z positions
         event_kwargs.update(_xyzpos(position, channel, sequence.z_plan, grid, z_pos))
 
-        if position:
-            if position.name:
-                event_kwargs["pos_name"] = position.name
+        if position and position.name:
+            event_kwargs["pos_name"] = position.name
         if channel:
             event_kwargs["channel"] = channel.to_event_channel()
             if channel.exposure is not None:
