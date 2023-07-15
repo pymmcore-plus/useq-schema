@@ -8,7 +8,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    TypedDict,
     Union,
     cast,
     no_type_check,
@@ -18,6 +17,7 @@ from warnings import warn
 
 import numpy as np
 from pydantic import Field, PrivateAttr, root_validator, validator
+from typing_extensions import TypedDict
 
 from . import _mda_event
 from ._base_model import UseqModel
