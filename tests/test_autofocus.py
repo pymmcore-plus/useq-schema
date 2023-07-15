@@ -108,6 +108,14 @@ def test_autofocus_z_pos() -> None:
     z = [e.z_pos for e in mda]
     assert z[0] == z[4] == 200
 
+def test_autofocus_z_pos_abovebelow() -> None:
+    mda = TWO_CH.replace(stage_positions=[ZPOS_200], z_plan=useq.ZAboveBelow(above=2, below=2, step=1))
+    af_plan = AxesBasedAF(
+        autofocus_device_name="Z", autofocus_motor_offset=50, axes=("c",)
+    )
+    mda = mda.replace(autofocus_plan=af_plan)
+    z = [e.z_pos for e in mda]
+    assert z[0] == z[6] == 200
 
 def test_autofocus_z_pos_af_sub_sequence() -> None:
     mda = TWO_CH.replace(stage_positions=[SUB_P_AF_C], z_plan=ZRANGE2)
