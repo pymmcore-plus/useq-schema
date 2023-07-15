@@ -1,7 +1,7 @@
 from ._actions import AcquireImage, Action, HardwareAutofocus
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridFromEdges, GridRelative, NoGrid
-from ._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF, NoAF
+from ._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF, NoAF
 from ._mda_event import MDAEvent, PropertyTuple
 from ._mda_sequence import MDASequence
 from ._position import Position
@@ -26,6 +26,7 @@ __all__ = [
     "Action",
     "AnyAutofocusPlan",
     "AnyGridPlan",
+    "AutoFocusPlan",
     "AxesBasedAF",
     "Channel",
     "GridFromEdges",

@@ -24,6 +24,7 @@ class AutoFocusPlan(FrozenModel):
     autofocus_motor_offset: Optional[float] = None
 
     def as_action(self) -> HardwareAutofocus:
+        """Return a [`HardwareAutofocus`][useq.HardwareAutofocus][`Action`][useq.Action] for this autofocus plan."""  # noqa: E501
         return HardwareAutofocus(
             autofocus_device_name=self.autofocus_device_name,
             autofocus_motor_offset=self.autofocus_motor_offset,
@@ -47,6 +48,10 @@ class AutoFocusPlan(FrozenModel):
         return None
 
     def should_autofocus(self, event: MDAEvent) -> bool:
+        """Method that must be implemented by a subclass.
+
+        Should return True if autofocus should be performed at this event.
+        """
         raise NotImplementedError("should_autofocus() must be implemented by subclass.")
 
 
@@ -66,8 +71,11 @@ class AxesBasedAF(AutoFocusPlan):
     _previous: dict = PrivateAttr(default_factory=dict)
 
     def should_autofocus(self, event: MDAEvent) -> bool:
-        # If any of the axes specified in self.axes have changed from the previous
-        # event, then return True.
+        """Return True if autofocus should be performed at this event.
+
+        ...if any of the axes specified in `axes` have changed from the previous
+        event.
+        """
         self._previous, previous = dict(event.index), self._previous
         for axis, index in event.index.items():
             if axis in self.axes and previous.get(axis) != index:

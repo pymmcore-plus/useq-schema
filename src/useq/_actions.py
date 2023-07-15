@@ -4,7 +4,7 @@ from ._base_model import FrozenModel
 
 
 class Action(FrozenModel):
-    """Base class for all [`useq.MDAEvent`][] actions.
+    """Base class for all [`MDAEvent`][useq.MDAEvent] `Actions`.
 
     Parameters
     ----------
@@ -16,7 +16,7 @@ class Action(FrozenModel):
 
 
 class AcquireImage(Action):
-    """Action to acquire an image.
+    """`Action` to acquire an image.
 
     Attributes
     ----------
@@ -28,7 +28,7 @@ class AcquireImage(Action):
 
 
 class HardwareAutofocus(Action):
-    """Action to perform a hardware autofocus.
+    """`Action` to perform a hardware autofocus.
 
     Attributes
     ----------
