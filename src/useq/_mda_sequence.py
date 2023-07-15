@@ -8,6 +8,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    TypedDict,
     Union,
     cast,
     no_type_check,
@@ -333,24 +334,6 @@ class MDASequence(UseqModel):
         """
         return iter_sequence(self)
 
-    def _combine_z(
-        self,
-        z_pos: float,
-        z_ind: int,
-        channel: Optional[Channel],
-        position: Optional[Position],
-    ) -> float:
-        if channel:
-            # only acquire on the middle plane:
-            if not channel.do_stack and z_ind != len(self.z_plan) // 2:
-                raise self._SkipFrame()
-            if channel.z_offset is not None:
-                z_pos += channel.z_offset
-        if self.z_plan.is_relative:
-            # TODO: either disallow without position z, or add concept of "current"
-            z_pos += getattr(position, Z, None) or 0
-        return z_pos
-
     def to_pycromanager(self) -> list[dict]:
         """Convenience to convert this sequence to a list of pycro-manager events.
 
@@ -363,20 +346,32 @@ MDAEvent.update_forward_refs(MDASequence=MDASequence)
 Position.update_forward_refs(MDASequence=MDASequence)
 
 
+class MDAEventDict(TypedDict, total=False):
+    index: dict[str, int]
+    channel: _mda_event.Channel | None
+    exposure: float | None
+    min_start_time: float | None
+    pos_name: str | None
+    x_pos: float | None
+    y_pos: float | None
+    z_pos: float | None
+    sequence: MDASequence | None
+    properties: list[tuple] | None
+    metadata: dict
+
+
+class PositionDict(TypedDict, total=False):
+    x_pos: float
+    y_pos: float
+    z_pos: float
+
+
 def iter_sequence(
     sequence: MDASequence,
-    pos_name_override: str | None = None,
-    parent_sequence: MDASequence | None = None,
-    parent_indices: dict | None = None,
-    channel_fallback: Any = None,
-    start_time_fallback: Any = None,
-    exposure_fallback: Any = None,
-    x_pos_override: float | None = None,
-    x_pos_shift: float = 0,
-    y_pos_override: float | None = None,
-    y_pos_shift: float = 0,
-    z_pos_override: float | None = None,
-    z_pos_shift: float = 0,
+    *,
+    base_event_kwargs: MDAEventDict | None = None,
+    event_kwarg_overrides: MDAEventDict | None = None,
+    position_offsets: PositionDict | None = None,
 ) -> Iterator[MDAEvent]:
     """Iterate over all events in the MDA sequence.'.
 
@@ -392,144 +387,149 @@ def iter_sequence(
     almost entirely declarative).  This iterator is useful for consuming `MDASequence`
     objects in a python runtime, but it isn't considered a "core" part of the schema.
 
+    Parameters
+    ----------
+    sequence : MDASequence
+        The sequence to iterate over.
+    base_event_kwargs : MDAEventDict | None
+        A dictionary of "global" kwargs to begin with when building the kwargs passed
+        to each MDAEvent.  These will be overriden by event-specific kwargs (e.g. if
+        the event specifies a channel, it will be used instead of the
+        `base_event_kwargs`.)
+    event_kwarg_overrides : MDAEventDict | None
+        A dictionary of kwargs that will be applied to all events. Unlike
+        `base_event_kwargs`, these kwargs take precedence over any event-specific
+        kwargs.
+    position_offsets : PositionDict | None
+        A dictionary of offsets to apply to each position. This can be used to shift
+        all positions in a sub-sequence.  Keys must be one of `x_pos`, `y_pos`, or
+        `z_pos` and values should be floats.s
+
     Yields
     ------
     MDAEvent
         Each event in the MDA sequence.
     """
     order = sequence.used_axes
-
-    event_iterator = (enumerate(sequence.iter_axis(ax)) for ax in order)
-    for item in product(*event_iterator):
+    axis_iterators = (enumerate(sequence.iter_axis(ax)) for ax in order)
+    for item in product(*axis_iterators):
         if not item:  # the case with no events
             continue  # pragma: no cover
 
-        index, position, channel, time, grid, z_pos = parse_axes(dict(zip(order, item)))
+        # get axes objects for this event
+        index, time, position, grid, channel, z_pos = _parse_axes(zip(order, item))
 
-        if should_skip(position, channel, index):
+        # skip if necessary
+        if _should_skip(position, channel, index, sequence.z_plan):
             continue
 
-        try:
-            if z_pos_override is not None:
-                z_pos = z_pos_override
-            elif z_pos is not None:
-                z_pos = sequence._combine_z(z_pos, index[Z], channel, position)
-            elif position:
-                z_pos = position.z
-        except sequence._SkipFrame:
-            continue
+        # build kwargs that will be passed to this MDAEvent
+        event_kwargs = base_event_kwargs or MDAEventDict(sequence=sequence)
+        # the .update() here lets us build on top of the base_event.index if present
+        event_kwargs.setdefault("index", {}).update(index)
+        # determine x, y, z positions
+        event_kwargs.update(_xyzpos(position, channel, sequence.z_plan, grid, z_pos))
 
-        if grid:
-            x_pos: Optional[float] = grid.x
-            y_pos: Optional[float] = grid.y
-            if grid.is_relative:
-                px = getattr(position, "x", 0) or 0
-                py = getattr(position, "y", 0) or 0
-                x_pos = x_pos + px if x_pos is not None else None
-                y_pos = y_pos + py if y_pos is not None else None
-        else:
-            x_pos = getattr(position, "x", None)
-            y_pos = getattr(position, "y", None)
+        if position and position.name:
+            event_kwargs["pos_name"] = position.name
+        if channel:
+            event_kwargs["channel"] = channel.to_event_channel()
+            if channel.exposure is not None:
+                event_kwargs["exposure"] = channel.exposure
+        if time is not None:
+            event_kwargs["min_start_time"] = time
 
-        if x_pos_override is not None:
-            x_pos = x_pos_override
-        if y_pos_override is not None:
-            y_pos = y_pos_override
-        xpos = (x_pos + x_pos_shift) if x_pos is not None else x_pos_shift
-        ypos = (y_pos + y_pos_shift) if y_pos is not None else y_pos_shift
-        zpos = (z_pos + z_pos_shift) if z_pos is not None else z_pos_shift
+        # apply any overrides
+        if event_kwarg_overrides:
+            event_kwargs.update(event_kwarg_overrides)
 
-        pos_name = pos_name_override or getattr(position, "name", None)
-        _exposure = getattr(channel, "exposure", None)
-        _channel = (
-            _mda_event.Channel(config=channel.config, group=channel.group)
-            if channel
-            else None
-        )
+        # shift positions if position_offsets have been provided
+        # (usually from sub-sequences)
+        if position_offsets:
+            for k, v in position_offsets.items():
+                if event_kwargs[k] is not None:  # type: ignore[literal-required]
+                    event_kwargs[k] += v  # type: ignore[literal-required]
+
+        # if a position has been declared with a sub-sequence, we recurse into it
         if position and position.sequence:
+            # determine any relative position shifts or global overrides
+            _pos, _offsets = _position_offsets(position, event_kwargs)
+            # build overrides for this position
+            pos_overrides = MDAEventDict(sequence=sequence, **_pos)  # type: ignore
+            if position.name:
+                pos_overrides["pos_name"] = position.name
+            # recurse into the sub-sequence
             yield from iter_sequence(
                 position.sequence,
-                pos_name_override=position.name,
-                parent_sequence=sequence,
-                parent_indices=index,
-                channel_fallback=_channel,
-                exposure_fallback=_exposure,
-                start_time_fallback=time,
-                **get_position_offsets(position, z_pos, x_pos, y_pos),
+                base_event_kwargs=event_kwargs.copy(),
+                event_kwarg_overrides=pos_overrides,
+                position_offsets=_offsets,
             )
             continue
 
-        yield MDAEvent(
-            index={**(parent_indices or {}), **index},
-            min_start_time=time if time is not None else start_time_fallback,
-            pos_name=pos_name,
-            x_pos=xpos,
-            y_pos=ypos,
-            z_pos=zpos,
-            exposure=_exposure if _exposure is not None else exposure_fallback,
-            channel=_channel if _channel is not None else channel_fallback,
-            sequence=sequence if parent_sequence is None else parent_sequence,
-        )
+        yield MDAEvent(**event_kwargs)
 
 
-def parse_axes(
-    event: dict,
+def _position_offsets(
+    position: Position, event_kwargs: MDAEventDict
+) -> tuple[MDAEventDict, PositionDict]:
+    """Determine shifts and position overrides for position subsequences."""
+    pos_seq = cast("MDASequence", position.sequence)
+    overrides = MDAEventDict()
+    offsets = PositionDict()
+    if not pos_seq.z_plan:
+        # if this position has no z_plan, we use the z_pos from the parent
+        overrides["z_pos"] = event_kwargs.get("z_pos")
+    elif pos_seq.z_plan.is_relative:
+        # otherwise apply z-shifts if this position has a relative z_plan
+        offsets["z_pos"] = position.z or 0.0
+
+    if not pos_seq.grid_plan:
+        # if this position has no grid plan, we use the x_pos and y_pos from the parent
+        overrides["x_pos"] = event_kwargs.get("x_pos")
+        overrides["y_pos"] = event_kwargs.get("y_pos")
+    elif pos_seq.grid_plan.is_relative:
+        # otherwise apply x/y shifts if this position has a relative grid plan
+        offsets["x_pos"] = position.x or 0.0
+        offsets["y_pos"] = position.y or 0.0
+    return overrides, offsets
+
+
+def _parse_axes(
+    event: zip[tuple[str, Any]],
 ) -> tuple[
     dict[str, int],
+    float | None,  # time
     Position | None,
-    Channel | None,
-    float | None,
     GridPosition | None,
-    float | None,
+    Channel | None,
+    float | None,  # z
 ]:
-    index = {k: event[k][0] for k in INDICES if k in event}
+    """Parse an individual event from the product of axis iterators.
 
-    position = event[POSITION][1] if POSITION in event else None
-    channel = event[CHANNEL][1] if CHANNEL in event else None
-    time = event[TIME][1] if TIME in event else None
-    grid = event[GRID][1] if GRID in event else None
-    z_pos = event[Z][1] if Z in event else None
-    return index, position, channel, time, grid, z_pos
-
-
-def get_position_offsets(
-    position: Position, z_pos: float | None, x_pos: float | None, y_pos: float | None
-) -> dict:
-    pos_seq = cast("MDASequence", position.sequence)
-
-    z_pos_shift = 0.0
-    z_pos_override = None
-    if not pos_seq.z_plan:
-        z_pos_override = z_pos
-    elif pos_seq.z_plan.is_relative:
-        z_pos_shift = position.z or 0.0
-
-    x_pos_shift = y_pos_shift = 0.0
-    x_pos_override = y_pos_override = None
-    if not pos_seq.grid_plan:
-        x_pos_override = x_pos
-        y_pos_override = y_pos
-    elif pos_seq.grid_plan.is_relative:
-        x_pos_shift = position.x or 0.0
-        y_pos_shift = position.y or 0.0
-
-    return {
-        "x_pos_override": x_pos_override,
-        "x_pos_shift": x_pos_shift,
-        "y_pos_override": y_pos_override,
-        "y_pos_shift": y_pos_shift,
-        "z_pos_override": z_pos_override,
-        "z_pos_shift": z_pos_shift,
-    }
+    Returns typed objects for each axis, and the index of the event.
+    """
+    _ev = dict(event)
+    index = {ax: _ev[ax][0] for ax in INDICES if ax in _ev}
+    axes = (_ev[ax][1] if ax in _ev else None for ax in INDICES)
+    return index, *axes  # type: ignore [return-value]
 
 
-def should_skip(
-    position: Position | None, channel: Channel | None, index: dict[str, int]
+def _should_skip(
+    position: Position | None,
+    channel: Channel | None,
+    index: dict[str, int],
+    z_plan: AnyZPlan,
 ) -> bool:
     """Return True if this event should be skipped."""
-    # skip channels
-    if channel and TIME in index and index[TIME] % channel.acquire_every:
-        return True
+    if channel:
+        # skip channels
+        if TIME in index and index[TIME] % channel.acquire_every:
+            return True
+
+        # only acquire on the middle plane:
+        if not channel.do_stack and index[Z] != len(z_plan) // 2:
+            return True
 
     if not position or not position.sequence:
         return False
@@ -560,3 +560,35 @@ def should_skip(
     if GRID in index and index[GRID] != 0 and position.sequence.grid_plan:
         return True
     return False
+
+
+def _xyzpos(
+    position: Position | None,
+    channel: Channel | None,
+    z_plan: AnyZPlan,
+    grid: GridPosition | None = None,
+    z_pos: float | None = None,
+) -> MDAEventDict:
+    if z_pos is not None:
+        # combine z_pos with z_offset
+        if channel and channel.z_offset is not None:
+            z_pos += channel.z_offset
+        if z_plan.is_relative:
+            # TODO: either disallow without position z, or add concept of "current"
+            z_pos += getattr(position, Z, None) or 0
+    elif position:
+        z_pos = position.z
+
+    if grid:
+        x_pos: Optional[float] = grid.x
+        y_pos: Optional[float] = grid.y
+        if grid.is_relative:
+            px = getattr(position, "x", 0) or 0
+            py = getattr(position, "y", 0) or 0
+            x_pos = x_pos + px if x_pos is not None else None
+            y_pos = y_pos + py if y_pos is not None else None
+    else:
+        x_pos = getattr(position, "x", None)
+        y_pos = getattr(position, "y", None)
+
+    return {"x_pos": x_pos, "y_pos": y_pos, "z_pos": z_pos}

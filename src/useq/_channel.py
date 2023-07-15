@@ -4,6 +4,7 @@ from typing import Any, Callable, Generator, Optional
 
 from pydantic.types import PositiveFloat, PositiveInt
 
+from . import _mda_event
 from ._base_model import FrozenModel
 
 
@@ -54,3 +55,6 @@ class Channel(FrozenModel):
         if isinstance(value, dict):
             return Channel(**value)
         raise TypeError(f"invalid Channel argument: {value!r}")
+
+    def to_event_channel(self) -> _mda_event.Channel:
+        return _mda_event.Channel(config=self.config, group=self.group)
