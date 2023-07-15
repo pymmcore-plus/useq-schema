@@ -133,3 +133,38 @@ def test_autofocus_sub_sequence(
     expected = list(expected_af_indices)
     if expected != actual:
         raise AssertionError(f"Expected AF indices at {expected} but got {actual}")
+
+
+def test_autofocus_z_pos() -> None:
+    mda = TWO_CH.replace(stage_positions=[ZPOS_200], z_plan=ZRANGE2)
+    af_plan = AxesBasedAF(
+        autofocus_device_name="Z", autofocus_motor_offset=50, axes=("c",)
+    )
+    mda = mda.replace(autofocus_plan=af_plan)
+    z = [e.z_pos for e in mda]
+    assert z[0] == z[4] == 200
+
+
+def test_autofocus_z_pos_af_sub_sequence() -> None:
+    mda = TWO_CH.replace(stage_positions=[SUB_P_AF_C], z_plan=ZRANGE2)
+    z = [e.z_pos for e in mda]
+    assert z[0] == z[4] == 10
+
+
+def test_autofocus_z_pos_af_sub_sequence_zplan() -> None:
+    mda = TWO_CH_SUBPAF_C
+    z = [e.z_pos for e in mda]
+    assert z[2] == z[4] == 10
+
+
+def test_autofocus_z_pos_multi_plans() -> None:
+    mda = TWO_CH.replace(
+        stage_positions=[ZPOS_200], grid_plan=GRID_PLAN, z_plan=ZRANGE2
+    )
+    af_plan = AxesBasedAF(
+        autofocus_device_name="Z", autofocus_motor_offset=50, axes=("c",)
+    )
+    mda = mda.replace(autofocus_plan=af_plan)
+    z = [e.z_pos for e in mda]
+    indexes = [0, 4, 8, 12]
+    assert [z[i] for i in indexes] == [200] * len(indexes)

@@ -5,6 +5,7 @@ from pydantic import PrivateAttr
 from ._actions import HardwareAutofocus
 from ._base_model import FrozenModel
 from ._mda_event import MDAEvent
+from ._z import AnyZPlan, NoZ
 
 
 class AutoFocusPlan(FrozenModel):
@@ -28,10 +29,21 @@ class AutoFocusPlan(FrozenModel):
             autofocus_motor_offset=self.autofocus_motor_offset,
         )
 
-    def event(self, event: MDAEvent) -> Optional[MDAEvent]:
-        """Return a new autofocus event if autofocus should be performed."""
+    def event(self, event: MDAEvent, zplan: AnyZPlan) -> Optional[MDAEvent]:
+        """Return a new autofocus event if autofocus should be performed.
+
+        Also update the z position of the autofocus event if a zplan is provided.
+        """
         if self.should_autofocus(event):
-            return event.copy(update={"action": self.as_action()})
+            new_z: Optional[float] = None
+            if event.z_pos is None:
+                new_z = None
+            elif "z" not in event.index or zplan is None or isinstance(zplan, NoZ):
+                new_z = event.z_pos
+            else:
+                new_z = event.z_pos - list(zplan)[event.index["z"]]
+
+            return event.copy(update={"action": self.as_action(), "z_pos": new_z})
         return None
 
     def should_autofocus(self, event: MDAEvent) -> bool:
