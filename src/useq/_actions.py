@@ -46,8 +46,11 @@ class HardwareAutofocus(Action):
     autofocus_motor_offset: float
         Before autofocus is performed, the autofocus motor should be moved to this
         offset.
+    max_retries : int
+        The number of retries if autofocus fails. By default, 3.
     """
 
     type: Literal["hardware_autofocus"] = "hardware_autofocus"
     autofocus_device_name: str
     autofocus_motor_offset: float
+    max_retries: int = 3
