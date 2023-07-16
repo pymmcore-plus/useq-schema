@@ -1,6 +1,6 @@
-## Hardware Autofocus
+# Hardware Autofocus Plan
 
-Ways to describe hardware-based autofocus.
+Ways to describe a hardware-based autofocus plan.
 
 ::: useq.AutoFocusPlan
     options:
@@ -13,6 +13,7 @@ Ways to describe hardware-based autofocus.
 
 ::: useq.AxesBasedAF
     options:
+        show_source: true
         show_signature: true
         show_signature_annotations: true
         members:

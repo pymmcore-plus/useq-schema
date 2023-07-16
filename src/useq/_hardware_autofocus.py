@@ -24,17 +24,23 @@ class AutoFocusPlan(FrozenModel):
     autofocus_motor_offset: Optional[float] = None
 
     def as_action(self) -> HardwareAutofocus:
-        """Return a [`HardwareAutofocus`][useq.HardwareAutofocus][`Action`][useq.Action] for this autofocus plan."""  # noqa: E501
+        """Return a [`HardwareAutofocus`][useq.HardwareAutofocus] [`Action`][useq.Action]
+        for this autofocus plan.
+        """  # noqa: D205, E501
         return HardwareAutofocus(
             autofocus_device_name=self.autofocus_device_name,
             autofocus_motor_offset=self.autofocus_motor_offset,
         )
 
     def event(self, event: MDAEvent, zplan: AnyZPlan) -> Optional[MDAEvent]:
-        """Return a new autofocus event if autofocus should be performed.
+        """Return a new [`MDAEvent`][useq.MDAEvent] with a
+        [`HardwareAutofocus`][useq.HardwareAutofocus] [`Action`][useq.Action]
+        if [should_autofocus][useq.AutoFocusPlan.should_autofocus] returns `True`.
 
-        Also update the z position of the autofocus event if a zplan is provided.
-        """
+        The z position of the new [`useq.MDAEvent`][] is also updated if a relative
+        zplan is provided since autofocus shuld be performed on the home z stack
+        position.
+        """  # noqa: D205
         if self.should_autofocus(event):
             new_z: Optional[float] = None
             if event.z_pos is None:
@@ -50,7 +56,8 @@ class AutoFocusPlan(FrozenModel):
     def should_autofocus(self, event: MDAEvent) -> bool:
         """Method that must be implemented by a subclass.
 
-        Should return True if autofocus should be performed at this event.
+        Should return True if autofocus should be performed (see
+        [`AxesBasedAF`][useq.AxesBasedAF]).
         """
         raise NotImplementedError("should_autofocus() must be implemented by subclass.")
 
@@ -71,10 +78,10 @@ class AxesBasedAF(AutoFocusPlan):
     _previous: dict = PrivateAttr(default_factory=dict)
 
     def should_autofocus(self, event: MDAEvent) -> bool:
-        """Return True if autofocus should be performed at this event.
+        """Return `True` if autofocus should be performed at this event.
 
-        ...if any of the axes specified in `axes` have changed from the previous
-        event.
+        Will return `True` if any of the axes specified in `axes` have changed from the
+        previous event.
         """
         self._previous, previous = dict(event.index), self._previous
         for axis, index in event.index.items():
