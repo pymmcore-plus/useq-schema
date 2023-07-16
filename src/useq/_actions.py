@@ -4,7 +4,12 @@ from ._base_model import FrozenModel
 
 
 class Action(FrozenModel):
-    """Base class for all [`useq.MDAEvent`][] actions.
+    """Base class for a [`MDAEvent`][useq.MDAEvent] `action`.
+
+    An `Action` specifies what task should be performed during a
+    [`MDAEvent`][useq.MDAEvent]. An `Action` can be for example used to acquire an
+    image ([`AcquireImage`][useq.AcquireImage]) or to perform a hardware autofocus
+    ([`HardwareAutofocus`][useq.HardwareAutofocus]).
 
     Parameters
     ----------
@@ -16,7 +21,7 @@ class Action(FrozenModel):
 
 
 class AcquireImage(Action):
-    """Action to acquire an image.
+    """[`Action`][useq.Action] to acquire an image.
 
     Attributes
     ----------
@@ -28,7 +33,9 @@ class AcquireImage(Action):
 
 
 class HardwareAutofocus(Action):
-    """Action to perform a hardware autofocus.
+    """[`Action`][useq.Action] to perform a hardware autofocus.
+
+    See also [`AutoFocusPlan`][useq.AutoFocusPlan].
 
     Attributes
     ----------
@@ -39,8 +46,11 @@ class HardwareAutofocus(Action):
     autofocus_motor_offset: float
         Before autofocus is performed, the autofocus motor should be moved to this
         offset.
+    max_retries : int
+        The number of retries if autofocus fails. By default, 3.
     """
 
     type: Literal["hardware_autofocus"] = "hardware_autofocus"
     autofocus_device_name: str
     autofocus_motor_offset: float
+    max_retries: int = 3
