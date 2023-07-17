@@ -496,7 +496,7 @@ def iter_sequence(
 
         event = MDAEvent(**event_kwargs)
         if autofocus_plan:
-            af_event = autofocus_plan.event(event, sequence.z_plan)
+            af_event = autofocus_plan.event(event)
             if af_event is not None:
                 yield af_event
         yield event

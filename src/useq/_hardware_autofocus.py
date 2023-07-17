@@ -1,11 +1,13 @@
-from typing import Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Union, cast
 
 from pydantic import PrivateAttr
 
 from ._actions import HardwareAutofocus
 from ._base_model import FrozenModel
 from ._mda_event import MDAEvent
-from ._z import AnyZPlan, NoZ
+
+if TYPE_CHECKING:
+    from useq._z import AnyZPlan
 
 
 class AutoFocusPlan(FrozenModel):
@@ -24,40 +26,35 @@ class AutoFocusPlan(FrozenModel):
     autofocus_motor_offset: Optional[float] = None
 
     def as_action(self) -> HardwareAutofocus:
-        """Return a [`HardwareAutofocus`][useq.HardwareAutofocus] [`Action`][useq.Action]
-        for this autofocus plan.
-        """  # noqa: D205, E501
+        """Return a [`useq.HardwareAutofocus`][] for this autofocus plan."""
         return HardwareAutofocus(
             autofocus_device_name=self.autofocus_device_name,
             autofocus_motor_offset=self.autofocus_motor_offset,
         )
 
-    def event(self, event: MDAEvent, zplan: AnyZPlan) -> Optional[MDAEvent]:
-        """Return a new [`MDAEvent`][useq.MDAEvent] with a
-        [`HardwareAutofocus`][useq.HardwareAutofocus] [`Action`][useq.Action]
-        if [should_autofocus][useq.AutoFocusPlan.should_autofocus] returns `True`.
+    def event(self, event: MDAEvent) -> Optional[MDAEvent]:
+        """Return an autofocus [`useq.MDAEvent`][] if autofocus should be performed.
 
         The z position of the new [`useq.MDAEvent`][] is also updated if a relative
         zplan is provided since autofocus shuld be performed on the home z stack
         position.
-        """  # noqa: D205
+        """
         if self.should_autofocus(event):
-            new_z: Optional[float] = None
-            if event.z_pos is None:
-                new_z = None
-            elif "z" not in event.index or isinstance(zplan, NoZ):
-                new_z = event.z_pos
-            else:
-                new_z = event.z_pos - list(zplan)[event.index["z"]]
+            updates: dict[str, Any] = {"action": self.as_action()}
+            if event.z_pos is not None:
+                zplan = cast("AnyZPlan | None", getattr(event.sequence, "z_plan", None))
+                updates["z_pos"] = event.z_pos
+                if "z" in event.index and zplan:
+                    updates["z_pos"] -= list(zplan)[event.index["z"]]
 
-            return event.copy(update={"action": self.as_action(), "z_pos": new_z})
+            return event.copy(update=updates)
         return None
 
     def should_autofocus(self, event: MDAEvent) -> bool:
         """Method that must be implemented by a subclass.
 
         Should return True if autofocus should be performed (see
-        [`AxesBasedAF`][useq.AxesBasedAF]).
+        [`useq.AxesBasedAF`][]).
         """
         raise NotImplementedError("should_autofocus() must be implemented by subclass.")
 
@@ -84,10 +81,10 @@ class AxesBasedAF(AutoFocusPlan):
         previous event.
         """
         self._previous, previous = dict(event.index), self._previous
-        for axis, index in event.index.items():
-            if axis in self.axes and previous.get(axis) != index:
-                return True
-        return False
+        return any(
+            axis in self.axes and previous.get(axis) != index
+            for axis, index in event.index.items()
+        )
 
 
 class NoAF(AutoFocusPlan):

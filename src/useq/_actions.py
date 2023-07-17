@@ -4,14 +4,14 @@ from ._base_model import FrozenModel
 
 
 class Action(FrozenModel):
-    """Base class for a [`MDAEvent`][useq.MDAEvent] `action`.
+    """Base class for a [`useq.MDAEvent`][] action.
 
     An `Action` specifies what task should be performed during a
-    [`MDAEvent`][useq.MDAEvent]. An `Action` can be for example used to acquire an
-    image ([`AcquireImage`][useq.AcquireImage]) or to perform a hardware autofocus
-    ([`HardwareAutofocus`][useq.HardwareAutofocus]).
+    [`useq.MDAEvent`][]. An `Action` can be for example used to acquire an
+    image ([`useq.AcquireImage`][]) or to perform a hardware autofocus
+    ([`useq.HardwareAutofocus`][]).
 
-    Parameters
+    Attributes
     ----------
     type : str
         Type of the action that should be performed at the [`useq.MDAEvent`][].
@@ -21,7 +21,7 @@ class Action(FrozenModel):
 
 
 class AcquireImage(Action):
-    """[`Action`][useq.Action] to acquire an image.
+    """[`useq.Action`][] to acquire an image.
 
     Attributes
     ----------
@@ -33,9 +33,9 @@ class AcquireImage(Action):
 
 
 class HardwareAutofocus(Action):
-    """[`Action`][useq.Action] to perform a hardware autofocus.
+    """[`useq.Action`][] to perform a hardware autofocus.
 
-    See also [`AutoFocusPlan`][useq.AutoFocusPlan].
+    See also [`useq.AutoFocusPlan`][].
 
     Attributes
     ----------
