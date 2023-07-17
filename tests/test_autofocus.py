@@ -55,6 +55,9 @@ AF_TESTS: list[tuple[MDASequence, tuple[str, ...], Iterable[int]]] = [
     (TWO_CH_SUBPAF_C.replace(z_plan=ZRANGE2, grid_plan=GRID_PLAN), ("c",), range(0, 29, 4)),
     (TWO_CH.replace(stage_positions=[ZPOS_30, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_C, grid_plan=GRID_PLAN))]), (), (2, 5)),
     (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, grid_plan=GRID_PLAN))]), (), range(0, 11, 2)),
+    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), ("z",), range(2, 13, 2)),
+    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), ("c",), (0, 2, 4, 8)),
+    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), (), ()),
 ]
 # fmt: on
 

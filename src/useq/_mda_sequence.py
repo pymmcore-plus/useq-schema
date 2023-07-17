@@ -388,6 +388,7 @@ def iter_sequence(
     base_event_kwargs: MDAEventDict | None = None,
     event_kwarg_overrides: MDAEventDict | None = None,
     position_offsets: PositionDict | None = None,
+    autofocus_plan_override: AnyAutofocusPlan | None = None,
 ) -> Iterator[MDAEvent]:
     """Iterate over all events in the MDA sequence.'.
 
@@ -420,12 +421,17 @@ def iter_sequence(
         A dictionary of offsets to apply to each position. This can be used to shift
         all positions in a sub-sequence.  Keys must be one of `x_pos`, `y_pos`, or
         `z_pos` and values should be floats.s
+    autofocus_plan_override : AnyAutofocusPlan | None
+        Override any autofocus plan. By default,`None`.
 
     Yields
     ------
     MDAEvent
         Each event in the MDA sequence.
     """
+    # override autofocus plan if autofocus_plan_override is provided
+    autofocus_plan = autofocus_plan_override or sequence.autofocus_plan
+
     order = sequence.used_axes
     axis_iterators = (enumerate(sequence.iter_axis(ax)) for ax in order)
     for item in product(*axis_iterators):
@@ -466,9 +472,6 @@ def iter_sequence(
                 if event_kwargs[k] is not None:  # type: ignore[literal-required]
                     event_kwargs[k] += v  # type: ignore[literal-required]
 
-        # grab global autofocus plan (may be overridden by position-specific plan below)
-        autofocus_plan = sequence.autofocus_plan
-
         # if a position has been declared with a sub-sequence, we recurse into it
         if position:
             if position.sequence:
@@ -484,6 +487,9 @@ def iter_sequence(
                     base_event_kwargs=event_kwargs.copy(),
                     event_kwarg_overrides=pos_overrides,
                     position_offsets=_offsets,
+                    autofocus_plan_override=(
+                        position.sequence.autofocus_plan or sequence.autofocus_plan
+                    ),
                 )
                 continue
             # note that position.sequence may be Falsey even if not None, for example
@@ -493,6 +499,7 @@ def iter_sequence(
                 autofocus_plan = position.sequence.autofocus_plan
 
         event = MDAEvent(**event_kwargs)
+
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
             if af_event is not None:
