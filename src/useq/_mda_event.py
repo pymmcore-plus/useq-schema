@@ -25,8 +25,6 @@ if TYPE_CHECKING:
 
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
-Undefined = object()
-
 
 class Channel(UseqModel):
     """Channel in a MDA event.
