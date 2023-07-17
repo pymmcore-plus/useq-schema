@@ -388,13 +388,18 @@ class PositionDict(TypedDict, total=False):
     z_pos: float
 
 
+class MDASequenceDict(TypedDict, total=False):
+    autofocus_plan: AnyAutofocusPlan | None
+    shutter_plan: ShutterOpenAxes | None
+
+
 def iter_sequence(
     sequence: MDASequence,
     *,
     base_event_kwargs: MDAEventDict | None = None,
     event_kwarg_overrides: MDAEventDict | None = None,
     position_offsets: PositionDict | None = None,
-    shutter_plan: ShutterOpenAxes | None = None,
+    sequence_kwargs_overrides: MDASequenceDict | None = None,
 ) -> Iterator[MDAEvent]:
     """Iterate over all events in the MDA sequence.'.
 
@@ -427,16 +432,15 @@ def iter_sequence(
         A dictionary of offsets to apply to each position. This can be used to shift
         all positions in a sub-sequence.  Keys must be one of `x_pos`, `y_pos`, or
         `z_pos` and values should be floats.s
-    shutter_plan : ShutterOpenAxes | None
-        The plan for keeping the shutter open for any specified axes. By default, None.
-        It will default to the `shutter_plan` of the sequence, if present.
+    sequence_kwargs_overrides : MDASequenceDict | None
+        A dictionary of kwargs that will override the specidied sequence kwargs
+        for all events (e.g. override the autofocus_plan or the shutter_plan).
 
     Yields
     ------
     MDAEvent
         Each event in the MDA sequence.
     """
-    shutter_plan = shutter_plan or sequence.shutter_plan
     order = sequence.used_axes
     axis_iterators = (enumerate(sequence.iter_axis(ax)) for ax in order)
     for item in product(*axis_iterators):
@@ -470,15 +474,20 @@ def iter_sequence(
         if event_kwarg_overrides:
             event_kwargs.update(event_kwarg_overrides)
 
+        sequence_kwargs_overrides = sequence_kwargs_overrides or MDASequenceDict()
+        autofocus_plan = (
+            sequence_kwargs_overrides.get("autofocus_plan") or sequence.autofocus_plan
+        )
+        shutter_plan = (
+            sequence_kwargs_overrides.get("shutter_plan") or sequence.shutter_plan
+        )
+
         # shift positions if position_offsets have been provided
         # (usually from sub-sequences)
         if position_offsets:
             for k, v in position_offsets.items():
                 if event_kwargs[k] is not None:  # type: ignore[literal-required]
                     event_kwargs[k] += v  # type: ignore[literal-required]
-
-        # grab global autofocus plan (may be overridden by position-specific plan below)
-        autofocus_plan = sequence.autofocus_plan
 
         # if a position has been declared with a sub-sequence, we recurse into it
         if position:
@@ -489,15 +498,26 @@ def iter_sequence(
                 pos_overrides = MDAEventDict(sequence=sequence, **_pos)  # type: ignore
                 if position.name:
                     pos_overrides["pos_name"] = position.name
+
+                # if the sub-sequence doe not have an autofocus plan, we override it
+                # with the parent sequence's autofocus plan
+                if not position.sequence.autofocus_plan:
+                    sequence_kwargs_overrides[
+                        "autofocus_plan"
+                    ] = sequence.autofocus_plan
+
+                # if the sub-sequence doe not have an shutter_plan, we override it
+                # with the parent sequence's shutter_plan
+                if not position.sequence.shutter_plan:
+                    sequence_kwargs_overrides["shutter_plan"] = sequence.shutter_plan
+
                 # recurse into the sub-sequence
                 yield from iter_sequence(
                     position.sequence,
                     base_event_kwargs=event_kwargs.copy(),
                     event_kwarg_overrides=pos_overrides,
                     position_offsets=_offsets,
-                    shutter_plan=(
-                        position.sequence.shutter_plan or sequence.shutter_plan
-                    ),
+                    sequence_kwargs_overrides=sequence_kwargs_overrides,
                 )
                 continue
             # note that position.sequence may be Falsey even if not None, for example
