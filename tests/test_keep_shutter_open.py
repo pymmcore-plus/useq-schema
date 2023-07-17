@@ -46,6 +46,7 @@ SH_TESTS: list[tuple[MDASequence, tuple[str, ...], Iterable[int]]] = [
     (TWO_CH_TWO_P_GRID.replace(axis_order="tpcgz"), ("g",), ("c",), (0, 1, 4, 5, 8, 9, 12, 13)),
     (TWO_CH_TWO_P_GRID, ("p",), ("c", ), range(10)),
     (TWO_CH_TWO_P_T, ("t",), ("c",), range(10)),
+    (TWO_CH_TWO_P_T, ("t",), ("t",), (0, 1, 5, 6)),
     (TWO_CH_SUBPAF_C, (), ("c",), range(6)),
     (TWO_CH.replace(stage_positions=[ZPOS_30, SUB_P_AF_G]), (), ("c",), range(4)),
     (TWO_CH.replace(stage_positions=[ZPOS_30, SUB_P_AF_G], grid_plan=GRID_PLAN), (), ("c",), range(10)),
@@ -66,10 +67,11 @@ SH_TESTS: list[tuple[MDASequence, tuple[str, ...], Iterable[int]]] = [
     (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, shutter_plan=ShutterOpenAxes(axes=("c",))))]), (), (), (4, 5)),
     (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, z_plan=ZRANGE2, shutter_plan=ShutterOpenAxes(axes=("z",))))]), (), ("c",), range(8)),
     (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, z_plan=ZRANGE2))]), (), ("z",), range(2, 8)),
+
 ]
 
 @pytest.mark.parametrize("mda, af_axes, sh_axes, expected_shutter_indices", SH_TESTS)
-def test_kso(
+def test_keep_shutter_open(
     mda: MDASequence,
     af_axes: tuple[str, ...],
     sh_axes: tuple[str, ...],
