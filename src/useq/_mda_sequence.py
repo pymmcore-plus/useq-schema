@@ -474,13 +474,8 @@ def iter_sequence(
         if event_kwarg_overrides:
             event_kwargs.update(event_kwarg_overrides)
 
-        sequence_kwargs_overrides = sequence_kwargs_overrides or MDASequenceDict()
-        autofocus_plan = (
-            sequence_kwargs_overrides.get("autofocus_plan") or sequence.autofocus_plan
-        )
-        shutter_plan = (
-            sequence_kwargs_overrides.get("shutter_plan") or sequence.shutter_plan
-        )
+        autofocus_plan = sequence.autofocus_plan
+        shutter_plan = sequence.shutter_plan
 
         # shift positions if position_offsets have been provided
         # (usually from sub-sequences)
@@ -499,25 +494,20 @@ def iter_sequence(
                 if position.name:
                     pos_overrides["pos_name"] = position.name
 
-                # if the sub-sequence doe not have an autofocus plan, we override it
-                # with the parent sequence's autofocus plan
-                if not position.sequence.autofocus_plan:
-                    sequence_kwargs_overrides[
-                        "autofocus_plan"
-                    ] = sequence.autofocus_plan
-
-                # if the sub-sequence doe not have an shutter_plan, we override it
-                # with the parent sequence's shutter_plan
-                if not position.sequence.shutter_plan:
-                    sequence_kwargs_overrides["shutter_plan"] = sequence.shutter_plan
+                sub_seq = position.sequence
+                # if the sub-sequence does not have an autofocus plan oe shutter_plan,
+                # we override it with the parent sequence's plans
+                if not sub_seq.autofocus_plan:
+                    sub_seq = sub_seq.copy(update={"autofocus_plan": autofocus_plan})
+                if not sub_seq.shutter_plan:
+                    sub_seq = sub_seq.copy(update={"shutter_plan": shutter_plan})
 
                 # recurse into the sub-sequence
                 yield from iter_sequence(
-                    position.sequence,
+                    sub_seq,
                     base_event_kwargs=event_kwargs.copy(),
                     event_kwarg_overrides=pos_overrides,
                     position_offsets=_offsets,
-                    sequence_kwargs_overrides=sequence_kwargs_overrides,
                 )
                 continue
             # note that position.sequence may be Falsey even if not None, for example
