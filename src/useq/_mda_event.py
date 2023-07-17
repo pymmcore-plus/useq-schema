@@ -116,7 +116,8 @@ class MDAEvent(UseqModel):
         Example of another action is [`useq.HardwareAutofocus`][] which could be used
         to perform a hardware autofocus.
     keep_shutter_open : bool
-        If True, the shutter should be kept open during this event. By default, `False`.
+        If True, the illumination shutter should be left open after the event has
+        been executed, otherwise it should be closed. By default, `False`."
     """
 
     index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)
