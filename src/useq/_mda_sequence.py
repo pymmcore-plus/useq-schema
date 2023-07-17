@@ -24,9 +24,9 @@ from ._base_model import UseqModel
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridPosition, NoGrid
 from ._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF, NoAF
-from ._keep_shutter_open import ShutterOpenAxes
 from ._mda_event import MDAEvent
 from ._position import Position
+from ._shutter_plan import ShutterOpenAxes
 from ._time import AnyTimePlan, NoT
 from ._z import AnyZPlan, NoZ
 

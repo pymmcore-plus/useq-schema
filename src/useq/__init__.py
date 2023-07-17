@@ -2,10 +2,10 @@ from ._actions import AcquireImage, Action, HardwareAutofocus
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridFromEdges, GridRelative, NoGrid
 from ._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF, NoAF
-from ._keep_shutter_open import ShutterOpenAxes
 from ._mda_event import MDAEvent, PropertyTuple
 from ._mda_sequence import MDASequence
 from ._position import Position
+from ._shutter_plan import ShutterOpenAxes
 from ._time import (
     MultiPhaseTimePlan,
     NoT,

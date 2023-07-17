@@ -49,6 +49,9 @@
   "metadata": {
     "some info": "something"
   },
+  "shutter_plan": {
+    "axes": []
+  },
   "stage_positions": [
     {
       "name": null,
@@ -77,6 +80,9 @@
           "rows": 2
         },
         "metadata": {},
+        "shutter_plan": {
+          "axes": []
+        },
         "stage_positions": [],
         "time_plan": {
           "prioritize_duration": false

@@ -59,12 +59,12 @@ SH_TESTS: list[tuple[MDASequence, tuple[str, ...], Iterable[int]]] = [
     (TWO_CH_SUBPAF_C.replace(z_plan=ZRANGE2, grid_plan=GRID_PLAN), ("c",), ("c",), (tuple(x for x in range(30) if x % 4 < 2))),
     (TWO_CH.replace(stage_positions=[ZPOS_30, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_C, grid_plan=GRID_PLAN))]), (), ("c",), (0, 1, 2, 3, 5, 6)),
     (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, grid_plan=GRID_PLAN))]), (), ("c",), (0, 1, 2, 3, 4, 5, 8, 9)),
-    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, grid_plan=GRID_PLAN, keep_shutter_open_plan=ShutterOpenAxes(axes=("c",))))]), (), (), (4, 5, 8, 9)),
-    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, z_plan=ZRANGE2, keep_shutter_open_plan=ShutterOpenAxes(axes=("c",))))]), (), (), (4, 7)),
-    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, z_plan=ZRANGE2, keep_shutter_open_plan=ShutterOpenAxes(axes=("z",))))]), (), ("c",), range(10)),
-    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, keep_shutter_open_plan=ShutterOpenAxes(axes=("c",))))]), (), (), (2, 3)),
-    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, keep_shutter_open_plan=ShutterOpenAxes(axes=("c",))))]), (), (), (4, 5)),
-    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, z_plan=ZRANGE2, keep_shutter_open_plan=ShutterOpenAxes(axes=("z",))))]), (), ("c",), range(8)),
+    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, grid_plan=GRID_PLAN, shutter_plan=ShutterOpenAxes(axes=("c",))))]), (), (), (4, 5, 8, 9)),
+    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, z_plan=ZRANGE2, shutter_plan=ShutterOpenAxes(axes=("c",))))]), (), (), (4, 7)),
+    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, z_plan=ZRANGE2, shutter_plan=ShutterOpenAxes(axes=("z",))))]), (), ("c",), range(10)),
+    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, shutter_plan=ShutterOpenAxes(axes=("c",))))]), (), (), (2, 3)),
+    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, shutter_plan=ShutterOpenAxes(axes=("c",))))]), (), (), (4, 5)),
+    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, z_plan=ZRANGE2, shutter_plan=ShutterOpenAxes(axes=("z",))))]), (), ("c",), range(8)),
     (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, z_plan=ZRANGE2))]), (), ("z",), range(2, 8)),
 ]
 
