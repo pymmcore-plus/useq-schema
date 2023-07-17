@@ -1,13 +1,10 @@
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Union, cast
+from typing import Any, Optional, Tuple, Union
 
 from pydantic import PrivateAttr
 
 from ._actions import HardwareAutofocus
 from ._base_model import FrozenModel
 from ._mda_event import MDAEvent
-
-if TYPE_CHECKING:
-    from useq._z import AnyZPlan
 
 
 class AutoFocusPlan(FrozenModel):
@@ -39,16 +36,16 @@ class AutoFocusPlan(FrozenModel):
         zplan is provided since autofocus shuld be performed on the home z stack
         position.
         """
-        if self.should_autofocus(event):
-            updates: dict[str, Any] = {"action": self.as_action()}
-            if event.z_pos is not None:
-                zplan = cast("AnyZPlan | None", getattr(event.sequence, "z_plan", None))
-                updates["z_pos"] = event.z_pos
-                if "z" in event.index and zplan:
-                    updates["z_pos"] -= list(zplan)[event.index["z"]]
+        if not self.should_autofocus(event):
+            return None
 
-            return event.copy(update=updates)
-        return None
+        updates: dict[str, Any] = {"action": self.as_action()}
+        if event.z_pos is not None and event.sequence is not None:
+            zplan = event.sequence.z_plan
+            if zplan and zplan.is_relative and "z" in event.index:
+                updates["z_pos"] = event.z_pos - list(zplan)[event.index["z"]]
+
+        return event.copy(update=updates)
 
     def should_autofocus(self, event: MDAEvent) -> bool:
         """Method that must be implemented by a subclass.
