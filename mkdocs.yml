@@ -20,6 +20,7 @@ nav:
         - schema/event.md
         - schema/axes.md
         - schema/hardware_autofocus.md
+        - schema/shutter_plan.md
       - api.md
   - pymmcore-widgets: /pymmcore-widgets/
 

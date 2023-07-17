@@ -13,7 +13,7 @@ class ShutterOpenAxes(FrozenModel):
     ----------
     axes : Tuple[str, ...]
         Tuple of axes label to use to keep the shutter open. At every event in which
-        *any* axis in this tuple is change, shutter will be set to open.  For example,
+        *any* axis in this tuple is changed, shutter will be set to open. For example,
         if `axes` is `('c',)` then the shutter will be kept open every time the `c` axis
         is change, (in other words: every time the channel is changed.).
     """
