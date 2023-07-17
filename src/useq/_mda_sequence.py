@@ -24,6 +24,7 @@ from ._base_model import UseqModel
 from ._channel import Channel
 from ._grid import AnyGridPlan, GridPosition, NoGrid
 from ._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF, NoAF
+from ._keep_shutter_open import ShutterOpenAxes
 from ._mda_event import MDAEvent
 from ._position import Position
 from ._time import AnyTimePlan, NoT
@@ -75,6 +76,9 @@ class MDASequence(UseqModel):
         generated, do not set.
     autofocus_plan : AxesBasedAF | NoAF
         The hardware autofocus plan to follow. One of `AxesBasedAF` or `NoAF`.
+    shutter_plan : ShutterOpenAxes
+        The plan for keeping the shutter open for any specified axes.
+        See `ShutterOpenAxes`.
 
     Examples
     --------
@@ -119,6 +123,7 @@ class MDASequence(UseqModel):
     time_plan: AnyTimePlan = Field(default_factory=NoT)
     z_plan: AnyZPlan = Field(default_factory=NoZ)
     autofocus_plan: AnyAutofocusPlan = Field(default_factory=NoAF)
+    shutter_plan: ShutterOpenAxes = Field(default_factory=ShutterOpenAxes)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _length: Optional[int] = PrivateAttr(default=None)
@@ -147,6 +152,7 @@ class MDASequence(UseqModel):
         time_plan: AnyTimePlan = Undefined,
         z_plan: AnyZPlan = Undefined,
         autofocus_plan: AnyAutofocusPlan = Undefined,
+        shutter_plan: ShutterOpenAxes = Undefined,
     ) -> MDASequence:
         """Return a new `MDAsequence` replacing specified kwargs with new values.
 
@@ -388,6 +394,7 @@ def iter_sequence(
     base_event_kwargs: MDAEventDict | None = None,
     event_kwarg_overrides: MDAEventDict | None = None,
     position_offsets: PositionDict | None = None,
+    shutter_plan: ShutterOpenAxes | None = None,
 ) -> Iterator[MDAEvent]:
     """Iterate over all events in the MDA sequence.'.
 
@@ -420,12 +427,16 @@ def iter_sequence(
         A dictionary of offsets to apply to each position. This can be used to shift
         all positions in a sub-sequence.  Keys must be one of `x_pos`, `y_pos`, or
         `z_pos` and values should be floats.s
+    shutter_plan : ShutterOpenAxes | None
+        The plan for keeping the shutter open for any specified axes. By default, None.
+        It will default to the `shutter_plan` of the sequence, if present.
 
     Yields
     ------
     MDAEvent
         Each event in the MDA sequence.
     """
+    shutter_plan = shutter_plan or sequence.shutter_plan
     order = sequence.used_axes
     axis_iterators = (enumerate(sequence.iter_axis(ax)) for ax in order)
     for item in product(*axis_iterators):
@@ -484,6 +495,9 @@ def iter_sequence(
                     base_event_kwargs=event_kwargs.copy(),
                     event_kwarg_overrides=pos_overrides,
                     position_offsets=_offsets,
+                    shutter_plan=(
+                        position.sequence.shutter_plan or sequence.shutter_plan
+                    ),
                 )
                 continue
             # note that position.sequence may be Falsey even if not None, for example
@@ -491,8 +505,13 @@ def iter_sequence(
             # and we don't hit the continue statement, but we can use the autofocus plan
             elif position.sequence is not None and position.sequence.autofocus_plan:
                 autofocus_plan = position.sequence.autofocus_plan
+                shutter_plan = position.sequence.shutter_plan or sequence.shutter_plan
 
         event = MDAEvent(**event_kwargs)
+
+        if shutter_plan.should_keep_open(event):
+            event = event.copy(update={"keep_shutter_open": True})
+
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
             if af_event is not None:
