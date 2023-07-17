@@ -1,4 +1,11 @@
 {
+  "autofocus_plan": {
+    "autofocus_device_name": "Z",
+    "autofocus_motor_offset": 50.0,
+    "axes": [
+      "c"
+    ]
+  },
   "axis_order": "tpgcz",
   "channels": [
     {
@@ -53,6 +60,10 @@
     {
       "name": "test_name",
       "sequence": {
+        "autofocus_plan": {
+          "autofocus_device_name": "__no_autofocus__",
+          "autofocus_motor_offset": null
+        },
         "axis_order": "tpgcz",
         "channels": [],
         "grid_plan": {

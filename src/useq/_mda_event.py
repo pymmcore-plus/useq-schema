@@ -16,6 +16,7 @@ from typing import (
 from pydantic import Field, validator
 from pydantic.types import PositiveFloat
 
+from ._actions import AcquireImage, Action
 from ._base_model import UseqModel
 from ._utils import ReadOnlyDict
 
@@ -110,6 +111,10 @@ class MDAEvent(UseqModel):
         concept of devices that have properties with values. By default, `None`.
     metadata : dict
         Optional metadata to be associated with this event.
+    action : Action
+        The action to perform for this event.  By default, [`useq.AcquireImage`][].
+        Example of another action is [`useq.HardwareAutofocus`][] which could be used
+        to perform a hardware autofocus.
     """
 
     index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)
@@ -123,6 +128,7 @@ class MDAEvent(UseqModel):
     sequence: Optional[MDASequence] = Field(default=None, repr=False)
     properties: Optional[List[PropertyTuple]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    action: Action = Field(default_factory=AcquireImage)
 
     # action
     # keep shutter open between channels/steps
