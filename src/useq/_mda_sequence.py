@@ -578,7 +578,7 @@ def _should_skip(
             return True
 
         # only acquire on the middle plane:
-        if not channel.do_stack and index[Z] != len(z_plan) // 2:
+        if not channel.do_stack and z_plan and index[Z] != len(z_plan) // 2:
             return True
 
     if not position or not position.sequence:
