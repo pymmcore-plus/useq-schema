@@ -388,18 +388,12 @@ class PositionDict(TypedDict, total=False):
     z_pos: float
 
 
-class MDASequenceDict(TypedDict, total=False):
-    autofocus_plan: AnyAutofocusPlan | None
-    shutter_plan: ShutterOpenAxes | None
-
-
 def iter_sequence(
     sequence: MDASequence,
     *,
     base_event_kwargs: MDAEventDict | None = None,
     event_kwarg_overrides: MDAEventDict | None = None,
     position_offsets: PositionDict | None = None,
-    sequence_kwargs_overrides: MDASequenceDict | None = None,
 ) -> Iterator[MDAEvent]:
     """Iterate over all events in the MDA sequence.'.
 
@@ -432,9 +426,6 @@ def iter_sequence(
         A dictionary of offsets to apply to each position. This can be used to shift
         all positions in a sub-sequence.  Keys must be one of `x_pos`, `y_pos`, or
         `z_pos` and values should be floats.s
-    sequence_kwargs_overrides : MDASequenceDict | None
-        A dictionary of kwargs that will override the specidied sequence kwargs
-        for all events (e.g. override the autofocus_plan or the shutter_plan).
 
     Yields
     ------
