@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Final, Sequence
+from typing import Any, Sequence
 
 import useq
 from useq import MDASequence
@@ -10,7 +10,7 @@ FITC = "FITC"
 CY5 = "Cy5"
 CY3 = "Cy3"
 NAME = "name"
-EMPTY: Final[dict] = {}
+EMPTY: dict = {}
 CH_FITC = useq.Channel(config=FITC, exposure=100)
 CH_CY5 = useq.Channel(config=CY5, exposure=50)
 Z_RANGE2 = useq.ZRangeAround(range=2, step=1)
