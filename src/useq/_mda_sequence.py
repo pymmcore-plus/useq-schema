@@ -478,9 +478,16 @@ def iter_sequence(
                 pos_overrides = MDAEventDict(sequence=sequence, **_pos)  # type: ignore
                 if position.name:
                     pos_overrides["pos_name"] = position.name
+
+                sub_seq = position.sequence
+                # if the sub-sequence doe not have an autofocus plan, we override it
+                # with the parent sequence's autofocus plan
+                if not sub_seq.autofocus_plan:
+                    sub_seq = sub_seq.copy(update={"autofocus_plan": autofocus_plan})
+
                 # recurse into the sub-sequence
                 yield from iter_sequence(
-                    position.sequence,
+                    sub_seq,
                     base_event_kwargs=event_kwargs.copy(),
                     event_kwarg_overrides=pos_overrides,
                     position_offsets=_offsets,
