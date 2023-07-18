@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from itertools import product
 from typing import Any, Final, Sequence
 
@@ -362,11 +364,8 @@ def test_z_absolute_in_main_and_z_relative_in_position_sub_sequence() -> None:
 def test_z_relative_in_main_and_z_absolute_in_position_sub_sequence() -> None:
     mda = MDASequence(
         stage_positions=[
-            (None, None, 0),
-            {
-                "name": NAME,
-                "sequence": {"z_plan": Z_58_60},
-            },
+            useq.Position(z=0),
+            useq.Position(name=NAME, sequence={"z_plan": Z_58_60}),
         ],
         z_plan=Z_RANGE3,
     )
@@ -466,20 +465,20 @@ def test_mix_cgz_axes() -> None:
         axis_order="tpgcz",
         stage_positions=[
             useq.Position(x=0, y=0),
-            {
-                "name": NAME,
-                "x": 10,
-                "y": 10,
-                "z": 30,
-                "sequence": {
-                    "channels": [
+            useq.Position(
+                name=NAME,
+                x=10,
+                y=10,
+                z=30,
+                sequence=MDASequence(
+                    channels=[
                         {"config": FITC, "exposure": 200},
                         {"config": CY3, "exposure": 100},
                     ],
-                    "grid_plan": {"rows": 2, "columns": 1},
-                    "z_plan": Z_RANGE2,
-                },
-            },
+                    grid_plan=useq.GridRelative(rows=2, columns=1),
+                    z_plan=Z_RANGE2,
+                ),
+            ),
         ],
         channels=[CH_CY5],
         z_plan={"top": 100, "bottom": 98, "step": 1},
@@ -512,22 +511,16 @@ def test_mix_cgz_axes() -> None:
 
 
 # axes order????
-def test_order():
+def test_order() -> None:
     sub_pos = useq.Position(
         z=50,
         sequence=MDASequence(
-            channels=[
-                useq.Channel(config=FITC, exposure=200),
-                useq.Channel(config=CY3, exposure=200),
-            ]
+            channels=[CH_FITC, useq.Channel(config=CY3, exposure=200)]
         ),
     )
     mda = MDASequence(
         stage_positions=[useq.Position(z=0), sub_pos],
-        channels=[
-            useq.Channel(config=FITC, exposure=50),
-            useq.Channel(config=CY5, exposure=50),
-        ],
+        channels=[CH_FITC, CH_CY5],
         z_plan=useq.ZRangeAround(range=2, step=1),
     )
 
@@ -549,38 +542,16 @@ def test_order():
         {"p": 1, "c": 1, "z": 2},
     ]
     expect_pos = [-1.0, 0.0, 1.0, -1.0, 0.0, 1.0, 49.0, 49.0, 50.0, 50.0, 51.0, 51.0]
-    expect_ch = [
-        FITC,
-        FITC,
-        FITC,
-        CY5,
-        CY5,
-        CY5,
-        FITC,
-        CY3,
-        FITC,
-        CY3,
-        FITC,
-        CY3,
-    ]
-
+    expect_ch = [FITC] * 3 + [CY5] * 3 + [FITC, CY3] * 3
     expect_mda(mda, index=expected_indices, z_pos=expect_pos, channel=expect_ch)
 
 
 def test_channels_and_pos_grid_plan() -> None:
     # test that all channels are acquired for each grid position
+    sub_seq = MDASequence(grid_plan=useq.GridRelative(rows=2, columns=1))
     mda = MDASequence(
-        channels=[
-            useq.Channel(config=CY5, exposure=10),
-            useq.Channel(config=FITC, exposure=10),
-        ],
-        stage_positions=[
-            useq.Position(
-                x=0,
-                y=0,
-                sequence=MDASequence(grid_plan=useq.GridRelative(rows=2, columns=1)),
-            )
-        ],
+        channels=[CH_CY5, CH_FITC],
+        stage_positions=[useq.Position(x=0, y=0, sequence=sub_seq)],
     )
 
     expect_mda(
@@ -596,7 +567,7 @@ def test_channels_and_pos_z_plan() -> None:
     # test that all channels are acquired for each z position
     mda = MDASequence(
         channels=[CH_CY5, CH_FITC],
-        stage_positions=[{"x": 0, "y": 0, "z": 0, "sequence": {"z_plan": Z_RANGE2}}],
+        stage_positions=[useq.Position(x=0, y=0, z=0, sequence={"z_plan": Z_RANGE2})],
     )
     expect_mda(
         mda,
