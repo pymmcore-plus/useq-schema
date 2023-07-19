@@ -42,6 +42,11 @@ class Channel(UseqModel):
     config: str
     group: str = "Channel"
 
+    def __eq__(self, _value: object) -> bool:
+        if isinstance(_value, str):
+            return self.config == _value
+        return super().__eq__(_value)
+
 
 class PropertyTuple(NamedTuple):
     """Three-tuple capturing a device, property, and value.
