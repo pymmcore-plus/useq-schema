@@ -22,12 +22,12 @@ from typing_extensions import TypedDict
 from . import _mda_event
 from ._base_model import UseqModel
 from ._channel import Channel
-from ._grid import AnyGridPlan, GridPosition, NoGrid
-from ._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF, NoAF
+from ._grid import AnyGridPlan, GridPosition
+from ._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from ._mda_event import MDAEvent
 from ._position import Position
-from ._time import AnyTimePlan, NoT
-from ._z import AnyZPlan, NoZ
+from ._time import AnyTimePlan
+from ._z import AnyZPlan
 
 TIME = "t"
 CHANNEL = "c"
@@ -58,23 +58,23 @@ class MDASequence(UseqModel):
     stage_positions : tuple[Position, ...]
         The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `sequence`,
         all of which are optional).
-    grid_plan : GridFromEdges, GridRelative, NoGrid
-        The grid plan to follow. One of `GridFromEdges`, `GridRelative` or `NoGrid`.
+    grid_plan : GridFromEdges | GridRelative | None
+        The grid plan to follow. One of `GridFromEdges`, `GridRelative` or `None`.
     channels : tuple[Channel, ...]
         The channels to acquire. see `Channel`.
     time_plan : MultiPhaseTimePlan | TIntervalDuration | TIntervalLoops \
-        | TDurationLoops | NoT
+        | TDurationLoops | None
         The time plan to follow. One of `TIntervalDuration`, `TIntervalLoops`,
-        `TDurationLoops`, `MultiPhaseTimePlan`, or `NoT`
+        `TDurationLoops`, `MultiPhaseTimePlan`, or `None`
     z_plan : ZTopBottom | ZRangeAround | ZAboveBelow | ZRelativePositions | \
-        ZAbsolutePositions | NoZ
+        ZAbsolutePositions | None
         The z plan to follow. One of `ZTopBottom`, `ZRangeAround`, `ZAboveBelow`,
-        `ZRelativePositions`, `ZAbsolutePositions`, or `NoZ`.
+        `ZRelativePositions`, `ZAbsolutePositions`, or `None`.
     uid : UUID
         A read-only unique identifier (uuid version 4) for the sequence. This will be
         generated, do not set.
-    autofocus_plan : AxesBasedAF | NoAF
-        The hardware autofocus plan to follow. One of `AxesBasedAF` or `NoAF`.
+    autofocus_plan : AxesBasedAF | None
+        The hardware autofocus plan to follow. One of `AxesBasedAF` or `None`.
 
     Examples
     --------
@@ -114,11 +114,11 @@ class MDASequence(UseqModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: str = "".join(INDICES)
     stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
-    grid_plan: AnyGridPlan = Field(default_factory=NoGrid)
+    grid_plan: Optional[AnyGridPlan] = None
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
-    time_plan: AnyTimePlan = Field(default_factory=NoT)
-    z_plan: AnyZPlan = Field(default_factory=NoZ)
-    autofocus_plan: AnyAutofocusPlan = Field(default_factory=NoAF)
+    time_plan: Optional[AnyTimePlan] = None
+    z_plan: Optional[AnyZPlan] = None
+    autofocus_plan: Optional[AnyAutofocusPlan] = None
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _length: Optional[int] = PrivateAttr(default=None)
@@ -164,12 +164,12 @@ class MDASequence(UseqModel):
         return hash(self.uid)
 
     @validator("z_plan", pre=True)
-    def validate_zplan(cls, v: Any) -> Union[dict, NoZ]:
-        return v or NoZ()
+    def validate_zplan(cls, v: Any) -> Optional[dict]:
+        return v or None
 
     @validator("time_plan", pre=True)
-    def validate_time_plan(cls, v: Any) -> Union[dict, NoT]:
-        return {"phases": v} if isinstance(v, (tuple, list)) else v or NoT()
+    def validate_time_plan(cls, v: Any) -> Optional[dict]:
+        return {"phases": v} if isinstance(v, (tuple, list)) else v or None
 
     @validator("stage_positions", pre=True)
     def validate_positions(cls, v: Any) -> Any:
@@ -252,7 +252,6 @@ class MDASequence(UseqModel):
             GRID in order
             and POSITION in order
             and grid_plan is not None
-            and not isinstance(grid_plan, NoGrid)
             and not grid_plan.is_relative
             and len(stage_positions) > 1
         ):
@@ -320,15 +319,19 @@ class MDASequence(UseqModel):
         self, axis: str
     ) -> Iterator[Position | Channel | float | GridPosition]:
         """Iterate over the events of a given axis."""
-        yield from {
+        plan = {
             TIME: self.time_plan,
             POSITION: self.stage_positions,
             Z: self.z_plan,
             CHANNEL: self.channels,
-            GRID: self.grid_plan.iter_grid_positions(
-                self._fov_size[0], self._fov_size[1]
+            GRID: (
+                self.grid_plan.iter_grid_positions(self._fov_size[0], self._fov_size[1])
+                if self.grid_plan
+                else ()
             ),
         }[axis]
+        if plan:
+            yield from plan
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
         """Same as `iter_events`. Supports `for event in sequence: ...` syntax."""

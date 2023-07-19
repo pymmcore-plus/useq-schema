@@ -2,9 +2,7 @@
   "autofocus_plan": {
     "autofocus_device_name": "Z",
     "autofocus_motor_offset": 50.0,
-    "axes": [
-      "c"
-    ]
+    "axes": ["c"]
   },
   "axis_order": "tpgcz",
   "channels": [
@@ -39,10 +37,7 @@
   "grid_plan": {
     "columns": 1,
     "mode": "row_wise_snake",
-    "overlap": [
-      0.0,
-      0.0
-    ],
+    "overlap": [0.0, 0.0],
     "relative_to": "center",
     "rows": 2
   },
@@ -60,27 +55,19 @@
     {
       "name": "test_name",
       "sequence": {
-        "autofocus_plan": {
-          "autofocus_device_name": "__no_autofocus__",
-          "autofocus_motor_offset": null
-        },
+        "autofocus_plan": null,
         "axis_order": "tpgcz",
         "channels": [],
         "grid_plan": {
           "columns": 3,
           "mode": "row_wise_snake",
-          "overlap": [
-            0.0,
-            0.0
-          ],
+          "overlap": [0.0, 0.0],
           "relative_to": "center",
           "rows": 2
         },
         "metadata": {},
         "stage_positions": [],
-        "time_plan": {
-          "prioritize_duration": false
-        },
+        "time_plan": null,
         "z_plan": {
           "above": 10.0,
           "below": 0.0,

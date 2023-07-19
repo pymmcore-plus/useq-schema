@@ -84,16 +84,5 @@ class AxesBasedAF(AutoFocusPlan):
         )
 
 
-class NoAF(AutoFocusPlan):
-    """No hardware autofocus plan."""
 
-    autofocus_device_name: str = "__no_autofocus__"
-
-    def __bool__(self) -> bool:
-        return False
-
-    def should_autofocus(self, event: MDAEvent) -> bool:
-        return False
-
-
-AnyAutofocusPlan = Union[AxesBasedAF, NoAF]
+AnyAutofocusPlan = Union[AxesBasedAF]
