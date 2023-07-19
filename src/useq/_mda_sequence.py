@@ -1,16 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import (
-    Any,
-    Dict,
-    Iterator,
-    Optional,
-    Sequence,
-    Tuple,
-    cast,
-    no_type_check,
-)
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, cast, no_type_check
 from uuid import UUID, uuid4
 from warnings import warn
 
