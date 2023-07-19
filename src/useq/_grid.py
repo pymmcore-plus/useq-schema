@@ -244,5 +244,4 @@ class GridRelative(_GridPlan):
         )
 
 
-
 AnyGridPlan = Union[GridFromEdges, GridRelative]

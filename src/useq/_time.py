@@ -99,7 +99,6 @@ class TIntervalDuration(TimePlan):
         return self.duration // self.interval + 1
 
 
-
 SinglePhaseTimePlan = Union[TIntervalDuration, TIntervalLoops, TDurationLoops]
 
 

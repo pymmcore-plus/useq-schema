@@ -84,5 +84,4 @@ class AxesBasedAF(AutoFocusPlan):
         )
 
 
-
 AnyAutofocusPlan = Union[AxesBasedAF]

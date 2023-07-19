@@ -2,7 +2,9 @@
   "autofocus_plan": {
     "autofocus_device_name": "Z",
     "autofocus_motor_offset": 50.0,
-    "axes": ["c"]
+    "axes": [
+      "c"
+    ]
   },
   "axis_order": "tpgcz",
   "channels": [
@@ -37,7 +39,10 @@
   "grid_plan": {
     "columns": 1,
     "mode": "row_wise_snake",
-    "overlap": [0.0, 0.0],
+    "overlap": [
+      0.0,
+      0.0
+    ],
     "relative_to": "center",
     "rows": 2
   },
@@ -61,7 +66,10 @@
         "grid_plan": {
           "columns": 3,
           "mode": "row_wise_snake",
-          "overlap": [0.0, 0.0],
+          "overlap": [
+            0.0,
+            0.0
+          ],
           "relative_to": "center",
           "rows": 2
         },

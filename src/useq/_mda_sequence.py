@@ -8,7 +8,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    Union,
     cast,
     no_type_check,
 )
@@ -559,7 +558,7 @@ def _should_skip(
     position: Position | None,
     channel: Channel | None,
     index: dict[str, int],
-    z_plan: AnyZPlan,
+    z_plan: AnyZPlan | None,
 ) -> bool:
     """Return True if this event should be skipped."""
     if channel:
@@ -605,7 +604,7 @@ def _should_skip(
 def _xyzpos(
     position: Position | None,
     channel: Channel | None,
-    z_plan: AnyZPlan,
+    z_plan: AnyZPlan | None,
     grid: GridPosition | None = None,
     z_pos: float | None = None,
 ) -> MDAEventDict:
@@ -613,7 +612,7 @@ def _xyzpos(
         # combine z_pos with z_offset
         if channel and channel.z_offset is not None:
             z_pos += channel.z_offset
-        if z_plan.is_relative:
+        if z_plan and z_plan.is_relative:
             # TODO: either disallow without position z, or add concept of "current"
             z_pos += getattr(position, Z, None) or 0
     elif position:
