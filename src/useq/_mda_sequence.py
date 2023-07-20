@@ -217,7 +217,7 @@ class MDASequence(UseqModel):
         if (
             GRID in order
             and POSITION in order
-            and grid_plan is not None
+            and grid_plan
             and not grid_plan.is_relative
             and len(stage_positions) > 1
         ):
@@ -240,7 +240,7 @@ class MDASequence(UseqModel):
             )
 
         # Cannot use autofocus plan with absolute z_plan
-        if Z in order and z_plan is not None and not z_plan.is_relative:
+        if Z in order and z_plan and not z_plan.is_relative:
             err = "Absolute Z positions cannot be used with autofocus plan."
             if isinstance(autofocus_plan, AxesBasedAF):
                 raise ValueError(err)
@@ -471,7 +471,7 @@ def iter_sequence(
         event = MDAEvent(**event_kwargs)
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
-            if af_event is not None:
+            if af_event:
                 yield af_event
         yield event
 

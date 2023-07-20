@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Tuple
 
 from pydantic import PrivateAttr
 
@@ -84,4 +84,4 @@ class AxesBasedAF(AutoFocusPlan):
         )
 
 
-AnyAutofocusPlan = Union[AxesBasedAF]
+AnyAutofocusPlan = AxesBasedAF
