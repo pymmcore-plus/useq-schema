@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
 
 import numpy as np
 
-from ._base_model import FrozenModel
+from useq._base_model import FrozenModel
 
 if TYPE_CHECKING:
     from useq import MDASequence

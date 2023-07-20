@@ -2,8 +2,8 @@ from typing import Iterator, List, Sequence, Union
 
 import numpy as np
 
-from ._base_model import FrozenModel
-from ._utils import list_cast
+from useq._base_model import FrozenModel
+from useq._utils import list_cast
 
 
 class ZPlan(FrozenModel):

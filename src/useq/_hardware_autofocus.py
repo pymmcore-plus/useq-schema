@@ -2,9 +2,9 @@ from typing import Any, Optional, Tuple, Union
 
 from pydantic import PrivateAttr
 
-from ._actions import HardwareAutofocus
-from ._base_model import FrozenModel
-from ._mda_event import MDAEvent
+from useq._actions import HardwareAutofocus
+from useq._base_model import FrozenModel
+from useq._mda_event import MDAEvent
 
 
 class AutoFocusPlan(FrozenModel):

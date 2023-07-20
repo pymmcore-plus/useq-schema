@@ -1,6 +1,6 @@
 from typing_extensions import Literal
 
-from ._base_model import FrozenModel
+from useq._base_model import FrozenModel
 
 
 class Action(FrozenModel):

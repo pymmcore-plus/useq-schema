@@ -9,15 +9,15 @@ import numpy as np
 from pydantic import Field, PrivateAttr, root_validator, validator
 from typing_extensions import TypedDict
 
-from . import _mda_event
-from ._base_model import UseqModel
-from ._channel import Channel
-from ._grid import AnyGridPlan, GridPosition
-from ._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
-from ._mda_event import MDAEvent
-from ._position import Position
-from ._time import AnyTimePlan
-from ._z import AnyZPlan
+from useq._base_model import UseqModel
+from useq._channel import Channel  # noqa: TCH001
+from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
+from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
+from useq._mda_event import Channel as EventChannel
+from useq._mda_event import MDAEvent
+from useq._position import Position
+from useq._time import AnyTimePlan  # noqa: TCH001
+from useq._z import AnyZPlan  # noqa: TCH001
 
 TIME = "t"
 CHANNEL = "c"
@@ -333,7 +333,7 @@ Position.update_forward_refs(MDASequence=MDASequence)
 
 class MDAEventDict(TypedDict, total=False):
     index: dict[str, int]
-    channel: _mda_event.Channel | None
+    channel: EventChannel | None
     exposure: float | None
     min_start_time: float | None
     pos_name: str | None
