@@ -1,8 +1,8 @@
 import datetime
 from typing import Any, Callable, Generator, Iterator, Sequence, Union
+from pydantic import Field
 
 from pydantic.datetime_parse import parse_duration
-from pydantic.types import PositiveInt
 
 from useq._base_model import FrozenModel
 
@@ -45,7 +45,7 @@ class TIntervalLoops(TimePlan):
     ----------
     interval : str | timedelta
         Time between frames.
-    loops : PositiveInt
+    loops : int
         Number of frames.
     prioritize_duration : bool
         If `True`, instructs engine to prioritize duration over number of frames in case
@@ -53,7 +53,7 @@ class TIntervalLoops(TimePlan):
     """
 
     interval: timedelta
-    loops: PositiveInt
+    loops: int = Field(..., gt=0)
 
 
 class TDurationLoops(TimePlan):
@@ -63,7 +63,7 @@ class TDurationLoops(TimePlan):
     ----------
     duration : str | timedelta
         Total duration of sequence.
-    loops : PositiveInt
+    loops : int
         Number of frames.
     prioritize_duration : bool
         If `True`, instructs engine to prioritize duration over number of frames in case
@@ -71,7 +71,7 @@ class TDurationLoops(TimePlan):
     """
 
     duration: timedelta
-    loops: PositiveInt
+    loops: int = Field(..., gt=0)
 
     @property
     def interval(self) -> datetime.timedelta:
