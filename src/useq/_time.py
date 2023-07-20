@@ -1,7 +1,7 @@
 import datetime
 from typing import Any, Callable, Generator, Iterator, Sequence, Union
-from pydantic import Field
 
+from pydantic import Field
 from pydantic.datetime_parse import parse_duration
 
 from useq._base_model import FrozenModel
