@@ -4,7 +4,7 @@ from typing import Any, Callable, Generator, Iterator, Sequence, Union
 from pydantic.datetime_parse import parse_duration
 from pydantic.types import PositiveInt
 
-from ._base_model import FrozenModel
+from useq._base_model import FrozenModel
 
 
 class timedelta(datetime.timedelta):

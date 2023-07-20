@@ -17,10 +17,11 @@ from typing import (
 
 from pydantic import BaseModel, root_validator
 from pydantic.error_wrappers import ErrorWrapper, ValidationError
-from pydantic.types import StrBytes
 from pydantic.utils import ROOT_KEY
 
 if TYPE_CHECKING:
+    from pydantic.types import StrBytes
+
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
 

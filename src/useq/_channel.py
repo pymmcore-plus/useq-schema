@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, Optional
+from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
 
-from pydantic.types import PositiveFloat, PositiveInt
+from useq import _mda_event
+from useq._base_model import FrozenModel
 
-from . import _mda_event
-from ._base_model import FrozenModel
+if TYPE_CHECKING:
+    from pydantic.types import PositiveFloat, PositiveInt
 
 
 class Channel(FrozenModel):

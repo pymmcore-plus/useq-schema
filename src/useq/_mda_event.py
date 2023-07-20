@@ -14,14 +14,15 @@ from typing import (
 )
 
 from pydantic import Field, validator
-from pydantic.types import PositiveFloat
 
-from ._actions import AcquireImage, Action
-from ._base_model import UseqModel
-from ._utils import ReadOnlyDict
+from useq._actions import AcquireImage, Action
+from useq._base_model import UseqModel
+from useq._utils import ReadOnlyDict
 
 if TYPE_CHECKING:
-    from ._mda_sequence import MDASequence
+    from pydantic.types import PositiveFloat
+
+    from useq._mda_sequence import MDASequence
 
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
