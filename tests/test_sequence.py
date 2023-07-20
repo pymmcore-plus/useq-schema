@@ -11,9 +11,6 @@ from useq import (
     GridRelative,
     MDAEvent,
     MDASequence,
-    NoGrid,
-    NoT,
-    NoZ,
     Position,
     TDurationLoops,
     TIntervalDuration,
@@ -32,14 +29,12 @@ z_as_class: _T = [
     (ZAbsolutePositions(absolute=[0, 0.5, 5]), [0, 0.5, 5]),
     (ZRelativePositions(relative=[0, 0.5, 5]), [0, 0.5, 5]),
     (ZRangeAround(range=8, step=1), [-4, -3, -2, -1, 0, 1, 2, 3, 4]),
-    (NoZ(), []),
 ]
 z_as_dict: _T = [
     ({"above": 8, "below": 4, "step": 2}, [-4, -2, 0, 2, 4, 6, 8]),
     ({"range": 8, "step": 1}, [-4, -3, -2, -1, 0, 1, 2, 3, 4]),
     ({"absolute": [0, 0.5, 5]}, [0, 0.5, 5]),
     ({"relative": [0, 0.5, 5]}, [0, 0.5, 5]),
-    (None, []),
 ]
 z_inputs = z_as_class + z_as_dict
 
@@ -60,7 +55,6 @@ t_as_class: _T = [
 ]
 
 t_as_dict: _T = [
-    (None, []),
     ({"interval": 0.5, "duration": 2}, [0, 0.5, 1, 1.5, 2]),
     ({"loops": 5, "duration": 8}, [0, 2, 4, 6, 8]),
     ({"loops": 5, "interval": 0.25}, [0, 0.25, 0.5, 0.75, 1]),
@@ -70,7 +64,6 @@ t_as_dict: _T = [
     ),
     ({"loops": 5, "duration": {"milliseconds": 8}}, [0, 0.002, 0.004, 0.006, 0.008]),
     ({"loops": 5, "duration": {"seconds": 8}}, [0, 2, 4, 6, 8]),
-    (NoT(), []),
 ]
 t_inputs = t_as_class + t_as_dict
 
@@ -87,7 +80,6 @@ g_as_dict = [
         {"overlap": 10.0, "top": 0.0, "left": 0.0, "bottom": 2.0, "right": 2.0},
         [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
     ),
-    ({}, [(0.0, 0.0), OrderMode.row_wise_snake]),
 ]
 
 g_as_class = [
@@ -99,7 +91,6 @@ g_as_class = [
         GridFromEdges(overlap=10.0, top=0.0, left=0, bottom=2, right=2),
         [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
     ),
-    (NoGrid(), [(0.0, 0.0), OrderMode.row_wise_snake]),
 ]
 g_inputs = g_as_class + g_as_dict
 

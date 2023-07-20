@@ -60,10 +60,7 @@
     {
       "name": "test_name",
       "sequence": {
-        "autofocus_plan": {
-          "autofocus_device_name": "__no_autofocus__",
-          "autofocus_motor_offset": null
-        },
+        "autofocus_plan": null,
         "axis_order": "tpgcz",
         "channels": [],
         "grid_plan": {
@@ -78,9 +75,7 @@
         },
         "metadata": {},
         "stage_positions": [],
-        "time_plan": {
-          "prioritize_duration": false
-        },
+        "time_plan": null,
         "z_plan": {
           "above": 10.0,
           "below": 0.0,

@@ -34,9 +34,6 @@ class TimePlan(FrozenModel):
             yield current
             current += self.interval  # type: ignore  # TODO
 
-    def __bool__(self) -> bool:
-        return len(self) > 0
-
 
 class TIntervalLoops(TimePlan):
     """Define temporal sequence using interval and number of loops.
@@ -102,14 +99,7 @@ class TIntervalDuration(TimePlan):
         return self.duration // self.interval + 1
 
 
-class NoT(TimePlan):
-    """Don't acquire a time sequence."""
-
-    def deltas(self) -> Iterator[datetime.timedelta]:
-        yield from ()
-
-
-SinglePhaseTimePlan = Union[TIntervalDuration, TIntervalLoops, TDurationLoops, NoT]
+SinglePhaseTimePlan = Union[TIntervalDuration, TIntervalLoops, TDurationLoops]
 
 
 class MultiPhaseTimePlan(TimePlan):
@@ -117,7 +107,7 @@ class MultiPhaseTimePlan(TimePlan):
 
     Attributes
     ----------
-    phases : Sequence[TIntervalDuration | TIntervalLoops | TDurationLoops | NoT]
+    phases : Sequence[TIntervalDuration | TIntervalLoops | TDurationLoops]
         Sequence of time plans.
     """
 

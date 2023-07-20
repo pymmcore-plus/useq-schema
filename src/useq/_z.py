@@ -155,20 +155,8 @@ class ZAbsolutePositions(ZPlan):
         return False
 
 
-class NoZ(ZPlan):
-    """Don't acquire Z."""
-
-    go_up: bool = True
-
-    def positions(self) -> Sequence[float]:
-        return []
-
-    def __bool__(self) -> bool:
-        return False
-
-
 # order matters... this is the order in which pydantic will try to coerce input.
 # should go from most specific to least specific
 AnyZPlan = Union[
-    ZTopBottom, ZAboveBelow, ZRangeAround, ZAbsolutePositions, ZRelativePositions, NoZ
+    ZTopBottom, ZAboveBelow, ZRangeAround, ZAbsolutePositions, ZRelativePositions
 ]
