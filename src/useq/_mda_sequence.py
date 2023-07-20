@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, cast, no_type_check
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, cast
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -125,30 +125,6 @@ class MDASequence(UseqModel):
         This is used to calculate the number of positions in a grid plan.
         """
         self._fov_size = fov_size
-
-    @no_type_check
-    def replace(
-        self,
-        metadata: Dict[str, Any] = Undefined,
-        axis_order: str = Undefined,
-        stage_positions: Tuple[Position, ...] = Undefined,
-        grid_plan: AnyGridPlan = Undefined,
-        channels: Tuple[Channel, ...] = Undefined,
-        time_plan: AnyTimePlan = Undefined,
-        z_plan: AnyZPlan = Undefined,
-        autofocus_plan: AnyAutofocusPlan = Undefined,
-    ) -> MDASequence:
-        """Return a new `MDAsequence` replacing specified kwargs with new values.
-
-        MDASequences are immutable, so this method is useful for creating a new
-        sequence with only a few fields changed.  The uid of the new sequence will
-        be different from the original.
-        """
-        kwargs = {
-            k: v for k, v in locals().items() if v is not Undefined and k != "self"
-        }
-        state = self.dict(exclude={"uid"})
-        return type(self)(**{**state, **kwargs})
 
     def __hash__(self) -> int:
         return hash(self.uid)
