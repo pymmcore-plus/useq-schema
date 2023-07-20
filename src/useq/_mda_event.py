@@ -14,14 +14,13 @@ from typing import (
 )
 
 from pydantic import Field, validator
-from pydantic.types import PositiveFloat
 
-from ._actions import AcquireImage, Action
-from ._base_model import UseqModel
-from ._utils import ReadOnlyDict
+from useq._actions import AcquireImage, Action
+from useq._base_model import UseqModel
+from useq._utils import ReadOnlyDict
 
 if TYPE_CHECKING:
-    from ._mda_sequence import MDASequence
+    from useq._mda_sequence import MDASequence
 
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
@@ -87,7 +86,7 @@ class MDAEvent(UseqModel):
         `config` and `group`.  `config` is the name of the configuration to use for this
         channel, (e.g. `"488nm"`, `"DAPI"`, `"FITC"`).  `group` is the name of the group
         to which this channel belongs. By default, `"Channel"`.
-    exposure : PositiveFloat | None
+    exposure : float | None
         Exposure time in seconds. If not provided, implies use current exposure time.
         By default, `None`.
     min_start_time : float | None
@@ -124,7 +123,7 @@ class MDAEvent(UseqModel):
 
     index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)
     channel: Optional[Channel] = None
-    exposure: Optional[PositiveFloat] = None
+    exposure: Optional[float] = Field(default=None, gt=0.0)
     min_start_time: Optional[float] = None  # time in sec
     pos_name: Optional[str] = None
     x_pos: Optional[float] = None
