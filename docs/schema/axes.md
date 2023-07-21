@@ -32,9 +32,6 @@ Ways to describe a temporal acquisition sequence.
 ::: useq.MultiPhaseTimePlan
     options:
         members: []
-::: useq.NoT
-    options:
-        members: []
 
 ## Z Plans
 
@@ -55,9 +52,6 @@ Ways to describe a z-stack acquisition sequence.
 ::: useq.ZRelativePositions
     options:
         members: []
-::: useq.NoZ
-    options:
-        members: []
 
 ## Grid Plans
 
@@ -68,9 +62,5 @@ Ways to describe a grid acquisition sequence.
         members: []
 
 ::: useq.GridFromEdges
-    options:
-        members: []
-
-::: useq.NoGrid
     options:
         members: []
