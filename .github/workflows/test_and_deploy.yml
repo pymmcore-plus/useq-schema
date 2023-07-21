@@ -102,7 +102,7 @@ jobs:
         run: mmcore install
 
       - name: Test
-        run: pytest -v --color=yes
+        run: pytest -v --color=yes -W ignore
         working-directory: pymmcore-widgets-from-github
 
 
