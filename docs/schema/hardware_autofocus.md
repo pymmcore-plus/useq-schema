@@ -18,7 +18,3 @@ Ways to describe a hardware-based autofocus plan.
         show_signature_annotations: true
         members:
             - should_autofocus
-
-::: useq.NoAF
-    options:
-        members: []
