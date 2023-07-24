@@ -1,17 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import (
-    Any,
-    Dict,
-    Iterator,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    cast,
-    no_type_check,
-)
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, cast
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -19,16 +9,16 @@ import numpy as np
 from pydantic import Field, PrivateAttr, root_validator, validator
 from typing_extensions import TypedDict
 
-from . import _mda_event
-from ._base_model import UseqModel
-from ._channel import Channel
-from ._grid import AnyGridPlan, GridPosition, NoGrid
-from ._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF, NoAF
-from ._mda_event import MDAEvent
-from ._position import Position
-from ._shutter_plan import ShutterOpenAxes
-from ._time import AnyTimePlan, NoT
-from ._z import AnyZPlan, NoZ
+from useq._base_model import UseqModel
+from useq._channel import Channel  # noqa: TCH001
+from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
+from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
+from useq._mda_event import Channel as EventChannel
+from useq._mda_event import MDAEvent
+from useq._position import Position
+from useq._shutter_plan import ShutterOpenAxes  # noqa: TCH001
+from useq._time import AnyTimePlan  # noqa: TCH001
+from useq._z import AnyZPlan  # noqa: TCH001
 
 TIME = "t"
 CHANNEL = "c"
@@ -59,23 +49,23 @@ class MDASequence(UseqModel):
     stage_positions : tuple[Position, ...]
         The stage positions to visit. (each with `x`, `y`, `z`, `name`, and `sequence`,
         all of which are optional).
-    grid_plan : GridFromEdges, GridRelative, NoGrid
-        The grid plan to follow. One of `GridFromEdges`, `GridRelative` or `NoGrid`.
+    grid_plan : GridFromEdges | GridRelative | None
+        The grid plan to follow. One of `GridFromEdges`, `GridRelative` or `None`.
     channels : tuple[Channel, ...]
         The channels to acquire. see `Channel`.
     time_plan : MultiPhaseTimePlan | TIntervalDuration | TIntervalLoops \
-        | TDurationLoops | NoT
+        | TDurationLoops | None
         The time plan to follow. One of `TIntervalDuration`, `TIntervalLoops`,
-        `TDurationLoops`, `MultiPhaseTimePlan`, or `NoT`
+        `TDurationLoops`, `MultiPhaseTimePlan`, or `None`
     z_plan : ZTopBottom | ZRangeAround | ZAboveBelow | ZRelativePositions | \
-        ZAbsolutePositions | NoZ
+        ZAbsolutePositions | None
         The z plan to follow. One of `ZTopBottom`, `ZRangeAround`, `ZAboveBelow`,
-        `ZRelativePositions`, `ZAbsolutePositions`, or `NoZ`.
+        `ZRelativePositions`, `ZAbsolutePositions`, or `None`.
     uid : UUID
         A read-only unique identifier (uuid version 4) for the sequence. This will be
         generated, do not set.
-    autofocus_plan : AxesBasedAF | NoAF
-        The hardware autofocus plan to follow. One of `AxesBasedAF` or `NoAF`.
+    autofocus_plan : AxesBasedAF | None
+        The hardware autofocus plan to follow. One of `AxesBasedAF` or `None`.
     shutter_plan : ShutterOpenAxes
         The plan for keeping the shutter open for any specified axes.
         See `ShutterOpenAxes`.
@@ -118,12 +108,12 @@ class MDASequence(UseqModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: str = "".join(INDICES)
     stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
-    grid_plan: AnyGridPlan = Field(default_factory=NoGrid)
+    grid_plan: Optional[AnyGridPlan] = None
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
-    time_plan: AnyTimePlan = Field(default_factory=NoT)
-    z_plan: AnyZPlan = Field(default_factory=NoZ)
-    autofocus_plan: AnyAutofocusPlan = Field(default_factory=NoAF)
-    shutter_plan: ShutterOpenAxes = Field(default_factory=ShutterOpenAxes)
+    time_plan: Optional[AnyTimePlan] = None
+    z_plan: Optional[AnyZPlan] = None
+    autofocus_plan: Optional[AnyAutofocusPlan] = None
+    shutter_plan: Optional[ShutterOpenAxes] = None
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _length: Optional[int] = PrivateAttr(default=None)
@@ -141,41 +131,16 @@ class MDASequence(UseqModel):
         """
         self._fov_size = fov_size
 
-    @no_type_check
-    def replace(
-        self,
-        metadata: Dict[str, Any] = Undefined,
-        axis_order: str = Undefined,
-        stage_positions: Tuple[Position, ...] = Undefined,
-        grid_plan: AnyGridPlan = Undefined,
-        channels: Tuple[Channel, ...] = Undefined,
-        time_plan: AnyTimePlan = Undefined,
-        z_plan: AnyZPlan = Undefined,
-        autofocus_plan: AnyAutofocusPlan = Undefined,
-        shutter_plan: ShutterOpenAxes = Undefined,
-    ) -> MDASequence:
-        """Return a new `MDAsequence` replacing specified kwargs with new values.
-
-        MDASequences are immutable, so this method is useful for creating a new
-        sequence with only a few fields changed.  The uid of the new sequence will
-        be different from the original.
-        """
-        kwargs = {
-            k: v for k, v in locals().items() if v is not Undefined and k != "self"
-        }
-        state = self.dict(exclude={"uid"})
-        return type(self)(**{**state, **kwargs})
-
     def __hash__(self) -> int:
         return hash(self.uid)
 
     @validator("z_plan", pre=True)
-    def validate_zplan(cls, v: Any) -> Union[dict, NoZ]:
-        return v or NoZ()
+    def validate_zplan(cls, v: Any) -> Optional[dict]:
+        return v or None
 
     @validator("time_plan", pre=True)
-    def validate_time_plan(cls, v: Any) -> Union[dict, NoT]:
-        return {"phases": v} if isinstance(v, (tuple, list)) else v or NoT()
+    def validate_time_plan(cls, v: Any) -> Optional[dict]:
+        return {"phases": v} if isinstance(v, (tuple, list)) else v or None
 
     @validator("stage_positions", pre=True)
     def validate_positions(cls, v: Any) -> Any:
@@ -257,8 +222,7 @@ class MDASequence(UseqModel):
         if (
             GRID in order
             and POSITION in order
-            and grid_plan is not None
-            and not isinstance(grid_plan, NoGrid)
+            and grid_plan
             and not grid_plan.is_relative
             and len(stage_positions) > 1
         ):
@@ -281,7 +245,7 @@ class MDASequence(UseqModel):
             )
 
         # Cannot use autofocus plan with absolute z_plan
-        if Z in order and z_plan is not None and not z_plan.is_relative:
+        if Z in order and z_plan and not z_plan.is_relative:
             err = "Absolute Z positions cannot be used with autofocus plan."
             if isinstance(autofocus_plan, AxesBasedAF):
                 raise ValueError(err)
@@ -326,15 +290,19 @@ class MDASequence(UseqModel):
         self, axis: str
     ) -> Iterator[Position | Channel | float | GridPosition]:
         """Iterate over the events of a given axis."""
-        yield from {
+        plan = {
             TIME: self.time_plan,
             POSITION: self.stage_positions,
             Z: self.z_plan,
             CHANNEL: self.channels,
-            GRID: self.grid_plan.iter_grid_positions(
-                self._fov_size[0], self._fov_size[1]
+            GRID: (
+                self.grid_plan.iter_grid_positions(self._fov_size[0], self._fov_size[1])
+                if self.grid_plan
+                else ()
             ),
         }[axis]
+        if plan:
+            yield from plan
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
         """Same as `iter_events`. Supports `for event in sequence: ...` syntax."""
@@ -370,7 +338,7 @@ Position.update_forward_refs(MDASequence=MDASequence)
 
 class MDAEventDict(TypedDict, total=False):
     index: dict[str, int]
-    channel: _mda_event.Channel | None
+    channel: EventChannel | None
     exposure: float | None
     min_start_time: float | None
     pos_name: str | None
@@ -515,7 +483,7 @@ def iter_sequence(
 
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
-            if af_event is not None:
+            if af_event:
                 yield af_event
         yield event
 
@@ -569,7 +537,7 @@ def _should_skip(
     position: Position | None,
     channel: Channel | None,
     index: dict[str, int],
-    z_plan: AnyZPlan,
+    z_plan: AnyZPlan | None,
 ) -> bool:
     """Return True if this event should be skipped."""
     if channel:
@@ -615,7 +583,7 @@ def _should_skip(
 def _xyzpos(
     position: Position | None,
     channel: Channel | None,
-    z_plan: AnyZPlan,
+    z_plan: AnyZPlan | None,
     grid: GridPosition | None = None,
     z_pos: float | None = None,
 ) -> MDAEventDict:
@@ -623,7 +591,7 @@ def _xyzpos(
         # combine z_pos with z_offset
         if channel and channel.z_offset is not None:
             z_pos += channel.z_offset
-        if z_plan.is_relative:
+        if z_plan and z_plan.is_relative:
             # TODO: either disallow without position z, or add concept of "current"
             z_pos += getattr(position, Z, None) or 0
     elif position:

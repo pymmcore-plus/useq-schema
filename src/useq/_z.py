@@ -2,7 +2,8 @@ from typing import Iterator, List, Sequence, Union
 
 import numpy as np
 
-from ._base_model import FrozenModel
+from useq._base_model import FrozenModel
+from useq._utils import list_cast
 
 
 class ZPlan(FrozenModel):
@@ -123,6 +124,8 @@ class ZRelativePositions(ZPlan):
     relative: List[float]
     go_up: bool = True
 
+    _normrel = list_cast("relative")
+
     def positions(self) -> Sequence[float]:
         return self.relative
 
@@ -142,6 +145,8 @@ class ZAbsolutePositions(ZPlan):
     absolute: List[float]
     go_up: bool = True
 
+    _normabs = list_cast("absolute")
+
     def positions(self) -> Sequence[float]:
         return self.absolute
 
@@ -150,20 +155,8 @@ class ZAbsolutePositions(ZPlan):
         return False
 
 
-class NoZ(ZPlan):
-    """Don't acquire Z."""
-
-    go_up: bool = True
-
-    def positions(self) -> Sequence[float]:
-        return []
-
-    def __bool__(self) -> bool:
-        return False
-
-
 # order matters... this is the order in which pydantic will try to coerce input.
 # should go from most specific to least specific
 AnyZPlan = Union[
-    ZTopBottom, ZAboveBelow, ZRangeAround, ZAbsolutePositions, ZRelativePositions, NoZ
+    ZTopBottom, ZAboveBelow, ZRangeAround, ZAbsolutePositions, ZRelativePositions
 ]

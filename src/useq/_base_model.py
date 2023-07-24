@@ -17,15 +17,17 @@ from typing import (
 
 from pydantic import BaseModel, root_validator
 from pydantic.error_wrappers import ErrorWrapper, ValidationError
-from pydantic.types import StrBytes
 from pydantic.utils import ROOT_KEY
 
 if TYPE_CHECKING:
+    from pydantic.types import StrBytes
+
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
 
 __all__ = ["UseqModel", "FrozenModel"]
 
+_T = TypeVar("_T", bound="FrozenModel")
 _Y = TypeVar("_Y", bound="UseqModel")
 
 
@@ -47,6 +49,20 @@ class FrozenModel(BaseModel):
             for k in extra_kwargs:
                 values.pop(k)
         return values
+
+    def replace(self: _T, **kwargs: Any) -> _T:
+        """Return a new instance replacing specified kwargs with new values.
+
+        This model is immutable, so this method is useful for creating a new
+        sequence with only a few fields changed.  The uid of the new sequence will
+        be different from the original.
+
+        The difference between this and `self.copy(update={...})` is that this method
+        will perform validation and casting on the new values, whereas `copy` assumes
+        that all objects are valid and will not perform any validation or casting.
+        """
+        state = self.dict(exclude={"uid"})
+        return type(self)(**{**state, **kwargs})
 
 
 class UseqModel(FrozenModel):

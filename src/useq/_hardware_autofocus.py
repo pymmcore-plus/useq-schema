@@ -1,10 +1,10 @@
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Tuple
 
 from pydantic import PrivateAttr
 
-from ._actions import HardwareAutofocus
-from ._base_model import FrozenModel
-from ._mda_event import MDAEvent
+from useq._actions import HardwareAutofocus
+from useq._base_model import FrozenModel
+from useq._mda_event import MDAEvent
 
 
 class AutoFocusPlan(FrozenModel):
@@ -84,16 +84,4 @@ class AxesBasedAF(AutoFocusPlan):
         )
 
 
-class NoAF(AutoFocusPlan):
-    """No hardware autofocus plan."""
-
-    autofocus_device_name: str = "__no_autofocus__"
-
-    def __bool__(self) -> bool:
-        return False
-
-    def should_autofocus(self, event: MDAEvent) -> bool:
-        return False
-
-
-AnyAutofocusPlan = Union[AxesBasedAF, NoAF]
+AnyAutofocusPlan = AxesBasedAF

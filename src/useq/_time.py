@@ -1,10 +1,10 @@
 import datetime
 from typing import Any, Callable, Generator, Iterator, Sequence, Union
 
+from pydantic import Field
 from pydantic.datetime_parse import parse_duration
-from pydantic.types import PositiveInt
 
-from ._base_model import FrozenModel
+from useq._base_model import FrozenModel
 
 
 class timedelta(datetime.timedelta):
@@ -34,9 +34,6 @@ class TimePlan(FrozenModel):
             yield current
             current += self.interval  # type: ignore  # TODO
 
-    def __bool__(self) -> bool:
-        return len(self) > 0
-
 
 class TIntervalLoops(TimePlan):
     """Define temporal sequence using interval and number of loops.
@@ -45,7 +42,7 @@ class TIntervalLoops(TimePlan):
     ----------
     interval : str | timedelta
         Time between frames.
-    loops : PositiveInt
+    loops : int
         Number of frames.
     prioritize_duration : bool
         If `True`, instructs engine to prioritize duration over number of frames in case
@@ -53,7 +50,7 @@ class TIntervalLoops(TimePlan):
     """
 
     interval: timedelta
-    loops: PositiveInt
+    loops: int = Field(..., gt=0)
 
 
 class TDurationLoops(TimePlan):
@@ -63,7 +60,7 @@ class TDurationLoops(TimePlan):
     ----------
     duration : str | timedelta
         Total duration of sequence.
-    loops : PositiveInt
+    loops : int
         Number of frames.
     prioritize_duration : bool
         If `True`, instructs engine to prioritize duration over number of frames in case
@@ -71,7 +68,7 @@ class TDurationLoops(TimePlan):
     """
 
     duration: timedelta
-    loops: PositiveInt
+    loops: int = Field(..., gt=0)
 
     @property
     def interval(self) -> datetime.timedelta:
@@ -102,14 +99,7 @@ class TIntervalDuration(TimePlan):
         return self.duration // self.interval + 1
 
 
-class NoT(TimePlan):
-    """Don't acquire a time sequence."""
-
-    def deltas(self) -> Iterator[datetime.timedelta]:
-        yield from ()
-
-
-SinglePhaseTimePlan = Union[TIntervalDuration, TIntervalLoops, TDurationLoops, NoT]
+SinglePhaseTimePlan = Union[TIntervalDuration, TIntervalLoops, TDurationLoops]
 
 
 class MultiPhaseTimePlan(TimePlan):
@@ -117,7 +107,7 @@ class MultiPhaseTimePlan(TimePlan):
 
     Attributes
     ----------
-    phases : Sequence[TIntervalDuration | TIntervalLoops | TDurationLoops | NoT]
+    phases : Sequence[TIntervalDuration | TIntervalLoops | TDurationLoops]
         Sequence of time plans.
     """
 
