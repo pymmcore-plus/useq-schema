@@ -122,6 +122,9 @@ class MDAEvent(UseqModel):
     keep_shutter_open : bool
         If True, the illumination shutter should be left open after the event has
         been executed, otherwise it should be closed. By default, `False`."
+        This is useful when the sequence of events being executed use the same
+        illumination scheme (such as a z-stack in a single channel), and closing and
+        opening the shutter between events would be slow.
     """
 
     index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)
