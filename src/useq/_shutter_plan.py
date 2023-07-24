@@ -2,8 +2,8 @@ from typing import Tuple
 
 from pydantic import PrivateAttr
 
-from ._base_model import FrozenModel
-from ._mda_event import MDAEvent
+from useq._base_model import FrozenModel
+from useq._mda_event import MDAEvent
 
 
 class ShutterOpenAxes(FrozenModel):
