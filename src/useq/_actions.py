@@ -58,4 +58,4 @@ class HardwareAutofocus(Action):
     max_retries: int = 3
 
 
-AnyAction = Union[AcquireImage, HardwareAutofocus]
+AnyAction = Union[HardwareAutofocus, AcquireImage]
