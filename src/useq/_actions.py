@@ -1,3 +1,5 @@
+from typing import Union
+
 from typing_extensions import Literal
 
 from useq._base_model import FrozenModel
@@ -54,3 +56,6 @@ class HardwareAutofocus(Action):
     autofocus_device_name: str
     autofocus_motor_offset: float
     max_retries: int = 3
+
+
+AnyAction = Union[AcquireImage, HardwareAutofocus]
