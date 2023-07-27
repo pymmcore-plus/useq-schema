@@ -321,3 +321,8 @@ def test_mda_warns_extra() -> None:
 def test_skip_channel_do_stack_no_zplan():
     mda = MDASequence(channels=[{"config": "DAPI", "do_stack": False}])
     assert len(list(mda)) == 1
+
+
+def test_event_action_union() -> None:
+    # test that action unions work
+    MDAEvent(action={"autofocus_device_name": "Z", "autofocus_motor_offset": 25})
