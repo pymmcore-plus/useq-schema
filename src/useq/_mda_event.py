@@ -15,7 +15,7 @@ from typing import (
 
 from pydantic import Field, validator
 
-from useq._actions import AcquireImage, Action
+from useq._actions import AcquireImage, AnyAction
 from useq._base_model import UseqModel
 from useq._utils import ReadOnlyDict
 
@@ -138,7 +138,7 @@ class MDAEvent(UseqModel):
     sequence: Optional[MDASequence] = Field(default=None, repr=False)
     properties: Optional[List[PropertyTuple]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    action: Action = Field(default_factory=AcquireImage)
+    action: AnyAction = Field(default_factory=AcquireImage)
     keep_shutter_open: bool = False
 
     # action
