@@ -9,7 +9,7 @@ name = "useq-schema"
 description = "Schema for multi-dimensional microscopy experiments"
 readme = "README.md"
 keywords = ["microscopy", "schema"]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = { text = "BSD 3-Clause License" }
 authors = [{ email = "talley.lambert@gmail.com", name = "Talley Lambert" }]
 classifiers = [
@@ -20,10 +20,16 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Software Development",
+    "Topic :: System :: Hardware",
+    "Typing :: Typed",
 ]
 dynamic = ["version"]
 dependencies = ["pydantic<2.0", "numpy"]
@@ -62,9 +68,10 @@ packages = ["src/useq"]
 # https://beta.ruff.rs/docs/rules/
 [tool.ruff]
 line-length = 88
-target-version = "py37"
+target-version = "py38"
 src = ["src", "tests"]
 select = [
+    "W",    # style warnings
     "E",    # style errors
     "F",    # flakes
     "D",    # pydocstyle
@@ -78,6 +85,7 @@ select = [
     "TID",  # flake8-tidy-imports
     "RUF",  # ruff-specific rules
     "PERF", # performance
+    "SLF",  # private access
 ]
 ignore = [
     "D100",  # Missing docstring in public module

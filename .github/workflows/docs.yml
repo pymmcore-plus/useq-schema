@@ -1,4 +1,4 @@
-name: publish docs
+name: docs
 on:
   push:
     branches:
