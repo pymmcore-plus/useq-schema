@@ -7,6 +7,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Mapping,
     NamedTuple,
     NoReturn,
     Optional,
@@ -127,9 +128,8 @@ class MDAEvent(UseqModel):
         opening the shutter between events would be slow.
     """
 
-    index: MappingProxyType[str, int] = Field(
-        default_factory=lambda: MappingProxyType({})
-    )
+    # MappingProxyType is not subscriptable on Python 3.8
+    index: Mapping[str, int] = Field(default_factory=lambda: MappingProxyType({}))
     channel: Optional[Channel] = None
     exposure: Optional[float] = Field(default=None, gt=0.0)
     min_start_time: Optional[float] = None  # time in sec
