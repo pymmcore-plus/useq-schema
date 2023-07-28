@@ -245,7 +245,11 @@ def _should_skip(
         if not channel.do_stack and z_plan and index[Axis.Z] != len(z_plan) // 2:
             return True
 
-    if not position or not position.sequence:
+    if (
+        not position
+        or position.sequence is None
+        or position.sequence.autofocus_plan is not None
+    ):
         return False
 
     # NOTE: if we ever add more plans, they will need to be explicitly added
@@ -263,12 +267,9 @@ def _should_skip(
     # if channel IS SPECIFIED in the position.sequence WITH any plan,
     # we skip otherwise the channel will be acquired twice. Same happens if
     # the channel IS NOT SPECIFIED but ANY plan is.
-    if (
-        Axis.CHANNEL in index
-        and index[Axis.CHANNEL] != 0
-        and ((position.sequence.channels and plans) or not plans)
-    ):
-        return True
+    if index.get(Axis.CHANNEL, 0) != 0:
+        if (position.sequence.channels and plans) or not plans:
+            return True
     if Axis.Z in index and index[Axis.Z] != 0 and position.sequence.z_plan:
         return True
     if Axis.GRID in index and index[Axis.GRID] != 0 and position.sequence.grid_plan:
