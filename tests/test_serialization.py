@@ -16,3 +16,7 @@ def test_serialization(mda1: MDASequence, ext: str) -> None:
         assert json.loads(mda.json(exclude={"uid"})) == json.loads(text)
     else:
         assert mda.yaml() == text
+
+    it = iter(mda)
+    for _ in range(20):
+        assert getattr(next(it), ext)()
