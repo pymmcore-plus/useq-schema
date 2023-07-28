@@ -103,7 +103,7 @@ class MDASequence(UseqModel):
     autofocus_plan: Optional[AnyAutofocusPlan] = None
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
-    _length: Optional[int] = PrivateAttr(default=None)
+    _sizes: Optional[Dict[str, int]] = PrivateAttr(default=None)
     _fov_size: Tuple[float, float] = PrivateAttr(default=(1, 1))
 
     @property
@@ -187,7 +187,9 @@ class MDASequence(UseqModel):
             and Axis.POSITION in order
             and order.index(Axis.Z) < order.index(Axis.POSITION)
             and z_plan
-            and any(p.sequence.z_plan for p in stage_positions if p.sequence)
+            and any(
+                p.sequence.z_plan for p in stage_positions if p.sequence is not None
+            )
         ):
             raise ValueError(
                 f"{Axis.Z!r} cannot precede {Axis.POSITION!r} in acquisition order if "
@@ -214,7 +216,9 @@ class MDASequence(UseqModel):
             and len(stage_positions) > 1
         ):
             sub_position_grid_plans = [
-                p for p in stage_positions if p.sequence and p.sequence.grid_plan
+                p
+                for p in stage_positions
+                if p.sequence is not None and p.sequence.grid_plan
             ]
             if len(stage_positions) - len(sub_position_grid_plans) > 1:
                 warn(
@@ -247,16 +251,7 @@ class MDASequence(UseqModel):
         return order
 
     def __str__(self) -> str:
-        shape = [
-            f"n{k.lower()}: {len(list(self.iter_axis(k)))}" for k in self.axis_order
-        ]
-        return "Multi-Dimensional Acquisition ▶ " + ", ".join(shape)
-
-    def __len__(self) -> int:
-        """Return the number of events in this sequence."""
-        if self._length is None:
-            self._length = len(list(self.iter_events()))
-        return self._length
+        return "Multi-Dimensional Acquisition ▶ " + ", ".join(self.sizes)
 
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -270,7 +265,9 @@ class MDASequence(UseqModel):
     @property
     def sizes(self) -> Dict[str, int]:
         """Mapping of axis to size of that axis."""
-        return {k: len(list(self.iter_axis(k))) for k in self.axis_order}
+        if self._sizes is None:
+            self._sizes = {k: len(list(self.iter_axis(k))) for k in self.axis_order}
+        return self._sizes
 
     @property
     def used_axes(self) -> str:
@@ -298,9 +295,6 @@ class MDASequence(UseqModel):
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
         """Same as `iter_events`. Supports `for event in sequence: ...` syntax."""
         yield from self.iter_events()
-
-    class _SkipFrame(Exception):
-        pass
 
     def iter_events(self) -> Iterator[MDAEvent]:
         """Iterate over all events in the MDA sequence.

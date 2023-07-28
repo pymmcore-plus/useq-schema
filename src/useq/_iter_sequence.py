@@ -17,6 +17,8 @@ from useq._utils import AXES, Axis
 from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
 if TYPE_CHECKING:
+    from typing_extensions import TypeGuard
+
     from useq._mda_sequence import MDASequence
     from useq._position import Position
 
@@ -56,6 +58,18 @@ def _sizes(seq: MDASequence) -> dict[str, int]:
 @lru_cache(maxsize=None)
 def _used_axes(seq: MDASequence) -> str:
     return "".join(k for k in seq.axis_order if _sizes(seq)[k])
+
+
+def _has_axes(seq: MDASequence | None) -> TypeGuard[MDASequence]:
+    if seq is None:
+        return False
+    return bool(
+        seq.time_plan is not None
+        or seq.stage_positions
+        or seq.z_plan is not None
+        or seq.channels
+        or seq.grid_plan is not None
+    )
 
 
 def iter_sequence(
@@ -148,7 +162,7 @@ def iter_sequence(
 
         # if a position has been declared with a sub-sequence, we recurse into it
         if position:
-            if position.sequence:
+            if _has_axes(position.sequence):
                 # determine any relative position shifts or global overrides
                 _pos, _offsets = _position_offsets(position, event_kwargs)
                 # build overrides for this position
