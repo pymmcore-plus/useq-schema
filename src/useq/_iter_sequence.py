@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from itertools import product
-from typing import TYPE_CHECKING, Any, Iterator, Optional, cast
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Tuple, cast
 
 from typing_extensions import TypedDict
 
-from useq._channel import Channel  # noqa: TCH001
-from useq._grid import GridPosition  # noqa: TCH001
+from useq._channel import Channel  # noqa: TCH001  # noqa: TCH001
+from useq._grid import (  # noqa: TCH001
+    GridPosition,
+)
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent
 from useq._utils import AXES, Axis
-from useq._z import AnyZPlan  # noqa: TCH001
+from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
@@ -18,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class MDAEventDict(TypedDict, total=False):
-    index: dict[str, int]
+    index: MappingProxyType[str, int]
     channel: EventChannel | None
     exposure: float | None
     min_start_time: float | None
@@ -27,7 +31,7 @@ class MDAEventDict(TypedDict, total=False):
     y_pos: float | None
     z_pos: float | None
     sequence: MDASequence | None
-    properties: list[tuple] | None
+    # properties: list[tuple] | None
     metadata: dict
 
 
@@ -35,6 +39,23 @@ class PositionDict(TypedDict, total=False):
     x_pos: float
     y_pos: float
     z_pos: float
+
+
+@lru_cache(maxsize=None)
+def _iter_axis(
+    seq: MDASequence, ax: str
+) -> Tuple[Position | Channel | float | GridPosition, ...]:
+    return tuple(seq.iter_axis(ax))
+
+
+@lru_cache(maxsize=None)
+def _sizes(seq: MDASequence) -> dict[str, int]:
+    return {k: len(list(_iter_axis(seq, k))) for k in seq.axis_order}
+
+
+@lru_cache(maxsize=None)
+def _used_axes(seq: MDASequence) -> str:
+    return "".join(k for k in seq.axis_order if _sizes(seq)[k])
 
 
 def iter_sequence(
@@ -81,12 +102,11 @@ def iter_sequence(
     MDAEvent
         Each event in the MDA sequence.
     """
-    order = sequence.used_axes
-    axis_iterators = (enumerate(sequence.iter_axis(ax)) for ax in order)
+    order = _used_axes(sequence)
+    axis_iterators = tuple(enumerate(_iter_axis(sequence, ax)) for ax in order)
     for item in product(*axis_iterators):
         if not item:  # the case with no events
             continue  # pragma: no cover
-
         # get axes objects for this event
         index, time, position, grid, channel, z_pos = _parse_axes(zip(order, item))
 
@@ -97,10 +117,12 @@ def iter_sequence(
         # build kwargs that will be passed to this MDAEvent
         event_kwargs = base_event_kwargs or MDAEventDict(sequence=sequence)
         # the .update() here lets us build on top of the base_event.index if present
-        event_kwargs.setdefault("index", {}).update(index)
+
+        event_kwargs["index"] = MappingProxyType(
+            {**event_kwargs.get("index", {}), **index}  # type: ignore
+        )
         # determine x, y, z positions
         event_kwargs.update(_xyzpos(position, channel, sequence.z_plan, grid, z_pos))
-
         if position and position.name:
             event_kwargs["pos_name"] = position.name
         if channel:
@@ -154,7 +176,7 @@ def iter_sequence(
             elif position.sequence is not None and position.sequence.autofocus_plan:
                 autofocus_plan = position.sequence.autofocus_plan
 
-        event = MDAEvent(**event_kwargs)
+        event = MDAEvent.construct(**event_kwargs)
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
             if af_event:
@@ -203,7 +225,7 @@ def _parse_axes(
     """
     _ev = dict(event)
     index = {ax: _ev[ax][0] for ax in AXES if ax in _ev}
-    axes = (_ev[ax][1] if ax in _ev else None for ax in AXES)
+    axes = tuple(_ev[ax][1] if ax in _ev else None for ax in AXES)
     return (index, *axes)  # type: ignore[return-value]
 
 

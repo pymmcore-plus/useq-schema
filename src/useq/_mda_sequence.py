@@ -248,11 +248,11 @@ class MDASequence(UseqModel):
         ]
         return "Multi-Dimensional Acquisition ▶ " + ", ".join(shape)
 
-    def __len__(self) -> int:
-        """Return the number of events in this sequence."""
-        if self._length is None:
-            self._length = len(list(self.iter_events()))
-        return self._length
+    # def __len__(self) -> int:
+    #     """Return the number of events in this sequence."""
+    #     if self._length is None:
+    #         self._length = len(list(self.iter_events()))
+    #     return self._length
 
     @property
     def shape(self) -> Tuple[int, ...]:

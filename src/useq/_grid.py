@@ -155,9 +155,6 @@ class _GridPlan(FrozenModel):
         for r, c in _INDEX_GENERATORS[self.mode](rows, cols):
             yield GridPosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
 
-    def __len__(self) -> int:
-        return len(list(self.iter_grid_positions(1, 1)))
-
     def _step_size(self, fov_width: float, fov_height: float) -> Tuple[float, float]:
         dx = fov_width - (fov_width * self.overlap[0]) / 100
         dy = fov_height - (fov_height * self.overlap[1]) / 100

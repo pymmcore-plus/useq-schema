@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import warnings
 from pathlib import Path
+from types import MappingProxyType
 from typing import (
     IO,
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
     Optional,
     Sequence,
     Tuple,
@@ -17,11 +16,9 @@ from typing import (
 )
 
 import numpy as np
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel
 from pydantic.error_wrappers import ErrorWrapper, ValidationError
 from pydantic.utils import ROOT_KEY
-
-from useq._utils import ReadOnlyDict
 
 if TYPE_CHECKING:
     from pydantic.types import StrBytes
@@ -40,20 +37,20 @@ class FrozenModel(BaseModel):
         allow_population_by_field_name = True
         extra = "allow"
         frozen = True
-        json_encoders: ClassVar[dict] = {"ReadOnlyDict": dict}
+        json_encoders: ClassVar[dict] = {MappingProxyType: dict}
 
-    @root_validator(pre=False, skip_on_failure=True)
-    def _validate_kwargs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate kwargs for MDASequence."""
-        extra_kwargs = set(values) - set(cls.__fields__)
-        if extra_kwargs:
-            name = getattr(cls, "__name__", "")
-            warnings.warn(
-                f"{name} got unknown keyword arguments: {extra_kwargs}", stacklevel=2
-            )
-            for k in extra_kwargs:
-                values.pop(k)
-        return values
+    # @root_validator(pre=False, skip_on_failure=True)
+    # def _validate_kwargs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    #     """Validate kwargs for MDASequence."""
+    #     extra_kwargs = set(values) - set(cls.__fields__)
+    #     if extra_kwargs:
+    #         name = getattr(cls, "__name__", "")
+    #         warnings.warn(
+    #             f"{name} got unknown keyword arguments: {extra_kwargs}", stacklevel=2
+    #         )
+    #         for k in extra_kwargs:
+    #             values.pop(k)
+    #     return values
 
     def replace(self: _T, **kwargs: Any) -> _T:
         """Return a new instance replacing specified kwargs with new values.
@@ -203,10 +200,10 @@ class UseqModel(FrozenModel):
             Enum, lambda dumper, data: dumper.represent_str(str(data.value))
         )
         yaml.SafeDumper.add_multi_representer(
-            ReadOnlyDict, lambda dumper, data: dumper.represent_dict(data)
+            MappingProxyType, lambda dumper, data: dumper.represent_dict(data)
         )
         yaml.SafeDumper.add_multi_representer(
-            np.floating, lambda dumper, data: dumper.represent_float(float(data))
+            np.floating, lambda dumper, d: dumper.represent_float(float(d))
         )
 
         data = self.dict(

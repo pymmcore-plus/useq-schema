@@ -38,11 +38,7 @@ def expect_mda(mda: MDASequence, **expectations: Sequence[Any]) -> None:
             results.setdefault(attr_name, []).append(getattr(event, attr_name))
 
     for attr_name, actual_value in results.items():
-        expect = expectations[attr_name]
-        if actual_value != expect:
-            raise AssertionError(
-                f"Expected {attr_name} to be {expect}, but got {actual_value}"
-            )
+        assert actual_value == expectations[attr_name]
 
 
 # test channels
