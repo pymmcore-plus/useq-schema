@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Literal,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Iterable, Iterator, Mapping, Tuple, TypeVar, Union
 
 from pydantic import validator
 
@@ -19,11 +15,11 @@ VT = TypeVar("VT")
 class Axis:
     """Recognized axis names."""
 
-    TIME: Final[Literal["t"]] = "t"
-    POSITION: Final[Literal["p"]] = "p"
-    GRID: Final[Literal["g"]] = "g"
-    CHANNEL: Final[Literal["c"]] = "c"
-    Z: Final[Literal["z"]] = "z"
+    TIME: Final[str] = "t"
+    POSITION: Final[str] = "p"
+    GRID: Final[str] = "g"
+    CHANNEL: Final[str] = "c"
+    Z: Final[str] = "z"
 
 
 # note: order affects the default axis_order in MDASequence
@@ -34,6 +30,25 @@ AXES: Final[tuple[str, ...]] = (
     Axis.CHANNEL,
     Axis.Z,
 )
+
+
+class ReadOnlyDict(Mapping[KT, VT]):
+    def __init__(
+        self, data: Union[Mapping[KT, VT], Iterable[Tuple[KT, VT]]] = ()
+    ) -> None:
+        self._data = dict(data)
+
+    def __getitem__(self, key: KT) -> VT:
+        return self._data[key]
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __iter__(self) -> Iterator[KT]:
+        return iter(self._data)
+
+    def __repr__(self) -> str:
+        return repr(self._data)
 
 
 def list_cast(field: str) -> classmethod:
