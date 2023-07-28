@@ -265,7 +265,7 @@ def _should_skip(
         if (
             not channel.do_stack
             and z_plan is not None
-            and index[Axis.Z] != len(z_plan.positions()) // 2
+            and index[Axis.Z] != z_plan.num_positions() // 2
         ):
             return True
 
