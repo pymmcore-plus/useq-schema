@@ -11,7 +11,7 @@ from useq._base_model import UseqModel
 from useq._channel import Channel  # noqa: TCH001
 from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
-from useq._iter_seq import iter_sequence
+from useq._iter_sequence import iter_sequence
 from useq._mda_event import MDAEvent
 from useq._position import Position
 from useq._time import AnyTimePlan  # noqa: TCH001
