@@ -225,11 +225,7 @@ class MDASequence(UseqModel):
         if (
             Axis.POSITION in order
             and stage_positions
-            and any(
-                p.sequence.stage_positions
-                for p in stage_positions
-                if p.sequence is not None
-            )
+            and any(p.sequence.stage_positions for p in stage_positions if p.sequence)
         ):
             raise ValueError(
                 "Currently, a Position sequence cannot have multiple stage positions!"
@@ -252,11 +248,11 @@ class MDASequence(UseqModel):
         ]
         return "Multi-Dimensional Acquisition ▶ " + ", ".join(shape)
 
-    def __len__(self) -> int:
-        """Return the number of events in this sequence."""
-        if self._length is None:
-            self._length = len(list(self.iter_events()))
-        return self._length
+    # def __len__(self) -> int:
+    #     """Return the number of events in this sequence."""
+    #     if self._length is None:
+    #         self._length = len(list(self.iter_events()))
+    #     return self._length
 
     @property
     def shape(self) -> Tuple[int, ...]:

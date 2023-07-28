@@ -309,7 +309,16 @@ def test_mda_str_repr(mda1: MDASequence) -> None:
     assert repr(mda1)
 
 
-def test_skip_channel_do_stack_no_zplan() -> None:
+def test_mda_warns_extra() -> None:
+    with pytest.warns(UserWarning, match="got unknown keyword arguments"):
+        seq = MDASequence(random_key="random_value")
+    assert not hasattr(seq, "random_key")
+
+    with pytest.warns(UserWarning, match="got unknown keyword arguments"):
+        Position(random_key="random_value")
+
+
+def test_skip_channel_do_stack_no_zplan():
     mda = MDASequence(channels=[{"config": "DAPI", "do_stack": False}])
     assert len(list(mda)) == 1
 

@@ -35,9 +35,22 @@ _Y = TypeVar("_Y", bound="UseqModel")
 class FrozenModel(BaseModel):
     class Config:
         allow_population_by_field_name = True
-        extra = "ignore"
+        extra = "allow"
         frozen = True
         json_encoders: ClassVar[dict] = {MappingProxyType: dict}
+
+    # @root_validator(pre=False, skip_on_failure=True)
+    # def _validate_kwargs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    #     """Validate kwargs for MDASequence."""
+    #     extra_kwargs = set(values) - set(cls.__fields__)
+    #     if extra_kwargs:
+    #         name = getattr(cls, "__name__", "")
+    #         warnings.warn(
+    #             f"{name} got unknown keyword arguments: {extra_kwargs}", stacklevel=2
+    #         )
+    #         for k in extra_kwargs:
+    #             values.pop(k)
+    #     return values
 
     def replace(self: _T, **kwargs: Any) -> _T:
         """Return a new instance replacing specified kwargs with new values.
