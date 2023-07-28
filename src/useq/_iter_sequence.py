@@ -117,6 +117,7 @@ def iter_sequence(
         Each event in the MDA sequence.
     """
     order = _used_axes(sequence)
+    # this needs to be tuple(...) to work for mypyc
     axis_iterators = tuple(enumerate(_iter_axis(sequence, ax)) for ax in order)
     for item in product(*axis_iterators):
         if not item:  # the case with no events
@@ -239,8 +240,11 @@ def _parse_axes(
 
     Returns typed objects for each axis, and the index of the event.
     """
+    # NOTE: this is currently the biggest time sink in iter_sequence.
+    # It is called for every event and takes ~40% of the cumulative time.
     _ev = dict(event)
     index = {ax: _ev[ax][0] for ax in AXES if ax in _ev}
+    # this needs to be tuple(...) to work for mypyc
     axes = tuple(_ev[ax][1] if ax in _ev else None for ax in AXES)
     return (index, *axes)  # type: ignore[return-value]
 
