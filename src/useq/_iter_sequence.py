@@ -140,7 +140,9 @@ def iter_sequence(
         if position and position.name:
             event_kwargs["pos_name"] = position.name
         if channel:
-            event_kwargs["channel"] = channel.to_event_channel()
+            event_kwargs["channel"] = EventChannel.construct(
+                config=channel.config, group=channel.group
+            )
             if channel.exposure is not None:
                 event_kwargs["exposure"] = channel.exposure
         if time is not None:
@@ -256,7 +258,11 @@ def _should_skip(
             return True
 
         # only acquire on the middle plane:
-        if not channel.do_stack and z_plan and index[Axis.Z] != len(z_plan) // 2:
+        if (
+            not channel.do_stack
+            and z_plan is not None
+            and index[Axis.Z] != len(z_plan.positions()) // 2
+        ):
             return True
 
     if (

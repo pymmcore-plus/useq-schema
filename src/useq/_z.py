@@ -18,7 +18,7 @@ class ZPlan(FrozenModel):
     def positions(self) -> Sequence[float]:
         raise NotImplementedError()
 
-    def __len__(self) -> int:
+    def num_positions(self) -> int:
         return len(self.positions())
 
     @property

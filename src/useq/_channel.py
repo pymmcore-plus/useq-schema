@@ -51,10 +51,10 @@ class Channel(FrozenModel):
         if isinstance(value, Channel):
             return value
         if isinstance(value, str):
-            return Channel(config=value)
+            return Channel.construct(config=value)
         if isinstance(value, dict):
             return Channel(**value)
         raise TypeError(f"invalid Channel argument: {value!r}")
 
     def to_event_channel(self) -> _mda_event.Channel:
-        return _mda_event.Channel(config=self.config, group=self.group)
+        return _mda_event.Channel.construct(config=self.config, group=self.group)
