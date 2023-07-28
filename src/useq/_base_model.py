@@ -6,6 +6,7 @@ from typing import (
     IO,
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Dict,
     Optional,
     Sequence,
@@ -15,9 +16,12 @@ from typing import (
     Union,
 )
 
+import numpy as np
 from pydantic import BaseModel, root_validator
 from pydantic.error_wrappers import ErrorWrapper, ValidationError
 from pydantic.utils import ROOT_KEY
+
+from useq._utils import ReadOnlyDict
 
 if TYPE_CHECKING:
     from pydantic.types import StrBytes
@@ -36,6 +40,7 @@ class FrozenModel(BaseModel):
         allow_population_by_field_name = True
         extra = "allow"
         frozen = True
+        json_encoders: ClassVar[dict] = {"ReadOnlyDict": dict}
 
     @root_validator(pre=False, skip_on_failure=True)
     def _validate_kwargs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -196,6 +201,12 @@ class UseqModel(FrozenModel):
         )
         yaml.SafeDumper.add_multi_representer(
             Enum, lambda dumper, data: dumper.represent_str(str(data.value))
+        )
+        yaml.SafeDumper.add_multi_representer(
+            ReadOnlyDict, lambda dumper, data: dumper.represent_dict(data)
+        )
+        yaml.SafeDumper.add_multi_representer(
+            np.floating, lambda dumper, data: dumper.represent_float(float(data))
         )
 
         data = self.dict(
