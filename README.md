@@ -1,7 +1,9 @@
 # useq-schema
 
 [![License](https://img.shields.io/pypi/l/useq-schema.svg?color=green)](https://github.com/pymmcore-plus/useq-schema/raw/main/LICENSE)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/useq-schema)](https://pypi.org/project/useq-schema)
 [![PyPI](https://img.shields.io/pypi/v/useq-schema.svg?color=green)](https://pypi.org/project/useq-schema)
+[![Conda](https://img.shields.io/conda/vn/conda-forge/useq-schema)](https://anaconda.org/conda-forge/useq-schema)
 [![tests](https://github.com/pymmcore-plus/useq-schema/actions/workflows/test_and_deploy.yml/badge.svg)](https://github.com/pymmcore-plus/useq-schema/actions/workflows/test_and_deploy.yml)
 [![docs](https://github.com/pymmcore-plus/useq-schema/actions/workflows/docs.yml/badge.svg)](https://pymmcore-plus.github.io/useq-schema/)
 [![codecov](https://codecov.io/gh/pymmcore-plus/useq-schema/branch/main/graph/badge.svg)](https://codecov.io/gh/pymmcore-plus/useq-schema)
