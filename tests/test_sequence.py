@@ -140,18 +140,21 @@ p_inputs = [
 def test_z_plan(zplan: Any, zexpectation: Sequence[float]) -> None:
     z_plan = MDASequence(z_plan=zplan).z_plan
     assert z_plan and list(z_plan) == zexpectation
+    assert z_plan.num_positions() == len(zexpectation)
 
 
 @pytest.mark.parametrize("gridplan, gridexpectation", g_inputs)
 def test_g_plan(gridplan: Any, gridexpectation: Sequence[Any]) -> None:
     g_plan = MDASequence(grid_plan=gridplan).grid_plan
     assert g_plan and list(g_plan) == gridexpectation
+    assert g_plan.num_positions() == len(gridexpectation)
 
 
 @pytest.mark.parametrize("tplan, texpectation", t_inputs)
 def test_time_plan(tplan: Any, texpectation: Sequence[float]) -> None:
     time_plan = MDASequence(time_plan=tplan).time_plan
     assert time_plan and list(time_plan) == texpectation
+    assert time_plan.num_timepoints() == len(texpectation)
 
 
 @pytest.mark.parametrize("channel, cexpectation", c_inputs)

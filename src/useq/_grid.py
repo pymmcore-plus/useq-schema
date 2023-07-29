@@ -165,6 +165,12 @@ class _GridPlan(FrozenModel):
         """Return the number of columns, given a grid step size."""
         raise NotImplementedError
 
+    def num_positions(self) -> int:
+        dx, dy = self._step_size(self.fov_width or 1, self.fov_height or 1)
+        rows = self._nrows(dy)
+        cols = self._ncolumns(dx)
+        return rows * cols
+
     def iter_grid_positions(
         self,
         fov_width: float | None = None,
