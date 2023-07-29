@@ -82,3 +82,8 @@ def test_grid_type():
         (1.0, -1.0),
         (2.0, -1.0),
     ]
+
+
+def test_num_position_error() -> None:
+    with pytest.raises(ValueError, match="the field of view size be set"):
+        GridFromEdges(top=1, left=-1, bottom=-1, right=2).num_positions()

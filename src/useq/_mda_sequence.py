@@ -104,7 +104,6 @@ class MDASequence(UseqModel):
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _sizes: Optional[Dict[str, int]] = PrivateAttr(default=None)
-    _fov_size: Tuple[float, float] = PrivateAttr(default=(1, 1))
 
     @property
     def uid(self) -> UUID:
@@ -116,7 +115,18 @@ class MDASequence(UseqModel):
 
         This is used to calculate the number of positions in a grid plan.
         """
-        self._fov_size = fov_size
+        warn(
+            "set_fov_size is deprecated and will be removed. Please use:\n"
+            "  new_plan = self.grid_plan.replace(fov_width=..., fov_height=...)\n"
+            "  seq = seq.replace(grid_plan=new_plan)",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if self.grid_plan is None:
+            return
+        # hack to get around immutability
+        new_plan = self.grid_plan.replace(fov_width=fov_size[0], fov_height=fov_size[1])
+        object.__setattr__(self, "grid_plan", new_plan)
 
     def __hash__(self) -> int:
         return hash(self.uid)
@@ -283,11 +293,7 @@ class MDASequence(UseqModel):
             Axis.POSITION: self.stage_positions,
             Axis.Z: self.z_plan,
             Axis.CHANNEL: self.channels,
-            Axis.GRID: (
-                self.grid_plan.iter_grid_positions(self._fov_size[0], self._fov_size[1])
-                if self.grid_plan
-                else ()
-            ),
+            Axis.GRID: self.grid_plan,
         }[axis]
         if plan:
             yield from plan

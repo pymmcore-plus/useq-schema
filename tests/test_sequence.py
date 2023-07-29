@@ -20,7 +20,7 @@ from useq import (
     ZRangeAround,
     ZRelativePositions,
 )
-from useq._grid import OrderMode, RelativeTo
+from useq._grid import GridPosition
 
 _T = List[Tuple[Any, Sequence[float]]]
 
@@ -67,33 +67,42 @@ t_as_dict: _T = [
 ]
 t_inputs = t_as_class + t_as_dict
 
-g_as_dict = [
+g_inputs = [
     (
-        {"overlap": 10.0, "rows": 1, "columns": 2, "relative_to": "center"},
-        [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.center],
+        GridRelative(overlap=10, rows=1, columns=2, relative_to="center"),
+        [
+            GridPosition(x=-0.45, y=0.0, row=0, col=0, is_relative=True),
+            GridPosition(x=0.45, y=0.0, row=0, col=1, is_relative=True),
+        ],
     ),
     (
-        {"overlap": 10.0, "rows": 1, "columns": 2, "relative_to": "top_left"},
-        [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.top_left],
+        GridRelative(overlap=0, rows=1, columns=2, relative_to="top_left"),
+        [
+            GridPosition(x=0.0, y=0.0, row=0, col=0, is_relative=True),
+            GridPosition(x=1.0, y=0.0, row=0, col=1, is_relative=True),
+        ],
     ),
     (
-        {"overlap": 10.0, "top": 0.0, "left": 0.0, "bottom": 2.0, "right": 2.0},
-        [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
+        GridRelative(overlap=(20, 40), rows=2, columns=2),
+        [
+            GridPosition(x=-0.4, y=0.3, row=0, col=0, is_relative=True),
+            GridPosition(x=0.4, y=0.3, row=0, col=1, is_relative=True),
+            GridPosition(x=0.4, y=-0.3, row=1, col=1, is_relative=True),
+            GridPosition(x=-0.4, y=-0.3, row=1, col=0, is_relative=True),
+        ],
+    ),
+    (
+        GridFromEdges(
+            overlap=0, top=0, left=0, bottom=20, right=20, fov_height=20, fov_width=20
+        ),
+        [
+            GridPosition(x=0.0, y=20.0, row=0, col=0, is_relative=False),
+            GridPosition(x=20.0, y=20.0, row=0, col=1, is_relative=False),
+            GridPosition(x=20.0, y=0.0, row=1, col=1, is_relative=False),
+            GridPosition(x=0.0, y=0.0, row=1, col=0, is_relative=False),
+        ],
     ),
 ]
-
-g_as_class = [
-    (
-        GridRelative(overlap=10.0, rows=1, columns=2, relative_to="center"),
-        [(10.0, 10.0), OrderMode.row_wise_snake, 1, 2, RelativeTo.center],
-    ),
-    (
-        GridFromEdges(overlap=10.0, top=0.0, left=0, bottom=2, right=2),
-        [(10.0, 10.0), OrderMode.row_wise_snake, 0.0, 0.0, 2.0, 2.0],
-    ),
-]
-g_inputs = g_as_class + g_as_dict
-
 
 all_orders = ["".join(i) for i in itertools.permutations("tpgcz")]
 
@@ -129,19 +138,23 @@ p_inputs = [
 
 @pytest.mark.parametrize("zplan, zexpectation", z_inputs)
 def test_z_plan(zplan: Any, zexpectation: Sequence[float]) -> None:
-    assert list(MDASequence(z_plan=zplan).z_plan) == zexpectation
+    z_plan = MDASequence(z_plan=zplan).z_plan
+    assert z_plan and list(z_plan) == zexpectation
+    assert z_plan.num_positions() == len(zexpectation)
 
 
 @pytest.mark.parametrize("gridplan, gridexpectation", g_inputs)
 def test_g_plan(gridplan: Any, gridexpectation: Sequence[Any]) -> None:
-    assert [
-        i[1] for i in list(MDASequence(grid_plan=gridplan).grid_plan)
-    ] == gridexpectation
+    g_plan = MDASequence(grid_plan=gridplan).grid_plan
+    assert g_plan and list(g_plan) == gridexpectation
+    assert g_plan.num_positions() == len(gridexpectation)
 
 
 @pytest.mark.parametrize("tplan, texpectation", t_inputs)
 def test_time_plan(tplan: Any, texpectation: Sequence[float]) -> None:
-    assert list(MDASequence(time_plan=tplan).time_plan) == texpectation
+    time_plan = MDASequence(time_plan=tplan).time_plan
+    assert time_plan and list(time_plan) == texpectation
+    assert time_plan.num_timepoints() == len(texpectation)
 
 
 @pytest.mark.parametrize("channel, cexpectation", c_inputs)
@@ -317,3 +330,13 @@ def test_skip_channel_do_stack_no_zplan() -> None:
 def test_event_action_union() -> None:
     # test that action unions work
     MDAEvent(action={"autofocus_device_name": "Z", "autofocus_motor_offset": 25})
+
+
+def test_set_fov_deprecation() -> None:
+    seq = MDASequence(grid_plan=GridRelative(overlap=10, rows=1, columns=2))
+    assert seq.grid_plan
+    assert list(seq.grid_plan) == [(-0.45, 0.0, 0, 0, True), (0.45, 0.0, 0, 1, True)]
+    with pytest.warns(match="deprecated"):
+        seq.set_fov_size((20, 20))
+    assert seq.grid_plan.fov_width == 20
+    assert list(seq.grid_plan) == [(-9, 0.0, 0, 0, True), (9, 0.0, 0, 1, True)]
