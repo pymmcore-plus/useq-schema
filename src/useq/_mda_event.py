@@ -88,8 +88,8 @@ class MDAEvent(UseqModel):
         channel, (e.g. `"488nm"`, `"DAPI"`, `"FITC"`).  `group` is the name of the group
         to which this channel belongs. By default, `"Channel"`.
     exposure : float | None
-        Exposure time in seconds. If not provided, implies use current exposure time.
-        By default, `None`.
+        Exposure time in milliseconds. If not provided, implies use current exposure
+        time. By default, `None`.
     min_start_time : float | None
         Minimum start time of this event, in seconds.  If provided, the engine will
         pause until this time has elapsed (relative to the start of the sequence)

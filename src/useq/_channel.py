@@ -20,7 +20,7 @@ class Channel(FrozenModel):
         Optional name of the group to which this channel belongs. By default,
         `"Channel"`.
     exposure : float | None
-        Exposure time in seconds. Must be positive.  If not provided, implies use
+        Exposure time in milliseconds. Must be positive.  If not provided, implies use
         current exposure time. By default, `None`.
     do_stack : bool
         If `True`, instructs engine to include this channel in any Z stacks being
