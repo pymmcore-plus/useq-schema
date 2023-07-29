@@ -15,7 +15,7 @@ from useq._iter_sequence import iter_sequence
 from useq._mda_event import MDAEvent
 from useq._position import Position
 from useq._time import AnyTimePlan  # noqa: TCH001
-from useq._utils import AXES, Axis
+from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TCH001
 
 Undefined = object()
@@ -321,6 +321,9 @@ class MDASequence(UseqModel):
         See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
         """
         return [event.to_pycromanager() for event in self]
+
+    def estimate_duration(self) -> TimeEstimate:
+        return estimate_sequence_duration(self)
 
 
 MDAEvent.update_forward_refs(MDASequence=MDASequence)

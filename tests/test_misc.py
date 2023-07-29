@@ -1,5 +1,4 @@
 # breaks
-from datetime import timedelta
 
 import numpy as np
 import pytest
@@ -9,29 +8,6 @@ import useq
 
 def test_from_numpy() -> None:
     useq.ZRelativePositions(relative=np.arange(-1.5, 1.5, 0.5))
-
-
-def estimate_time(seq: useq.MDASequence) -> float:
-    n_timepoints = seq.time_plan.num_timepoints() if seq.time_plan else 1
-
-    if isinstance(seq.time_plan, useq.MultiPhaseTimePlan):
-        min_t_interval = min(p.interval for p in seq.time_plan.phases)
-    else:
-        min_t_interval = seq.time_plan.interval if seq.time_plan else timedelta(0)
-
-    n_positions = len(seq.stage_positions or [0])
-    num_z = seq.z_plan.num_positions() if seq.z_plan else 1
-    num_grid = seq.grid_plan.num_positions() if seq.grid_plan else 1
-
-    exposure_sum = sum((ch.exposure or 1) / 1000 for ch in seq.channels)
-    per_timepoint_time_s = exposure_sum * n_positions * num_z * num_grid
-
-    # the actual interval between timepoints will be the greater of the
-    # prescribed interval (according to the time plan) and the time it takes
-    # to actually acquire the data
-    max_interval = max(min_t_interval.total_seconds(), per_timepoint_time_s)
-    # note: the last per_timepoint_time_s depends on whether each channel has acquire_every
-    return (n_timepoints - 1) * max_interval + per_timepoint_time_s
 
 
 DAPI_10 = useq.Channel(config="DAPI", exposure=10)
@@ -52,9 +28,12 @@ def test_num_pos() -> None:
     assert GRID_4.num_positions() == 4
 
 
-def _sizes_str(param: useq.MDASequence) -> str:
+def _sizes_str(seq: useq.MDASequence) -> str:
     # key used for test ids
-    return "".join([f"{k}{v}" for k, v in param.sizes.items()])
+    sizes = "".join([f"{k}{v}" for k, v in seq.sizes.items() if v])
+    if seq.channels and any(not ch.do_stack for ch in seq.channels):
+        sizes += "_Zskip"
+    return sizes
 
 
 # a list of (sequence, expected total time)
@@ -68,12 +47,17 @@ SEQS_NO_T: dict[useq.MDASequence, float] = {
 }
 
 
+def _seq_duration_exceeded(seq: useq.MDASequence) -> tuple[float, bool]:
+    estimate = seq.estimate_duration()
+    return estimate.total_duration, estimate.time_interval_exceeded
+
+
 @pytest.mark.parametrize("seq", SEQS_NO_T, ids=_sizes_str)
 def test_time_estimation_without_t(seq: useq.MDASequence) -> None:
-    assert estimate_time(seq) == SEQS_NO_T[seq]
+    assert _seq_duration_exceeded(seq) == (SEQS_NO_T[seq], False)
 
 
-SEQS_WITH_T: dict[useq.MDASequence, float] = {
+SEQS_WITH_T: dict[useq.MDASequence, float | tuple[float, bool]] = {
     # with a simple time plan, the total duration is (ntime - 1) * interval + per_t_time
     # because the first timepoint is acquired immediately
     useq.MDASequence(channels=[DAPI_10], time_plan={"interval": 1, "loops": 2}): 1.01,
@@ -85,18 +69,55 @@ SEQS_WITH_T: dict[useq.MDASequence, float] = {
     SEQ_40_T2.replace(stage_positions=TWO_POS, z_plan=Z_4): 1.32,
     # HERE, however, a single timepoint takes 1.28s, longer than the time interval
     # so the total time is 1.28s * n_timepoints = 1.28s * 2 = 2.56s
-    SEQ_40_T2.replace(stage_positions=TWO_POS, z_plan=Z_4, grid_plan=GRID_4): 2.56,
+    SEQ_40_T2.replace(stage_positions=TWO_POS, z_plan=Z_4, grid_plan=GRID_4): (
+        2.56,
+        True,  # time interval exceeded
+    ),
 }
 
 
 @pytest.mark.parametrize("seq", SEQS_WITH_T, ids=_sizes_str)
 def test_time_estimation_with_t(seq: useq.MDASequence) -> None:
-    assert estimate_time(seq) == SEQS_WITH_T[seq]
+    expect = SEQS_WITH_T[seq]
+    if not isinstance(expect, tuple):
+        expect = (expect, False)
+    assert _seq_duration_exceeded(seq) == expect
 
 
-# SEQS_WITH_T_AND_SKIPS: dict[useq.MDASequence, float] = {}
+DAPI_10_NOZ = DAPI_10.replace(do_stack=False)
+SEQS_WITH_Z_SKIPS: dict[useq.MDASequence, float | tuple[float, bool]] = {
+    useq.MDASequence(channels=[DAPI_10], z_plan=Z_4): 0.04,
+    useq.MDASequence(channels=[DAPI_10_NOZ], z_plan=Z_4): 0.01,
+    useq.MDASequence(channels=[FITC_30], z_plan=Z_4): 0.12,
+    useq.MDASequence(channels=[DAPI_10_NOZ, FITC_30], z_plan=Z_4): 0.13,  # 0.01 + 0.12
+    useq.MDASequence(channels=[DAPI_10, FITC_30], z_plan=Z_4): 0.16,  # 0.04 + 0.12
+    # time interval-limited
+    useq.MDASequence(
+        channels=[DAPI_10_NOZ, FITC_30], z_plan=Z_4, time_plan=LOOP_1Sx2
+    ): 1.13,
+    useq.MDASequence(
+        channels=[DAPI_10_NOZ, FITC_30],
+        stage_positions=TWO_POS,
+        z_plan=Z_4,
+        time_plan=LOOP_1Sx2,
+    ): 1.26,  # two positions = 1s interval + 0.13 * 2
+    # acquisition-limited
+    useq.MDASequence(
+        channels=[DAPI_10],
+        z_plan=useq.ZRangeAround(range=199, step=1),
+        time_plan=LOOP_1Sx2,
+    ): (4.0, True),
+    useq.MDASequence(
+        channels=[DAPI_10_NOZ],  # with NOZ, the time is 0.01s plus a 1sec T interval
+        z_plan=useq.ZRangeAround(range=199, step=1),
+        time_plan=LOOP_1Sx2,
+    ): 1.01,
+}
 
 
-# @pytest.mark.parametrize("seq", SEQS_WITH_T_AND_SKIPS, ids=_sizes_str)
-# def test_time_estimation_with_t(seq: useq.MDASequence) -> None:
-#     assert estimate_time(seq) == SEQS_WITH_T[seq]
+@pytest.mark.parametrize("seq", SEQS_WITH_Z_SKIPS, ids=_sizes_str)
+def test_time_estimation_with_z_skips(seq: useq.MDASequence) -> None:
+    expect = SEQS_WITH_Z_SKIPS[seq]
+    if not isinstance(expect, tuple):
+        expect = (expect, False)
+    assert _seq_duration_exceeded(seq) == expect
