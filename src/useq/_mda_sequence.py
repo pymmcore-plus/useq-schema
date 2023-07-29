@@ -122,7 +122,7 @@ class MDASequence(UseqModel):
             DeprecationWarning,
             stacklevel=2,
         )
-        if self.grid_plan is None:
+        if self.grid_plan is None:  # pragma: no cover
             return
         # hack to get around immutability
         new_plan = self.grid_plan.replace(fov_width=fov_size[0], fov_height=fov_size[1])
