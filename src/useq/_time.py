@@ -26,7 +26,7 @@ class TimePlan(FrozenModel):
             yield td.total_seconds()
 
     def num_timepoints(self) -> int:
-        return len(list(self.deltas()))
+        return self.loops  # type: ignore  # TODO
 
     def deltas(self) -> Iterator[datetime.timedelta]:
         current = timedelta(0)
@@ -123,6 +123,9 @@ class MultiPhaseTimePlan(TimePlan):
                     continue
                 yield td + accum
             accum += td
+
+    def num_timepoints(self) -> int:
+        return sum(phase.loops for phase in self.phases)
 
 
 AnyTimePlan = Union[MultiPhaseTimePlan, SinglePhaseTimePlan]
