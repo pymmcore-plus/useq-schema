@@ -73,7 +73,8 @@ for executing an `MDASequence`.  However,
 acquisition engine that can execute an `MDASequence` object with
 [micro-manager](https://micro-manager.org) (via the
 [`pymmcore`](https://github.com/micro-manager/pymmcore) python wrapper around
-the C++ MMCore).  See the `pymmcore_plus.CMMCorePlus.run_mda` method for more.
+the C++ MMCore).  See the [pymmcore-plus documentation for
+details](https://pymmcore-plus.github.io/pymmcore-plus/examples/mda/).
 `napari-micromanager` also creates a `useq.MDASequence` object from user input
 and passes it to `pymmcore-plus` for execution.
 
