@@ -188,11 +188,10 @@ class _GridPlan(FrozenModel):
         dx, dy = self._step_size(_fov_width, _fov_height)
         rows = self._nrows(dy)
         cols = self._ncolumns(dx)
-
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
+
         for r, c in _INDEX_GENERATORS[mode](rows, cols):
-            print(x0, y0)
             yield GridPosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
 
     def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
