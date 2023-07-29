@@ -90,7 +90,7 @@ YAML (or JSON) file, and then load that file into your acquisition engine.
 
 For example, the following file defines an experiment with:
 
-- 3 channels (`DAPI`, `FITC`, and `Cy5`), specifying exposure times for each channel
+- 3 channels (`DAPI`, `FITC`, and `Cy5`), specifying exposure times in ms for each channel
 - a two-phase time-lapse: 3 frames in the first phase, followed by a frame every 10 seconds
 for 40 minutes
 - a Z-stack at each timepoint, with a range of 4 microns and a step size of 0.5 micron
