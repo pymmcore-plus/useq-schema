@@ -47,14 +47,14 @@ SEQS_NO_T: dict[useq.MDASequence, float] = {
 }
 
 
-def _seq_duration_exceeded(seq: useq.MDASequence) -> tuple[float, bool]:
+def _duration_exceeded(seq: useq.MDASequence) -> tuple[float, bool]:
     estimate = seq.estimate_duration()
     return estimate.total_duration, estimate.time_interval_exceeded
 
 
 @pytest.mark.parametrize("seq", SEQS_NO_T, ids=_sizes_str)
 def test_time_estimation_without_t(seq: useq.MDASequence) -> None:
-    assert _seq_duration_exceeded(seq) == (SEQS_NO_T[seq], False)
+    assert _duration_exceeded(seq) == (SEQS_NO_T[seq], False)
 
 
 SEQS_WITH_T: dict[useq.MDASequence, float | tuple[float, bool]] = {
@@ -81,7 +81,7 @@ def test_time_estimation_with_t(seq: useq.MDASequence) -> None:
     expect = SEQS_WITH_T[seq]
     if not isinstance(expect, tuple):
         expect = (expect, False)
-    assert _seq_duration_exceeded(seq) == expect
+    assert _duration_exceeded(seq) == expect
 
 
 DAPI_10_NOZ = DAPI_10.replace(do_stack=False)
@@ -120,4 +120,24 @@ def test_time_estimation_with_z_skips(seq: useq.MDASequence) -> None:
     expect = SEQS_WITH_Z_SKIPS[seq]
     if not isinstance(expect, tuple):
         expect = (expect, False)
-    assert _seq_duration_exceeded(seq) == expect
+    assert _duration_exceeded(seq) == expect
+
+
+SEQS_WITH_SUBSEQS: dict[useq.MDASequence, float | tuple[float, bool]] = {
+    useq.MDASequence(channels=[DAPI_10], stage_positions=TWO_POS): 0.02,
+    useq.MDASequence(
+        channels=[DAPI_10],
+        stage_positions=[
+            (0, 0),  # 0.01
+            useq.Position(x=1, sequence=useq.MDASequence(grid_plan=GRID_4)),  # 0.04
+        ],
+    ): 0.05,  # 0.01 + 0.04
+}
+
+
+@pytest.mark.parametrize("seq", SEQS_WITH_SUBSEQS, ids=_sizes_str)
+def test_time_estimation_with_position_seqs(seq: useq.MDASequence) -> None:
+    expect = SEQS_WITH_SUBSEQS[seq]
+    if not isinstance(expect, tuple):
+        expect = (expect, False)
+    assert _duration_exceeded(seq) == expect

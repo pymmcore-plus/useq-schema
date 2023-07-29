@@ -2,18 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, NamedTuple, TypeVar
 
-from pydantic import validator
-
-import useq
-
 if TYPE_CHECKING:
     from typing import Final
 
+    from typing_extensions import TypeGuard
+
+    import useq
     from useq._time import SinglePhaseTimePlan
 
-
-KT = TypeVar("KT")
-VT = TypeVar("VT")
+    KT = TypeVar("KT")
+    VT = TypeVar("VT")
 
 
 # could be an enum, but this more easily allows Axis.Z to be a string
@@ -38,6 +36,8 @@ AXES: Final[tuple[str, ...]] = (
 
 
 def list_cast(field: str) -> classmethod:
+    from pydantic import validator
+
     v = validator(field, pre=True, allow_reuse=True, check_fields=False)
     return v(list)
 
@@ -63,6 +63,50 @@ class TimeEstimate(NamedTuple):
 
 
 def estimate_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
+    if not any(_has_axes(p.sequence) for p in seq.stage_positions):
+        return _position_duration(seq)
+
+    tot_duration = 0.0
+    per_t_duration = 0.0
+    time_interval_exceeded = False
+    parent_seq = seq.replace(stage_positions=[])
+    for p in seq.stage_positions:
+        if not _has_axes(p.sequence):
+            sub_seq = parent_seq
+        else:
+            updates = {
+                field: getattr(parent_seq, field)
+                for field in ("time_plan", "z_plan", "grid_plan", "channels")
+                if getattr(parent_seq, field) and not getattr(p.sequence, field)
+            }
+            sub_seq = p.sequence.copy(update=updates)
+        tot, per_t, exceeded = _position_duration(sub_seq)
+        tot_duration += tot
+        per_t_duration += per_t
+        time_interval_exceeded = time_interval_exceeded or exceeded
+    return TimeEstimate(tot_duration, per_t_duration, time_interval_exceeded)
+
+
+def _position_duration(seq: useq.MDASequence) -> TimeEstimate:
+    """Estimate the duration of an MDASequence.
+
+    Notable mis-estimations may include:
+    - when the time interval is shorter than the time it takes to acquire the data
+      and any of the channels have `acquire_every` > 1
+    - when channel exposure times are omitted. In this case, we assume 1ms exposure.
+
+    Returns
+    -------
+    TimeEstimate
+        A named 3-tuple with the following fields:
+        - total_duration: float
+            Estimated total duration of the experiment, in seconds.
+        - per_t_duration: float
+            Estimated duration of a single timepoint, in seconds.
+        - time_interval_exceeded: bool
+            Whether the time interval between timepoints is shorter than the time it
+            takes to acquire the data
+    """
     n_positions = len(seq.stage_positions or [0])
     num_z = seq.z_plan.num_positions() if seq.z_plan else 1
     num_grid = seq.grid_plan.num_positions() if seq.grid_plan else 1
@@ -84,7 +128,7 @@ def estimate_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
 
     t_interval_exceeded = False
     if tplan := seq.time_plan:
-        phases = tplan.phases if isinstance(tplan, useq.MultiPhaseTimePlan) else [tplan]
+        phases = tplan.phases if hasattr(tplan, "phases") else [tplan]
         tot_duration = 0.0
         for phase in phases:
             phase_duration, exceeded = _time_phase_duration(phase, s_per_timepoint)
@@ -99,6 +143,7 @@ def estimate_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
 def _time_phase_duration(
     phase: SinglePhaseTimePlan, s_per_timepoint: float
 ) -> tuple[float, bool]:
+    """Calculate duration for a single time plan phase."""
     time_interval_s = phase.interval.total_seconds()
 
     if time_interval_exceeded := (s_per_timepoint > time_interval_s):
@@ -109,3 +154,16 @@ def _time_phase_duration(
 
     tot_duration = (phase.num_timepoints() - 1) * time_interval_s + s_per_timepoint
     return tot_duration, time_interval_exceeded
+
+
+def _has_axes(seq: useq.MDASequence | None) -> TypeGuard[useq.MDASequence]:
+    """Return True if the sequence has anything to iterate over."""
+    if seq is None:
+        return False
+    return bool(
+        seq.time_plan is not None
+        or seq.stage_positions
+        or seq.z_plan is not None
+        or seq.channels
+        or seq.grid_plan is not None
+    )
