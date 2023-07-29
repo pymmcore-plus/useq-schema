@@ -50,6 +50,7 @@ dev = [
     "rich",
     "ruff",
     "PyYaml",
+    "types-PyYAML",
 ]
 docs = ["mkdocs >=1.4", "mkdocs-material", "mkdocstrings-python"]
 

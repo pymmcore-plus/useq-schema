@@ -25,7 +25,7 @@ class TimePlan(FrozenModel):
         for td in self.deltas():
             yield td.total_seconds()
 
-    def __len__(self) -> int:
+    def num_timepoints(self) -> int:
         return len(list(self.deltas()))
 
     def deltas(self) -> Iterator[datetime.timedelta]:

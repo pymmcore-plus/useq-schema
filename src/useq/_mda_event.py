@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import warnings
+from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
     List,
+    Mapping,
     NamedTuple,
     NoReturn,
     Optional,
@@ -13,11 +15,10 @@ from typing import (
     Tuple,
 )
 
-from pydantic import Field, validator
+from pydantic import Field
 
 from useq._actions import AcquireImage, AnyAction
 from useq._base_model import UseqModel
-from useq._utils import ReadOnlyDict
 
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
@@ -127,7 +128,8 @@ class MDAEvent(UseqModel):
         opening the shutter between events would be slow.
     """
 
-    index: ReadOnlyDict[str, int] = Field(default_factory=ReadOnlyDict)
+    # MappingProxyType is not subscriptable on Python 3.8
+    index: Mapping[str, int] = Field(default_factory=lambda: MappingProxyType({}))
     channel: Optional[Channel] = None
     exposure: Optional[float] = Field(default=None, gt=0.0)
     min_start_time: Optional[float] = None  # time in sec
@@ -151,10 +153,6 @@ class MDAEvent(UseqModel):
             stacklevel=2,
         )
         return 0
-
-    @validator("index", pre=True)
-    def validate_index(cls, v: dict) -> ReadOnlyDict[str, int]:
-        return ReadOnlyDict(v)
 
     def __repr_args__(self) -> ReprArgs:
         d = self.__dict__.copy()
