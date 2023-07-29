@@ -4,16 +4,7 @@ import contextlib
 import math
 from enum import Enum
 from functools import partial
-from typing import (
-    Any,
-    Callable,
-    Iterator,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Iterator, NamedTuple, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from pydantic import validator
