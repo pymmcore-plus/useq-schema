@@ -61,33 +61,18 @@ class TimeEstimate(NamedTuple):
     per_t_duration: float
     time_interval_exceeded: bool
 
+    def __add__(self, other: object) -> TimeEstimate:
+        """Add two TimeEstimates."""
+        if not isinstance(other, TimeEstimate):
+            return NotImplemented
+        return TimeEstimate(
+            self.total_duration + other.total_duration,
+            self.per_t_duration + other.per_t_duration,
+            self.time_interval_exceeded or other.time_interval_exceeded,
+        )
+
 
 def estimate_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
-    if not any(_has_axes(p.sequence) for p in seq.stage_positions):
-        return _position_duration(seq)
-
-    tot_duration = 0.0
-    per_t_duration = 0.0
-    time_interval_exceeded = False
-    parent_seq = seq.replace(stage_positions=[])
-    for p in seq.stage_positions:
-        if not _has_axes(p.sequence):
-            sub_seq = parent_seq
-        else:
-            updates = {
-                field: getattr(parent_seq, field)
-                for field in ("time_plan", "z_plan", "grid_plan", "channels")
-                if getattr(parent_seq, field) and not getattr(p.sequence, field)
-            }
-            sub_seq = p.sequence.copy(update=updates)
-        tot, per_t, exceeded = _position_duration(sub_seq)
-        tot_duration += tot
-        per_t_duration += per_t
-        time_interval_exceeded = time_interval_exceeded or exceeded
-    return TimeEstimate(tot_duration, per_t_duration, time_interval_exceeded)
-
-
-def _position_duration(seq: useq.MDASequence) -> TimeEstimate:
     """Estimate the duration of an MDASequence.
 
     Notable mis-estimations may include:
@@ -106,6 +91,31 @@ def _position_duration(seq: useq.MDASequence) -> TimeEstimate:
         - time_interval_exceeded: bool
             Whether the time interval between timepoints is shorter than the time it
             takes to acquire the data
+    """
+    if not any(_has_axes(p.sequence) for p in seq.stage_positions):
+        # the simple case: no axes to iterate over in any of the positions
+        return _estimate_simple_sequence_duration(seq)
+
+    estimate = TimeEstimate(0.0, 0.0, False)
+    parent_seq = seq.replace(stage_positions=[])
+    for p in seq.stage_positions:
+        if not _has_axes(p.sequence):
+            sub_seq = parent_seq
+        else:
+            updates = {
+                field: getattr(parent_seq, field)
+                for field in ("time_plan", "z_plan", "grid_plan", "channels")
+                if getattr(parent_seq, field) and not getattr(p.sequence, field)
+            }
+            sub_seq = p.sequence.copy(update=updates)
+        estimate += _estimate_simple_sequence_duration(sub_seq)
+    return estimate
+
+
+def _estimate_simple_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
+    """Estimate the duration of an MDASequence with no sub-pos axes to iterate over.
+
+    Helper function for estimate_sequence_duration.
     """
     n_positions = len(seq.stage_positions or [0])
     num_z = seq.z_plan.num_positions() if seq.z_plan else 1
