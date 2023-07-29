@@ -40,8 +40,9 @@ class TIntervalLoops(TimePlan):
 
     Attributes
     ----------
-    interval : str | timedelta
-        Time between frames.
+    interval : str | timedelta | float
+        Time between frames. Scalars are interpreted as seconds.
+        Strings are parsed according to ISO 8601.
     loops : int
         Number of frames.
     prioritize_duration : bool
@@ -59,7 +60,8 @@ class TDurationLoops(TimePlan):
     Attributes
     ----------
     duration : str | timedelta
-        Total duration of sequence.
+        Total duration of sequence. Scalars are interpreted as seconds.
+        Strings are parsed according to ISO 8601.
     loops : int
         Number of frames.
     prioritize_duration : bool
@@ -82,7 +84,8 @@ class TIntervalDuration(TimePlan):
     Attributes
     ----------
     interval : str | timedelta
-        Time between frames.
+        Time between frames. Scalars are interpreted as seconds.
+        Strings are parsed according to ISO 8601.
     duration : str | timedelta
         Total duration of sequence.
     prioritize_duration : bool
@@ -125,7 +128,8 @@ class MultiPhaseTimePlan(TimePlan):
             accum += td
 
     def num_timepoints(self) -> int:
-        return sum(phase.loops for phase in self.phases)
+        # TODO: is this correct?
+        return sum(phase.loops for phase in self.phases) - 1
 
 
 AnyTimePlan = Union[MultiPhaseTimePlan, SinglePhaseTimePlan]
