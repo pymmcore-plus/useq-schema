@@ -132,17 +132,15 @@ class MDASequence(UseqModel):
             Set `fov_width` and `fov_height` directly on the `grid_plan` instead.
         """
         warn(
-            "set_fov_size is deprecated and will be removed. Please use:\n"
-            "  new_plan = self.grid_plan.replace(fov_width=..., fov_height=...)\n"
-            "  seq = seq.replace(grid_plan=new_plan)",
+            "set_fov_size is deprecated and will be removed. Please directly mutate "
+            "fov_width and fov_height on the sequence.grid_plan instead. (They are "
+            "mutable.)",
             DeprecationWarning,
             stacklevel=2,
         )
-        if self.grid_plan is None:  # pragma: no cover
-            return
-        # hack to get around immutability
-        new_plan = self.grid_plan.replace(fov_width=fov_size[0], fov_height=fov_size[1])
-        object.__setattr__(self, "grid_plan", new_plan)
+        if self.grid_plan:
+            self.grid_plan.fov_width = fov_size[0]
+            self.grid_plan.fov_height = fov_size[1]
 
     def __hash__(self) -> int:
         return hash(self.uid)
