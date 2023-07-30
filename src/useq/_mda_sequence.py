@@ -201,6 +201,15 @@ class MDASequence(UseqModel):
                 grid_plan=values.get("grid_plan"),
                 autofocus_plan=values.get("autofocus_plan"),
             )
+        if "stage_positions" in values:
+            for p in values["stage_positions"]:
+                if hasattr(p, "sequence") and getattr(
+                    p.sequence, "keep_shutter_open_across", None
+                ):  # pragma: no cover
+                    raise ValueError(
+                        "keep_shutter_open_across cannot currently be set on a "
+                        "Position sequence"
+                    )
         return values
 
     def __eq__(self, other: Any) -> bool:
@@ -273,7 +282,7 @@ class MDASequence(UseqModel):
             )
         ):
             raise ValueError(
-                "Currently, a Position sequence cannot have multiple stage positions!"
+                "Currently, a Position sequence cannot have multiple stage positions."
             )
 
         # Cannot use autofocus plan with absolute z_plan

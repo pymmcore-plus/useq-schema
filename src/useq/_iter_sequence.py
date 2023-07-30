@@ -88,7 +88,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
         return
 
     it = _iter_sequence(sequence)
-    if (this_e := next(it, None)) is None:
+    if (this_e := next(it, None)) is None:  # pragma: no cover
         return
 
     for next_e in it:
