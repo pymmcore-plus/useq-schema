@@ -178,7 +178,7 @@ class MDASequence(UseqModel):
         return tuple(channels)
 
     @field_validator("stage_positions", mode="before")
-    def validate(cls, value: Any) -> Tuple[Position, ...]:
+    def _validate_stage_positions(cls, value: Any) -> Tuple[Position, ...]:
         if isinstance(value, np.ndarray):
             if value.ndim == 1:
                 value = [value]
