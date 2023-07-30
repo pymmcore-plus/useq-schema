@@ -338,3 +338,49 @@ def test_set_fov_deprecation() -> None:
         seq.set_fov_size((20, 20))
     assert seq.grid_plan.fov_width == 20
     assert list(seq.grid_plan) == [(-9, 0.0, 0, 0, True), (9, 0.0, 0, 1, True)]
+
+
+def test_keep_shutter_open() -> None:
+    # with z as the last axis, the shutter will be left open
+    # whenever z is the first index (since there are only 2 z planes)
+    mda1 = MDASequence(
+        axis_order="tcz",
+        channels=["DAPI", "FITC"],
+        time_plan=TIntervalLoops(loops=2, interval=0),
+        z_plan=ZRangeAround(range=1, step=1),
+        keep_shutter_open_across="z",
+    )
+    assert all(e.keep_shutter_open for e in mda1 if e.index["z"] == 0)
+
+    # with c as the last axis, the shutter will never be left open
+    mda2 = MDASequence(
+        axis_order="tzc",
+        channels=["DAPI", "FITC"],
+        time_plan=TIntervalLoops(loops=2, interval=0),
+        z_plan=ZRangeAround(range=1, step=1),
+        keep_shutter_open_across="z",
+    )
+    assert not any(e.keep_shutter_open for e in mda2)
+
+    # because t is changing faster than z, the shutter will never be left open
+    mda3 = MDASequence(
+        axis_order="czt",
+        channels=["DAPI", "FITC"],
+        time_plan=TIntervalLoops(loops=2, interval=0),
+        z_plan=ZRangeAround(range=1, step=1),
+        keep_shutter_open_across="z",
+    )
+    assert not any(e.keep_shutter_open for e in mda3)
+
+    # but, if we include 't' in the keep_shutter_open_across,
+    # it will be left open except when it's the last t and last z
+    mda4 = MDASequence(
+        axis_order="czt",
+        channels=["DAPI", "FITC"],
+        time_plan=TIntervalLoops(loops=2, interval=0),
+        z_plan=ZRangeAround(range=1, step=1),
+        keep_shutter_open_across=("z", "t"),
+    )
+    for event in mda4:
+        is_last_zt = bool(event.index["t"] == 1 and event.index["z"] == 1)
+        assert event.keep_shutter_open != is_last_zt

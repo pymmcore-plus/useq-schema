@@ -61,15 +61,13 @@ class MDASequence(UseqModel):
         generated, do not set.
     autofocus_plan : AxesBasedAF | None
         The hardware autofocus plan to follow. One of `AxesBasedAF` or `None`.
-    keep_shutter_open_across: tuple[str, ...]
-        A tuple of axes across which the illumination shutter should be kept open.
-        Resulting events will have `keep_shutter_open` set to `True` if and only if the
-        all axes changing are in this tuple. For example, if
-        `keep_shutter_open_across=('z',)`, then the shutter will be kept open between
-        events axes {'t': 0, 'z: 0} and {'t': 0, 'z': 1}, but not between {'t': 0, 'z':
-        0} and {'t': 1, 'z': 0}. Currently, this cannot contain `'c'` (an exception will
-        be raised if it does). If you have an application where you need to keep the
-        shutter open across channels, please open an issue.
+    keep_shutter_open_across : tuple[str, ...]
+        A tuple of axes `str` across which the illumination shutter should be kept open.
+        Resulting events will have `keep_shutter_open` set to `True` if and only if
+        ALL axes whose indices are changing are in this tuple. For example, if
+        `keep_shutter_open_across=('z',)`, then the shutter would be kept open between
+        events axes {'t': 0, 'z: 0} and {'t': 0, 'z': 1}, but not between
+        {'t': 0, 'z': 0} and {'t': 1, 'z': 0}.
 
     Examples
     --------
@@ -152,6 +150,17 @@ class MDASequence(UseqModel):
     @validator("z_plan", pre=True)
     def _validate_zplan(cls, v: Any) -> Optional[dict]:
         return v or None
+
+    @validator("keep_shutter_open_across", pre=True)
+    def _validate_keep_shutter_open_across(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        try:
+            v = tuple(v)
+        except (TypeError, ValueError):  # pragma: no cover
+            raise ValueError(
+                f"keep_shutter_open_across must be string or a sequence of strings, "
+                f"got {type(v)}"
+            ) from None
+        return v
 
     @validator("time_plan", pre=True)
     def _validate_time_plan(cls, v: Any) -> Optional[dict]:
