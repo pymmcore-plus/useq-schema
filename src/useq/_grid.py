@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import math
 from enum import Enum
 from functools import partial
-from typing import Any, Callable, Iterator, NamedTuple, Sequence, Tuple, Union
+from typing import Any, Callable, Iterator, NamedTuple, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from pydantic import validator
@@ -110,13 +111,25 @@ class _GridPlan(FrozenModel):
         Define the ways of ordering the grid positions. Options are
         row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
         By default, row_wise_snake.
+    fov_width : Optional[float]
+        Width of the field of view in microns.  If not provided, acquisition engines
+        should use current width of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    fov_height : Optional[float]
+        Height of the field of view in microns. If not provided, acquisition engines
+        should use current height of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
     """
 
     overlap: Tuple[float, float] = (0.0, 0.0)
     mode: OrderMode = OrderMode.row_wise_snake
+    fov_width: Optional[float] = None
+    fov_height: Optional[float] = None
 
     @validator("overlap", pre=True)
     def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
+        with contextlib.suppress(TypeError, ValueError):
+            v = float(v)
         if isinstance(v, float):
             return (v,) * 2
         if isinstance(v, Sequence) and len(v) == 2:
@@ -143,17 +156,46 @@ class _GridPlan(FrozenModel):
         """Return the number of columns, given a grid step size."""
         raise NotImplementedError
 
+    def num_positions(self) -> int:
+        """Return the number of individual positions in the grid.
+
+        Note: For GridFromEdges, this will depend on field of view size.  If no
+        field of view size is provided, the number of positions will be 1.
+        """
+        if not self.is_relative and (self.fov_width is None or self.fov_height is None):
+            raise ValueError(
+                "Retrieving the number of positions in a GridFromEdges plan requires "
+                "that the field of view size be set."
+            )
+
+        dx, dy = self._step_size(self.fov_width or 1, self.fov_height or 1)
+        rows = self._nrows(dy)
+        cols = self._ncolumns(dx)
+        return rows * cols
+
     def iter_grid_positions(
-        self, fov_width: float, fov_height: float
+        self,
+        fov_width: float | None = None,
+        fov_height: float | None = None,
+        *,
+        mode: OrderMode | None = None,
     ) -> Iterator[GridPosition]:
         """Iterate over all grid positions, given a field of view size."""
-        dx, dy = self._step_size(fov_width, fov_height)
+        _fov_width = fov_width or self.fov_width or 1.0
+        _fov_height = fov_height or self.fov_height or 1.0
+        mode = self.mode if mode is None else OrderMode(mode)
+
+        dx, dy = self._step_size(_fov_width, _fov_height)
         rows = self._nrows(dy)
         cols = self._ncolumns(dx)
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
-        for r, c in _INDEX_GENERATORS[self.mode](rows, cols):
+
+        for r, c in _INDEX_GENERATORS[mode](rows, cols):
             yield GridPosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
+
+    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+        yield from self.iter_grid_positions()
 
     def _step_size(self, fov_width: float, fov_height: float) -> Tuple[float, float]:
         dx = fov_width - (fov_width * self.overlap[0]) / 100
@@ -162,21 +204,21 @@ class _GridPlan(FrozenModel):
 
 
 class GridFromEdges(_GridPlan):
-    """Yield absolute stage positions to cover a bounded area...
+    """Yield absolute stage positions to cover a bounded area.
 
-    ...defined by setting the stage coordinates of the top, left,
-    bottom and right edges.
+    The bounded area is defined by top, left, bottom and right edges in
+    stage coordinates.
 
     Attributes
     ----------
     top : float
-        top stage position of the bounding area
+        Top stage position of the bounding area
     left : float
-        left stage position of the bounding area
+        Left stage position of the bounding area
     bottom : float
-        bottom stage position of the bounding area
+        Bottom stage position of the bounding area
     right : float
-        right stage position of the bounding area
+        Right stage position of the bounding area
     """
 
     top: float
