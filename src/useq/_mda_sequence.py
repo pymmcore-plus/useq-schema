@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple
+import warnings
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Sequence, Tuple
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -19,6 +20,9 @@ from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TCH001
 
 Undefined = object()
+
+if TYPE_CHECKING:
+    from useq.pycromanager import PycroManagerEvent
 
 
 class MDASequence(UseqModel):
@@ -113,7 +117,11 @@ class MDASequence(UseqModel):
     def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
         """Set the field of view size.
 
-        This is used to calculate the number of positions in a grid plan.
+        FOV is used to calculate the number of positions in a grid plan.
+
+        !!! warning "DEPRECATED"
+
+            Set `fov_width` and `fov_height` directly on the `grid_plan` instead.
         """
         warn(
             "set_fov_size is deprecated and will be removed. Please use:\n"
@@ -132,15 +140,15 @@ class MDASequence(UseqModel):
         return hash(self.uid)
 
     @validator("z_plan", pre=True)
-    def validate_zplan(cls, v: Any) -> Optional[dict]:
+    def _validate_zplan(cls, v: Any) -> Optional[dict]:
         return v or None
 
     @validator("time_plan", pre=True)
-    def validate_time_plan(cls, v: Any) -> Optional[dict]:
+    def _validate_time_plan(cls, v: Any) -> Optional[dict]:
         return {"phases": v} if isinstance(v, (tuple, list)) else v or None
 
     @validator("stage_positions", pre=True)
-    def validate_positions(cls, v: Any) -> Any:
+    def _validate_positions(cls, v: Any) -> Any:
         if isinstance(v, np.ndarray):
             if v.ndim == 1:
                 return [v]
@@ -149,7 +157,7 @@ class MDASequence(UseqModel):
         return v
 
     @validator("axis_order", pre=True)
-    def validate_axis_order(cls, v: Any) -> str:
+    def _validate_axis_order(cls, v: Any) -> str:
         if not isinstance(v, str):
             raise TypeError(f"acquisition order must be a string, got {type(v)}")
         order = v.lower()
@@ -164,7 +172,7 @@ class MDASequence(UseqModel):
         return order
 
     @root_validator
-    def validate_mda(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_mda(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if "axis_order" in values:
             values["axis_order"] = cls._check_order(
                 values["axis_order"],
@@ -268,13 +276,14 @@ class MDASequence(UseqModel):
         """Return the shape of this sequence.
 
         !!! note
-            This doesn't account for jagged arrays, like skipped Z or channel frames.
+            This doesn't account for jagged arrays, like channels that exclude z
+            stacks or skip timepoints.
         """
         return tuple(s for s in self.sizes.values() if s)
 
     @property
     def sizes(self) -> Dict[str, int]:
-        """Mapping of axis to size of that axis."""
+        """Mapping of axis name to size of that axis."""
         if self._sizes is None:
             self._sizes = {k: len(list(self.iter_axis(k))) for k in self.axis_order}
         return self._sizes
@@ -287,7 +296,7 @@ class MDASequence(UseqModel):
     def iter_axis(
         self, axis: str
     ) -> Iterator[Position | Channel | float | GridPosition]:
-        """Iterate over the events of a given axis."""
+        """Iterate over the positions or items of a given axis."""
         plan = {
             Axis.TIME: self.time_plan,
             Axis.POSITION: self.stage_positions,
@@ -315,12 +324,16 @@ class MDASequence(UseqModel):
         """
         return iter_sequence(self)
 
-    def to_pycromanager(self) -> list[dict]:
-        """Convenience to convert this sequence to a list of pycro-manager events.
+    def to_pycromanager(self) -> list[PycroManagerEvent]:
+        warnings.warn(
+            "useq.MDASequence.to_pycromanager() is deprecated and will be removed in a "
+            "future version. Useq useq.pycromanager.to_pycromanager(seq) instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        from useq.pycromanager import to_pycromanager
 
-        See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
-        """
-        return [event.to_pycromanager() for event in self]
+        return to_pycromanager(self)
 
     def estimate_duration(self) -> TimeEstimate:
         """Estimate duration and other timing issues of an MDASequence.

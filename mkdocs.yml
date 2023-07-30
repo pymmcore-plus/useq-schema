@@ -75,7 +75,6 @@ plugins:
             show_root_heading: true # default is false
             show_root_full_path: false # default is true
             docstring_style: 'numpy'
-            show_if_no_docstring: true  # default is false
             show_signature: false  # default is true
             annotations_path: 'source' # default is 'brief'
             show_bases: false # default is true

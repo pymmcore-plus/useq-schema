@@ -22,6 +22,7 @@ from useq._base_model import UseqModel
 
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
+    from useq.pycromanager import PycroManagerEvent
 
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
@@ -159,30 +160,14 @@ class MDAEvent(UseqModel):
         d.pop("sequence")
         return list(d.items())
 
-    def to_pycromanager(self) -> dict:
-        """Convenience method to convert this event to a pycro-manager events.
+    def to_pycromanager(self) -> PycroManagerEvent:
+        from useq.pycromanager import to_pycromanager
 
-        See: <https://pycro-manager.readthedocs.io/en/latest/apis.html>
-        """
-        d: Dict[str, Any] = {
-            "exposure": self.exposure,
-            "axes": {},
-            "z": self.z_pos,
-            "x": self.x_pos,
-            "y": self.y_pos,
-            "min_start_time": self.min_start_time,
-            "channel": self.channel and self.channel.dict(),
-        }
-        if "p" in self.index:
-            d["axes"]["position"] = self.index["p"]
-        if "t" in self.index:
-            d["axes"]["time"] = self.index["t"]
-        if "z" in self.index:
-            d["axes"]["z"] = self.index["z"]
-        if self.properties:
-            d["properties"] = [list(p) for p in self.properties]
+        warnings.warn(
+            "useq.MDAEvent.to_pycromanager() is deprecated and will be removed in a "
+            "future version. Useq useq.pycromanager.to_pycromanager(event) instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
 
-        for key, value in list(d.items()):
-            if value is None:
-                d.pop(key)
-        return d
+        return to_pycromanager(self)

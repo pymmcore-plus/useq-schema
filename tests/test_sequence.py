@@ -274,8 +274,6 @@ def test_combinations(
     position = mda.stage_positions[0]
     assert (position.x, position.y, position.z) == pexpectation
 
-    assert mda.to_pycromanager()
-
 
 @pytest.mark.parametrize("cls", [MDASequence, MDAEvent])
 def test_schema(cls: BaseModel) -> None:
