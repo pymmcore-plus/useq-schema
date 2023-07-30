@@ -323,6 +323,25 @@ class MDASequence(UseqModel):
         return [event.to_pycromanager() for event in self]
 
     def estimate_duration(self) -> TimeEstimate:
+        """Estimate duration and other timing issues of an MDASequence.
+
+        Notable mis-estimations may include:
+        - when the time interval is shorter than the time it takes to acquire the data
+        and any of the channels have `acquire_every` > 1
+        - when channel exposure times are omitted. In this case, we assume 1ms exposure.
+
+        Returns
+        -------
+        TimeEstimate
+            A named 3-tuple with the following fields:
+            - total_duration: float
+                Estimated total duration of the experiment, in seconds.
+            - per_t_duration: float
+                Estimated duration of a single timepoint, in seconds.
+            - time_interval_exceeded: bool
+                Whether the time interval between timepoints is shorter than the time it
+                takes to acquire the data
+        """
         return estimate_sequence_duration(self)
 
 
