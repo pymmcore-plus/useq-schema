@@ -1,4 +1,5 @@
-from __future__ import annotations
+# don't add __future__.annotations here
+# pydantic2 isn't rebuilding the model correctly
 
 import warnings
 from types import MappingProxyType
@@ -138,7 +139,7 @@ class MDAEvent(UseqModel):
     x_pos: Optional[float] = None
     y_pos: Optional[float] = None
     z_pos: Optional[float] = None
-    sequence: Optional[MDASequence] = Field(default=None, repr=False)
+    sequence: Optional["MDASequence"] = Field(default=None, repr=False)
     properties: Optional[List[PropertyTuple]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage)
@@ -155,12 +156,12 @@ class MDAEvent(UseqModel):
         )
         return 0
 
-    def __repr_args__(self) -> ReprArgs:
+    def __repr_args__(self) -> "ReprArgs":
         d = self.__dict__.copy()
         d.pop("sequence")
         return list(d.items())
 
-    def to_pycromanager(self) -> PycroManagerEvent:
+    def to_pycromanager(self) -> "PycroManagerEvent":
         from useq.pycromanager import to_pycromanager
 
         warnings.warn(

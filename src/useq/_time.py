@@ -1,10 +1,14 @@
 import datetime
-from typing import Any, Callable, Generator, Iterator, Sequence, Union
+from typing import TYPE_CHECKING, Any, Callable, Generator, Iterator, Sequence, Union
 
 from pydantic import Field
-from pydantic.datetime_parse import parse_duration
 
 from useq._base_model import FrozenModel
+from useq._utils import parse_duration
+
+if TYPE_CHECKING:
+    from pydantic import GetCoreSchemaHandler
+    from pydantic_core import CoreSchema
 
 
 class timedelta(datetime.timedelta):
@@ -15,6 +19,15 @@ class timedelta(datetime.timedelta):
     @classmethod
     def validate(cls, v: Any) -> datetime.timedelta:
         return datetime.timedelta(**v) if isinstance(v, dict) else parse_duration(v)
+
+    @classmethod
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: "GetCoreSchemaHandler"
+    ) -> "CoreSchema":
+        from pydantic_core import core_schema
+
+        return core_schema.no_info_plain_validator_function(cls.validate)
 
 
 class TimePlan(FrozenModel):

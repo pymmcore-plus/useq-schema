@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+from datetime import timedelta
 from typing import TYPE_CHECKING, Literal, NamedTuple, TypeVar
 
 if TYPE_CHECKING:
@@ -177,3 +179,67 @@ def _has_axes(seq: useq.MDASequence | None) -> TypeGuard[useq.MDASequence]:
         or seq.channels
         or seq.grid_plan is not None
     )
+
+
+def parse_duration(value: str | bytes | int | float) -> timedelta:
+    """
+    Parse a duration int/float/string and return a datetime.timedelta.
+
+    The preferred format for durations in Django is '%d %H:%M:%S.%f'.
+
+    Also supports ISO 8601 representation.
+    """
+    if isinstance(value, timedelta):
+        return value
+
+    if isinstance(value, (int, float)):
+        # below code requires a string
+        value = f"{value:f}"
+    elif isinstance(value, bytes):
+        value = value.decode()
+
+    try:
+        match = standard_duration_re.match(value) or iso8601_duration_re.match(value)
+    except TypeError:
+        raise TypeError(
+            "invalid type; expected timedelta, string, bytes, int or float"
+        ) from None
+
+    if not match:
+        raise ValueError(f"{value!r} is not a valid duration")
+
+    kw = match.groupdict()
+    sign = -1 if kw.pop("sign", "+") == "-" else 1
+    if kw.get("microseconds"):
+        kw["microseconds"] = kw["microseconds"].ljust(6, "0")
+
+    if kw.get("seconds") and kw.get("microseconds") and kw["seconds"].startswith("-"):
+        kw["microseconds"] = "-" + kw["microseconds"]
+
+    kw_ = {k: float(v) for k, v in kw.items() if v is not None}
+
+    return sign * timedelta(**kw_)
+
+
+standard_duration_re = re.compile(
+    r"^"
+    r"(?:(?P<days>-?\d+) (days?, )?)?"
+    r"((?:(?P<hours>-?\d+):)(?=\d+:\d+))?"
+    r"(?:(?P<minutes>-?\d+):)?"
+    r"(?P<seconds>-?\d+)"
+    r"(?:\.(?P<microseconds>\d{1,6})\d{0,6})?"
+    r"$"
+)
+
+# Support the sections of ISO 8601 date representation that are accepted by timedelta
+iso8601_duration_re = re.compile(
+    r"^(?P<sign>[-+]?)"
+    r"P"
+    r"(?:(?P<days>\d+(.\d+)?)D)?"
+    r"(?:T"
+    r"(?:(?P<hours>\d+(.\d+)?)H)?"
+    r"(?:(?P<minutes>\d+(.\d+)?)M)?"
+    r"(?:(?P<seconds>\d+(.\d+)?)S)?"
+    r")?"
+    r"$"
+)

@@ -17,8 +17,8 @@ from typing import (
 
 import numpy as np
 from pydantic import BaseModel
-from pydantic.error_wrappers import ErrorWrapper, ValidationError
-from pydantic.utils import ROOT_KEY
+
+from useq._pydantic_compat import model_dump, model_fields
 
 if TYPE_CHECKING:
     from pydantic.types import StrBytes
@@ -50,7 +50,7 @@ class FrozenModel(BaseModel):
         will perform validation and casting on the new values, whereas `copy` assumes
         that all objects are valid and will not perform any validation or casting.
         """
-        state = self.dict(exclude={"uid"})
+        state = model_dump(self, exclude={"uid"})
         return type(self)(**{**state, **kwargs})
 
 
@@ -59,38 +59,38 @@ class UseqModel(FrozenModel):
         return [
             (k, val)
             for k, val in super().__repr_args__()
-            if k in self.__fields__
+            if k in model_fields(self)
             and val
             != (
-                self.__fields__[k].default_factory()  # type: ignore
-                if self.__fields__[k].default_factory is not None
-                else self.__fields__[k].default
+                model_fields(self)[k].default_factory()  # type: ignore
+                if model_fields(self)[k].default_factory is not None
+                else model_fields(self)[k].default
             )
         ]
 
-    def __repr__(self) -> str:
-        """Repr, that only shows values that are changed form the defaults."""
-        from textwrap import indent
+    # def __repr__(self) -> str:
+    #     """Repr, that only shows values that are changed form the defaults."""
+    #     from textwrap import indent
 
-        lines = []
-        for k, current in sorted(self.__repr_args__()):
-            if not k:
-                continue
-            f = self.__fields__[k]
-            default = (
-                self.__fields__[k].default_factory()  # type: ignore
-                if self.__fields__[k].default_factory is not None
-                else self.__fields__[k].default
-            )
-            if current != default:
-                lines.append(f"{f.name}={current!r},")
-        if len(lines) == 1:
-            body = lines[-1].rstrip(",")
-        elif lines:
-            body = "\n" + indent("\n".join(lines), "   ") + "\n"
-        else:
-            body = ""
-        return f"{self.__class__.__qualname__}({body})"
+    #     lines = []
+    #     for k, current in sorted(self.__repr_args__()):
+    #         if not k:
+    #             continue
+    #         f = self.__fields__[k]
+    #         default = (
+    #             self.__fields__[k].default_factory()  # type: ignore
+    #             if self.__fields__[k].default_factory is not None
+    #             else self.__fields__[k].default
+    #         )
+    #         if current != default:
+    #             lines.append(f"{f.name}={current!r},")
+    #     if len(lines) == 1:
+    #         body = lines[-1].rstrip(",")
+    #     elif lines:
+    #         body = "\n" + indent("\n".join(lines), "   ") + "\n"
+    #     else:
+    #         body = ""
+    #     return f"{self.__class__.__qualname__}({body})"
 
     @classmethod
     def parse_raw(
@@ -110,10 +110,7 @@ class UseqModel(FrozenModel):
         if proto == "yaml" or assume_yaml:
             import yaml
 
-            try:
-                obj = yaml.safe_load(b)
-            except Exception as e:
-                raise ValidationError([ErrorWrapper(e, loc=ROOT_KEY)], cls) from e
+            obj = yaml.safe_load(b)
             return cls.parse_obj(obj)
         return super().parse_raw(
             b,
@@ -193,7 +190,8 @@ class UseqModel(FrozenModel):
             np.floating, lambda dumper, d: dumper.represent_float(float(d))
         )
 
-        data = self.dict(
+        data = model_dump(
+            self,
             include=include,
             exclude=exclude,
             by_alias=by_alias,

@@ -6,15 +6,15 @@ from uuid import UUID, uuid4
 from warnings import warn
 
 import numpy as np
-from pydantic import Field, PrivateAttr, root_validator, validator
+from pydantic import Field, PrivateAttr
 
 from useq._base_model import UseqModel
-from useq._channel import Channel  # noqa: TCH001
+from useq._channel import Channel
 from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
-from useq._mda_event import MDAEvent
 from useq._position import Position
+from useq._pydantic_compat import field_validator, model_dump, model_validator
 from useq._time import AnyTimePlan  # noqa: TCH001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TCH001
@@ -22,6 +22,7 @@ from useq._z import AnyZPlan  # noqa: TCH001
 Undefined = object()
 
 if TYPE_CHECKING:
+    from useq._mda_event import MDAEvent
     from useq.pycromanager import PycroManagerEvent
 
 
@@ -137,27 +138,59 @@ class MDASequence(UseqModel):
     def __hash__(self) -> int:
         return hash(self.uid)
 
-    @validator("z_plan", pre=True)
+    @field_validator("z_plan", mode="before")
     def _validate_zplan(cls, v: Any) -> Optional[dict]:
         return v or None
 
-    @validator("time_plan", pre=True)
+    @field_validator("channels", mode="before")
+    def _validate_channels(cls, value: Any) -> Tuple[Channel, ...]:
+        if isinstance(value, str) or not isinstance(value, Sequence):
+            raise ValueError(f"channels must be a sequence, got {type(value)}")
+        channels = []
+        for v in value:
+            if isinstance(v, Channel):
+                channels.append(v)
+            elif isinstance(v, str):
+                channels.append(Channel.construct(config=v))
+            elif isinstance(v, dict):
+                channels.append(Channel(**v))
+            else:
+                raise ValueError(f"Invalid Channel argument: {value!r}")
+        return tuple(channels)
+
+    @field_validator("stage_positions", mode="before")
+    def validate(cls, value: Any) -> Tuple[Position, ...]:
+        if isinstance(value, np.ndarray):
+            if value.ndim == 1:
+                value = [value]
+            elif value.ndim == 2:
+                value = list(value)
+        if not isinstance(value, Sequence):
+            raise ValueError(f"stage_positions must be a sequence, got {type(value)}")
+
+        positions = []
+        for v in value:
+            if isinstance(v, Position):
+                positions.append(v)
+            elif isinstance(v, dict):
+                positions.append(Position(**v))
+            elif isinstance(v, (np.ndarray, tuple)):
+                x, *v = v
+                y, *v = v or (None,)
+                z = v[0] if v else None
+                positions.append(Position(x=x, y=y, z=z))
+            else:
+                raise ValueError(f"Cannot coerce {v!r} to Position")
+        return tuple(positions)
+
+    @field_validator("time_plan", mode="before")
     def _validate_time_plan(cls, v: Any) -> Optional[dict]:
         return {"phases": v} if isinstance(v, (tuple, list)) else v or None
 
-    @validator("stage_positions", pre=True)
-    def _validate_positions(cls, v: Any) -> Any:
-        if isinstance(v, np.ndarray):
-            if v.ndim == 1:
-                return [v]
-            elif v.ndim == 2:
-                return list(v)
-        return v
-
-    @validator("axis_order", pre=True)
+    @field_validator("axis_order", mode="before")
     def _validate_axis_order(cls, v: Any) -> str:
         if not isinstance(v, str):
-            raise TypeError(f"acquisition order must be a string, got {type(v)}")
+            raise ValueError(f"acquisition order must be a string, got {type(v)}")
         order = v.lower()
         extra = {x for x in order if x not in AXES}
         if extra:
@@ -169,7 +202,7 @@ class MDASequence(UseqModel):
 
         return order
 
-    @root_validator
+    @model_validator(mode="after")
     def _validate_mda(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if "axis_order" in values:
             values["axis_order"] = cls._check_order(
@@ -185,7 +218,9 @@ class MDASequence(UseqModel):
     def __eq__(self, other: Any) -> bool:
         """Return `True` if two `MDASequences` are equal (uid is excluded)."""
         if isinstance(other, MDASequence):
-            return bool(self.dict(exclude={"uid"}) == other.dict(exclude={"uid"}))
+            return bool(
+                model_dump(self, exclude={"uid"}) == model_dump(other, exclude={"uid"})
+            )
         else:
             return False
 
@@ -354,7 +389,3 @@ class MDASequence(UseqModel):
                 takes to acquire the data
         """
         return estimate_sequence_duration(self)
-
-
-MDAEvent.update_forward_refs(MDASequence=MDASequence)
-Position.update_forward_refs(MDASequence=MDASequence)
