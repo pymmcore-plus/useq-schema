@@ -187,6 +187,9 @@ def iter_sequence(
         yield event
 
 
+# ###################### Helper functions ######################
+
+
 def _position_offsets(
     position: Position, event_kwargs: MDAEventDict
 ) -> tuple[MDAEventDict, PositionDict]:

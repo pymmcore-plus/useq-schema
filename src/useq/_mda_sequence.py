@@ -61,6 +61,15 @@ class MDASequence(UseqModel):
         generated, do not set.
     autofocus_plan : AxesBasedAF | None
         The hardware autofocus plan to follow. One of `AxesBasedAF` or `None`.
+    keep_shutter_open_across: tuple[str, ...]
+        A tuple of axes across which the illumination shutter should be kept open.
+        Resulting events will have `keep_shutter_open` set to `True` if and only if the
+        all axes changing are in this tuple. For example, if
+        `keep_shutter_open_across=('z',)`, then the shutter will be kept open between
+        events axes {'t': 0, 'z: 0} and {'t': 0, 'z': 1}, but not between {'t': 0, 'z':
+        0} and {'t': 1, 'z': 0}. Currently, this cannot contain `'c'` (an exception will
+        be raised if it does). If you have an application where you need to keep the
+        shutter open across channels, please open an issue.
 
     Examples
     --------
@@ -105,6 +114,7 @@ class MDASequence(UseqModel):
     time_plan: Optional[AnyTimePlan] = None
     z_plan: Optional[AnyZPlan] = None
     autofocus_plan: Optional[AnyAutofocusPlan] = None
+    keep_shutter_open_across: Tuple[str, ...] = Field(default_factory=tuple)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _sizes: Optional[Dict[str, int]] = PrivateAttr(default=None)
