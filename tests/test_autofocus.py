@@ -22,11 +22,11 @@ AF_C = AF.copy(update={"axes": ("c",)})
 AF_G = AF.copy(update={"axes": ("g",)})
 AF_P = AF.copy(update={"axes": ("p",)})
 AF_Z = AF.copy(update={"axes": ("z",)})
-AF_SEQ_C = MDASequence(autofocus_plan=AF_C)
+AF_SEQ_C = MDASequence(event_modifiers=[AF_C])
 SUB_P_AF_C = useq.Position(z=10, sequence=AF_SEQ_C)
-SUB_P_AF_G = useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G))
-SUB_P_AF_P = useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_P))
-SUB_P_AF_Z = useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_Z))
+SUB_P_AF_G = useq.Position(z=10, sequence=MDASequence(event_modifiers=[AF_G]))
+SUB_P_AF_P = useq.Position(z=10, sequence=MDASequence(event_modifiers=[AF_P]))
+SUB_P_AF_Z = useq.Position(z=10, sequence=MDASequence(event_modifiers=[AF_Z]))
 TWO_CH_SUBPAF_C = TWO_CH.replace(stage_positions=[ZPOS_30, SUB_P_AF_C])
 TWO_CH_SUBPAF_Z = TWO_CH.replace(stage_positions=[ZPOS_30, SUB_P_AF_Z])
 
@@ -53,8 +53,8 @@ AF_TESTS: list[tuple[MDASequence, tuple[str, ...], Iterable[int]]] = [
     (TWO_CH_SUBPAF_Z.replace(z_plan=ZRANGE2), (), range(6, 17, 2)),
     (TWO_CH_SUBPAF_Z.replace(z_plan=ZRANGE2), ("p",), (0, *tuple(range(7, 18, 2)))),
     (TWO_CH_SUBPAF_C.replace(z_plan=ZRANGE2, grid_plan=GRID_PLAN), ("c",), range(0, 29, 4)),
-    (TWO_CH.replace(stage_positions=[ZPOS_30, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_C, grid_plan=GRID_PLAN))]), (), (2, 5)),
-    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, grid_plan=GRID_PLAN))]), (), range(0, 11, 2)),
+    (TWO_CH.replace(stage_positions=[ZPOS_30, useq.Position(z=10, sequence=MDASequence(event_modifiers=[AF_C], grid_plan=GRID_PLAN))]), (), (2, 5)),
+    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(event_modifiers=[AF_G], grid_plan=GRID_PLAN))]), (), range(0, 11, 2)),
     (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), ("z",), range(2, 13, 2)),
     (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), ("c",), (0, 2, 4, 8)),
     (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), (), ()),
@@ -69,9 +69,9 @@ def test_autofocus(
     expected_af_indices: Iterable[int],
 ) -> None:
     if af_axes:
-        mda = mda.replace(autofocus_plan=AF.copy(update={"axes": af_axes}))
-        assert isinstance(mda.autofocus_plan, AxesBasedAF)
-        assert mda.autofocus_plan.axes == af_axes
+        mda = mda.replace(event_modifiers=[AF.copy(update={"axes": af_axes})])
+        assert isinstance(mda.event_modifiers[0], AxesBasedAF)
+        assert mda.event_modifiers[0].axes == af_axes
 
     actual = [i for i, e in enumerate(mda) if isinstance(e.action, HardwareAutofocus)]
     expected = list(expected_af_indices)
@@ -81,7 +81,7 @@ def test_autofocus(
 
 def test_autofocus_z_pos() -> None:
     mda = TWO_CH.replace(
-        stage_positions=[ZPOS_200], z_plan=ZRANGE2, autofocus_plan=AF_C
+        stage_positions=[ZPOS_200], z_plan=ZRANGE2, event_modifiers=[AF_C]
     )
     assert all(e.z_pos == 200 for e in mda if isinstance(e.action, HardwareAutofocus))
 
@@ -90,7 +90,7 @@ def test_autofocus_z_pos_abovebelow() -> None:
     mda = TWO_CH.replace(
         stage_positions=[ZPOS_200],
         z_plan=useq.ZAboveBelow(above=2, below=2, step=1),
-        autofocus_plan=AF_C,
+        event_modifiers=[AF_C],
     )
     assert all(e.z_pos == 200 for e in mda if isinstance(e.action, HardwareAutofocus))
 
@@ -110,7 +110,7 @@ def test_autofocus_z_pos_multi_plans() -> None:
         stage_positions=[ZPOS_200],
         grid_plan=GRID_PLAN,
         z_plan=ZRANGE2,
-        autofocus_plan=AF_C,
+        event_modifiers=[AF_C],
     )
 
     assert all(e.z_pos == 200 for e in mda if isinstance(e.action, HardwareAutofocus))

@@ -3,7 +3,16 @@ from __future__ import annotations
 from functools import lru_cache
 from itertools import product
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Iterator,
+    Optional,
+    Sequence,
+    Tuple,
+    cast,
+)
 
 from typing_extensions import TypedDict
 
@@ -17,6 +26,7 @@ from useq._utils import AXES, Axis, _has_axes
 from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
 if TYPE_CHECKING:
+    from useq._event_modifiers import EventModifier
     from useq._mda_sequence import MDASequence
     from useq._position import Position
 
@@ -83,26 +93,42 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     MDAEvent
         Each event in the MDA sequence.
     """
-    if not (keep_shutter_open_axes := sequence.keep_shutter_open_across):
-        yield from _iter_sequence(sequence)
-        return
-
     it = _iter_sequence(sequence)
-    if (this_e := next(it, None)) is None:
+    first_e = next(it, None)
+    if first_e is None:
         return
 
-    for next_e in it:
+    this_e: MDAEvent | None
+    this_e, modifiers = first_e
+    for next_e, next_modifiers in it:
         # set `keep_shutter_open` to `True` if and only if ALL axes whose index
         # changes betwee this_event and next_event are in `keep_shutter_open_axes`
-        if all(
-            axis in keep_shutter_open_axes
-            for axis, idx in this_e.index.items()
-            if idx != next_e.index[axis]
-        ):
-            this_e = this_e.copy(update={"keep_shutter_open": True})
+        if modifiers:
+            this_e, extras = _process_modifiers(modifiers, this_e, next_e)
+            yield from extras
+        if this_e is not None:
+            yield this_e
+        this_e, modifiers = next_e, next_modifiers
+
+    if modifiers:
+        this_e, extras = _process_modifiers(modifiers, this_e, None)
+        yield from extras
+    if this_e is not None:
         yield this_e
-        this_e = next_e
-    yield this_e
+
+
+def _process_modifiers(
+    modifiers: Iterable[EventModifier], this_e: MDAEvent, next_e: MDAEvent | None
+) -> tuple[MDAEvent | None, Sequence[MDAEvent]]:
+    extras: Sequence[MDAEvent] = ()
+    for mod in modifiers:
+        _event = mod(this_e, next_e)
+        if isinstance(_event, Sequence):
+            extras = _event
+            event: MDAEvent | None = this_e
+        else:
+            event = _event
+    return event, extras
 
 
 def _iter_sequence(
@@ -111,7 +137,7 @@ def _iter_sequence(
     base_event_kwargs: MDAEventDict | None = None,
     event_kwarg_overrides: MDAEventDict | None = None,
     position_offsets: PositionDict | None = None,
-) -> Iterator[MDAEvent]:
+) -> Iterator[tuple[MDAEvent, Sequence[EventModifier]]]:
     """Helper function for `iter_sequence`.
 
     We put most of the logic into this sub-function so that `iter_sequence` can
@@ -187,8 +213,8 @@ def _iter_sequence(
                 if event_kwargs[k] is not None:  # type: ignore[literal-required]
                     event_kwargs[k] += v  # type: ignore[literal-required]
 
-        # grab global autofocus plan (may be overridden by position-specific plan below)
-        autofocus_plan = sequence.autofocus_plan
+        # grab global event_modifiers (may be overridden by position below)
+        modifiers = sequence.event_modifiers
 
         # if a position has been declared with a sub-sequence, we recurse into it
         if position:
@@ -201,10 +227,10 @@ def _iter_sequence(
                     pos_overrides["pos_name"] = position.name
 
                 sub_seq = position.sequence
-                # if the sub-sequence doe not have an autofocus plan, we override it
-                # with the parent sequence's autofocus plan
-                if not sub_seq.autofocus_plan:
-                    sub_seq = sub_seq.copy(update={"autofocus_plan": autofocus_plan})
+                # if the sub-sequence does not have event_modifiers, we override it
+                # with the parent
+                if not sub_seq.event_modifiers:
+                    sub_seq = sub_seq.copy(update={"event_modifiers": modifiers})
 
                 # recurse into the sub-sequence
                 yield from _iter_sequence(
@@ -215,17 +241,13 @@ def _iter_sequence(
                 )
                 continue
             # note that position.sequence may be Falsey even if not None, for example
-            # if all it has is an autofocus plan.  In that case, we don't recurse.
-            # and we don't hit the continue statement, but we can use the autofocus plan
-            elif position.sequence is not None and position.sequence.autofocus_plan:
-                autofocus_plan = position.sequence.autofocus_plan
+            # if it has event_modifiers.  In that case, we don't recurse.
+            # and we don't hit the continue statement, but we can use the modifiers
+            elif position.sequence is not None and position.sequence.event_modifiers:
+                modifiers = position.sequence.event_modifiers
 
         event = MDAEvent.construct(**event_kwargs)
-        if autofocus_plan:
-            af_event = autofocus_plan.event(event)
-            if af_event:
-                yield af_event
-        yield event
+        yield event, modifiers
 
 
 # ###################### Helper functions ######################
@@ -302,7 +324,7 @@ def _should_skip(
     if (
         not position
         or position.sequence is None
-        or position.sequence.autofocus_plan is not None
+        or position.sequence.event_modifiers is not None
     ):
         return False
 

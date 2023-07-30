@@ -1,7 +1,7 @@
 from useq._actions import AcquireImage, Action, HardwareAutofocus
 from useq._channel import Channel
+from useq._event_modifiers import AxesBasedAF
 from useq._grid import AnyGridPlan, GridFromEdges, GridRelative
-from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent, PropertyTuple
 from useq._mda_sequence import MDASequence
 from useq._position import Position
