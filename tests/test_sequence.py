@@ -384,3 +384,21 @@ def test_keep_shutter_open() -> None:
     for event in mda4:
         is_last_zt = bool(event.index["t"] == 1 and event.index["z"] == 1)
         assert event.keep_shutter_open != is_last_zt
+
+    # testing keep shutter open in sub-sequence
+    mda5 = MDASequence(
+        axis_order="pgc",
+        channels=["DAPI", "FITC"],
+        stage_positions=[
+            {
+                "x": 0,
+                "y": 0,
+                "sequence": MDASequence(
+                    grid_plan=GridRelative(overlap=10, rows=2, columns=2)
+                ),
+            }
+        ],
+        keep_shutter_open_across="g",
+    )
+    for event in mda5:
+        assert event.keep_shutter_open != bool(event.index["g"] == 3)
