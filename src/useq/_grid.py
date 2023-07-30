@@ -7,7 +7,7 @@ from functools import partial
 from typing import Any, Callable, Iterator, NamedTuple, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from pydantic import validator
+from pydantic import Field, validator
 
 from useq._base_model import FrozenModel
 
@@ -121,10 +121,15 @@ class _GridPlan(FrozenModel):
         Engines MAY override this even if provided.
     """
 
-    overlap: Tuple[float, float] = (0.0, 0.0)
-    mode: OrderMode = OrderMode.row_wise_snake
-    fov_width: Optional[float] = None
-    fov_height: Optional[float] = None
+    # Overriding FrozenModel to make fov_width and fov_height mutable.
+    class Config:
+        validate_assignment = True
+        frozen = False
+
+    overlap: Tuple[float, float] = Field((0.0, 0.0), allow_mutation=False)
+    mode: OrderMode = Field(OrderMode.row_wise_snake, allow_mutation=False)
+    fov_width: Optional[float] = Field(None, allow_mutation=True)
+    fov_height: Optional[float] = Field(None, allow_mutation=True)
 
     @validator("overlap", pre=True)
     def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
@@ -221,10 +226,11 @@ class GridFromEdges(_GridPlan):
         Right stage position of the bounding area
     """
 
-    top: float
-    left: float
-    bottom: float
-    right: float
+    # everything but fov_width and fov_height is immutable
+    top: float = Field(..., allow_mutation=True)
+    left: float = Field(..., allow_mutation=True)
+    bottom: float = Field(..., allow_mutation=True)
+    right: float = Field(..., allow_mutation=True)
 
     def _nrows(self, dy: float) -> int:
         total_height = abs(self.top - self.bottom) + dy
@@ -256,9 +262,10 @@ class GridRelative(_GridPlan):
         the top left corner is at the origin.
     """
 
-    rows: int
-    columns: int
-    relative_to: RelativeTo = RelativeTo.center
+    # everything but fov_width and fov_height is immutable
+    rows: int = Field(..., allow_mutation=True)
+    columns: int = Field(..., allow_mutation=True)
+    relative_to: RelativeTo = Field(RelativeTo.center, allow_mutation=False)
 
     @property
     def is_relative(self) -> bool:
