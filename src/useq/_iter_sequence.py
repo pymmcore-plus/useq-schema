@@ -13,12 +13,10 @@ from useq._grid import (  # noqa: TCH001
 )
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent
-from useq._utils import AXES, Axis
+from useq._utils import AXES, Axis, _has_axes
 from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeGuard
-
     from useq._mda_sequence import MDASequence
     from useq._position import Position
 
@@ -58,18 +56,6 @@ def _sizes(seq: MDASequence) -> dict[str, int]:
 @lru_cache(maxsize=None)
 def _used_axes(seq: MDASequence) -> str:
     return "".join(k for k in seq.axis_order if _sizes(seq)[k])
-
-
-def _has_axes(seq: MDASequence | None) -> TypeGuard[MDASequence]:
-    if seq is None:
-        return False
-    return bool(
-        seq.time_plan is not None
-        or seq.stage_positions
-        or seq.z_plan is not None
-        or seq.channels
-        or seq.grid_plan is not None
-    )
 
 
 def iter_sequence(

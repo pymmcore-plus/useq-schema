@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import math
 from typing import Iterator, List, Sequence, Union
 
 import numpy as np
@@ -7,7 +10,7 @@ from useq._utils import list_cast
 
 
 class ZPlan(FrozenModel):
-    go_up: bool
+    go_up: bool = True
 
     def __iter__(self) -> Iterator[float]:  # type: ignore
         positions = self.positions()
@@ -15,11 +18,16 @@ class ZPlan(FrozenModel):
             positions = positions[::-1]
         yield from positions
 
+    def _start_stop_step(self) -> tuple[float, float, float]:
+        raise NotImplementedError
+
     def positions(self) -> Sequence[float]:
-        raise NotImplementedError()
+        start, stop, step = self._start_stop_step()
+        return list(np.arange(start, stop + step, step))
 
     def num_positions(self) -> int:
-        return len(self.positions())
+        start, stop, step = self._start_stop_step()
+        return math.ceil((stop + step - start) / step)
 
     @property
     def is_relative(self) -> bool:
@@ -29,12 +37,16 @@ class ZPlan(FrozenModel):
 class ZTopBottom(ZPlan):
     """Define Z using absolute top & bottom positions.
 
+    Note that `bottom` will always be visited, regardless of `go_up`, while `top` will
+    always be *encompassed* by the range, but may not be precisely visited if the step
+    size does not divide evenly into the range.
+
     Attributes
     ----------
     top : float
-        Top position.
+        Top position (inclusive).
     bottom : float
-        Bottom position.
+        Bottom position (inclusive).
     step : float
         Step size in microns.
     go_up : bool
@@ -45,26 +57,27 @@ class ZTopBottom(ZPlan):
     top: float
     bottom: float
     step: float
-    go_up: bool = True
 
-    def positions(self) -> Sequence[float]:
-        return np.arange(self.bottom, self.top + self.step, self.step)  # type: ignore
+    def _start_stop_step(self) -> tuple[float, float, float]:
+        return self.bottom, self.top, self.step
 
     @property
     def is_relative(self) -> bool:
         return False
 
 
-# ZTopBottom()
-
-
 class ZRangeAround(ZPlan):
     """Define Z as a symmetric range around some reference position.
+
+    Note that `-range / 2` will always be visited, regardless of `go_up`, while
+    `+range / 2` will always be *encompassed* by the range, but may not be precisely
+    visited if the step size does not divide evenly into the range.
 
     Attributes
     ----------
     range : float
-        Range in microns.
+        Range in microns (inclusive). For example, a range of 4 with a step size
+        of 1 would visit [-2, -1, 0, 1, 2].
     step : float
         Step size in microns.
     go_up : bool
@@ -74,23 +87,24 @@ class ZRangeAround(ZPlan):
 
     range: float
     step: float
-    go_up: bool = True
 
-    def positions(self) -> Sequence[float]:
-        return np.arange(  # type: ignore
-            -self.range / 2, self.range / 2 + self.step, self.step
-        )
+    def _start_stop_step(self) -> tuple[float, float, float]:
+        return -self.range / 2, self.range / 2, self.step
 
 
 class ZAboveBelow(ZPlan):
     """Define Z as asymmetric range above and below some reference position.
 
+    Note that `below` will always be visited, regardless of `go_up`, while `above` will
+    always be *encompassed* by the range, but may not be precisely visited if the step
+    size does not divide evenly into the range.
+
     Attributes
     ----------
     above : float
-        Range above reference position in microns.
+        Range above reference position in microns (inclusive).
     below : float
-        Range below reference position in microns.
+        Range below reference position in microns (inclusive).
     step : float
         Step size in microns.
     go_up : bool
@@ -101,16 +115,16 @@ class ZAboveBelow(ZPlan):
     above: float
     below: float
     step: float
-    go_up: bool = True
 
-    def positions(self) -> Sequence[float]:
-        return np.arange(  # type: ignore
-            -abs(self.below), +abs(self.above) + self.step, self.step
-        )
+    def _start_stop_step(self) -> tuple[float, float, float]:
+        return -abs(self.below), +abs(self.above), self.step
 
 
 class ZRelativePositions(ZPlan):
     """Define Z as a list of positions relative to some reference.
+
+    Typically, the "reference" will be whatever the current Z position is at the start
+    of the sequence.
 
     Attributes
     ----------
@@ -122,12 +136,14 @@ class ZRelativePositions(ZPlan):
     """
 
     relative: List[float]
-    go_up: bool = True
 
     _normrel = list_cast("relative")
 
     def positions(self) -> Sequence[float]:
         return self.relative
+
+    def num_positions(self) -> int:
+        return len(self.relative)
 
 
 class ZAbsolutePositions(ZPlan):
@@ -143,12 +159,14 @@ class ZAbsolutePositions(ZPlan):
     """
 
     absolute: List[float]
-    go_up: bool = True
 
     _normabs = list_cast("absolute")
 
     def positions(self) -> Sequence[float]:
         return self.absolute
+
+    def num_positions(self) -> int:
+        return len(self.absolute)
 
     @property
     def is_relative(self) -> bool:
