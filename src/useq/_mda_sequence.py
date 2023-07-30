@@ -62,6 +62,13 @@ class MDASequence(UseqModel):
         generated, do not set.
     autofocus_plan : AxesBasedAF | None
         The hardware autofocus plan to follow. One of `AxesBasedAF` or `None`.
+    keep_shutter_open_across : tuple[str, ...]
+        A tuple of axes `str` across which the illumination shutter should be kept open.
+        Resulting events will have `keep_shutter_open` set to `True` if and only if
+        ALL axes whose indices are changing are in this tuple. For example, if
+        `keep_shutter_open_across=('z',)`, then the shutter would be kept open between
+        events axes {'t': 0, 'z: 0} and {'t': 0, 'z': 1}, but not between
+        {'t': 0, 'z': 0} and {'t': 1, 'z': 0}.
 
     Examples
     --------
@@ -106,6 +113,7 @@ class MDASequence(UseqModel):
     time_plan: Optional[AnyTimePlan] = None
     z_plan: Optional[AnyZPlan] = None
     autofocus_plan: Optional[AnyAutofocusPlan] = None
+    keep_shutter_open_across: Tuple[str, ...] = Field(default_factory=tuple)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _sizes: Optional[Dict[str, int]] = PrivateAttr(default=None)
@@ -141,6 +149,17 @@ class MDASequence(UseqModel):
     @field_validator("z_plan", mode="before")
     def _validate_zplan(cls, v: Any) -> Optional[dict]:
         return v or None
+
+    @field_validator("keep_shutter_open_across", mode="before")
+    def _validate_keep_shutter_open_across(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        try:
+            v = tuple(v)
+        except (TypeError, ValueError):  # pragma: no cover
+            raise ValueError(
+                f"keep_shutter_open_across must be string or a sequence of strings, "
+                f"got {type(v)}"
+            ) from None
+        return v
 
     @field_validator("channels", mode="before")
     def _validate_channels(cls, value: Any) -> Tuple[Channel, ...]:
@@ -213,6 +232,15 @@ class MDASequence(UseqModel):
                 grid_plan=values.get("grid_plan"),
                 autofocus_plan=values.get("autofocus_plan"),
             )
+        if "stage_positions" in values:
+            for p in values["stage_positions"]:
+                if hasattr(p, "sequence") and getattr(
+                    p.sequence, "keep_shutter_open_across", None
+                ):  # pragma: no cover
+                    raise ValueError(
+                        "keep_shutter_open_across cannot currently be set on a "
+                        "Position sequence"
+                    )
         return values
 
     def __eq__(self, other: Any) -> bool:
@@ -287,7 +315,7 @@ class MDASequence(UseqModel):
             )
         ):
             raise ValueError(
-                "Currently, a Position sequence cannot have multiple stage positions!"
+                "Currently, a Position sequence cannot have multiple stage positions."
             )
 
         # Cannot use autofocus plan with absolute z_plan

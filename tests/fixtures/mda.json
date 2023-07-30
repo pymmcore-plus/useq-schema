@@ -48,6 +48,7 @@
     "relative_to": "center",
     "rows": 2
   },
+  "keep_shutter_open_across": [],
   "metadata": {
     "some info": "something"
   },
@@ -77,6 +78,7 @@
           "relative_to": "center",
           "rows": 2
         },
+        "keep_shutter_open_across": [],
         "metadata": {},
         "stage_positions": [],
         "time_plan": null,
