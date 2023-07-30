@@ -58,13 +58,7 @@ def _used_axes(seq: MDASequence) -> str:
     return "".join(k for k in seq.axis_order if _sizes(seq)[k])
 
 
-def iter_sequence(
-    sequence: MDASequence,
-    *,
-    base_event_kwargs: MDAEventDict | None = None,
-    event_kwarg_overrides: MDAEventDict | None = None,
-    position_offsets: PositionDict | None = None,
-) -> Iterator[MDAEvent]:
+def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     """Iterate over all events in the MDA sequence.'.
 
     !!! note
@@ -78,6 +72,53 @@ def iter_sequence(
     The is the most "logic heavy" part of `useq-schema` (the rest of which is
     almost entirely declarative).  This iterator is useful for consuming `MDASequence`
     objects in a python runtime, but it isn't considered a "core" part of the schema.
+
+    Parameters
+    ----------
+    sequence : MDASequence
+        The sequence to iterate over.
+
+    Yields
+    ------
+    MDAEvent
+        Each event in the MDA sequence.
+    """
+    if not (keep_shutter_open_axes := sequence.keep_shutter_open_across):
+        yield from _iter_sequence(sequence)
+        return
+
+    it = _iter_sequence(sequence)
+    if (this_e := next(it, None)) is None:  # pragma: no cover
+        return
+
+    for next_e in it:
+        # set `keep_shutter_open` to `True` if and only if ALL axes whose index
+        # changes betwee this_event and next_event are in `keep_shutter_open_axes`
+        if all(
+            axis in keep_shutter_open_axes
+            for axis, idx in this_e.index.items()
+            if idx != next_e.index[axis]
+        ):
+            this_e = this_e.copy(update={"keep_shutter_open": True})
+        yield this_e
+        this_e = next_e
+    yield this_e
+
+
+def _iter_sequence(
+    sequence: MDASequence,
+    *,
+    base_event_kwargs: MDAEventDict | None = None,
+    event_kwarg_overrides: MDAEventDict | None = None,
+    position_offsets: PositionDict | None = None,
+) -> Iterator[MDAEvent]:
+    """Helper function for `iter_sequence`.
+
+    We put most of the logic into this sub-function so that `iter_sequence` can
+    easily modify the resulting sequence of events (e.g. to peek at the next event
+    before yielding the current one).
+
+    It also keeps the sub-sequence iteration kwargs out of the public API.
 
     Parameters
     ----------
@@ -166,7 +207,7 @@ def iter_sequence(
                     sub_seq = sub_seq.copy(update={"autofocus_plan": autofocus_plan})
 
                 # recurse into the sub-sequence
-                yield from iter_sequence(
+                yield from _iter_sequence(
                     sub_seq,
                     base_event_kwargs=event_kwargs.copy(),
                     event_kwarg_overrides=pos_overrides,
@@ -185,6 +226,9 @@ def iter_sequence(
             if af_event:
                 yield af_event
         yield event
+
+
+# ###################### Helper functions ######################
 
 
 def _position_offsets(
