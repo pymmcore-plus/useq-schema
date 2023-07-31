@@ -1,5 +1,14 @@
 import datetime
-from typing import TYPE_CHECKING, Any, Callable, Generator, Iterator, Sequence, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterator,
+    Sequence,
+    Union,
+)
 
 from pydantic import Field
 
@@ -44,7 +53,7 @@ class timedelta(datetime.timedelta):
     @classmethod
     def __get_pydantic_json_schema__(
         cls, core_schema: "core_schema.CoreSchema", handler: Any
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         return {"type": "number", "format": "float"}
 
 
