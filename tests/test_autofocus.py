@@ -68,7 +68,6 @@ def test_autofocus(
     af_axes: tuple[str, ...],
     expected_af_indices: Iterable[int],
 ) -> None:
-    print()
     if af_axes:
         mda = mda.replace(autofocus_plan=AF.copy(update={"axes": af_axes}))
         assert isinstance(mda.autofocus_plan, AxesBasedAF)

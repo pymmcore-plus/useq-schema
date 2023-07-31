@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
@@ -7,6 +8,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
+    Mapping,
     Optional,
     Sequence,
     Tuple,
@@ -18,11 +20,9 @@ from typing import (
 import numpy as np
 from pydantic import BaseModel
 
-from useq._pydantic_compat import model_dump, model_fields
+from useq._pydantic_compat import PYDANTIC2, model_dump, model_fields
 
 if TYPE_CHECKING:
-    from pydantic.types import StrBytes
-
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
 
@@ -33,11 +33,20 @@ _Y = TypeVar("_Y", bound="UseqModel")
 
 
 class FrozenModel(BaseModel):
-    class Config:
-        allow_population_by_field_name = True
-        extra = "ignore"
-        frozen = True
-        json_encoders: ClassVar[dict] = {MappingProxyType: dict}
+    if PYDANTIC2:
+        model_config = {
+            "populate_by_name": True,
+            "extra": "ignore",
+            "frozen": True,
+        }
+
+    else:
+
+        class Config:
+            allow_population_by_field_name = True
+            extra = "ignore"
+            frozen = True
+            json_encoders: ClassVar[dict] = {MappingProxyType: dict}
 
     def replace(self: _T, **kwargs: Any) -> _T:
         """Return a new instance replacing specified kwargs with new values.
@@ -52,6 +61,18 @@ class FrozenModel(BaseModel):
         """
         state = model_dump(self, exclude={"uid"})
         return type(self)(**{**state, **kwargs})
+
+    if PYDANTIC2:
+
+        def copy(
+            self,
+            *,
+            include: set | Mapping | None = None,
+            exclude: set | Mapping | None = None,
+            update: dict[str, Any] | None = None,
+            deep: bool = False,
+        ):
+            return self.model_copy(update=update, deep=deep)
 
 
 class UseqModel(FrozenModel):
@@ -93,66 +114,29 @@ class UseqModel(FrozenModel):
     #     return f"{self.__class__.__qualname__}({body})"
 
     @classmethod
-    def parse_raw(
-        cls: Type[_Y],
-        b: StrBytes,
-        *,
-        content_type: Optional[str] = None,
-        encoding: str = "utf8",
-        proto: Optional[str] = None,
-        allow_pickle: bool = False,
-    ) -> _Y:
-        if content_type is None:
-            assume_yaml = False
-        else:
-            assume_yaml = ("yaml" in content_type) or ("yml" in content_type)
-
-        if proto == "yaml" or assume_yaml:
+    def from_file(cls: Type[_Y], path: Union[str, Path]) -> _Y:
+        path = Path(path)
+        if path.suffix in {".yaml", ".yml"}:
             import yaml
 
-            obj = yaml.safe_load(b)
-            return cls.parse_obj(obj)
-        return super().parse_raw(
-            b,
-            content_type=content_type,  # type: ignore
-            encoding=encoding,
-            proto=proto,  # type: ignore
-            allow_pickle=allow_pickle,
-        )
+            obj = yaml.safe_load(path.read_bytes())
+        elif path.suffix == ".json":
+            import json
+
+            obj = json.loads(path.read_bytes())
+        else:
+            raise ValueError(f"Unknown file type: {path.suffix}")
+
+        return cls.model_validate(obj) if PYDANTIC2 else cls.parse_obj(obj)
 
     @classmethod
-    def parse_file(
-        cls: Type[_Y],
-        path: Union[str, Path],
-        *,
-        content_type: Optional[str] = None,
-        encoding: str = "utf8",
-        proto: Optional[str] = None,
-        allow_pickle: bool = False,
-    ) -> _Y:
-        if encoding is None:
-            assume_yaml = False
-        elif content_type:
-            assume_yaml = ("yaml" in content_type) or ("yml" in content_type)
-        else:
-            assume_yaml = str(path).endswith((".yml", ".yaml"))
-
-        if proto == "yaml" or assume_yaml:
-            return cls.parse_raw(
-                Path(path).read_bytes(),
-                content_type=content_type or "application/yaml",
-                encoding=encoding,
-                proto="yaml",
-                allow_pickle=allow_pickle,
-            )
-
-        return super().parse_file(
-            path,
-            content_type=content_type,  # type: ignore
-            encoding=encoding,
-            proto=proto,  # type: ignore
-            allow_pickle=allow_pickle,
+    def parse_file(cls: Type[_Y], path: Union[str, Path], *args, **kwargs) -> _Y:
+        warnings.warn(
+            "parse_file is deprecated. Use from_file instead.",
+            DeprecationWarning,
+            stacklevel=2,
         )
+        return cls.from_file(path)
 
     def yaml(
         self,

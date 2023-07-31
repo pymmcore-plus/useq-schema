@@ -222,14 +222,10 @@ def _iter_sequence(
                 autofocus_plan = position.sequence.autofocus_plan
 
         event = model_construct(MDAEvent, **event_kwargs)
-        print(event.index)
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
-            print("af_event", af_event)
             if af_event:
                 yield af_event
-        else:
-            print("no plan")
         yield event
 
 

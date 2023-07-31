@@ -7,10 +7,11 @@ from useq._base_model import FrozenModel
 from useq._utils import parse_duration
 
 if TYPE_CHECKING:
-    from pydantic import GetCoreSchemaHandler
-    from pydantic_core import CoreSchema
+    from pydantic_core import CoreSchema, core_schema
 
 
+# FIXME: please!!
+# This is a gross amalgamation of fixes that tries to work with both pydantic1 and 2
 class timedelta(datetime.timedelta):
     @classmethod
     def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
@@ -23,11 +24,28 @@ class timedelta(datetime.timedelta):
     @classmethod
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: "GetCoreSchemaHandler"
+        cls, source_type: Any, handler: Any
     ) -> "CoreSchema":
-        from pydantic_core import core_schema
+        from pydantic_core.core_schema import (
+            no_info_plain_validator_function,
+            plain_serializer_function_ser_schema,
+        )
 
-        return core_schema.no_info_plain_validator_function(cls.validate)
+        serializer = plain_serializer_function_ser_schema(
+            cls._serialize, when_used="json"
+        )
+
+        return no_info_plain_validator_function(cls.validate, serialization=serializer)
+
+    @classmethod
+    def _serialize(cls, v: datetime.timedelta) -> float:
+        return v.total_seconds()
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: "core_schema.CoreSchema", handler: Any
+    ) -> dict[str, Any]:
+        return {"type": "number", "format": "float"}
 
 
 class TimePlan(FrozenModel):

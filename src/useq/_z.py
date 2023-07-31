@@ -6,7 +6,12 @@ from typing import Iterator, List, Sequence, Union
 import numpy as np
 
 from useq._base_model import FrozenModel
-from useq._utils import list_cast
+from useq._pydantic_compat import field_validator
+
+
+def _list_cast(field: str) -> classmethod:
+    v = field_validator(field, mode="before", allow_reuse=True, check_fields=False)
+    return v(list)
 
 
 class ZPlan(FrozenModel):
@@ -137,7 +142,7 @@ class ZRelativePositions(ZPlan):
 
     relative: List[float]
 
-    _normrel = list_cast("relative")
+    _normrel = _list_cast("relative")
 
     def positions(self) -> Sequence[float]:
         return self.relative
@@ -160,7 +165,7 @@ class ZAbsolutePositions(ZPlan):
 
     absolute: List[float]
 
-    _normabs = list_cast("absolute")
+    _normabs = _list_cast("absolute")
 
     def positions(self) -> Sequence[float]:
         return self.absolute

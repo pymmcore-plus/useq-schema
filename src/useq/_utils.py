@@ -37,13 +37,6 @@ AXES: Final[tuple[str, ...]] = (
 )
 
 
-def list_cast(field: str) -> classmethod:
-    from pydantic import validator
-
-    v = validator(field, pre=True, allow_reuse=True, check_fields=False)
-    return v(list)
-
-
 class TimeEstimate(NamedTuple):
     """Record of time estimation results.
 

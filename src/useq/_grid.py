@@ -7,9 +7,10 @@ from functools import partial
 from typing import Any, Callable, Iterator, NamedTuple, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from pydantic import Field, validator
+from pydantic import Field
 
 from useq._base_model import FrozenModel
+from useq._pydantic_compat import FROZEN, PYDANTIC2, field_validator
 
 
 class RelativeTo(Enum):
@@ -122,16 +123,20 @@ class _GridPlan(FrozenModel):
     """
 
     # Overriding FrozenModel to make fov_width and fov_height mutable.
-    class Config:
-        validate_assignment = True
-        frozen = False
+    if PYDANTIC2:
+        model_config = {"validate_assignment": True, "frozen": False}
+    else:
 
-    overlap: Tuple[float, float] = Field((0.0, 0.0), allow_mutation=False)
-    mode: OrderMode = Field(OrderMode.row_wise_snake, allow_mutation=False)
-    fov_width: Optional[float] = Field(None, allow_mutation=True)
-    fov_height: Optional[float] = Field(None, allow_mutation=True)
+        class Config:
+            validate_assignment = True
+            frozen = False
 
-    @validator("overlap", pre=True)
+    overlap: Tuple[float, float] = Field((0.0, 0.0), **FROZEN)
+    mode: OrderMode = Field(OrderMode.row_wise_snake, **FROZEN)
+    fov_width: Optional[float] = Field(None)
+    fov_height: Optional[float] = Field(None)
+
+    @field_validator("overlap", mode="before")
     def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
         with contextlib.suppress(TypeError, ValueError):
             v = float(v)
@@ -227,10 +232,10 @@ class GridFromEdges(_GridPlan):
     """
 
     # everything but fov_width and fov_height is immutable
-    top: float = Field(..., allow_mutation=True)
-    left: float = Field(..., allow_mutation=True)
-    bottom: float = Field(..., allow_mutation=True)
-    right: float = Field(..., allow_mutation=True)
+    top: float = Field(..., **FROZEN)
+    left: float = Field(..., **FROZEN)
+    bottom: float = Field(..., **FROZEN)
+    right: float = Field(..., **FROZEN)
 
     def _nrows(self, dy: float) -> int:
         total_height = abs(self.top - self.bottom) + dy
@@ -263,9 +268,9 @@ class GridRelative(_GridPlan):
     """
 
     # everything but fov_width and fov_height is immutable
-    rows: int = Field(..., allow_mutation=True)
-    columns: int = Field(..., allow_mutation=True)
-    relative_to: RelativeTo = Field(RelativeTo.center, allow_mutation=False)
+    rows: int = Field(..., **FROZEN)
+    columns: int = Field(..., **FROZEN)
+    relative_to: RelativeTo = Field(RelativeTo.center, **FROZEN)
 
     @property
     def is_relative(self) -> bool:

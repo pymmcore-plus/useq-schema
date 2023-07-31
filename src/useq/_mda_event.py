@@ -20,6 +20,7 @@ from pydantic import Field
 
 from useq._actions import AcquireImage, AnyAction
 from useq._base_model import UseqModel
+from useq._pydantic_compat import field_serializer
 
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
@@ -172,3 +173,7 @@ class MDAEvent(UseqModel):
         )
 
         return to_pycromanager(self)
+
+    @field_serializer("index", mode="plain", when_used="json")
+    def f(self, v: Any):
+        return dict(v)
