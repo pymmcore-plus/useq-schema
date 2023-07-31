@@ -169,7 +169,9 @@ class MDASequence(UseqModel):
 
     @field_validator("channels", mode="before")
     def _validate_channels(cls, value: Any) -> Tuple[Channel, ...]:
-        if isinstance(value, str) or not isinstance(value, Sequence):
+        if isinstance(value, str) or not isinstance(
+            value, Sequence
+        ):  # pragma: no cover
             raise ValueError(f"channels must be a sequence, got {type(value)}")
         channels = []
         for v in value:
@@ -179,7 +181,7 @@ class MDASequence(UseqModel):
                 channels.append(model_construct(Channel, config=v))
             elif isinstance(v, dict):
                 channels.append(Channel(**v))
-            else:
+            else:  # pragma: no cover
                 raise ValueError(f"Invalid Channel argument: {value!r}")
         return tuple(channels)
 
@@ -190,7 +192,7 @@ class MDASequence(UseqModel):
                 value = [value]
             elif value.ndim == 2:
                 value = list(value)
-        if not isinstance(value, Sequence):
+        if not isinstance(value, Sequence):  # pragma: no cover
             raise ValueError(f"stage_positions must be a sequence, got {type(value)}")
 
         positions = []
@@ -204,7 +206,7 @@ class MDASequence(UseqModel):
                 y, *v = v or (None,)
                 z = v[0] if v else None
                 positions.append(Position(x=x, y=y, z=z))
-            else:
+            else:  # pragma: no cover
                 raise ValueError(f"Cannot coerce {v!r} to Position")
         return tuple(positions)
 

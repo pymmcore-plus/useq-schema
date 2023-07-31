@@ -61,13 +61,12 @@ else:
 
     def model_validator(**kwargs: Any) -> Callable[[Callable], Callable]:  # type: ignore  # noqa
         if kwargs.pop("mode", None) == "before":
-            kwargs["pre"] = True
+            kwargs["pre"] = True  # pragma: no cover
         return root_validator(**kwargs)
 
     def field_validator(*fields: str, **kwargs: Any) -> Callable[[Callable], Callable]:  # type: ignore  # noqa
         if kwargs.pop("mode", None) == "before":
             kwargs["pre"] = True
-            return validator(*fields, **kwargs)
         return validator(*fields, **kwargs)
 
     def model_dump(obj: BaseModel, **kwargs: Any) -> dict[str, Any]:
@@ -89,9 +88,9 @@ else:
         return values
 
     def model_serializer(**kwargs):  # type: ignore
-        return lambda f: f
+        return lambda f: f  # pragma: no cover
 
     def field_serializer(*args, **kwargs):  # type: ignore
-        return lambda f: f
+        return lambda f: f  # pragma: no cover
 
     FROZEN = {"allow_mutation": False}

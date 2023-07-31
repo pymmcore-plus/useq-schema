@@ -112,7 +112,7 @@ class UseqModel(FrozenModel):
             import json
 
             obj = json.loads(path.read_bytes())
-        else:
+        else:  # pragma: no cover
             raise ValueError(f"Unknown file type: {path.suffix}")
 
         return cls.model_validate(obj) if PYDANTIC2 else cls.parse_obj(obj)

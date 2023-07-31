@@ -176,7 +176,8 @@ def _has_axes(seq: useq.MDASequence | None) -> TypeGuard[useq.MDASequence]:
     )
 
 
-def parse_duration(value: str | bytes | int | float) -> timedelta:
+# vendored from pydantic v1
+def parse_duration(value: str | bytes | int | float) -> timedelta:  # pragma: no cover
     """
     Parse a duration int/float/string and return a datetime.timedelta.
 
