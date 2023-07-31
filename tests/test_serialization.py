@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 
 from useq import MDASequence
-from useq._pydantic_compat import model_dump_json
 
 
 @pytest.mark.parametrize("ext", ["json", "yaml"])
@@ -14,13 +13,13 @@ def test_serialization(mda1: MDASequence, ext: str) -> None:
     mda = MDASequence.from_file(str(FILE))
     assert mda == mda1
     if ext == "json":
-        assert json.loads(model_dump_json(mda, exclude={"uid"})) == json.loads(text)
+        assert json.loads(mda.json(exclude={"uid"})) == json.loads(text)
     else:
         assert mda.yaml() == text
 
     it = iter(mda)
     for _ in range(20):
         if ext == "json":
-            assert model_dump_json(next(it))
+            assert next(it).json()
         else:
             assert next(it).yaml()

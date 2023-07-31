@@ -23,7 +23,7 @@ from useq._pydantic_compat import PYDANTIC2, model_dump, model_fields
 
 if TYPE_CHECKING:
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
-
+    IncEx = set[int] | set[str] | dict[int, Any] | dict[str, Any] | None
 
 __all__ = ["UseqModel", "FrozenModel"]
 
@@ -61,44 +61,58 @@ class FrozenModel(BaseModel):
         state = model_dump(self, exclude={"uid"})
         return type(self)(**{**state, **kwargs})
 
+    if PYDANTIC2:
+        # retain pydantic1's json method
+        def json(
+            self,
+            *,
+            indent: int | None = None,  # type: ignore
+            include: IncEx = None,
+            exclude: IncEx = None,  # type: ignore
+            by_alias: bool = False,
+            exclude_unset: bool = False,
+            exclude_defaults: bool = False,
+            exclude_none: bool = False,  # type: ignore
+            round_trip: bool = False,
+            warnings: bool = True,
+        ) -> str:
+            return super().model_dump_json(
+                indent=indent,
+                include=include,
+                exclude=exclude,
+                by_alias=by_alias,
+                exclude_unset=exclude_unset,
+                exclude_defaults=exclude_defaults,
+                exclude_none=exclude_none,
+                round_trip=round_trip,
+                warnings=warnings,
+            )
+
+    else:
+
+        def model_dump_json(self, **kwargs: Any) -> str:
+            """Backport of pydantic2's model_dump_json method."""
+            return self.json(**kwargs)
+
+        def model_dump(self, **kwargs: Any) -> dict[str, Any]:
+            """Backport of pydantic2's model_dump_json method."""
+            return self.dict(**kwargs)
+
 
 class UseqModel(FrozenModel):
     def __repr_args__(self) -> ReprArgs:
+        """Only show fields that are not None or equal to their default value."""
         return [
             (k, val)
             for k, val in super().__repr_args__()
             if k in model_fields(self)
             and val
             != (
-                model_fields(self)[k].default_factory()  # type: ignore
-                if model_fields(self)[k].default_factory is not None
+                factory()
+                if (factory := model_fields(self)[k].default_factory) is not None
                 else model_fields(self)[k].default
             )
         ]
-
-    # def __repr__(self) -> str:
-    #     """Repr, that only shows values that are changed form the defaults."""
-    #     from textwrap import indent
-
-    #     lines = []
-    #     for k, current in sorted(self.__repr_args__()):
-    #         if not k:
-    #             continue
-    #         f = self.__fields__[k]
-    #         default = (
-    #             self.__fields__[k].default_factory()  # type: ignore
-    #             if self.__fields__[k].default_factory is not None
-    #             else self.__fields__[k].default
-    #         )
-    #         if current != default:
-    #             lines.append(f"{f.name}={current!r},")
-    #     if len(lines) == 1:
-    #         body = lines[-1].rstrip(",")
-    #     elif lines:
-    #         body = "\n" + indent("\n".join(lines), "   ") + "\n"
-    #     else:
-    #         body = ""
-    #     return f"{self.__class__.__qualname__}({body})"
 
     @classmethod
     def from_file(cls: Type[_Y], path: Union[str, Path]) -> _Y:

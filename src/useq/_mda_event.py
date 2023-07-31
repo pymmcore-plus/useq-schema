@@ -154,11 +154,6 @@ class MDAEvent(UseqModel):
         )
         return 0
 
-    def __repr_args__(self) -> "ReprArgs":
-        d = self.__dict__.copy()
-        d.pop("sequence")
-        return list(d.items())
-
     def to_pycromanager(self) -> "PycroManagerEvent":
         from useq.pycromanager import to_pycromanager
 

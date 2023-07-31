@@ -6,19 +6,29 @@ import pydantic.version
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
-    from pydantic import field_serializer, model_serializer
     from pydantic.fields import FieldInfo
 
+
 PYDANTIC2 = pydantic.version.VERSION.startswith("2")
-
-__all__ = ["model_validator", "field_validator", "field_serializer", "model_serializer"]
-
 BM = TypeVar("BM", bound=BaseModel)
 
+__all__ = [
+    "PYDANTIC2",
+    "model_validator",
+    "field_validator",
+    "field_serializer",
+    "model_serializer",
+    "model_fields",
+]
+
+
 if PYDANTIC2:
-    from pydantic import field_serializer as field_serializer  # noqa
-    from pydantic import functional_validators, model_validator
-    from pydantic import model_serializer as model_serializer  # noqa
+    from pydantic import (
+        field_serializer,
+        functional_validators,
+        model_serializer,
+        model_validator,
+    )
 
     def model_fields(obj: BaseModel | type[BaseModel]) -> dict[str, FieldInfo]:
         return obj.model_fields
@@ -51,20 +61,20 @@ if PYDANTIC2:
 
     FROZEN = {"frozen": True}
 
-else:
+elif not TYPE_CHECKING:
     from pydantic import root_validator, validator
 
-    def model_fields(  # type: ignore
+    def model_fields(
         obj: BaseModel | type[BaseModel],
     ) -> dict[str, Any]:
-        return obj.__fields__  # type: ignore
+        return obj.__fields__
 
-    def model_validator(**kwargs: Any) -> Callable[[Callable], Callable]:  # type: ignore  # noqa
+    def model_validator(**kwargs: Any) -> Callable[[Callable], Callable]:
         if kwargs.pop("mode", None) == "before":
             kwargs["pre"] = True  # pragma: no cover
         return root_validator(**kwargs)
 
-    def field_validator(*fields: str, **kwargs: Any) -> Callable[[Callable], Callable]:  # type: ignore  # noqa
+    def field_validator(*fields: str, **kwargs: Any) -> Callable[[Callable], Callable]:
         if kwargs.pop("mode", None) == "before":
             kwargs["pre"] = True
         return validator(*fields, **kwargs)
@@ -78,19 +88,19 @@ else:
     def model_dump_json(obj: BaseModel, **kwargs: Any) -> str:
         return obj.json(**kwargs)
 
-    def model_rebuild(obj: type[BM], **kwargs: Any) -> None:  # type: ignore
+    def model_rebuild(obj: type[BM], **kwargs: Any) -> None:
         obj.update_forward_refs(**kwargs)
 
     def model_construct(obj: type[BM], **kwargs: Any) -> BM:
         return obj.construct(**kwargs)
 
-    def pydantic_1_style_root_dict(cls: type[BM], values: dict) -> dict:  # type: ignore
+    def pydantic_1_style_root_dict(cls: type[BM], values: dict) -> dict:
         return values
 
-    def model_serializer(**kwargs):  # type: ignore
+    def model_serializer(**kwargs):
         return lambda f: f  # pragma: no cover
 
-    def field_serializer(*args, **kwargs):  # type: ignore
+    def field_serializer(*args, **kwargs):
         return lambda f: f  # pragma: no cover
 
     FROZEN = {"allow_mutation": False}
