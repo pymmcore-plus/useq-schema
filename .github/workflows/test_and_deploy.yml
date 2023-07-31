@@ -86,7 +86,7 @@ jobs:
         run: mmcore install
 
       - name: Test
-        run: pytest -v --color=yes -W ignore
+        run: pytest -v --color=yes -W default
         working-directory: pymmcore-plus-from-github
 
   test_pymmcore_widgets:
@@ -114,7 +114,7 @@ jobs:
         run: mmcore install
 
       - name: Test
-        run: pytest -v --color=yes -W ignore
+        run: pytest -v --color=yes -W default
         working-directory: pymmcore-widgets-from-github
 
   deploy:
