@@ -13,6 +13,7 @@ from useq._grid import (  # noqa: TCH001
 )
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent
+from useq._pydantic_compat import model_construct
 from useq._utils import AXES, Axis, _has_axes
 from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
@@ -168,8 +169,8 @@ def _iter_sequence(
         if position and position.name:
             event_kwargs["pos_name"] = position.name
         if channel:
-            event_kwargs["channel"] = EventChannel.construct(
-                config=channel.config, group=channel.group
+            event_kwargs["channel"] = model_construct(
+                EventChannel, config=channel.config, group=channel.group
             )
             if channel.exposure is not None:
                 event_kwargs["exposure"] = channel.exposure
@@ -220,11 +221,15 @@ def _iter_sequence(
             elif position.sequence is not None and position.sequence.autofocus_plan:
                 autofocus_plan = position.sequence.autofocus_plan
 
-        event = MDAEvent.construct(**event_kwargs)
+        event = model_construct(MDAEvent, **event_kwargs)
+        print(event.index)
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
+            print("af_event", af_event)
             if af_event:
                 yield af_event
+        else:
+            print("no plan")
         yield event
 
 

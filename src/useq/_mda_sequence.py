@@ -14,7 +14,13 @@ from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._position import Position
-from useq._pydantic_compat import field_validator, model_dump, model_validator
+from useq._pydantic_compat import (
+    field_validator,
+    model_construct,
+    model_dump,
+    model_validator,
+    pydantic_1_style_root_dict,
+)
 from useq._time import AnyTimePlan  # noqa: TCH001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TCH001
@@ -170,7 +176,7 @@ class MDASequence(UseqModel):
             if isinstance(v, Channel):
                 channels.append(v)
             elif isinstance(v, str):
-                channels.append(Channel.construct(config=v))
+                channels.append(model_construct(Channel, config=v))
             elif isinstance(v, dict):
                 channels.append(Channel(**v))
             else:
@@ -222,18 +228,23 @@ class MDASequence(UseqModel):
         return order
 
     @model_validator(mode="after")
-    def _validate_mda(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if "axis_order" in values:
-            values["axis_order"] = cls._check_order(
-                values["axis_order"],
-                z_plan=values.get("z_plan"),
-                stage_positions=values.get("stage_positions", ()),
-                channels=values.get("channels", ()),
-                grid_plan=values.get("grid_plan"),
-                autofocus_plan=values.get("autofocus_plan"),
+    def _validate_mda(cls, values: Any) -> Any:
+        # this strange bit here is to deal with the fact that in pydantic1
+        # root_validator after returned a dict of {field_name -> validated_value}
+        # but in pydantic2 it returns the complete validated model instance
+        _values = pydantic_1_style_root_dict(cls, values)
+
+        if "axis_order" in _values:
+            cls._check_order(
+                _values["axis_order"],
+                z_plan=_values.get("z_plan"),
+                stage_positions=_values.get("stage_positions", ()),
+                channels=_values.get("channels", ()),
+                grid_plan=_values.get("grid_plan"),
+                autofocus_plan=_values.get("autofocus_plan"),
             )
-        if "stage_positions" in values:
-            for p in values["stage_positions"]:
+        if "stage_positions" in _values:
+            for p in _values["stage_positions"]:
                 if hasattr(p, "sequence") and getattr(
                     p.sequence, "keep_shutter_open_across", None
                 ):  # pragma: no cover
@@ -260,7 +271,7 @@ class MDASequence(UseqModel):
         channels: Sequence[Channel] = (),
         grid_plan: Optional[AnyGridPlan] = None,
         autofocus_plan: Optional[AnyAutofocusPlan] = None,
-    ) -> str:
+    ) -> None:
         if (
             Axis.Z in order
             and Axis.POSITION in order
@@ -326,8 +337,6 @@ class MDASequence(UseqModel):
             for p in stage_positions:
                 if p.sequence is not None and p.sequence.autofocus_plan:
                     raise ValueError(err)
-
-        return order
 
     def __str__(self) -> str:
         return "Multi-Dimensional Acquisition ▶ " + ", ".join(self.sizes)

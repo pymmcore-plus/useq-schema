@@ -68,6 +68,7 @@ def test_autofocus(
     af_axes: tuple[str, ...],
     expected_af_indices: Iterable[int],
 ) -> None:
+    print()
     if af_axes:
         mda = mda.replace(autofocus_plan=AF.copy(update={"axes": af_axes}))
         assert isinstance(mda.autofocus_plan, AxesBasedAF)
@@ -75,8 +76,7 @@ def test_autofocus(
 
     actual = [i for i, e in enumerate(mda) if isinstance(e.action, HardwareAutofocus)]
     expected = list(expected_af_indices)
-    if expected != actual:
-        raise AssertionError(f"Expected AF indices at {expected} but got {actual}")
+    assert expected == actual, "Unexpected AF indices"
 
 
 def test_autofocus_z_pos() -> None:

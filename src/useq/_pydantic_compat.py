@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, MutableSequence, cast
+from typing import TYPE_CHECKING, Any, Callable, MutableSequence, TypeVar, cast
 
 import pydantic.version
 from pydantic import BaseModel
@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 PYDANTIC2 = pydantic.version.VERSION.startswith("2")
 
 __all__ = ["model_validator", "field_validator"]
+
+BM = TypeVar("BM", bound=BaseModel)
 
 if PYDANTIC2:
     from pydantic import functional_validators, model_validator
@@ -45,8 +47,17 @@ if PYDANTIC2:
     def model_dump(obj: BaseModel, **kwargs: Any) -> dict[str, Any]:
         return obj.model_dump(**kwargs)
 
-    def model_rebuild(obj: type[BaseModel], **kwargs: Any) -> BaseModel:
+    def model_rebuild(obj: type[BaseModel], **kwargs: Any) -> bool | None:
         return obj.model_rebuild(_types_namespace=kwargs)
+
+    def model_construct(obj: type[BM], **kwargs: Any) -> BM:
+        return obj.model_construct(**kwargs)
+
+    def pydantic_1_style_root_dict(cls: type[BM], values: BM) -> dict:
+        # deal with the fact that in pydantic1
+        # root_validator after returned a dict of {field_name -> validated_value}
+        # but in pydantic2 it returns the complete validated model instance
+        return {k: getattr(values, k) for k in cls.model_fields}
 
 else:
     from pydantic import root_validator, validator  # type: ignore
@@ -86,6 +97,12 @@ else:
 
     def model_rebuild(obj: type[type][BaseModel], **kwargs: Any) -> BaseModel:
         obj.update_forward_refs(**kwargs)
+
+    def model_construct(obj: type[BM], **kwargs: Any) -> BM:
+        return obj.construct(**kwargs)
+
+    def pydantic_1_style_root_dict(cls: type[BM], values: dict) -> dict:
+        return values
 
 
 def update_set_fields(self: BaseModel) -> None:
