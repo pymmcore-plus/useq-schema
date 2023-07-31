@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
@@ -17,14 +18,12 @@ from typing import (
 
 import numpy as np
 from pydantic import BaseModel
-from pydantic.error_wrappers import ErrorWrapper, ValidationError
-from pydantic.utils import ROOT_KEY
+
+from useq._pydantic_compat import PYDANTIC2, model_dump, model_fields
 
 if TYPE_CHECKING:
-    from pydantic.types import StrBytes
-
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
-
+    IncEx = set[int] | set[str] | dict[int, Any] | dict[str, Any] | None
 
 __all__ = ["UseqModel", "FrozenModel"]
 
@@ -33,11 +32,20 @@ _Y = TypeVar("_Y", bound="UseqModel")
 
 
 class FrozenModel(BaseModel):
-    class Config:
-        allow_population_by_field_name = True
-        extra = "ignore"
-        frozen = True
-        json_encoders: ClassVar[dict] = {MappingProxyType: dict}
+    if PYDANTIC2:
+        model_config = {
+            "populate_by_name": True,
+            "extra": "ignore",
+            "frozen": True,
+        }
+
+    else:
+
+        class Config:
+            allow_population_by_field_name = True
+            extra = "ignore"
+            frozen = True
+            json_encoders: ClassVar[dict] = {MappingProxyType: dict}
 
     def replace(self: _T, **kwargs: Any) -> _T:
         """Return a new instance replacing specified kwargs with new values.
@@ -50,112 +58,91 @@ class FrozenModel(BaseModel):
         will perform validation and casting on the new values, whereas `copy` assumes
         that all objects are valid and will not perform any validation or casting.
         """
-        state = self.dict(exclude={"uid"})
+        state = model_dump(self, exclude={"uid"})
         return type(self)(**{**state, **kwargs})
+
+    if PYDANTIC2:
+        # retain pydantic1's json method
+        def json(
+            self,
+            *,
+            indent: int | None = None,  # type: ignore
+            include: IncEx = None,
+            exclude: IncEx = None,  # type: ignore
+            by_alias: bool = False,
+            exclude_unset: bool = False,
+            exclude_defaults: bool = False,
+            exclude_none: bool = False,  # type: ignore
+            round_trip: bool = False,
+            warnings: bool = True,
+        ) -> str:
+            return super().model_dump_json(
+                indent=indent,
+                include=include,
+                exclude=exclude,
+                by_alias=by_alias,
+                exclude_unset=exclude_unset,
+                exclude_defaults=exclude_defaults,
+                exclude_none=exclude_none,
+                round_trip=round_trip,
+                warnings=warnings,
+            )
+
+        # we let this one be deprecated
+        # def dict()
+
+    elif not TYPE_CHECKING:
+        # Backport pydantic2 methods so that useq-0.1.0 can be used with pydantic1
+
+        def model_dump_json(self, **kwargs: Any) -> str:
+            """Backport of pydantic2's model_dump_json method."""
+            return self.json(**kwargs)
+
+        def model_dump(self, **kwargs: Any) -> dict[str, Any]:
+            """Backport of pydantic2's model_dump_json method."""
+            return self.dict(**kwargs)
 
 
 class UseqModel(FrozenModel):
     def __repr_args__(self) -> ReprArgs:
+        """Only show fields that are not None or equal to their default value."""
         return [
             (k, val)
             for k, val in super().__repr_args__()
-            if k in self.__fields__
+            if k in model_fields(self)
             and val
             != (
-                self.__fields__[k].default_factory()  # type: ignore
-                if self.__fields__[k].default_factory is not None
-                else self.__fields__[k].default
+                factory()
+                if (factory := model_fields(self)[k].default_factory) is not None
+                else model_fields(self)[k].default
             )
         ]
 
-    def __repr__(self) -> str:
-        """Repr, that only shows values that are changed form the defaults."""
-        from textwrap import indent
-
-        lines = []
-        for k, current in sorted(self.__repr_args__()):
-            if not k:
-                continue
-            f = self.__fields__[k]
-            default = (
-                self.__fields__[k].default_factory()  # type: ignore
-                if self.__fields__[k].default_factory is not None
-                else self.__fields__[k].default
-            )
-            if current != default:
-                lines.append(f"{f.name}={current!r},")
-        if len(lines) == 1:
-            body = lines[-1].rstrip(",")
-        elif lines:
-            body = "\n" + indent("\n".join(lines), "   ") + "\n"
-        else:
-            body = ""
-        return f"{self.__class__.__qualname__}({body})"
-
     @classmethod
-    def parse_raw(
-        cls: Type[_Y],
-        b: StrBytes,
-        *,
-        content_type: Optional[str] = None,
-        encoding: str = "utf8",
-        proto: Optional[str] = None,
-        allow_pickle: bool = False,
-    ) -> _Y:
-        if content_type is None:
-            assume_yaml = False
-        else:
-            assume_yaml = ("yaml" in content_type) or ("yml" in content_type)
-
-        if proto == "yaml" or assume_yaml:
+    def from_file(cls: Type[_Y], path: Union[str, Path]) -> _Y:
+        """Return an instance of this class from a file.  Supports JSON and YAML."""
+        path = Path(path)
+        if path.suffix in {".yaml", ".yml"}:
             import yaml
 
-            try:
-                obj = yaml.safe_load(b)
-            except Exception as e:
-                raise ValidationError([ErrorWrapper(e, loc=ROOT_KEY)], cls) from e
-            return cls.parse_obj(obj)
-        return super().parse_raw(
-            b,
-            content_type=content_type,  # type: ignore
-            encoding=encoding,
-            proto=proto,  # type: ignore
-            allow_pickle=allow_pickle,
-        )
+            obj = yaml.safe_load(path.read_bytes())
+        elif path.suffix == ".json":
+            import json
+
+            obj = json.loads(path.read_bytes())
+        else:  # pragma: no cover
+            raise ValueError(f"Unknown file type: {path.suffix}")
+
+        return cls.model_validate(obj) if PYDANTIC2 else cls.parse_obj(obj)
 
     @classmethod
-    def parse_file(
-        cls: Type[_Y],
-        path: Union[str, Path],
-        *,
-        content_type: Optional[str] = None,
-        encoding: str = "utf8",
-        proto: Optional[str] = None,
-        allow_pickle: bool = False,
-    ) -> _Y:
-        if encoding is None:
-            assume_yaml = False
-        elif content_type:
-            assume_yaml = ("yaml" in content_type) or ("yml" in content_type)
-        else:
-            assume_yaml = str(path).endswith((".yml", ".yaml"))
-
-        if proto == "yaml" or assume_yaml:
-            return cls.parse_raw(
-                Path(path).read_bytes(),
-                content_type=content_type or "application/yaml",
-                encoding=encoding,
-                proto="yaml",
-                allow_pickle=allow_pickle,
-            )
-
-        return super().parse_file(
-            path,
-            content_type=content_type,  # type: ignore
-            encoding=encoding,
-            proto=proto,  # type: ignore
-            allow_pickle=allow_pickle,
+    def parse_file(cls: Type[_Y], path: Union[str, Path], **kwargs: Any) -> _Y:
+        warnings.warn(  # pragma: no cover
+            "parse_file is deprecated. Use from_file instead.",
+            DeprecationWarning,
+            stacklevel=2,
         )
+        return cls.from_file(path)  # pragma: no cover
 
     def yaml(
         self,
@@ -193,7 +180,8 @@ class UseqModel(FrozenModel):
             np.floating, lambda dumper, d: dumper.represent_float(float(d))
         )
 
-        data = self.dict(
+        data = model_dump(
+            self,
             include=include,
             exclude=exclude,
             by_alias=by_alias,

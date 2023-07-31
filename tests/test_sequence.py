@@ -1,4 +1,5 @@
 import itertools
+import json
 from typing import Any, List, Sequence, Tuple
 
 import numpy as np
@@ -21,6 +22,7 @@ from useq import (
     ZRelativePositions,
 )
 from useq._grid import GridPosition
+from useq._pydantic_compat import PYDANTIC2
 
 _T = List[Tuple[Any, Sequence[float]]]
 
@@ -277,8 +279,13 @@ def test_combinations(
 
 @pytest.mark.parametrize("cls", [MDASequence, MDAEvent])
 def test_schema(cls: BaseModel) -> None:
-    assert cls.schema()
-    assert cls.schema_json()
+    if PYDANTIC2:
+        schema = cls.model_json_schema()
+        assert schema
+        assert json.dumps(schema)
+    else:
+        assert cls.schema()
+        assert cls.schema_json()
 
 
 def test_z_position() -> None:
@@ -384,3 +391,15 @@ def test_keep_shutter_open() -> None:
     for event in mda4:
         is_last_zt = bool(event.index["t"] == 1 and event.index["z"] == 1)
         assert event.keep_shutter_open != is_last_zt
+
+    # even though c is the last axis, and comes after g, because the grid happens
+    # on a subsequence shutter will be open across the grid for each position
+    subseq = MDASequence(grid_plan=GridRelative(rows=2, columns=2))
+    mda5 = MDASequence(
+        axis_order="pgc",
+        channels=["DAPI", "FITC"],
+        stage_positions=[Position(sequence=subseq)],
+        keep_shutter_open_across="g",
+    )
+    for event in mda5:
+        assert event.keep_shutter_open != (event.index["g"] == 3)

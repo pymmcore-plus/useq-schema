@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
+
 import numpy as np
 import pytest
 
 import useq
+from useq._pydantic_compat import PYDANTIC2
 
 
 def test_from_numpy() -> None:
@@ -141,3 +144,14 @@ def test_time_estimation_with_position_seqs(seq: useq.MDASequence) -> None:
     if not isinstance(expect, tuple):
         expect = (expect, False)
     assert _duration_exceeded(seq) == expect
+
+
+def test_pydantic_compat(mda1: useq.MDASequence) -> None:
+    # testing names of deprecated methods and cross-compatible API
+    assert mda1.json()
+    assert mda1.model_dump_json()
+
+    assert mda1.model_dump()
+    ctx = pytest.warns(DeprecationWarning) if PYDANTIC2 else nullcontext()
+    with ctx:  # type: ignore
+        assert mda1.dict()

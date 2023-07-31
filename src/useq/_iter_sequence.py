@@ -22,6 +22,7 @@ from useq._grid import (  # noqa: TCH001
 )
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent
+from useq._pydantic_compat import model_construct, model_copy
 from useq._utils import AXES, Axis, _has_axes
 from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
@@ -194,8 +195,8 @@ def _iter_sequence(
         if position and position.name:
             event_kwargs["pos_name"] = position.name
         if channel:
-            event_kwargs["channel"] = EventChannel.construct(
-                config=channel.config, group=channel.group
+            event_kwargs["channel"] = model_construct(
+                EventChannel, config=channel.config, group=channel.group
             )
             if channel.exposure is not None:
                 event_kwargs["exposure"] = channel.exposure
@@ -230,7 +231,7 @@ def _iter_sequence(
                 # if the sub-sequence does not have event_modifiers, we override it
                 # with the parent
                 if not sub_seq.event_modifiers:
-                    sub_seq = sub_seq.copy(update={"event_modifiers": modifiers})
+                    sub_seq = model_copy(sub_seq, update={"event_modifiers": modifiers})
 
                 # recurse into the sub-sequence
                 yield from _iter_sequence(
@@ -246,8 +247,11 @@ def _iter_sequence(
             elif position.sequence is not None and position.sequence.event_modifiers:
                 modifiers = position.sequence.event_modifiers
 
-        event = MDAEvent.construct(**event_kwargs)
+        event = model_construct(MDAEvent, **event_kwargs)
         yield event, modifiers
+
+
+# ###################### Helper functions ######################
 
 
 # ###################### Helper functions ######################

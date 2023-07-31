@@ -1,4 +1,5 @@
-from __future__ import annotations
+# don't add __future__.annotations here
+# pydantic2 isn't rebuilding the model correctly
 
 import warnings
 from types import MappingProxyType
@@ -9,7 +10,6 @@ from typing import (
     List,
     Mapping,
     NamedTuple,
-    NoReturn,
     Optional,
     Sequence,
     Tuple,
@@ -19,6 +19,7 @@ from pydantic import Field
 
 from useq._actions import AcquireImage, AnyAction
 from useq._base_model import UseqModel
+from useq._pydantic_compat import PYDANTIC2, field_serializer
 
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
@@ -67,8 +68,8 @@ class PropertyTuple(NamedTuple):
     property_value: Any
 
 
-def _readonly(self: object, *_: Any, **__: Any) -> NoReturn:
-    raise RuntimeError(f"Cannot modify {type(self).__name__}")
+def _float_or_none(v: Any) -> Optional[float]:
+    return float(v) if v is not None else v
 
 
 class MDAEvent(UseqModel):
@@ -138,14 +139,12 @@ class MDAEvent(UseqModel):
     x_pos: Optional[float] = None
     y_pos: Optional[float] = None
     z_pos: Optional[float] = None
-    sequence: Optional[MDASequence] = Field(default=None, repr=False)
+    sequence: Optional["MDASequence"] = Field(default=None, repr=False)
     properties: Optional[List[PropertyTuple]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage)
     keep_shutter_open: bool = False
 
-    # action
-    # keep shutter open between channels/steps
     @property
     def global_index(self) -> int:
         warnings.warn(
@@ -155,12 +154,7 @@ class MDAEvent(UseqModel):
         )
         return 0
 
-    def __repr_args__(self) -> ReprArgs:
-        d = self.__dict__.copy()
-        d.pop("sequence")
-        return list(d.items())
-
-    def to_pycromanager(self) -> PycroManagerEvent:
+    def to_pycromanager(self) -> "PycroManagerEvent":
         from useq.pycromanager import to_pycromanager
 
         warnings.warn(
@@ -171,3 +165,9 @@ class MDAEvent(UseqModel):
         )
 
         return to_pycromanager(self)
+
+    if PYDANTIC2:
+        _si = field_serializer("index", mode="plain")(lambda v: dict(v))
+        _sx = field_serializer("x_pos", mode="plain")(_float_or_none)
+        _sy = field_serializer("y_pos", mode="plain")(_float_or_none)
+        _sz = field_serializer("z_pos", mode="plain")(_float_or_none)

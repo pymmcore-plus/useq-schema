@@ -7,9 +7,10 @@ from functools import partial
 from typing import Any, Callable, Iterator, NamedTuple, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from pydantic import validator
+from pydantic import Field
 
 from useq._base_model import FrozenModel
+from useq._pydantic_compat import FROZEN, PYDANTIC2, field_validator
 
 
 class RelativeTo(Enum):
@@ -121,12 +122,21 @@ class _GridPlan(FrozenModel):
         Engines MAY override this even if provided.
     """
 
-    overlap: Tuple[float, float] = (0.0, 0.0)
-    mode: OrderMode = OrderMode.row_wise_snake
-    fov_width: Optional[float] = None
-    fov_height: Optional[float] = None
+    # Overriding FrozenModel to make fov_width and fov_height mutable.
+    if PYDANTIC2:
+        model_config = {"validate_assignment": True, "frozen": False}
+    else:
 
-    @validator("overlap", pre=True)
+        class Config:
+            validate_assignment = True
+            frozen = False
+
+    overlap: Tuple[float, float] = Field((0.0, 0.0), **FROZEN)  # type: ignore
+    mode: OrderMode = Field(OrderMode.row_wise_snake, **FROZEN)  # type: ignore
+    fov_width: Optional[float] = Field(None)
+    fov_height: Optional[float] = Field(None)
+
+    @field_validator("overlap", mode="before")
     def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
         with contextlib.suppress(TypeError, ValueError):
             v = float(v)
@@ -221,10 +231,11 @@ class GridFromEdges(_GridPlan):
         Right stage position of the bounding area
     """
 
-    top: float
-    left: float
-    bottom: float
-    right: float
+    # everything but fov_width and fov_height is immutable
+    top: float = Field(..., **FROZEN)  # type: ignore
+    left: float = Field(..., **FROZEN)  # type: ignore
+    bottom: float = Field(..., **FROZEN)  # type: ignore
+    right: float = Field(..., **FROZEN)  # type: ignore
 
     def _nrows(self, dy: float) -> int:
         total_height = abs(self.top - self.bottom) + dy
@@ -256,9 +267,10 @@ class GridRelative(_GridPlan):
         the top left corner is at the origin.
     """
 
-    rows: int
-    columns: int
-    relative_to: RelativeTo = RelativeTo.center
+    # everything but fov_width and fov_height is immutable
+    rows: int = Field(..., **FROZEN)  # type: ignore
+    columns: int = Field(..., **FROZEN)  # type: ignore
+    relative_to: RelativeTo = Field(RelativeTo.center, **FROZEN)  # type: ignore
 
     @property
     def is_relative(self) -> bool:

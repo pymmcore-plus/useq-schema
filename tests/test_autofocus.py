@@ -6,6 +6,7 @@ import pytest
 
 import useq
 from useq import AxesBasedAF, HardwareAutofocus, MDASequence
+from useq._pydantic_compat import model_copy
 
 ZRANGE2 = useq.ZRangeAround(range=2, step=1)
 ZPOS_30 = useq.Position(z=30.0)
@@ -18,10 +19,10 @@ TWO_CH_TWO_P_T = TWO_CH_TWO_P.replace(time_plan={"interval": 1, "loops": 2})
 NO_CH_ZSTACK = MDASequence(stage_positions=[ZPOS_30], z_plan=ZRANGE2)
 TWO_CH_ZSTACK = NO_CH_ZSTACK.replace(channels=["DAPI", "FITC"])
 AF = AxesBasedAF(autofocus_device_name="Z", autofocus_motor_offset=40, axes=())
-AF_C = AF.copy(update={"axes": ("c",)})
-AF_G = AF.copy(update={"axes": ("g",)})
-AF_P = AF.copy(update={"axes": ("p",)})
-AF_Z = AF.copy(update={"axes": ("z",)})
+AF_C = model_copy(AF, update={"axes": ("c",)})
+AF_G = model_copy(AF, update={"axes": ("g",)})
+AF_P = model_copy(AF, update={"axes": ("p",)})
+AF_Z = model_copy(AF, update={"axes": ("z",)})
 AF_SEQ_C = MDASequence(event_modifiers=[AF_C])
 SUB_P_AF_C = useq.Position(z=10, sequence=AF_SEQ_C)
 SUB_P_AF_G = useq.Position(z=10, sequence=MDASequence(event_modifiers=[AF_G]))
@@ -69,14 +70,13 @@ def test_autofocus(
     expected_af_indices: Iterable[int],
 ) -> None:
     if af_axes:
-        mda = mda.replace(event_modifiers=[AF.copy(update={"axes": af_axes})])
+        mda = mda.replace(event_modifiers=[model_copy(AF, update={"axes": af_axes})])
         assert isinstance(mda.event_modifiers[0], AxesBasedAF)
         assert mda.event_modifiers[0].axes == af_axes
 
     actual = [i for i, e in enumerate(mda) if isinstance(e.action, HardwareAutofocus)]
     expected = list(expected_af_indices)
-    if expected != actual:
-        raise AssertionError(f"Expected AF indices at {expected} but got {actual}")
+    assert expected == actual, "Unexpected AF indices"
 
 
 def test_autofocus_z_pos() -> None:
