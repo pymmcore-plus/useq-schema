@@ -28,7 +28,7 @@ jobs:
         include:
           - python-version: 3.11
             platform: ubuntu-latest
-            pydantic: "pydantic<2"
+            pydantic: "'pydantic<2'"
 
     steps:
       - name: Cancel Previous Runs

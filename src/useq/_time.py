@@ -31,7 +31,6 @@ class timedelta(datetime.timedelta):
         return datetime.timedelta(**v) if isinstance(v, dict) else parse_duration(v)
 
     @classmethod
-    @classmethod
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: Any
     ) -> "CoreSchema":
