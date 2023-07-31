@@ -119,12 +119,12 @@ class UseqModel(FrozenModel):
 
     @classmethod
     def parse_file(cls: Type[_Y], path: Union[str, Path], **kwargs: Any) -> _Y:
-        warnings.warn(
+        warnings.warn(  # pragma: no cover
             "parse_file is deprecated. Use from_file instead.",
             DeprecationWarning,
             stacklevel=2,
         )
-        return cls.from_file(path)
+        return cls.from_file(path)  # pragma: no cover
 
     def yaml(
         self,
