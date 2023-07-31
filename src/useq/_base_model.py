@@ -91,7 +91,8 @@ class FrozenModel(BaseModel):
         # we let this one be deprecated
         # def dict()
 
-    else:
+    elif not TYPE_CHECKING:
+        # Backport pydantic2 methods so that useq-0.1.0 can be used with pydantic1
 
         def model_dump_json(self, **kwargs: Any) -> str:
             """Backport of pydantic2's model_dump_json method."""
