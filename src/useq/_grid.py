@@ -131,8 +131,8 @@ class _GridPlan(FrozenModel):
             validate_assignment = True
             frozen = False
 
-    overlap: Tuple[float, float] = Field((0.0, 0.0), **FROZEN)
-    mode: OrderMode = Field(OrderMode.row_wise_snake, **FROZEN)
+    overlap: Tuple[float, float] = Field((0.0, 0.0), **FROZEN)  # type: ignore
+    mode: OrderMode = Field(OrderMode.row_wise_snake, **FROZEN)  # type: ignore
     fov_width: Optional[float] = Field(None)
     fov_height: Optional[float] = Field(None)
 
@@ -232,10 +232,10 @@ class GridFromEdges(_GridPlan):
     """
 
     # everything but fov_width and fov_height is immutable
-    top: float = Field(..., **FROZEN)
-    left: float = Field(..., **FROZEN)
-    bottom: float = Field(..., **FROZEN)
-    right: float = Field(..., **FROZEN)
+    top: float = Field(..., **FROZEN)  # type: ignore
+    left: float = Field(..., **FROZEN)  # type: ignore
+    bottom: float = Field(..., **FROZEN)  # type: ignore
+    right: float = Field(..., **FROZEN)  # type: ignore
 
     def _nrows(self, dy: float) -> int:
         total_height = abs(self.top - self.bottom) + dy
@@ -268,9 +268,9 @@ class GridRelative(_GridPlan):
     """
 
     # everything but fov_width and fov_height is immutable
-    rows: int = Field(..., **FROZEN)
-    columns: int = Field(..., **FROZEN)
-    relative_to: RelativeTo = Field(RelativeTo.center, **FROZEN)
+    rows: int = Field(..., **FROZEN)  # type: ignore
+    columns: int = Field(..., **FROZEN)  # type: ignore
+    relative_to: RelativeTo = Field(RelativeTo.center, **FROZEN)  # type: ignore
 
     @property
     def is_relative(self) -> bool:

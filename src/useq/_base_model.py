@@ -8,7 +8,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Mapping,
     Optional,
     Sequence,
     Tuple,
@@ -62,18 +61,6 @@ class FrozenModel(BaseModel):
         state = model_dump(self, exclude={"uid"})
         return type(self)(**{**state, **kwargs})
 
-    if PYDANTIC2:
-
-        def copy(
-            self,
-            *,
-            include: set | Mapping | None = None,
-            exclude: set | Mapping | None = None,
-            update: dict[str, Any] | None = None,
-            deep: bool = False,
-        ):
-            return self.model_copy(update=update, deep=deep)
-
 
 class UseqModel(FrozenModel):
     def __repr_args__(self) -> ReprArgs:
@@ -115,6 +102,7 @@ class UseqModel(FrozenModel):
 
     @classmethod
     def from_file(cls: Type[_Y], path: Union[str, Path]) -> _Y:
+        """Return an instance of this class from a file.  Supports JSON and YAML."""
         path = Path(path)
         if path.suffix in {".yaml", ".yml"}:
             import yaml
@@ -130,7 +118,7 @@ class UseqModel(FrozenModel):
         return cls.model_validate(obj) if PYDANTIC2 else cls.parse_obj(obj)
 
     @classmethod
-    def parse_file(cls: Type[_Y], path: Union[str, Path], *args, **kwargs) -> _Y:
+    def parse_file(cls: Type[_Y], path: Union[str, Path], **kwargs: Any) -> _Y:
         warnings.warn(
             "parse_file is deprecated. Use from_file instead.",
             DeprecationWarning,

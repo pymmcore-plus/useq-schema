@@ -31,7 +31,7 @@ if PYDANTIC2:
     def model_dump(obj: BaseModel, **kwargs: Any) -> dict[str, Any]:
         return obj.model_dump(**kwargs)
 
-    def model_dump_json(obj: BaseModel, **kwargs: Any) -> dict[str, Any]:
+    def model_dump_json(obj: BaseModel, **kwargs: Any) -> str:
         return obj.model_dump_json(**kwargs)
 
     def model_rebuild(obj: type[BaseModel], **kwargs: Any) -> bool | None:
@@ -39,6 +39,9 @@ if PYDANTIC2:
 
     def model_construct(obj: type[BM], **kwargs: Any) -> BM:
         return obj.model_construct(**kwargs)
+
+    def model_copy(obj: BM, **kwargs: Any) -> BM:
+        return obj.model_copy(**kwargs)
 
     def pydantic_1_style_root_dict(cls: type[BM], values: BM) -> dict:
         # deal with the fact that in pydantic1
@@ -49,7 +52,7 @@ if PYDANTIC2:
     FROZEN = {"frozen": True}
 
 else:
-    from pydantic import root_validator, validator  # type: ignore
+    from pydantic import root_validator, validator
 
     def model_fields(  # type: ignore
         obj: BaseModel | type[BaseModel],
@@ -70,22 +73,25 @@ else:
     def model_dump(obj: BaseModel, **kwargs: Any) -> dict[str, Any]:
         return obj.dict(**kwargs)
 
-    def model_dump_json(obj: BaseModel, **kwargs: Any) -> dict[str, Any]:
+    def model_copy(obj: BM, **kwargs: Any) -> BM:
+        return obj.copy(**kwargs)
+
+    def model_dump_json(obj: BaseModel, **kwargs: Any) -> str:
         return obj.json(**kwargs)
 
-    def model_rebuild(obj: type[BM], **kwargs: Any) -> BaseModel:
+    def model_rebuild(obj: type[BM], **kwargs: Any) -> None:  # type: ignore
         obj.update_forward_refs(**kwargs)
 
     def model_construct(obj: type[BM], **kwargs: Any) -> BM:
         return obj.construct(**kwargs)
 
-    def pydantic_1_style_root_dict(cls: type[BM], values: dict) -> dict:
+    def pydantic_1_style_root_dict(cls: type[BM], values: dict) -> dict:  # type: ignore
         return values
 
-    def model_serializer(**kwargs):
+    def model_serializer(**kwargs):  # type: ignore
         return lambda f: f
 
-    def field_serializer(*args, **kwargs):
+    def field_serializer(*args, **kwargs):  # type: ignore
         return lambda f: f
 
     FROZEN = {"allow_mutation": False}

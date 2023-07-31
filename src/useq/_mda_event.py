@@ -175,5 +175,5 @@ class MDAEvent(UseqModel):
         return to_pycromanager(self)
 
     @field_serializer("index", mode="plain", when_used="json")
-    def f(self, v: Any):
+    def f(self, v: Any) -> Dict[str, int]:
         return dict(v)

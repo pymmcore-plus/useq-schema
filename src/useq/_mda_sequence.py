@@ -228,6 +228,7 @@ class MDASequence(UseqModel):
         return order
 
     @model_validator(mode="after")
+    @classmethod
     def _validate_mda(cls, values: Any) -> Any:
         # this strange bit here is to deal with the fact that in pydantic1
         # root_validator after returned a dict of {field_name -> validated_value}

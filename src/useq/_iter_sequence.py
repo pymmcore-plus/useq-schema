@@ -13,7 +13,7 @@ from useq._grid import (  # noqa: TCH001
 )
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent
-from useq._pydantic_compat import model_construct
+from useq._pydantic_compat import model_construct, model_copy
 from useq._utils import AXES, Axis, _has_axes
 from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
@@ -100,7 +100,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
             for axis, idx in this_e.index.items()
             if idx != next_e.index[axis]
         ):
-            this_e = this_e.copy(update={"keep_shutter_open": True})
+            this_e = model_copy(this_e, update={"keep_shutter_open": True})
         yield this_e
         this_e = next_e
     yield this_e
@@ -205,7 +205,9 @@ def _iter_sequence(
                 # if the sub-sequence doe not have an autofocus plan, we override it
                 # with the parent sequence's autofocus plan
                 if not sub_seq.autofocus_plan:
-                    sub_seq = sub_seq.copy(update={"autofocus_plan": autofocus_plan})
+                    sub_seq = model_copy(
+                        sub_seq, update={"autofocus_plan": autofocus_plan}
+                    )
 
                 # recurse into the sub-sequence
                 yield from _iter_sequence(
