@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, Optional
+from typing import Optional
 
 from pydantic import Field
 
-from useq import _mda_event
 from useq._base_model import FrozenModel
 
 
@@ -41,20 +40,3 @@ class Channel(FrozenModel):
     z_offset: float = 0.0
     acquire_every: int = Field(default=1, gt=0)  # acquire every n frames
     camera: Optional[str] = None
-
-    @classmethod
-    def __get_validators__(cls) -> Generator[Callable, None, None]:
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: Any) -> Channel:
-        if isinstance(value, Channel):
-            return value
-        if isinstance(value, str):
-            return Channel.construct(config=value)
-        if isinstance(value, dict):
-            return Channel(**value)
-        raise TypeError(f"invalid Channel argument: {value!r}")
-
-    def to_event_channel(self) -> _mda_event.Channel:
-        return _mda_event.Channel.construct(config=self.config, group=self.group)

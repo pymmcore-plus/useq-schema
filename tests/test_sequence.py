@@ -1,4 +1,5 @@
 import itertools
+import json
 from typing import Any, List, Sequence, Tuple
 
 import numpy as np
@@ -21,6 +22,7 @@ from useq import (
     ZRelativePositions,
 )
 from useq._grid import GridPosition
+from useq._pydantic_compat import PYDANTIC2
 
 _T = List[Tuple[Any, Sequence[float]]]
 
@@ -277,8 +279,13 @@ def test_combinations(
 
 @pytest.mark.parametrize("cls", [MDASequence, MDAEvent])
 def test_schema(cls: BaseModel) -> None:
-    assert cls.schema()
-    assert cls.schema_json()
+    if PYDANTIC2:
+        schema = cls.model_json_schema()
+        assert schema
+        assert json.dumps(schema)
+    else:
+        assert cls.schema()
+        assert cls.schema_json()
 
 
 def test_z_position() -> None:

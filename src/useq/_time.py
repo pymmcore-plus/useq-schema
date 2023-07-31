@@ -1,12 +1,26 @@
 import datetime
-from typing import Any, Callable, Generator, Iterator, Sequence, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterator,
+    Sequence,
+    Union,
+)
 
 from pydantic import Field
-from pydantic.datetime_parse import parse_duration
 
 from useq._base_model import FrozenModel
+from useq._utils import parse_duration
+
+if TYPE_CHECKING:
+    from pydantic_core import CoreSchema, core_schema
 
 
+# FIXME: please!!
+# This is a gross amalgamation of fixes that tries to work with both pydantic1 and 2
 class timedelta(datetime.timedelta):
     @classmethod
     def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
@@ -15,6 +29,31 @@ class timedelta(datetime.timedelta):
     @classmethod
     def validate(cls, v: Any) -> datetime.timedelta:
         return datetime.timedelta(**v) if isinstance(v, dict) else parse_duration(v)
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: Any
+    ) -> "CoreSchema":
+        from pydantic_core.core_schema import (
+            no_info_plain_validator_function,
+            plain_serializer_function_ser_schema,
+        )
+
+        serializer = plain_serializer_function_ser_schema(
+            cls._serialize, when_used="json"
+        )
+
+        return no_info_plain_validator_function(cls.validate, serialization=serializer)
+
+    @classmethod
+    def _serialize(cls, v: datetime.timedelta) -> float:
+        return v.total_seconds()
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: "core_schema.CoreSchema", handler: Any
+    ) -> Dict[str, Any]:
+        return {"type": "number", "format": "float"}
 
 
 class TimePlan(FrozenModel):

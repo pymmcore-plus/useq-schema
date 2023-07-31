@@ -10,7 +10,7 @@ from useq import MDASequence
 def test_serialization(mda1: MDASequence, ext: str) -> None:
     FILE = Path(__file__).parent / "fixtures" / f"mda.{ext}"
     text = FILE.read_text()
-    mda = MDASequence.parse_file(str(FILE))
+    mda = MDASequence.from_file(str(FILE))
     assert mda == mda1
     if ext == "json":
         assert json.loads(mda.json(exclude={"uid"})) == json.loads(text)
@@ -19,4 +19,7 @@ def test_serialization(mda1: MDASequence, ext: str) -> None:
 
     it = iter(mda)
     for _ in range(20):
-        assert getattr(next(it), ext)()
+        if ext == "json":
+            assert next(it).json()
+        else:
+            assert next(it).yaml()

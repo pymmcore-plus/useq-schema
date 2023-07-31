@@ -5,6 +5,7 @@ from pydantic import PrivateAttr
 from useq._actions import HardwareAutofocus
 from useq._base_model import FrozenModel
 from useq._mda_event import MDAEvent
+from useq._pydantic_compat import model_copy
 
 
 class AutoFocusPlan(FrozenModel):
@@ -45,7 +46,7 @@ class AutoFocusPlan(FrozenModel):
             if zplan and zplan.is_relative and "z" in event.index:
                 updates["z_pos"] = event.z_pos - list(zplan)[event.index["z"]]
 
-        return event.copy(update=updates)
+        return model_copy(event, update=updates)
 
     def should_autofocus(self, event: MDAEvent) -> bool:
         """Method that must be implemented by a subclass.
