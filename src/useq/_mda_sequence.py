@@ -25,8 +25,6 @@ from useq._time import AnyTimePlan  # noqa: TCH001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TCH001
 
-Undefined = object()
-
 if TYPE_CHECKING:
     from useq._mda_event import MDAEvent
     from useq.pycromanager import PycroManagerEvent
