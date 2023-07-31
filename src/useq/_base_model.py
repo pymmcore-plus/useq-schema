@@ -88,6 +88,9 @@ class FrozenModel(BaseModel):
                 warnings=warnings,
             )
 
+        # we let this one be deprecated
+        # def dict()
+
     else:
 
         def model_dump_json(self, **kwargs: Any) -> str:
