@@ -18,10 +18,11 @@ from typing import (
 
 import numpy as np
 from pydantic import BaseModel
-
-from useq._pydantic_compat import PYDANTIC2, model_dump, model_fields
+from pydantic_compat import PydanticCompatMixin
 
 if TYPE_CHECKING:
+    from pydantic import ConfigDict
+
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
     IncEx = set[int] | set[str] | dict[int, Any] | dict[str, Any] | None
 
@@ -31,21 +32,13 @@ _T = TypeVar("_T", bound="FrozenModel")
 _Y = TypeVar("_Y", bound="UseqModel")
 
 
-class FrozenModel(BaseModel):
-    if PYDANTIC2:
-        model_config = {
-            "populate_by_name": True,
-            "extra": "ignore",
-            "frozen": True,
-        }
-
-    else:
-
-        class Config:
-            allow_population_by_field_name = True
-            extra = "ignore"
-            frozen = True
-            json_encoders: ClassVar[dict] = {MappingProxyType: dict}
+class FrozenModel(PydanticCompatMixin, BaseModel):
+    model_config: ClassVar[ConfigDict] = {
+        "populate_by_name": True,
+        "extra": "ignore",
+        "frozen": True,
+        "json_encoders": {MappingProxyType: dict},
+    }
 
     def replace(self: _T, **kwargs: Any) -> _T:
         """Return a new instance replacing specified kwargs with new values.
@@ -58,49 +51,8 @@ class FrozenModel(BaseModel):
         will perform validation and casting on the new values, whereas `copy` assumes
         that all objects are valid and will not perform any validation or casting.
         """
-        state = model_dump(self, exclude={"uid"})
+        state = self.model_dump(exclude={"uid"})
         return type(self)(**{**state, **kwargs})
-
-    if PYDANTIC2:
-        # retain pydantic1's json method
-        def json(
-            self,
-            *,
-            indent: int | None = None,  # type: ignore
-            include: IncEx = None,
-            exclude: IncEx = None,  # type: ignore
-            by_alias: bool = False,
-            exclude_unset: bool = False,
-            exclude_defaults: bool = False,
-            exclude_none: bool = False,  # type: ignore
-            round_trip: bool = False,
-            warnings: bool = True,
-        ) -> str:
-            return super().model_dump_json(
-                indent=indent,
-                include=include,
-                exclude=exclude,
-                by_alias=by_alias,
-                exclude_unset=exclude_unset,
-                exclude_defaults=exclude_defaults,
-                exclude_none=exclude_none,
-                round_trip=round_trip,
-                warnings=warnings,
-            )
-
-        # we let this one be deprecated
-        # def dict()
-
-    elif not TYPE_CHECKING:
-        # Backport pydantic2 methods so that useq-0.1.0 can be used with pydantic1
-
-        def model_dump_json(self, **kwargs: Any) -> str:
-            """Backport of pydantic2's model_dump_json method."""
-            return self.json(**kwargs)
-
-        def model_dump(self, **kwargs: Any) -> dict[str, Any]:
-            """Backport of pydantic2's model_dump_json method."""
-            return self.dict(**kwargs)
 
 
 class UseqModel(FrozenModel):
@@ -109,12 +61,12 @@ class UseqModel(FrozenModel):
         return [
             (k, val)
             for k, val in super().__repr_args__()
-            if k in model_fields(self)
+            if k in self.model_fields
             and val
             != (
                 factory()
-                if (factory := model_fields(self)[k].default_factory) is not None
-                else model_fields(self)[k].default
+                if (factory := self.model_fields[k].default_factory) is not None
+                else self.model_fields[k].default
             )
         ]
 
@@ -133,7 +85,7 @@ class UseqModel(FrozenModel):
         else:  # pragma: no cover
             raise ValueError(f"Unknown file type: {path.suffix}")
 
-        return cls.model_validate(obj) if PYDANTIC2 else cls.parse_obj(obj)
+        return cls.model_validate(obj)
 
     @classmethod
     def parse_file(cls: Type[_Y], path: Union[str, Path], **kwargs: Any) -> _Y:
@@ -180,8 +132,7 @@ class UseqModel(FrozenModel):
             np.floating, lambda dumper, d: dumper.represent_float(float(d))
         )
 
-        data = model_dump(
-            self,
+        data = self.model_dump(
             include=include,
             exclude=exclude,
             by_alias=by_alias,

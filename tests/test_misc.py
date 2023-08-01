@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from contextlib import nullcontext
-
 import numpy as np
 import pytest
 
 import useq
-from useq._pydantic_compat import PYDANTIC2
 
 
 def test_from_numpy() -> None:
@@ -152,6 +149,4 @@ def test_pydantic_compat(mda1: useq.MDASequence) -> None:
     assert mda1.model_dump_json()
 
     assert mda1.model_dump()
-    ctx = pytest.warns(DeprecationWarning) if PYDANTIC2 else nullcontext()
-    with ctx:  # type: ignore
-        assert mda1.dict()
+    assert mda1.dict()

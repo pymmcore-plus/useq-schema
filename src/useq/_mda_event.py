@@ -19,7 +19,11 @@ from pydantic import Field
 
 from useq._actions import AcquireImage, AnyAction
 from useq._base_model import UseqModel
-from useq._pydantic_compat import PYDANTIC2, field_serializer
+
+try:
+    from pydantic import field_serializer
+except ImportError:
+    field_serializer = None  # type: ignore
 
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
@@ -166,7 +170,7 @@ class MDAEvent(UseqModel):
 
         return to_pycromanager(self)
 
-    if PYDANTIC2:
+    if field_serializer is not None:
         _si = field_serializer("index", mode="plain")(lambda v: dict(v))
         _sx = field_serializer("x_pos", mode="plain")(_float_or_none)
         _sy = field_serializer("y_pos", mode="plain")(_float_or_none)

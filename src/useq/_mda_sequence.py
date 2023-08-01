@@ -7,6 +7,7 @@ from warnings import warn
 
 import numpy as np
 from pydantic import Field, PrivateAttr
+from pydantic_compat import field_validator, model_validator
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
@@ -14,13 +15,6 @@ from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._position import Position
-from useq._pydantic_compat import (
-    field_validator,
-    model_construct,
-    model_dump,
-    model_validator,
-    pydantic_1_style_root_dict,
-)
 from useq._time import AnyTimePlan  # noqa: TCH001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TCH001
@@ -176,7 +170,7 @@ class MDASequence(UseqModel):
             if isinstance(v, Channel):
                 channels.append(v)
             elif isinstance(v, str):
-                channels.append(model_construct(Channel, config=v))
+                channels.append(Channel.model_construct(config=v))
             elif isinstance(v, dict):
                 channels.append(Channel(**v))
             else:  # pragma: no cover
@@ -230,22 +224,17 @@ class MDASequence(UseqModel):
     @model_validator(mode="after")
     @classmethod
     def _validate_mda(cls, values: Any) -> Any:
-        # this strange bit here is to deal with the fact that in pydantic1
-        # root_validator after returned a dict of {field_name -> validated_value}
-        # but in pydantic2 it returns the complete validated model instance
-        _values = pydantic_1_style_root_dict(cls, values)
-
-        if "axis_order" in _values:
+        if values.axis_order:
             cls._check_order(
-                _values["axis_order"],
-                z_plan=_values.get("z_plan"),
-                stage_positions=_values.get("stage_positions", ()),
-                channels=_values.get("channels", ()),
-                grid_plan=_values.get("grid_plan"),
-                autofocus_plan=_values.get("autofocus_plan"),
+                values.axis_order,
+                z_plan=values.z_plan,
+                stage_positions=values.stage_positions,
+                channels=values.channels,
+                grid_plan=values.grid_plan,
+                autofocus_plan=values.autofocus_plan,
             )
-        if "stage_positions" in _values:
-            for p in _values["stage_positions"]:
+        if values.stage_positions:
+            for p in values.stage_positions:
                 if hasattr(p, "sequence") and getattr(
                     p.sequence, "keep_shutter_open_across", None
                 ):  # pragma: no cover
@@ -259,7 +248,7 @@ class MDASequence(UseqModel):
         """Return `True` if two `MDASequences` are equal (uid is excluded)."""
         if isinstance(other, MDASequence):
             return bool(
-                model_dump(self, exclude={"uid"}) == model_dump(other, exclude={"uid"})
+                self.model_dump(exclude={"uid"}) == other.model_dump(exclude={"uid"})
             )
         else:
             return False
