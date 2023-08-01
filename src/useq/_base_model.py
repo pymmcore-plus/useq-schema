@@ -18,9 +18,7 @@ from typing import (
 
 import numpy as np
 from pydantic import BaseModel
-from pydantic_compat import PydanticCompatMixin
-
-from useq._pydantic_compat import PYDANTIC2
+from pydantic_compat import PYDANTIC2, PydanticCompatMixin
 
 if TYPE_CHECKING:
     ReprArgs = Sequence[Tuple[Optional[str], Any]]

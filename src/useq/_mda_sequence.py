@@ -7,6 +7,7 @@ from warnings import warn
 
 import numpy as np
 from pydantic import Field, PrivateAttr
+from pydantic_compat import field_validator, model_validator
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
@@ -14,11 +15,7 @@ from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._position import Position
-from useq._pydantic_compat import (
-    field_validator,
-    model_validator,
-    pydantic_1_style_root_dict,
-)
+from useq._pydantic_compat import pydantic_1_style_root_dict
 from useq._time import AnyTimePlan  # noqa: TCH001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TCH001

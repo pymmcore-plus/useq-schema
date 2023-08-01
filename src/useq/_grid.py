@@ -8,9 +8,10 @@ from typing import Any, Callable, Iterator, NamedTuple, Optional, Sequence, Tupl
 
 import numpy as np
 from pydantic import Field
+from pydantic_compat import PYDANTIC2, field_validator
 
 from useq._base_model import FrozenModel
-from useq._pydantic_compat import FROZEN, PYDANTIC2, field_validator
+from useq._pydantic_compat import FROZEN
 
 
 class RelativeTo(Enum):
