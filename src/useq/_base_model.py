@@ -33,9 +33,9 @@ _Y = TypeVar("_Y", bound="UseqModel")
 
 
 class FrozenModel(PydanticCompatMixin, BaseModel):
-    model_config: ClassVar[ConfigDict] = {  # type: ignore
+    model_config: ClassVar[ConfigDict] = {
         "populate_by_name": True,
-        "extra": "ignore",  # type: ignore
+        "extra": "ignore",
         "frozen": True,
         "json_encoders": {MappingProxyType: dict},
     }

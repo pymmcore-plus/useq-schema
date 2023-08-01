@@ -223,7 +223,7 @@ class MDASequence(UseqModel):
 
     @model_validator(mode="after")
     @classmethod
-    def _validate_mda(cls, values: MDASequence) -> MDASequence:
+    def _validate_mda(cls, values: Any) -> Any:
         if values.axis_order:
             cls._check_order(
                 values.axis_order,

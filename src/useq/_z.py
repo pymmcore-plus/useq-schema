@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Callable, Iterator, List, Sequence, Union
+from typing import Callable, Iterator, List, Sequence, Union
 
 import numpy as np
 from pydantic_compat import field_validator
@@ -9,7 +9,7 @@ from pydantic_compat import field_validator
 from useq._base_model import FrozenModel
 
 
-def _list_cast(field: str) -> Callable[[Any], Any]:
+def _list_cast(field: str) -> Callable:
     v = field_validator(field, mode="before", check_fields=False)
     return v(list)
 
