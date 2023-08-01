@@ -10,8 +10,8 @@ from pydantic import Field, PrivateAttr
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
+from useq._event_modifiers import AxesBasedAF, EventModifier
 from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
-from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._position import Position
 from useq._pydantic_compat import (
@@ -64,15 +64,8 @@ class MDASequence(UseqModel):
     uid : UUID
         A read-only unique identifier (uuid version 4) for the sequence. This will be
         generated, do not set.
-    autofocus_plan : AxesBasedAF | None
-        The hardware autofocus plan to follow. One of `AxesBasedAF` or `None`.
-    keep_shutter_open_across : tuple[str, ...]
-        A tuple of axes `str` across which the illumination shutter should be kept open.
-        Resulting events will have `keep_shutter_open` set to `True` if and only if
-        ALL axes whose indices are changing are in this tuple. For example, if
-        `keep_shutter_open_across=('z',)`, then the shutter would be kept open between
-        events axes {'t': 0, 'z: 0} and {'t': 0, 'z': 1}, but not between
-        {'t': 0, 'z': 0} and {'t': 1, 'z': 0}.
+    event_modifiers: tuple[EventModifier, ...]
+
 
     Examples
     --------
@@ -116,8 +109,8 @@ class MDASequence(UseqModel):
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: Optional[AnyTimePlan] = None
     z_plan: Optional[AnyZPlan] = None
-    autofocus_plan: Optional[AnyAutofocusPlan] = None
-    keep_shutter_open_across: Tuple[str, ...] = Field(default_factory=tuple)
+
+    event_modifiers: Tuple[EventModifier, ...] = Field(default_factory=tuple)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _sizes: Optional[Dict[str, int]] = PrivateAttr(default=None)
@@ -271,8 +264,8 @@ class MDASequence(UseqModel):
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
         grid_plan: Optional[AnyGridPlan] = None,
-        autofocus_plan: Optional[AnyAutofocusPlan] = None,
-    ) -> None:
+        event_modifiers: Sequence[EventModifier] = (),
+    ) -> str:
         if (
             Axis.Z in order
             and Axis.POSITION in order
@@ -333,7 +326,7 @@ class MDASequence(UseqModel):
         # Cannot use autofocus plan with absolute z_plan
         if Axis.Z in order and z_plan and not z_plan.is_relative:
             err = "Absolute Z positions cannot be used with autofocus plan."
-            if isinstance(autofocus_plan, AxesBasedAF):
+            if any(isinstance(x, AxesBasedAF) for x in event_modifiers):
                 raise ValueError(err)
             for p in stage_positions:
                 if p.sequence is not None and p.sequence.autofocus_plan:
