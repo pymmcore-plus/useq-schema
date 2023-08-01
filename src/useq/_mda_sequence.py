@@ -16,8 +16,6 @@ from useq._iter_sequence import iter_sequence
 from useq._position import Position
 from useq._pydantic_compat import (
     field_validator,
-    model_construct,
-    model_dump,
     model_validator,
     pydantic_1_style_root_dict,
 )
@@ -176,7 +174,7 @@ class MDASequence(UseqModel):
             if isinstance(v, Channel):
                 channels.append(v)
             elif isinstance(v, str):
-                channels.append(model_construct(Channel, config=v))
+                channels.append(Channel.model_construct(config=v))
             elif isinstance(v, dict):
                 channels.append(Channel(**v))
             else:  # pragma: no cover
@@ -259,7 +257,7 @@ class MDASequence(UseqModel):
         """Return `True` if two `MDASequences` are equal (uid is excluded)."""
         if isinstance(other, MDASequence):
             return bool(
-                model_dump(self, exclude={"uid"}) == model_dump(other, exclude={"uid"})
+                self.model_dump(exclude={"uid"}) == other.model_dump(exclude={"uid"})
             )
         else:
             return False

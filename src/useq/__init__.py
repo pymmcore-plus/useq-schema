@@ -45,8 +45,6 @@ __all__ = [
     "ZTopBottom",
 ]
 
-from useq._pydantic_compat import model_rebuild
 
-model_rebuild(MDAEvent, MDASequence=MDASequence)
-model_rebuild(Position, MDASequence=MDASequence)
-del model_rebuild
+MDAEvent.model_rebuild(MDASequence=MDASequence)
+Position.model_rebuild(MDASequence=MDASequence)

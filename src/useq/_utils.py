@@ -4,8 +4,6 @@ import re
 from datetime import timedelta
 from typing import TYPE_CHECKING, Literal, NamedTuple, TypeVar
 
-from useq._pydantic_compat import model_copy
-
 if TYPE_CHECKING:
     from typing import Final
 
@@ -104,7 +102,7 @@ def estimate_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
                 for field in ("time_plan", "z_plan", "grid_plan", "channels")
                 if getattr(parent_seq, field) and not getattr(p.sequence, field)
             }
-            sub_seq = model_copy(p.sequence, update=updates)
+            sub_seq = p.sequence.model_copy(update=updates)
         estimate += _estimate_simple_sequence_duration(sub_seq)
     return estimate
 
