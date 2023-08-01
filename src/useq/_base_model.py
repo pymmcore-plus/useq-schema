@@ -18,9 +18,11 @@ from typing import (
 
 import numpy as np
 from pydantic import BaseModel
-from pydantic_compat import PYDANTIC2, PydanticCompatMixin
+from pydantic_compat import PydanticCompatMixin
 
 if TYPE_CHECKING:
+    from pydantic import ConfigDict
+
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
     IncEx = set[int] | set[str] | dict[int, Any] | dict[str, Any] | None
 
@@ -31,20 +33,12 @@ _Y = TypeVar("_Y", bound="UseqModel")
 
 
 class FrozenModel(PydanticCompatMixin, BaseModel):
-    if PYDANTIC2:
-        model_config = {
-            "populate_by_name": True,
-            "extra": "ignore",
-            "frozen": True,
-        }
-
-    else:
-
-        class Config:
-            allow_population_by_field_name = True
-            extra = "ignore"
-            frozen = True
-            json_encoders: ClassVar[dict] = {MappingProxyType: dict}
+    model_config: ClassVar[ConfigDict] = {  # type: ignore
+        "populate_by_name": True,
+        "extra": "ignore",  # type: ignore
+        "frozen": True,
+        "json_encoders": {MappingProxyType: dict},
+    }
 
     def replace(self: _T, **kwargs: Any) -> _T:
         """Return a new instance replacing specified kwargs with new values.

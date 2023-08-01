@@ -4,11 +4,21 @@ import contextlib
 import math
 from enum import Enum
 from functools import partial
-from typing import Any, Callable, Iterator, NamedTuple, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Iterator,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import numpy as np
-from pydantic import Field
-from pydantic_compat import PYDANTIC2, field_validator
+from pydantic import ConfigDict, Field
+from pydantic_compat import field_validator
 
 from useq._base_model import FrozenModel
 from useq._pydantic_compat import FROZEN
@@ -124,13 +134,7 @@ class _GridPlan(FrozenModel):
     """
 
     # Overriding FrozenModel to make fov_width and fov_height mutable.
-    if PYDANTIC2:
-        model_config = {"validate_assignment": True, "frozen": False}
-    else:
-
-        class Config:
-            validate_assignment = True
-            frozen = False
+    model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
 
     overlap: Tuple[float, float] = Field((0.0, 0.0), **FROZEN)  # type: ignore
     mode: OrderMode = Field(OrderMode.row_wise_snake, **FROZEN)  # type: ignore
