@@ -35,6 +35,6 @@ repos:
       - id: mypy
         additional_dependencies:
           - types-PyYAML
-          - pydantic>=2
-          - pydantic-compat
+          - pydantic >=2
+          - pydantic-compat >=0.0.4
         files: "^src/"
