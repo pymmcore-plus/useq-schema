@@ -46,5 +46,6 @@ __all__ = [
 ]
 
 
-MDAEvent.model_rebuild(MDASequence=MDASequence)
-Position.model_rebuild(MDASequence=MDASequence)
+# type ignores because pydantic-compat consumes the kwargs
+MDAEvent.model_rebuild(MDASequence=MDASequence)  # type: ignore  [call-arg]
+Position.model_rebuild(MDASequence=MDASequence)  # type: ignore  [call-arg]
