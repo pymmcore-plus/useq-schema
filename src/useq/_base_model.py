@@ -17,8 +17,7 @@ from typing import (
 )
 
 import numpy as np
-from pydantic import BaseModel
-from pydantic_compat import PydanticCompatMixin
+from pydantic_compat import BaseModel
 
 if TYPE_CHECKING:
     from pydantic import ConfigDict
@@ -32,7 +31,7 @@ _T = TypeVar("_T", bound="FrozenModel")
 _Y = TypeVar("_Y", bound="UseqModel")
 
 
-class FrozenModel(PydanticCompatMixin, BaseModel):
+class FrozenModel(BaseModel):
     model_config: ClassVar[ConfigDict] = {
         "populate_by_name": True,
         "extra": "ignore",
