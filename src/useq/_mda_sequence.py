@@ -329,7 +329,8 @@ class MDASequence(UseqModel):
                     raise ValueError(err)
 
     def __str__(self) -> str:
-        return "Multi-Dimensional Acquisition ▶ " + ", ".join(self.sizes)
+        sizes = ", ".join(f"n{k}={v}" for k, v in self.sizes.items() if v)
+        return f"Multi-Dimensional Acquisition with: {sizes}"
 
     @property
     def shape(self) -> Tuple[int, ...]:
