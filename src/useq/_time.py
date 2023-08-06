@@ -92,6 +92,10 @@ class TIntervalLoops(TimePlan):
     interval: timedelta
     loops: int = Field(..., gt=0)
 
+    @property
+    def duration(self) -> datetime.timedelta:
+        return self.interval * (self.loops - 1)
+
 
 class TDurationLoops(TimePlan):
     """Define temporal sequence using duration and number of loops.
