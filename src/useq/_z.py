@@ -28,11 +28,13 @@ class ZPlan(FrozenModel):
 
     def positions(self) -> Sequence[float]:
         start, stop, step = self._start_stop_step()
-        return list(np.arange(start, stop + step, step))
+        stop += step / 2  # make sure we include the last point
+        return list(np.arange(start, stop, step))
 
     def num_positions(self) -> int:
         start, stop, step = self._start_stop_step()
-        return math.ceil((stop + step - start) / step)
+        nsteps = (stop + step - start) / step
+        return math.ceil(round(nsteps, 6))
 
     @property
     def is_relative(self) -> bool:
@@ -49,9 +51,9 @@ class ZTopBottom(ZPlan):
     Attributes
     ----------
     top : float
-        Top position (inclusive).
+        Top position in microns (inclusive).
     bottom : float
-        Bottom position (inclusive).
+        Bottom position in microns (inclusive).
     step : float
         Step size in microns.
     go_up : bool
