@@ -28,11 +28,15 @@ class ZPlan(FrozenModel):
 
     def positions(self) -> Sequence[float]:
         start, stop, step = self._start_stop_step()
+        if step == 0:
+            return [start]
         stop += step / 2  # make sure we include the last point
         return list(np.arange(start, stop, step))
 
     def num_positions(self) -> int:
         start, stop, step = self._start_stop_step()
+        if step == 0:
+            return 1
         nsteps = (stop + step - start) / step
         return math.ceil(round(nsteps, 6))
 
