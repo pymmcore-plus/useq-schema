@@ -398,3 +398,10 @@ def test_keep_shutter_open() -> None:
     )
     for event in mda5:
         assert event.keep_shutter_open != (event.index["g"] == 3)
+
+
+def test_z_plan_num_position():
+    for i in range(1, 100):
+        plan = ZRangeAround(range=(i - 1) / 10, step=0.1)
+        assert plan.num_positions() == i
+        assert len(list(plan)) == i
