@@ -15,7 +15,7 @@ from typing import (
     Tuple,
 )
 
-from pydantic import Field
+from pydantic_compat import Field, field_validator
 
 from useq._actions import AcquireImage, AnyAction
 from useq._base_model import UseqModel
@@ -157,6 +157,10 @@ class MDAEvent(UseqModel):
             stacklevel=2,
         )
         return 0
+
+    @field_validator("channel", mode="before")
+    def _validate_channel(cls, val: Any) -> Any:
+        return Channel(config=val) if isinstance(val, str) else val
 
     def to_pycromanager(self) -> "PycroManagerEvent":
         from useq.pycromanager import to_pycromanager
