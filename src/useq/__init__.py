@@ -61,15 +61,13 @@ Position.model_rebuild(MDASequence=MDASequence)  # type: ignore  [call-arg]
 
 def __getattr__(name: str) -> Any:
     if name == "GridRelative":
-        import warnings
-
         from useq._grid import GridRowsColumns
 
-        warnings.warn(
-            "useq.GridRelative has been renamed to useq.GridFromEdges",
-            DeprecationWarning,
-            stacklevel=2,
-        )
+        # warnings.warn(
+        #     "useq.GridRelative has been renamed to useq.GridFromEdges",
+        #     DeprecationWarning,
+        #     stacklevel=2,
+        # )
 
         return GridRowsColumns
     raise AttributeError(f"module {__name__} has no attribute {name}")
