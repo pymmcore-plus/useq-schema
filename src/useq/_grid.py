@@ -259,7 +259,7 @@ class GridFromEdges(_GridPlan):
         return max(self.top, self.bottom)
 
 
-class GridRelative(_GridPlan):
+class GridRowsColumns(_GridPlan):
     """Yield relative delta increments to build a grid acquisition.
 
     Attributes
@@ -275,8 +275,8 @@ class GridRelative(_GridPlan):
     """
 
     # everything but fov_width and fov_height is immutable
-    rows: int = Field(..., frozen=True)
-    columns: int = Field(..., frozen=True)
+    rows: int = Field(..., frozen=True, ge=1)
+    columns: int = Field(..., frozen=True, ge=1)
     relative_to: RelativeTo = Field(RelativeTo.center, frozen=True)
 
     @property
@@ -302,4 +302,52 @@ class GridRelative(_GridPlan):
         )
 
 
-AnyGridPlan = Union[GridFromEdges, GridRelative]
+GridRelative = GridRowsColumns
+
+
+class GridWidthHeight(_GridPlan):
+    """Yield relative delta increments to build a grid acquisition.
+
+    Attributes
+    ----------
+    width: float
+        Minimum total width of the grid, in microns. (may be larger based on fov_width)
+    height: float
+        Minimum total height of the grid, in microns. (may be larger based on
+        fov_height)
+    relative_to : RelativeTo
+        Point in the grid to which the coordinates are relative. If "center", the grid
+        is centered around the origin. If "top_left", the grid is positioned such that
+        the top left corner is at the origin.
+    """
+
+    width: float = Field(..., frozen=True, gt=0)
+    height: float = Field(..., frozen=True, gt=0)
+    relative_to: RelativeTo = Field(RelativeTo.center, frozen=True)
+
+    @property
+    def is_relative(self) -> bool:
+        return True
+
+    def _nrows(self, dy: float) -> int:
+        return math.ceil(self.height / dy)
+
+    def _ncolumns(self, dx: float) -> int:
+        return math.ceil(self.width / dx)
+
+    def _offset_x(self, dx: float) -> float:
+        return (
+            -((self._ncolumns(dx) - 1) * dx) / 2
+            if self.relative_to == RelativeTo.center
+            else 0.0
+        )
+
+    def _offset_y(self, dy: float) -> float:
+        return (
+            ((self._nrows(dy) - 1) * dy) / 2
+            if self.relative_to == RelativeTo.center
+            else 0.0
+        )
+
+
+AnyGridPlan = Union[GridFromEdges, GridRowsColumns, GridWidthHeight]
