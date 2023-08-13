@@ -405,3 +405,7 @@ def test_z_plan_num_position():
         plan = ZRangeAround(range=(i - 1) / 10, step=0.1)
         assert plan.num_positions() == i
         assert len(list(plan)) == i
+
+
+def test_channel_str():
+    assert MDAEvent(channel="DAPI") == MDAEvent(channel={"config": "DAPI"})
