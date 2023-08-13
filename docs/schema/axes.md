@@ -57,10 +57,12 @@ Ways to describe a z-stack acquisition sequence.
 
 Ways to describe a grid acquisition sequence.
 
-::: useq.GridRelative
+::: useq.GridRowsColumns
     options:
         members: []
-
+::: useq.GridWidthHeight
+    options:
+        members: []
 ::: useq.GridFromEdges
     options:
         members: []
