@@ -1,6 +1,6 @@
 import pytest
 
-from useq import GridFromEdges, GridRelative
+from useq import GridFromEdges, GridRowsColumns, GridWidthHeight
 from useq._grid import OrderMode, _rect_indices, _spiral_indices
 
 EXPECT = {
@@ -39,26 +39,26 @@ def test_spiral_indices() -> None:
 
 def test_position_equality():
     """Order of grid positions should only change the order in which they are yielded"""
-    t1 = GridRelative(rows=3, columns=3, mode=OrderMode.spiral)
+    t1 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.spiral)
     spiral_pos = set(t1.iter_grid_positions(1, 1))
 
-    t2 = GridRelative(rows=3, columns=3, mode=OrderMode.row_wise)
+    t2 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.row_wise)
     row_pos = set(t2.iter_grid_positions(1, 1))
 
-    t3 = GridRelative(rows=3, columns=3, mode="row_wise_snake")
+    t3 = GridRowsColumns(rows=3, columns=3, mode="row_wise_snake")
     snake_row_pos = set(t3.iter_grid_positions(1, 1))
 
-    t4 = GridRelative(rows=3, columns=3, mode=OrderMode.column_wise)
+    t4 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.column_wise)
     col_pos = set(t4.iter_grid_positions(1, 1))
 
-    t5 = GridRelative(rows=3, columns=3, mode=OrderMode.column_wise_snake)
+    t5 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.column_wise_snake)
     snake_col_pos = set(t5.iter_grid_positions(1, 1))
 
     assert spiral_pos == row_pos == snake_row_pos == col_pos == snake_col_pos
 
 
 def test_grid_type():
-    g1 = GridRelative(rows=2, columns=3)
+    g1 = GridRowsColumns(rows=2, columns=3)
     assert [(g.x, g.y) for g in g1.iter_grid_positions(1, 1)] == [
         (-1.0, 0.5),
         (0.0, 0.5),
@@ -67,8 +67,19 @@ def test_grid_type():
         (0.0, -0.5),
         (-1.0, -0.5),
     ]
-    g2 = GridFromEdges(top=1, left=-1, bottom=-1, right=2)
-    assert [(g.x, g.y) for g in g2.iter_grid_positions(1, 1)] == [
+    assert g1.is_relative
+    g2 = GridWidthHeight(width=3, height=2, fov_height=1, fov_width=1)
+    assert [(g.x, g.y) for g in g2.iter_grid_positions()] == [
+        (-1.0, 0.5),
+        (0.0, 0.5),
+        (1.0, 0.5),
+        (1.0, -0.5),
+        (0.0, -0.5),
+        (-1.0, -0.5),
+    ]
+    assert g2.is_relative
+    g3 = GridFromEdges(top=1, left=-1, bottom=-1, right=2)
+    assert [(g.x, g.y) for g in g3.iter_grid_positions(1, 1)] == [
         (-1.0, 1.0),
         (0.0, 1.0),
         (1.0, 1.0),
@@ -82,6 +93,7 @@ def test_grid_type():
         (1.0, -1.0),
         (2.0, -1.0),
     ]
+    assert not g3.is_relative
 
 
 def test_num_position_error() -> None:
