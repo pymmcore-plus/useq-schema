@@ -66,3 +66,6 @@ class RandomPoints(FrozenModel):
             area.center.y - (area.height / 2), area.center.y + (area.height / 2)
         )
         return Point(x, y)
+
+    def __iter__(self) -> Iterator[Point]:  # type: ignore
+        yield from self.iterate_random_points()
