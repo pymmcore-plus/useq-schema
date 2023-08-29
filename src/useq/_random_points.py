@@ -53,9 +53,9 @@ class RandomPoints(FrozenModel):
 
         The point is within the bounding box (-width/2, -height/2, width/2, height/2)
         """
-        np.random.seed(seed + 1 if seed is not None else None)
+        np.random.seed(seed)
         x = np.random.uniform(-self.area_width / 2, self.area_width / 2)
-        np.random.seed(seed + 2 if seed is not None else None)
+        np.random.seed(seed + 1 if seed is not None else None)
         y = np.random.uniform(-self.area_height / 2, self.area_height / 2)
         return Point(x, y)
 
