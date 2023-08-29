@@ -14,21 +14,11 @@ class Point(NamedTuple):
     y: float
 
 
-class RandomArea(NamedTuple):
-    x: float
-    y: float
-    width: float
-    height: float
-
-    @property
-    def center(self) -> Point:
-        return Point(self.x + (self.width / 2), self.y + (self.height / 2))
-
-
 class RandomPoints(FrozenModel):
     circular: bool
     nFOV: int
-    area: RandomArea
+    area_width: float
+    area_height: float
     random_seed: Optional[Union[int, None]] = Field(None)
 
     def iterate_random_points(self) -> Iterator[Point]:
@@ -39,32 +29,34 @@ class RandomPoints(FrozenModel):
             seed = self.random_seed + fov if self.random_seed is not None else None
 
             yield (
-                self._random_point_in_circle(self.area, seed)
+                self._random_point_in_circle(seed)
                 if self.circular
-                else self._random_point_in_rectangle(self.area, seed)
+                else self._random_point_in_rectangle(seed)
             )
 
-    def _random_point_in_circle(self, area: RandomArea, seed: int | None) -> Point:
-        """Generate a random point around the center of a circle."""
-        radius = area.width / 2
+    def _random_point_in_circle(self, seed: int | None) -> Point:
+        """Generate a random point around a circle with center (0, 0).
+
+        The point is within the bounding box (-radius, -radius, radius, radius)
+        """
+        radius = self.area_width / 2
         np.random.seed(seed)
         angle = np.random.uniform(0, 2 * math.pi)
-        np.random.seed(seed + 1 if seed is not None else None)
-        x = area.center.x + (np.random.uniform(0, radius) * math.cos(angle))
-        np.random.seed(seed + 2 if seed is not None else None)
-        y = area.center.y + (np.random.uniform(0, radius) * math.sin(angle))
+        np.random.seed(seed)
+        r = math.sqrt(np.random.uniform(0, 1)) * radius
+        x = r * math.cos(angle)
+        y = r * math.sin(angle)
         return Point(x, y)
 
-    def _random_point_in_rectangle(self, area: RandomArea, seed: int | None) -> Point:
-        """Generate a random point around the center of a rectangle."""
+    def _random_point_in_rectangle(self, seed: int | None) -> Point:
+        """Generate a random point around a rectangle with center (0, 0).
+
+        The point is within the bounding box (-width/2, -height/2, width/2, height/2)
+        """
         np.random.seed(seed + 1 if seed is not None else None)
-        x = np.random.uniform(
-            area.center.x - (area.width / 2), area.center.x + (area.width / 2)
-        )
+        x = np.random.uniform(-self.area_width / 2, self.area_width / 2)
         np.random.seed(seed + 2 if seed is not None else None)
-        y = np.random.uniform(
-            area.center.y - (area.height / 2), area.center.y + (area.height / 2)
-        )
+        y = np.random.uniform(-self.area_height / 2, self.area_height / 2)
         return Point(x, y)
 
     def __iter__(self) -> Iterator[Point]:  # type: ignore

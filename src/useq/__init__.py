@@ -7,7 +7,7 @@ from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedA
 from useq._mda_event import MDAEvent, PropertyTuple
 from useq._mda_sequence import MDASequence
 from useq._position import Position
-from useq._random_points import Point, RandomArea, RandomPoints
+from useq._random_points import Point, RandomPoints
 from useq._time import (
     AnyTimePlan,
     MultiPhaseTimePlan,
@@ -25,7 +25,6 @@ from useq._z import (
 )
 
 __all__ = [
-    "RandomArea",
     "AcquireImage",
     "Action",
     "AnyAutofocusPlan",
