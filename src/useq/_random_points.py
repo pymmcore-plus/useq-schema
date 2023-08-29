@@ -42,7 +42,7 @@ class RandomPoints(FrozenModel):
         radius = self.area_width / 2
         np.random.seed(seed)
         angle = np.random.uniform(0, 2 * math.pi)
-        np.random.seed(seed)
+        np.random.seed(seed + 1 if seed is not None else None)
         r = math.sqrt(np.random.uniform(0, 1)) * radius
         x = r * math.cos(angle)
         y = r * math.sin(angle)
