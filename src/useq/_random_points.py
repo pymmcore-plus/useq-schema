@@ -37,7 +37,7 @@ class RandomPoints(FrozenModel):
     def _random_point_in_circle(self, seed: int | None) -> Point:
         """Generate a random point around a circle with center (0, 0).
 
-        The point is within the bounding box (-radius, -radius, radius, radius)
+        The point is within the bounding box (-radius, -radius, diameter, diameter)
         """
         radius = self.area_width / 2
         np.random.seed(seed)
@@ -51,7 +51,7 @@ class RandomPoints(FrozenModel):
     def _random_point_in_rectangle(self, seed: int | None) -> Point:
         """Generate a random point around a rectangle with center (0, 0).
 
-        The point is within the bounding box (-width/2, -height/2, width/2, height/2)
+        The point is within the bounding box (-width/2, -height/2, width, height)
         """
         np.random.seed(seed)
         x = np.random.uniform(-self.area_width / 2, self.area_width / 2)
