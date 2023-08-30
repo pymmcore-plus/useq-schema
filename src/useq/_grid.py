@@ -363,7 +363,7 @@ class GridWidthHeight(_GridPlan):
 
 
 class Shape(Enum):
-    CIRCLE = "circle"
+    ELLIPSE = "ellipse"
     RECTANGLE = "rectangle"
 
 
@@ -396,6 +396,7 @@ def _random_points_in_circle(
 
     The point is within +/- radius at a random angle.
     """
+    # TODO: fix this method for ellipses
     radius = np.minimum(max_width, max_height) / 2
 
     angle, *_points = np.random.uniform(0, 1, size=2 * num_points + 1)
@@ -427,7 +428,7 @@ def _random_points_in_rectangle(
 # an iterable of (x, y) points
 PointGenerator = Callable[[int, float, float], Iterable[Tuple[int, int]]]
 _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
-    Shape.CIRCLE: _random_points_in_circle,
+    Shape.ELLIPSE: _random_points_in_circle,
     Shape.RECTANGLE: _random_points_in_rectangle,
 }
 
