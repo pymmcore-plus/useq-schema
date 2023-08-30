@@ -2,7 +2,13 @@ from typing import Any
 
 from useq._actions import AcquireImage, Action, HardwareAutofocus
 from useq._channel import Channel
-from useq._grid import AnyGridPlan, GridFromEdges, GridRowsColumns, GridWidthHeight
+from useq._grid import (
+    AnyGridPlan,
+    GridFromEdges,
+    GridRowsColumns,
+    GridWidthHeight,
+    RandomPoints,
+)
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent, PropertyTuple
 from useq._mda_sequence import MDASequence
