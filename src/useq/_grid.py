@@ -380,9 +380,10 @@ class RandomPoints(_PointsPlan):
         return True
 
     def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
-        np.random.seed(self.random_seed)
         func = _POINTS_GENERATORS[self.shape]
-        for x, y in func(self.num_points, self.max_width, self.max_height):
+        for x, y in func(
+            self.num_points, self.max_width, self.max_height, self.random_seed
+        ):
             yield GridPosition(x, y, 0, 0, True)
 
     def num_positions(self) -> int:
@@ -390,18 +391,18 @@ class RandomPoints(_PointsPlan):
 
 
 def _random_points_in_ellipse(
-    num_points: int,
-    max_width: float,
-    max_height: float,
+    num_points: int, max_width: float, max_height: float, random_seed: Optional[int]
 ) -> Iterable[Tuple[float, float]]:
     """Generate a random point around a circle with center (0, 0).
 
     The point is within +/- radius_x and +/- radius_y at a random angle.
     """
+    seed = np.random.RandomState(random_seed)
+
     radius_x, radius_y = (max_width / 2, max_height / 2)
     # size is num_points * 2 because we need x and y for each point + num_points because
     # we need an angle for each point
-    rnd = np.random.uniform(0, 1, size=(2 * num_points) + num_points)
+    rnd = seed.random.uniform(0, 1, size=(2 * num_points) + num_points)
     arr = np.array(rnd).reshape(num_points, 3)
     return [
         (
@@ -413,13 +414,14 @@ def _random_points_in_ellipse(
 
 
 def _random_points_in_rectangle(
-    num_points: int, max_width: float, max_height: float
+    num_points: int, max_width: float, max_height: float, random_seed: Optional[int]
 ) -> Iterable[Tuple[float, float]]:
     """Generate a random point around a rectangle with center (0, 0).
 
     The point is within the bounding box (-width/2, -height/2, width, height)
     """
-    xy = np.random.uniform(0, 1, size=(num_points, 2))
+    seed = np.random.RandomState(random_seed)
+    xy = seed.uniform(0, 1, size=(num_points, 2))
     xy[:, 0] *= max_width
     xy[:, 0] -= max_width / 2
     xy[:, 1] *= max_height
@@ -429,7 +431,9 @@ def _random_points_in_rectangle(
 
 # function that takes in num_points, max_width, max_height and returns
 # an iterable of (x, y) points
-PointGenerator = Callable[[int, float, float], Iterable[Tuple[float, float]]]
+PointGenerator = Callable[
+    [int, float, float, Optional[int]], Iterable[Tuple[float, float]]
+]
 _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
     Shape.ELLIPSE: _random_points_in_ellipse,
     Shape.RECTANGLE: _random_points_in_rectangle,
