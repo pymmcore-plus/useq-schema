@@ -389,29 +389,32 @@ class RandomPoints(_PointsPlan):
         return self.num_points
 
 
-def _random_points_in_circle(
-    num_points: int, max_width: float, max_height: float
-) -> Iterable[Tuple[int, int]]:
+def _random_points_in_ellipse(
+    num_points: int,
+    max_width: float,
+    max_height: float,
+) -> Iterable[Tuple[float, float]]:
     """Generate a random point around a circle with center (0, 0).
 
-    The point is within +/- radius at a random angle.
+    The point is within +/- radius_x and +/- radius_y at a random angle.
     """
-    # TODO: fix this method for ellipses
-    radius = np.minimum(max_width, max_height) / 2
-
-    angle, *_points = np.random.uniform(0, 1, size=2 * num_points + 1)
-    angle *= 2 * math.pi
-
-    points = np.array(_points).reshape(num_points, 2)
-    points = np.sqrt(points) * radius
-    points[:, 0] *= np.cos(angle)
-    points[:, 1] *= np.sin(angle)
-    return points  # type: ignore
+    radius_x, radius_y = (max_width / 2, max_height / 2)
+    # size is num_points * 2 because we need x and y for each point + num_points because
+    # we need an angle for each point
+    rnd = np.random.uniform(0, 1, size=(2 * num_points) + num_points)
+    arr = np.array(rnd).reshape(num_points, 3)
+    return [
+        (
+            math.sqrt(x) * radius_x * math.cos(angle * 2 * math.pi),
+            math.sqrt(y) * radius_y * math.sin(angle * 2 * math.pi),
+        )
+        for x, y, angle in arr
+    ]
 
 
 def _random_points_in_rectangle(
     num_points: int, max_width: float, max_height: float
-) -> Iterable[Tuple[int, int]]:
+) -> Iterable[Tuple[float, float]]:
     """Generate a random point around a rectangle with center (0, 0).
 
     The point is within the bounding box (-width/2, -height/2, width, height)
@@ -426,9 +429,9 @@ def _random_points_in_rectangle(
 
 # function that takes in num_points, max_width, max_height and returns
 # an iterable of (x, y) points
-PointGenerator = Callable[[int, float, float], Iterable[Tuple[int, int]]]
+PointGenerator = Callable[[int, float, float], Iterable[Tuple[float, float]]]
 _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
-    Shape.ELLIPSE: _random_points_in_circle,
+    Shape.ELLIPSE: _random_points_in_ellipse,
     Shape.RECTANGLE: _random_points_in_rectangle,
 }
 
