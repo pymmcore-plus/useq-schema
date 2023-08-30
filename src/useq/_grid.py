@@ -9,6 +9,7 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Iterable,
     Iterator,
     NamedTuple,
     Optional,
@@ -112,7 +113,22 @@ class GridPosition(NamedTuple):
     is_relative: bool
 
 
-class _GridPlan(FrozenModel):
+class _PointsPlan(FrozenModel):
+    # Overriding FrozenModel to make fov_width and fov_height mutable.
+    model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
+
+    @property
+    def is_relative(self) -> bool:
+        return False
+
+    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+        raise NotImplementedError("This method must be implemented by subclasses.")
+
+    def num_positions(self) -> int:
+        raise NotImplementedError("This method must be implemented by subclasses.")
+
+
+class _GridPlan(_PointsPlan):
     """Base class for all grid plans.
 
     Attributes
@@ -135,9 +151,6 @@ class _GridPlan(FrozenModel):
         Engines MAY override this even if provided.
     """
 
-    # Overriding FrozenModel to make fov_width and fov_height mutable.
-    model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
-
     overlap: Tuple[float, float] = Field((0.0, 0.0), frozen=True)
     mode: OrderMode = Field(OrderMode.row_wise_snake, frozen=True)
     fov_width: Optional[float] = Field(None)
@@ -154,10 +167,6 @@ class _GridPlan(FrozenModel):
         raise ValueError(  # pragma: no cover
             "overlap must be a float or a tuple of two floats"
         )
-
-    @property
-    def is_relative(self) -> bool:
-        return False
 
     def _offset_x(self, dx: float) -> float:
         raise NotImplementedError
@@ -350,4 +359,77 @@ class GridWidthHeight(_GridPlan):
         )
 
 
-AnyGridPlan = Union[GridFromEdges, GridRowsColumns, GridWidthHeight]
+# ------------------------ RANDOM ------------------------
+
+
+class Shape(Enum):
+    CIRCLE = "circle"
+    RECTANGLE = "rectangle"
+
+
+class RandomPoints(_PointsPlan):
+    num_points: int
+    max_width: float
+    max_height: float
+    shape: Shape
+    random_seed: Optional[int] = None
+    allow_overlap: bool = False
+
+    @property
+    def is_relative(self) -> bool:
+        return True
+
+    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+        np.random.seed(self.random_seed)
+        func = _POINTS_GENERATORS[self.shape]
+        for x, y in func(self.num_points, self.max_width, self.max_height):
+            yield GridPosition(x, y, 0, 0, True)
+
+    def num_positions(self) -> int:
+        return self.num_points
+
+
+def _random_points_in_circle(
+    num_points: int, max_width: float, max_height: float
+) -> Iterable[Tuple[int, int]]:
+    """Generate a random point around a circle with center (0, 0).
+
+    The point is within +/- radius at a random angle.
+    """
+    radius = np.minimum(max_width, max_height) / 2
+
+    angle, *_points = np.random.uniform(0, 1, size=2 * num_points + 1)
+    angle *= 2 * math.pi
+
+    points = np.array(_points).reshape(num_points, 2)
+    points = np.sqrt(points) * radius
+    points[:, 0] *= np.cos(angle)
+    points[:, 1] *= np.sin(angle)
+    return points  # type: ignore
+
+
+def _random_points_in_rectangle(
+    num_points: int, max_width: float, max_height: float
+) -> Iterable[Tuple[int, int]]:
+    """Generate a random point around a rectangle with center (0, 0).
+
+    The point is within the bounding box (-width/2, -height/2, width, height)
+    """
+    xy = np.random.uniform(0, 1, size=(num_points, 2))
+    xy[:, 0] *= max_width
+    xy[:, 0] -= max_width / 2
+    xy[:, 1] *= max_height
+    xy[:, 1] -= max_height / 2
+    return xy  # type: ignore
+
+
+# function that takes in num_points, max_width, max_height and returns
+# an iterable of (x, y) points
+PointGenerator = Callable[[int, float, float], Iterable[Tuple[int, int]]]
+_POINTS_GENERATORS: dict[Shape, PointGenerator] = {
+    Shape.CIRCLE: _random_points_in_circle,
+    Shape.RECTANGLE: _random_points_in_rectangle,
+}
+
+
+AnyGridPlan = Union[GridFromEdges, GridRowsColumns, GridWidthHeight, RandomPoints]
