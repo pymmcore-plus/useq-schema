@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import math
+import warnings
 from enum import Enum
 from functools import partial
 from typing import (
@@ -16,6 +17,7 @@ from typing import (
     Sequence,
     Tuple,
     Union,
+    cast,
 )
 
 import numpy as np
@@ -25,6 +27,8 @@ from useq._base_model import FrozenModel
 
 if TYPE_CHECKING:
     from pydantic import ConfigDict
+
+MAX_ITER = 5000
 
 
 class RelativeTo(Enum):
@@ -117,6 +121,9 @@ class _PointsPlan(FrozenModel):
     # Overriding FrozenModel to make fov_width and fov_height mutable.
     model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
 
+    fov_width: Optional[float] = Field(None)
+    fov_height: Optional[float] = Field(None)
+
     @property
     def is_relative(self) -> bool:
         return False
@@ -153,8 +160,6 @@ class _GridPlan(_PointsPlan):
 
     overlap: Tuple[float, float] = Field((0.0, 0.0), frozen=True)
     mode: OrderMode = Field(OrderMode.row_wise_snake, frozen=True)
-    fov_width: Optional[float] = Field(None)
-    fov_height: Optional[float] = Field(None)
 
     @field_validator("overlap", mode="before")
     def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
@@ -373,7 +378,7 @@ class RandomPoints(_PointsPlan):
     max_height: float
     shape: Shape
     random_seed: Optional[int] = None
-    allow_overlap: bool = False
+    allow_overlap: bool = True
 
     @property
     def is_relative(self) -> bool:
@@ -381,8 +386,16 @@ class RandomPoints(_PointsPlan):
 
     def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
         func = _POINTS_GENERATORS[self.shape]
+
+        min_distance = (self.fov_width, self.fov_height)
+
         for x, y in func(
-            self.num_points, self.max_width, self.max_height, self.random_seed
+            self.num_points,
+            self.max_width,
+            self.max_height,
+            min_distance,
+            self.allow_overlap,
+            self.random_seed,
         ):
             yield GridPosition(x, y, 0, 0, True)
 
@@ -391,48 +404,135 @@ class RandomPoints(_PointsPlan):
 
 
 def _random_points_in_ellipse(
-    num_points: int, max_width: float, max_height: float, random_seed: Optional[int]
+    num_points: int,
+    max_width: float,
+    max_height: float,
+    min_distance: Tuple[Optional[float], Optional[float]],
+    allow_overlap: bool,
+    random_seed: Optional[int],
 ) -> Iterable[Tuple[float, float]]:
     """Generate a random point around a circle with center (0, 0).
 
     The point is within +/- radius_x and +/- radius_y at a random angle.
     """
-    seed = np.random.RandomState(random_seed)
+    _iter = _get_iterator(Shape.ELLIPSE, num_points, random_seed)
+    points: list[Tuple[float, float]] = []
 
-    radius_x, radius_y = (max_width / 2, max_height / 2)
-    # size is num_points * 2 because we need x and y for each point + num_points because
-    # we need an angle for each point
-    rnd = seed.random.uniform(0, 1, size=(2 * num_points) + num_points)
-    arr = np.array(rnd).reshape(num_points, 3)
-    return [
-        (
-            math.sqrt(x) * radius_x * math.cos(angle * 2 * math.pi),
-            math.sqrt(y) * radius_y * math.sin(angle * 2 * math.pi),
-        )
-        for x, y, angle in arr
-    ]
+    try:
+        while len(points) < num_points:
+            x0, y0, angle = next(_iter)
+            x, y = (
+                math.sqrt(x0) * (max_width / 2) * math.cos(angle * 2 * math.pi),
+                math.sqrt(y0) * (max_height / 2) * math.sin(angle * 2 * math.pi),
+            )
+            if _check_validity(allow_overlap, min_distance, points, x, y):
+                points.append((x, y))
+
+    except StopIteration:
+        _raise_warning(points)
+
+    return points
 
 
 def _random_points_in_rectangle(
-    num_points: int, max_width: float, max_height: float, random_seed: Optional[int]
+    num_points: int,
+    max_width: float,
+    max_height: float,
+    min_distance: Tuple[Optional[float], Optional[float]],
+    allow_overlap: bool,
+    random_seed: Optional[int],
 ) -> Iterable[Tuple[float, float]]:
     """Generate a random point around a rectangle with center (0, 0).
 
     The point is within the bounding box (-width/2, -height/2, width, height)
     """
+    _iter = _get_iterator(Shape.RECTANGLE, num_points, random_seed)
+    points: list[Tuple[float, float]] = []
+
+    try:
+        while len(points) < num_points:
+            x0, y0 = next(_iter)
+            x, y = (
+                (x0 * max_width) - (max_width / 2),
+                (y0 * max_height) - (max_height / 2),
+            )
+            if _check_validity(allow_overlap, min_distance, points, x, y):
+                points.append((x, y))
+
+    except StopIteration:
+        _raise_warning(points)
+
+    return points
+
+
+def _get_iterator(
+    shape: Shape, num_points: int, random_seed: Optional[int]
+) -> Iterator[Tuple[float, ...]]:
+    """Return an iterator of random numbers between 0 and 1 with size depending on the
+    `shape`.
+    """  # noqa: D205
+    # set the numpy random seed
     seed = np.random.RandomState(random_seed)
-    xy = seed.uniform(0, 1, size=(num_points, 2))
-    xy[:, 0] *= max_width
-    xy[:, 0] -= max_width / 2
-    xy[:, 1] *= max_height
-    xy[:, 1] -= max_height / 2
-    return xy  # type: ignore
+    # setting the max array size as the max number of iterations
+    iter_size = max(num_points, MAX_ITER)
+    # generate random numbers between 0 and 1 and shape them in an iterator depending
+    # on the shape
+    size = (iter_size, 2) if shape == Shape.RECTANGLE else (iter_size, 3)
+    return iter(seed.uniform(0, 1, size=size))
+
+
+def _check_validity(
+    allow_overlap: bool,
+    min_distance: Tuple[Optional[float], Optional[float]],
+    points: list[Tuple[float, float]],
+    x: float,
+    y: float,
+) -> bool:
+    """Return True if `allow_overlap` is True, if `None` is in `min_distance` or if
+    the `(x, y)` point is at least `min_distance` away from all other points.
+    """  # noqa: D205
+    if allow_overlap or None in min_distance:
+        return True
+    min_distance = cast(Tuple[float, float], min_distance)
+    return _is_a_valid_point(points, x, y, *min_distance)
+
+
+def _is_a_valid_point(
+    points: list[Tuple[float, float]],
+    x: float,
+    y: float,
+    min_dist_x: float,
+    min_dist_y: float,
+) -> bool:
+    """Return True if the point is at least min_dist_x and min_dist_y away from
+    all other points.
+    """  # noqa: D205
+
+    def _distance(point1: Tuple[float, float], point2: Tuple[float, float]) -> float:
+        """Return the Euclidean distance between two points."""
+        p1_x, p1_y = point1
+        p2_x, p2_y = point2
+        return math.sqrt((p2_x - p1_x) ** 2 + (p2_y - p1_y) ** 2)
+
+    return not any(
+        (_distance((x, y), point) < min_dist_x or _distance((x, y), point) < min_dist_y)
+        for point in points
+    )
+
+
+def _raise_warning(points: list[Tuple[float, float]]) -> None:
+    warnings.warn(
+        f"Max number of iterations reached ({MAX_ITER}). "
+        f"Only {len(points)} points were found.",
+        stacklevel=5,
+    )
 
 
 # function that takes in num_points, max_width, max_height and returns
 # an iterable of (x, y) points
 PointGenerator = Callable[
-    [int, float, float, Optional[int]], Iterable[Tuple[float, float]]
+    [int, float, float, Tuple[Optional[float], Optional[float]], bool, Optional[int]],
+    Iterable[Tuple[float, float]],
 ]
 _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
     Shape.ELLIPSE: _random_points_in_ellipse,
