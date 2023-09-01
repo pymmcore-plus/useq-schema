@@ -419,11 +419,8 @@ class RandomPoints(_PointsPlan):
         ):
             yield GridPosition(x, y, 0, 0, True)
 
-    def __len__(self) -> int:
-        return self.num_positions()
-
     def num_positions(self) -> int:
-        return len(list(self.__iter__()))
+        return self.num_points
 
 
 def _random_points_in_ellipse(
