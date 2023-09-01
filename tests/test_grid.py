@@ -1,6 +1,8 @@
+from typing import Optional
+
 import pytest
 
-from useq import GridFromEdges, GridRowsColumns, GridWidthHeight
+from useq import GridFromEdges, GridRowsColumns, GridWidthHeight, RandomPoints
 from useq._grid import OrderMode, _rect_indices, _spiral_indices
 
 EXPECT = {
@@ -99,3 +101,34 @@ def test_grid_type():
 def test_num_position_error() -> None:
     with pytest.raises(ValueError, match="the field of view size be set"):
         GridFromEdges(top=1, left=-1, bottom=-1, right=2).num_positions()
+
+
+expected_rectangle = [
+    (0.195254015709299, 0.8607574654896779),
+    (0.4110535042865755, 0.17953273198758746),
+    (-0.30538080264438117, 0.5835764522666245),
+]
+expected_circle = [
+    (-1.1833701700089627, -1.0177740857447513),
+    (-0.8982817915459649, -1.0330704250777567),
+    (1.2886747534938614, -0.4274735932019082),
+]
+
+
+@pytest.mark.parametrize("shape", ["rectangle", "ellipse"])
+@pytest.mark.parametrize("seed", [None, 0])
+def test_random_points(shape: str, seed: Optional[int]) -> None:
+    rp = RandomPoints(
+        num_points=3,
+        max_width=4,
+        max_height=4,
+        shape=shape,
+        random_seed=seed,
+        allow_overlap=False,
+    )
+
+    expected = expected_rectangle if shape == "rectangle" else expected_circle
+    if seed is None:
+        assert [(g.x, g.y) for g in rp] != expected
+    else:
+        assert [(g.x, g.y) for g in rp] == expected
