@@ -524,20 +524,14 @@ def _is_a_valid_point(
     min_dist_x: float,
     min_dist_y: float,
 ) -> bool:
-    """Return True if the point is at least min_dist_x and min_dist_y away from
-    all other points.
+    """Return True if the `(x, y)` point is at least `min_dist_x` and `min_dist_y` away
+    from all other points (using Manhattan distance).
     """  # noqa: D205
-
-    def _distance(point1: Tuple[float, float], point2: Tuple[float, float]) -> float:
-        """Return the Euclidean distance between two points."""
-        p1_x, p1_y = point1
-        p2_x, p2_y = point2
-        return math.sqrt((p2_x - p1_x) ** 2 + (p2_y - p1_y) ** 2)
-
-    return not any(
-        (_distance((x, y), point) < min_dist_x or _distance((x, y), point) < min_dist_y)
-        for point in points
-    )
+    for point in points:
+        point_x, point_y = point
+        if abs(x - point_x) < min_dist_x and abs(y - point_y) < min_dist_y:
+            return False
+    return True
 
 
 def _raise_warning(points: list[Tuple[float, float]]) -> None:
