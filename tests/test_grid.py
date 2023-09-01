@@ -104,31 +104,38 @@ def test_num_position_error() -> None:
 
 
 expected_rectangle = [
-    (0.195254015709299, 0.8607574654896779),
-    (0.4110535042865755, 0.17953273198758746),
-    (-0.30538080264438117, 0.5835764522666245),
+    (0.195254015709299, 1.0759468318620975),
+    (0.4110535042865755, 0.2244159149844842),
+    (-0.30538080264438117, 0.7294705653332807),
 ]
 expected_circle = [
-    (-1.1833701700089627, -1.0177740857447513),
-    (-0.8982817915459649, -1.0330704250777567),
-    (1.2886747534938614, -0.4274735932019082),
+    (-1.1833701700089627, -1.272217607180939),
+    (1.2886747534938614, -0.5343419915023853),
+    (-1.2180986624660364, -0.4016429267523442),
 ]
 
 
+@pytest.mark.parametrize("n_points", [3, 100])
 @pytest.mark.parametrize("shape", ["rectangle", "ellipse"])
 @pytest.mark.parametrize("seed", [None, 0])
-def test_random_points(shape: str, seed: Optional[int]) -> None:
+def test_random_points(n_points: int, shape: str, seed: Optional[int]) -> None:
     rp = RandomPoints(
-        num_points=3,
+        num_points=n_points,
         max_width=4,
-        max_height=4,
+        max_height=5,
         shape=shape,
         random_seed=seed,
         allow_overlap=False,
+        fov_width=0.5,
+        fov_height=0.5,
     )
 
-    expected = expected_rectangle if shape == "rectangle" else expected_circle
-    if seed is None:
-        assert [(g.x, g.y) for g in rp] != expected
+    if n_points == 3:
+        expected = expected_rectangle if shape == "rectangle" else expected_circle
+        if seed is None:
+            assert [(g.x, g.y) for g in rp] != expected
+        else:
+            assert [(g.x, g.y) for g in rp] == expected
     else:
-        assert [(g.x, g.y) for g in rp] == expected
+        with pytest.raises(UserWarning, match="Max number of iterations reached"):
+            list(rp)
