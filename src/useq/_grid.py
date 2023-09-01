@@ -373,6 +373,26 @@ class Shape(Enum):
 
 
 class RandomPoints(_PointsPlan):
+    """Yield random points in a specified geometric shape.
+
+    Attributes
+    ----------
+    num_points : int
+        Number of points to generate.
+    max_width : float
+        Maximum width of the bounding box.
+    max_height : float
+        Maximum height of the bounding box.
+    shape : Shape
+        Shape of the bounding box. Current options are "ellipse" and "rectangle".
+    random_seed : Optional[int]
+        Random numpy seed that should be used to generate the points. If None, a random
+        seed will be used.
+    allow_overlap : bool
+        By defaut, True. If False and `fov_width` and `fov_height` are specified, points
+        will not overlap and will be at least `fov_width` and `fov_height apart.
+    """
+
     num_points: int
     max_width: float
     max_height: float
@@ -524,7 +544,7 @@ def _raise_warning(points: list[Tuple[float, float]]) -> None:
     warnings.warn(
         f"Max number of iterations reached ({MAX_ITER}). "
         f"Only {len(points)} points were found.",
-        stacklevel=5,
+        stacklevel=2,
     )
 
 
