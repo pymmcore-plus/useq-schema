@@ -108,7 +108,7 @@ expected_rectangle = [
     (0.4110535042865755, 0.2244159149844842),
     (-0.30538080264438117, 0.7294705653332807),
 ]
-expected_circle = [
+expected_ellipse = [
     (-1.1833701700089627, -1.272217607180939),
     (1.2886747534938614, -0.5343419915023853),
     (-1.2180986624660364, -0.4016429267523442),
@@ -131,7 +131,7 @@ def test_random_points(n_points: int, shape: str, seed: Optional[int]) -> None:
     )
 
     if n_points == 3:
-        expected = expected_rectangle if shape == "rectangle" else expected_circle
+        expected = expected_rectangle if shape == "rectangle" else expected_ellipse
         if seed is None:
             assert [(g.x, g.y) for g in rp] != expected
         else:
