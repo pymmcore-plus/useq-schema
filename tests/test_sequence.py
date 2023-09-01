@@ -116,27 +116,9 @@ g_inputs = [
             random_seed=0,
         ),
         [
-            GridPosition(
-                x=-1.1833701700089627,
-                y=-1.272217607180939,
-                row=0,
-                col=0,
-                is_relative=True,
-            ),
-            GridPosition(
-                x=1.2886747534938614,
-                y=-0.5343419915023853,
-                row=0,
-                col=0,
-                is_relative=True,
-            ),
-            GridPosition(
-                x=-1.2180986624660364,
-                y=-0.4016429267523442,
-                row=0,
-                col=0,
-                is_relative=True,
-            ),
+            GridPosition(x=-1.2, y=-1.3, row=0, col=0, is_relative=True),
+            GridPosition(x=1.3, y=-0.5, row=0, col=0, is_relative=True),
+            GridPosition(x=-1.2, y=-0.4, row=0, col=0, is_relative=True),
         ],
     ),
 ]
@@ -183,7 +165,19 @@ def test_z_plan(zplan: Any, zexpectation: Sequence[float]) -> None:
 @pytest.mark.parametrize("gridplan, gridexpectation", g_inputs)
 def test_g_plan(gridplan: Any, gridexpectation: Sequence[Any]) -> None:
     g_plan = MDASequence(grid_plan=gridplan).grid_plan
-    assert g_plan and list(g_plan) == gridexpectation
+    if isinstance(gridplan, RandomPoints):
+        # need to round up the expected because different python versions give
+        # slightly different results in the last few digits
+        assert (
+            g_plan
+            and [
+                GridPosition(round(x, 1), round(y, 1), _r, _c, rl)
+                for x, y, _r, _c, rl in g_plan
+            ]
+            == gridexpectation
+        )
+    else:
+        assert g_plan and list(g_plan) == gridexpectation
     assert g_plan.num_positions() == len(gridexpectation)
 
 

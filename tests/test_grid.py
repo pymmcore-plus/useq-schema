@@ -103,16 +103,8 @@ def test_num_position_error() -> None:
         GridFromEdges(top=1, left=-1, bottom=-1, right=2).num_positions()
 
 
-expected_rectangle = [
-    (0.195254015709299, 1.0759468318620975),
-    (0.4110535042865755, 0.2244159149844842),
-    (-0.30538080264438117, 0.7294705653332807),
-]
-expected_ellipse = [
-    (-1.1833701700089627, -1.272217607180939),
-    (1.2886747534938614, -0.5343419915023853),
-    (-1.2180986624660364, -0.4016429267523442),
-]
+expected_rectangle = [(0.2, 1.1), (0.4, 0.2), (-0.3, 0.7)]
+expected_ellipse = [(-1.2, -1.3), (1.3, -0.5), (-1.2, -0.4)]
 
 
 @pytest.mark.parametrize("n_points", [3, 100])
@@ -132,10 +124,11 @@ def test_random_points(n_points: int, shape: str, seed: Optional[int]) -> None:
 
     if n_points == 3:
         expected = expected_rectangle if shape == "rectangle" else expected_ellipse
+        values = [(round(g.x, 1), round(g.y, 1)) for g in rp]
         if seed is None:
-            assert [(g.x, g.y) for g in rp] != expected
+            assert values != expected
         else:
-            assert [(g.x, g.y) for g in rp] == expected
+            assert values == expected
     else:
         with pytest.raises(UserWarning, match="Max number of iterations reached"):
             list(rp)
