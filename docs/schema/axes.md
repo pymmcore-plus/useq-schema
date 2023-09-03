@@ -66,3 +66,6 @@ Ways to describe a grid acquisition sequence.
 ::: useq.GridFromEdges
     options:
         members: []
+::: useq.RandomPoints
+    options:
+        members: []
