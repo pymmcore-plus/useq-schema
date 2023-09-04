@@ -38,7 +38,6 @@ __all__ = [
     "AnyZPlan",
     "AutoFocusPlan",
     "AxesBasedAF",
-    "Point",
     "Channel",
     "GridFromEdges",
     "GridRelative",
