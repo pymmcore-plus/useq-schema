@@ -444,6 +444,8 @@ def _is_a_valid_point(
         abs(x - point_x) < min_dist_x and abs(y - point_y) < min_dist_y
         for point_x, point_y in points
     )
+
+
 def _random_points_in_ellipse(
     seed: np.random.RandomState, n_points: int, max_width: float, max_height: float
 ) -> Iterator[Tuple[float, float]]:
