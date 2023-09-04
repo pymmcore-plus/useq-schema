@@ -410,15 +410,20 @@ class RandomPoints(_PointsPlan):
         for x, y in func(seed, n_points, self.max_width, self.max_height):
             if (
                 self.allow_overlap
-                or (None in (self.fov_width, self.fov_height))
+                or self.fov_width is None
+                or self.fov_height is None
                 or _is_a_valid_point(points, x, y, self.fov_width, self.fov_height)
             ):
                 yield GridPosition(x, y, 0, 0, True)
                 points.append((x, y))
             if len(points) >= self.num_points:
                 break
-        if len(points) < self.num_points:
-            _raise_warning(n_points, points)
+        else:
+            warnings.warn(
+                f"Unable to generate {self.num_points} points non-overlapping points."
+                f"Only {len(points)} points were found.",
+                stacklevel=2,
+            )
 
     def num_positions(self) -> int:
         return self.num_points
@@ -428,30 +433,17 @@ def _is_a_valid_point(
     points: list[Tuple[float, float]],
     x: float,
     y: float,
-    min_dist_x: float | None,
-    min_dist_y: float | None,
+    min_dist_x: float,
+    min_dist_y: float,
 ) -> bool:
     """Return True if the the point is at least min_dist away from all the others.
 
     note: using Manhattan distance.
     """
-    if min_dist_x is None or min_dist_y is None:
-        return True
     return not any(
         abs(x - point_x) < min_dist_x and abs(y - point_y) < min_dist_y
         for point_x, point_y in points
     )
-
-
-def _raise_warning(n_points: int, points: list[Tuple[float, float]]) -> None:
-    """Raise a warning if the number of points is less than the requested number."""
-    warnings.warn(
-        f"Max number of iterations reached ({n_points}). "
-        f"Only {len(points)} points were found.",
-        stacklevel=2,
-    )
-
-
 def _random_points_in_ellipse(
     seed: np.random.RandomState, n_points: int, max_width: float, max_height: float
 ) -> Iterator[Tuple[float, float]]:
