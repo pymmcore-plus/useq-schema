@@ -13,6 +13,7 @@ from useq import (
     MDAEvent,
     MDASequence,
     Position,
+    RandomPoints,
     TDurationLoops,
     TIntervalDuration,
     TIntervalLoops,
@@ -103,6 +104,23 @@ g_inputs = [
             GridPosition(x=0.0, y=0.0, row=1, col=0, is_relative=False),
         ],
     ),
+    (
+        RandomPoints(
+            num_points=3,
+            max_width=4,
+            max_height=5,
+            fov_height=0.5,
+            fov_width=0.5,
+            shape="ellipse",
+            allow_overlap=False,
+            random_seed=0,
+        ),
+        [
+            GridPosition(x=-0.0, y=-2.1, row=0, col=0, is_relative=True),
+            GridPosition(x=0.7, y=1.7, row=0, col=0, is_relative=True),
+            GridPosition(x=-1.0, y=1.3, row=0, col=0, is_relative=True),
+        ],
+    ),
 ]
 
 all_orders = ["".join(i) for i in itertools.permutations("tpgcz")]
@@ -147,7 +165,19 @@ def test_z_plan(zplan: Any, zexpectation: Sequence[float]) -> None:
 @pytest.mark.parametrize("gridplan, gridexpectation", g_inputs)
 def test_g_plan(gridplan: Any, gridexpectation: Sequence[Any]) -> None:
     g_plan = MDASequence(grid_plan=gridplan).grid_plan
-    assert g_plan and list(g_plan) == gridexpectation
+    if isinstance(gridplan, RandomPoints):
+        # need to round up the expected because different python versions give
+        # slightly different results in the last few digits
+        assert (
+            g_plan
+            and [
+                GridPosition(round(x, 1), round(y, 1), _r, _c, rl)
+                for x, y, _r, _c, rl in g_plan
+            ]
+            == gridexpectation
+        )
+    else:
+        assert g_plan and list(g_plan) == gridexpectation
     assert g_plan.num_positions() == len(gridexpectation)
 
 

@@ -1,6 +1,8 @@
+from typing import Optional
+
 import pytest
 
-from useq import GridFromEdges, GridRowsColumns, GridWidthHeight
+from useq import GridFromEdges, GridRowsColumns, GridWidthHeight, RandomPoints
 from useq._grid import OrderMode, _rect_indices, _spiral_indices
 
 EXPECT = {
@@ -99,3 +101,34 @@ def test_grid_type():
 def test_num_position_error() -> None:
     with pytest.raises(ValueError, match="the field of view size be set"):
         GridFromEdges(top=1, left=-1, bottom=-1, right=2).num_positions()
+
+
+expected_rectangle = [(0.2, 1.1), (0.4, 0.2), (-0.3, 0.7)]
+expected_ellipse = [(-0.0, -2.1), (0.7, 1.7), (-1.0, 1.3)]
+
+
+@pytest.mark.parametrize("n_points", [3, 100])
+@pytest.mark.parametrize("shape", ["rectangle", "ellipse"])
+@pytest.mark.parametrize("seed", [None, 0])
+def test_random_points(n_points: int, shape: str, seed: Optional[int]) -> None:
+    rp = RandomPoints(
+        num_points=n_points,
+        max_width=4,
+        max_height=5,
+        shape=shape,
+        random_seed=seed,
+        allow_overlap=False,
+        fov_width=0.5,
+        fov_height=0.5,
+    )
+
+    if n_points == 3:
+        expected = expected_rectangle if shape == "rectangle" else expected_ellipse
+        values = [(round(g.x, 1), round(g.y, 1)) for g in rp]
+        if seed is None:
+            assert values != expected
+        else:
+            assert values == expected
+    else:
+        with pytest.raises(UserWarning, match="Unable to generate"):
+            list(rp)

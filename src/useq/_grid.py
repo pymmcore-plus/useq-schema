@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import math
+import warnings
 from enum import Enum
 from functools import partial
 from typing import (
@@ -24,6 +25,8 @@ from useq._base_model import FrozenModel
 
 if TYPE_CHECKING:
     from pydantic import ConfigDict
+
+MIN_RANDOM_POINTS = 5000
 
 
 class RelativeTo(Enum):
@@ -112,7 +115,25 @@ class GridPosition(NamedTuple):
     is_relative: bool
 
 
-class _GridPlan(FrozenModel):
+class _PointsPlan(FrozenModel):
+    # Overriding FrozenModel to make fov_width and fov_height mutable.
+    model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
+
+    fov_width: Optional[float] = Field(None)
+    fov_height: Optional[float] = Field(None)
+
+    @property
+    def is_relative(self) -> bool:
+        return False
+
+    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+        raise NotImplementedError("This method must be implemented by subclasses.")
+
+    def num_positions(self) -> int:
+        raise NotImplementedError("This method must be implemented by subclasses.")
+
+
+class _GridPlan(_PointsPlan):
     """Base class for all grid plans.
 
     Attributes
@@ -135,13 +156,8 @@ class _GridPlan(FrozenModel):
         Engines MAY override this even if provided.
     """
 
-    # Overriding FrozenModel to make fov_width and fov_height mutable.
-    model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
-
     overlap: Tuple[float, float] = Field((0.0, 0.0), frozen=True)
     mode: OrderMode = Field(OrderMode.row_wise_snake, frozen=True)
-    fov_width: Optional[float] = Field(None)
-    fov_height: Optional[float] = Field(None)
 
     @field_validator("overlap", mode="before")
     def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
@@ -154,10 +170,6 @@ class _GridPlan(FrozenModel):
         raise ValueError(  # pragma: no cover
             "overlap must be a float or a tuple of two floats"
         )
-
-    @property
-    def is_relative(self) -> bool:
-        return False
 
     def _offset_x(self, dx: float) -> float:
         raise NotImplementedError
@@ -350,4 +362,122 @@ class GridWidthHeight(_GridPlan):
         )
 
 
-AnyGridPlan = Union[GridFromEdges, GridRowsColumns, GridWidthHeight]
+# ------------------------ RANDOM ------------------------
+
+
+class Shape(Enum):
+    ELLIPSE = "ellipse"
+    RECTANGLE = "rectangle"
+
+
+class RandomPoints(_PointsPlan):
+    """Yield random points in a specified geometric shape.
+
+    Attributes
+    ----------
+    num_points : int
+        Number of points to generate.
+    max_width : float
+        Maximum width of the bounding box.
+    max_height : float
+        Maximum height of the bounding box.
+    shape : Shape
+        Shape of the bounding box. Current options are "ellipse" and "rectangle".
+    random_seed : Optional[int]
+        Random numpy seed that should be used to generate the points. If None, a random
+        seed will be used.
+    allow_overlap : bool
+        By defaut, True. If False and `fov_width` and `fov_height` are specified, points
+        will not overlap and will be at least `fov_width` and `fov_height apart.
+    """
+
+    num_points: int
+    max_width: float
+    max_height: float
+    shape: Shape
+    random_seed: Optional[int] = None
+    allow_overlap: bool = True
+
+    @property
+    def is_relative(self) -> bool:
+        return True
+
+    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+        seed = np.random.RandomState(self.random_seed)
+        func = _POINTS_GENERATORS[self.shape]
+        n_points = max(self.num_points, MIN_RANDOM_POINTS)
+        points: list[Tuple[float, float]] = []
+        for x, y in func(seed, n_points, self.max_width, self.max_height):
+            if (
+                self.allow_overlap
+                or self.fov_width is None
+                or self.fov_height is None
+                or _is_a_valid_point(points, x, y, self.fov_width, self.fov_height)
+            ):
+                yield GridPosition(x, y, 0, 0, True)
+                points.append((x, y))
+            if len(points) >= self.num_points:
+                break
+        else:
+            warnings.warn(
+                f"Unable to generate {self.num_points} non-overlapping points. "
+                f"Only {len(points)} points were found.",
+                stacklevel=2,
+            )
+
+    def num_positions(self) -> int:
+        return self.num_points
+
+
+def _is_a_valid_point(
+    points: list[Tuple[float, float]],
+    x: float,
+    y: float,
+    min_dist_x: float,
+    min_dist_y: float,
+) -> bool:
+    """Return True if the the point is at least min_dist away from all the others.
+
+    note: using Manhattan distance.
+    """
+    return not any(
+        abs(x - point_x) < min_dist_x and abs(y - point_y) < min_dist_y
+        for point_x, point_y in points
+    )
+
+
+def _random_points_in_ellipse(
+    seed: np.random.RandomState, n_points: int, max_width: float, max_height: float
+) -> np.ndarray:
+    """Generate a random point around a circle with center (0, 0).
+
+    The point is within +/- radius_x and +/- radius_y at a random angle.
+    """
+    xy = np.sqrt(seed.uniform(0, 1, size=(n_points, 2)))
+    angle = seed.uniform(0, 2 * np.pi, size=n_points)
+    xy[:, 0] *= (max_width / 2) * np.cos(angle)
+    xy[:, 1] *= (max_height / 2) * np.sin(angle)
+    return xy
+
+
+def _random_points_in_rectangle(
+    seed: np.random.RandomState, n_points: int, max_width: float, max_height: float
+) -> np.ndarray:
+    """Generate a random point around a rectangle with center (0, 0).
+
+    The point is within the bounding box (-width/2, -height/2, width, height).
+    """
+    xy = seed.uniform(0, 1, size=(n_points, 2))
+    xy[:, 0] = (xy[:, 0] * max_width) - (max_width / 2)
+    xy[:, 1] = (xy[:, 1] * max_height) - (max_height / 2)
+    return xy
+
+
+PointGenerator = Callable[[np.random.RandomState, int, float, float], np.ndarray]
+_POINTS_GENERATORS: dict[Shape, PointGenerator] = {
+    Shape.ELLIPSE: _random_points_in_ellipse,
+    Shape.RECTANGLE: _random_points_in_rectangle,
+}
+
+
+AnyGridPlan = Union[GridFromEdges, GridRowsColumns, GridWidthHeight, RandomPoints]
