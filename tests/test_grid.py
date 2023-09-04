@@ -104,7 +104,7 @@ def test_num_position_error() -> None:
 
 
 expected_rectangle = [(0.2, 1.1), (0.4, 0.2), (-0.3, 0.7)]
-expected_ellipse = [(-1.2, -1.3), (1.3, -0.5), (-1.2, -0.4)]
+expected_ellipse = [(-0.0, -2.1), (0.7, 1.7), (-1.0, 1.3)]
 
 
 @pytest.mark.parametrize("n_points", [3, 100])
@@ -130,5 +130,5 @@ def test_random_points(n_points: int, shape: str, seed: Optional[int]) -> None:
         else:
             assert values == expected
     else:
-        with pytest.raises(UserWarning, match="Max number of iterations reached"):
+        with pytest.raises(UserWarning, match="Unable to generate"):
             list(rp)

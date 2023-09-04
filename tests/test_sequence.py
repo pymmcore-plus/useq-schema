@@ -116,9 +116,9 @@ g_inputs = [
             random_seed=0,
         ),
         [
-            GridPosition(x=-1.2, y=-1.3, row=0, col=0, is_relative=True),
-            GridPosition(x=1.3, y=-0.5, row=0, col=0, is_relative=True),
-            GridPosition(x=-1.2, y=-0.4, row=0, col=0, is_relative=True),
+            GridPosition(x=-0.0, y=-2.1, row=0, col=0, is_relative=True),
+            GridPosition(x=0.7, y=1.7, row=0, col=0, is_relative=True),
+            GridPosition(x=-1.0, y=1.3, row=0, col=0, is_relative=True),
         ],
     ),
 ]

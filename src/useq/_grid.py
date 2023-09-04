@@ -420,7 +420,7 @@ class RandomPoints(_PointsPlan):
                 break
         else:
             warnings.warn(
-                f"Unable to generate {self.num_points} points non-overlapping points."
+                f"Unable to generate {self.num_points} non-overlapping points. "
                 f"Only {len(points)} points were found.",
                 stacklevel=2,
             )
@@ -448,27 +448,29 @@ def _is_a_valid_point(
 
 def _random_points_in_ellipse(
     seed: np.random.RandomState, n_points: int, max_width: float, max_height: float
-) -> Iterator[Tuple[float, float]]:
+) -> np.ndarray:
     """Generate a random point around a circle with center (0, 0).
 
     The point is within +/- radius_x and +/- radius_y at a random angle.
     """
-    for x0, y0, angle in seed.uniform(0, 1, size=(n_points, 3)):
-        yield (
-            np.sqrt(x0) * (max_width / 2) * np.cos(angle * 2 * np.pi),
-            np.sqrt(y0) * (max_height / 2) * np.sin(angle * 2 * np.pi),
-        )
+    xy = np.sqrt(seed.uniform(0, 1, size=(n_points, 2)))
+    angle = seed.uniform(0, 2 * np.pi, size=n_points)
+    xy[:, 0] *= (max_width / 2) * np.cos(angle)
+    xy[:, 1] *= (max_height / 2) * np.sin(angle)
+    return xy
 
 
 def _random_points_in_rectangle(
     seed: np.random.RandomState, n_points: int, max_width: float, max_height: float
-) -> Iterator[Tuple[float, float]]:
+) -> np.ndarray:
     """Generate a random point around a rectangle with center (0, 0).
 
     The point is within the bounding box (-width/2, -height/2, width, height).
     """
-    for x0, y0 in seed.uniform(0, 1, size=(n_points, 2)):
-        yield (x0 * max_width) - (max_width / 2), (y0 * max_height) - (max_height / 2)
+    xy = seed.uniform(0, 1, size=(n_points, 2))
+    xy[:, 0] = (xy[:, 0] * max_width) - (max_width / 2)
+    xy[:, 1] = (xy[:, 1] * max_height) - (max_height / 2)
+    return xy
 
 
 PointGenerator = Callable[[np.random.RandomState, int, float, float], np.ndarray]
