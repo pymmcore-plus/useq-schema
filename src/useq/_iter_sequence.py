@@ -196,7 +196,7 @@ def _iter_sequence(
                 # determine any relative position shifts or global overrides
                 _pos, _offsets = _position_offsets(position, event_kwargs)
                 # build overrides for this position
-                pos_overrides = MDAEventDict(sequence=sequence, **_pos)  # type: ignore
+                pos_overrides = MDAEventDict(sequence=sequence, **_pos)
                 if position.name:
                     pos_overrides["pos_name"] = position.name
 
