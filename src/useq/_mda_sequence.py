@@ -328,10 +328,6 @@ class MDASequence(UseqModel):
                 if p.sequence is not None and p.sequence.autofocus_plan:
                     raise ValueError(err)
 
-    def __str__(self) -> str:
-        sizes = ", ".join(f"n{k}={v}" for k, v in self.sizes.items() if v)
-        return f"Multi-Dimensional Acquisition with: {sizes}"
-
     @property
     def shape(self) -> Tuple[int, ...]:
         """Return the shape of this sequence.
