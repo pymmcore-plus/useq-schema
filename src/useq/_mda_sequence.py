@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Sequence, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Sequence,
+    Tuple,
+)
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -104,7 +113,7 @@ class MDASequence(UseqModel):
     """
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    axis_order: str = "".join(AXES)
+    axis_order: Tuple[str, ...] = AXES
     stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
     grid_plan: Optional[AnyGridPlan] = None
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
@@ -207,10 +216,10 @@ class MDASequence(UseqModel):
         return {"phases": v} if isinstance(v, (tuple, list)) else v or None
 
     @field_validator("axis_order", mode="before")
-    def _validate_axis_order(cls, v: Any) -> str:
-        if not isinstance(v, str):
-            raise ValueError(f"acquisition order must be a string, got {type(v)}")
-        order = v.lower()
+    def _validate_axis_order(cls, v: Any) -> tuple[str, ...]:
+        if not isinstance(v, Iterable):
+            raise ValueError(f"axis_order must be iterable, got {type(v)}")
+        order = tuple(str(x).lower() for x in v)
         extra = {x for x in order if x not in AXES}
         if extra:
             raise ValueError(

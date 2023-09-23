@@ -201,7 +201,7 @@ def test_stage_positions(position: Any, pexpectation: Sequence[float]) -> None:
 
 
 def test_axis_order_errors() -> None:
-    with pytest.raises(ValueError, match="acquisition order must be a"):
+    with pytest.raises(ValueError, match="axis_order must be iterable"):
         MDASequence(axis_order=1)
     with pytest.raises(ValueError, match="Duplicate entries found"):
         MDASequence(axis_order="tpgcztpgcz")
@@ -325,13 +325,13 @@ def test_shape_and_axes() -> None:
         z_plan=z_as_class[0][0], time_plan=t_as_class[0][0], axis_order="tzp"
     )
     assert mda.shape == (5, 7)
-    assert mda.axis_order == "tzp"
+    assert mda.axis_order == tuple("tzp")
     assert mda.used_axes == "tz"
     assert mda.sizes == {"t": 5, "z": 7, "p": 0}
 
     mda2 = mda.replace(axis_order="zptc")
     assert mda2.shape == (7, 5)
-    assert mda2.axis_order == "zptc"
+    assert mda2.axis_order == tuple("zptc")
     assert mda2.used_axes == "zt"
     assert mda2.sizes == {"z": 7, "p": 0, "t": 5, "c": 0}
 

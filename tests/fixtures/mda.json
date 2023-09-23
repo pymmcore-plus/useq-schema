@@ -6,7 +6,13 @@
       "c"
     ]
   },
-  "axis_order": "tpgcz",
+  "axis_order": [
+    "t",
+    "p",
+    "g",
+    "c",
+    "z"
+  ],
   "channels": [
     {
       "acquire_every": 1,
@@ -64,7 +70,13 @@
       "name": "test_name",
       "sequence": {
         "autofocus_plan": null,
-        "axis_order": "tpgcz",
+        "axis_order": [
+          "t",
+          "p",
+          "g",
+          "c",
+          "z"
+        ],
         "channels": [],
         "grid_plan": {
           "columns": 3,
