@@ -117,6 +117,34 @@ jobs:
         run: pytest -v --color=yes -W default
         working-directory: pymmcore-widgets-from-github
 
+  test_napari_micromanager:
+    name: Test napari-micromanager
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: pymmcore-plus/napari-micromanager
+          path: napari-micromanager-from-github
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e napari-micromanager-from-github[test,image,pyqt5]
+          pip install -e .[test]
+
+      - name: Install Micro-Manager
+        run: mmcore install
+
+      - name: Test
+        run: pytest -v --color=yes -W default
+        working-directory: napari-micromanager-from-github
+
   deploy:
     needs: test
     runs-on: ubuntu-latest
