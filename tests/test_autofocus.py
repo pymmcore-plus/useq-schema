@@ -113,3 +113,12 @@ def test_autofocus_z_pos_multi_plans() -> None:
     )
 
     assert all(e.z_pos == 200 for e in mda if isinstance(e.action, HardwareAutofocus))
+
+
+def test_af_no_name() -> None:
+    list(
+        MDASequence(
+            time_plan={"interval": 1, "loops": 2},
+            autofocus_plan=AxesBasedAF(axes=("t", "c")),
+        )
+    )

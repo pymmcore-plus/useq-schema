@@ -12,14 +12,17 @@ class AutoFocusPlan(FrozenModel):
 
     Attributes
     ----------
-    autofocus_device_name : str
-        Name of the hardware autofocus z device.
+    autofocus_device_name : str | None
+        Optional name of the offset motor device.  If `None`, acquisition engines may
+        attempt to set the offset however they see fit (such as using a current
+        or default autofocus device.)
     autofocus_motor_offset : float | None
         Before autofocus is performed, the autofocus motor should be moved to this
-        offset.
+        offset, if applicable. (Not all autofocus devices have an offset motor.)
+        If None, the autofocus motor should not be moved.
     """
 
-    autofocus_device_name: str
+    autofocus_device_name: Optional[str] = None
     autofocus_motor_offset: Optional[float] = None
 
     def as_action(self) -> HardwareAutofocus:

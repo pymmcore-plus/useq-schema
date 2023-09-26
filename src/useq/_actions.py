@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 from typing_extensions import Literal
 
@@ -43,18 +43,21 @@ class HardwareAutofocus(Action):
     ----------
     type : Literal["hardware_autofocus"]
         This action can be used to trigger hardware autofocus.
-    autofocus_device_name : str
-        The name of the hardware autofocus device.
-    autofocus_motor_offset: float
+    autofocus_device_name : str, optional
+        The name of the autofocus offset motor device (if applicable).  If `None`,
+        acquisition engines may attempt to set the offset however they see fit (such as
+        using a current or default autofocus device.)
+    autofocus_motor_offset: float, optional
         Before autofocus is performed, the autofocus motor should be moved to this
-        offset.
+        offset, if applicable. (Not all autofocus devices have an offset motor.)
+        If None, the autofocus motor should not be moved.
     max_retries : int
         The number of retries if autofocus fails. By default, 3.
     """
 
     type: Literal["hardware_autofocus"] = "hardware_autofocus"
-    autofocus_device_name: str
-    autofocus_motor_offset: float
+    autofocus_device_name: Optional[str] = None
+    autofocus_motor_offset: Optional[float] = None
     max_retries: int = 3
 
 
