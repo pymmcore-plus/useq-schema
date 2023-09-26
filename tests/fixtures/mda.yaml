@@ -3,7 +3,12 @@ autofocus_plan:
   autofocus_motor_offset: 50.0
   axes:
   - c
-axis_order: tpgcz
+axis_order:
+- t
+- p
+- g
+- c
+- z
 channels:
 - config: Cy5
   exposure: 50.0
@@ -22,7 +27,12 @@ stage_positions:
   y: 20.0
 - name: test_name
   sequence:
-    axis_order: tpgcz
+    axis_order:
+    - t
+    - p
+    - g
+    - c
+    - z
     grid_plan:
       columns: 3
       mode: row_wise_snake
