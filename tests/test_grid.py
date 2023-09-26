@@ -99,8 +99,11 @@ def test_grid_type():
 
 
 def test_num_position_error() -> None:
-    with pytest.raises(ValueError, match="the field of view size be set"):
+    with pytest.raises(ValueError, match="plan requires the field of view size"):
         GridFromEdges(top=1, left=-1, bottom=-1, right=2).num_positions()
+
+    with pytest.raises(ValueError, match="plan requires the field of view size"):
+        GridWidthHeight(width=2, height=2).num_positions()
 
 
 expected_rectangle = [(0.2, 1.1), (0.4, 0.2), (-0.3, 0.7)]
