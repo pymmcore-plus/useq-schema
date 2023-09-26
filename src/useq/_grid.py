@@ -188,13 +188,15 @@ class _GridPlan(_PointsPlan):
     def num_positions(self) -> int:
         """Return the number of individual positions in the grid.
 
-        Note: For GridFromEdges, this will depend on field of view size.  If no
-        field of view size is provided, the number of positions will be 1.
+        Note: For GridFromEdges and GridWidthHeight, this will depend on field of view
+        size. If no field of view size is provided, the number of positions will be 1.
         """
-        if not self.is_relative and (self.fov_width is None or self.fov_height is None):
+        if isinstance(self, (GridFromEdges, GridWidthHeight)) and (
+            self.fov_width is None or self.fov_height is None
+        ):
             raise ValueError(
-                "Retrieving the number of positions in a GridFromEdges plan requires "
-                "that the field of view size be set."
+                "Retrieving the number of positions in a GridFromEdges or "
+                "GridWidthHeight plan requires the field of view size to be set."
             )
 
         dx, dy = self._step_size(self.fov_width or 1, self.fov_height or 1)
