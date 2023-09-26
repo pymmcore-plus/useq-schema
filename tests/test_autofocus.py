@@ -17,7 +17,7 @@ TWO_CH_TWO_P_GRID = TWO_CH_TWO_P.replace(grid_plan=GRID_PLAN)
 TWO_CH_TWO_P_T = TWO_CH_TWO_P.replace(time_plan={"interval": 1, "loops": 2})
 NO_CH_ZSTACK = MDASequence(stage_positions=[ZPOS_30], z_plan=ZRANGE2)
 TWO_CH_ZSTACK = NO_CH_ZSTACK.replace(channels=["DAPI", "FITC"])
-AF = AxesBasedAF(autofocus_motor_offset=40, axes=())
+AF = AxesBasedAF(autofocus_device_name="Z", autofocus_motor_offset=40, axes=())
 AF_C = AF.model_copy(update={"axes": ("c",)})
 AF_G = AF.model_copy(update={"axes": ("g",)})
 AF_P = AF.model_copy(update={"axes": ("p",)})
@@ -113,3 +113,12 @@ def test_autofocus_z_pos_multi_plans() -> None:
     )
 
     assert all(e.z_pos == 200 for e in mda if isinstance(e.action, HardwareAutofocus))
+
+
+def test_af_no_name() -> None:
+    list(
+        MDASequence(
+            time_plan={"interval": 1, "loops": 2},
+            autofocus_plan=AxesBasedAF(axes=("t", "c")),
+        )
+    )
