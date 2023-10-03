@@ -159,8 +159,24 @@ def _time_phase_duration(
         # to actually acquire the data
         time_interval_s = s_per_timepoint
 
-        # if p axes is before t axes, then the time interval is not exceeded
-        if list(axis_order).index("p") < list(axis_order).index("t"):
+        axis = list(axis_order)
+        # if there are no position and grid axes, then the time interval is not
+        # exceeded
+        if Axis.POSITION not in axis and Axis.GRID not in axis:
+            time_interval_exceeded = False
+        # if there are both position and grid axes, then the time interval, is not
+        # exceeded if the position and grid axes are before the time axis
+        elif Axis.POSITION in axis and Axis.GRID in axis:
+            if axis.index(Axis.POSITION) < axis.index(Axis.TIME) and axis.index(
+                Axis.GRID
+            ) < axis.index(Axis.TIME):
+                time_interval_exceeded = False
+        # if there is only one of position or grid axes, then the time interval is
+        # not exceeded if that axis is before the time axis
+        elif Axis.POSITION in axis:
+            if axis.index(Axis.POSITION) < axis.index(Axis.TIME):
+                time_interval_exceeded = False
+        elif axis.index(Axis.GRID) < axis.index(Axis.TIME):
             time_interval_exceeded = False
 
     tot_duration = (phase.num_timepoints() - 1) * time_interval_s + s_per_timepoint
