@@ -136,7 +136,9 @@ def _estimate_simple_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
         phases = tplan.phases if hasattr(tplan, "phases") else [tplan]
         tot_duration = 0.0
         for phase in phases:
-            phase_duration, exceeded = _time_phase_duration(phase, s_per_timepoint)
+            phase_duration, exceeded = _time_phase_duration(
+                phase, s_per_timepoint, seq.axis_order
+            )
             tot_duration += phase_duration
             t_interval_exceeded = t_interval_exceeded or exceeded
     else:
@@ -146,7 +148,7 @@ def _estimate_simple_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
 
 
 def _time_phase_duration(
-    phase: SinglePhaseTimePlan, s_per_timepoint: float
+    phase: SinglePhaseTimePlan, s_per_timepoint: float, axis_order: tuple[str, ...]
 ) -> tuple[float, bool]:
     """Calculate duration for a single time plan phase."""
     time_interval_s = phase.interval.total_seconds()
@@ -156,6 +158,10 @@ def _time_phase_duration(
         # prescribed interval (according to the time plan) and the time it takes
         # to actually acquire the data
         time_interval_s = s_per_timepoint
+
+        # if p axes is before t axes, then the time interval is not exceeded
+        if list(axis_order).index("p") < list(axis_order).index("t"):
+            time_interval_exceeded = False
 
     tot_duration = (phase.num_timepoints() - 1) * time_interval_s + s_per_timepoint
     return tot_duration, time_interval_exceeded
