@@ -79,9 +79,8 @@ class MDASequence(UseqModel):
 
     Examples
     --------
-    >>> from useq import MDASequence, Position, Channel, TIntervalDuration
-
     # Create a MDASequence
+    >>> from useq import MDASequence, Position, Channel, TIntervalDuration
     >>> seq = MDASequence(
     ...     time_plan={"interval": 0.1, "loops": 2},
     ...     stage_positions=[(1, 1, 1)],
