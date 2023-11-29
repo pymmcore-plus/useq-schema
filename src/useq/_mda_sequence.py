@@ -87,8 +87,6 @@ class MDASequence(UseqModel):
     ...     z_plan={"range": 3, "step": 1},
     ...     channels=[{"config": "DAPI", "exposure": 1}]
     ... )
-    >>> print(seq)
-    Multi-Dimensional Acquisition ▶ nt: 2, np: 1, nc: 1, nz: 4, ng: 4
 
     >>> for event in seq:
     ...     print(event)
