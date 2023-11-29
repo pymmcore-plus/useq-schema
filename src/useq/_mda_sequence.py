@@ -89,15 +89,14 @@ class MDASequence(UseqModel):
     ...     channels=[{"config": "DAPI", "exposure": 1}]
     ... )
 
-    # print the sequence to visualize its structure
+    # Print the sequence to visualize its structure
     >>> print(seq)
 
-    # iterate over the events in the sequence and print each one to visualize the
-    # structure
+    # Iterate over the events in the sequence and print each one to visualize the structure
     >>> for event in seq:
     ...     print(event)
 
-    # print the sequence as yaml
+    # Print the sequence as yaml
     >>> print(seq.yaml())
     channels:
     - config: DAPI
@@ -115,7 +114,7 @@ class MDASequence(UseqModel):
     z_plan:
       range: 3.0
       step: 1.0
-    """
+    """  # noqa: E501
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: Tuple[str, ...] = AXES
