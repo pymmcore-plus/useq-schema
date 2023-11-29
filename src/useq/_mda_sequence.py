@@ -83,7 +83,7 @@ class MDASequence(UseqModel):
     >>> seq = MDASequence(
     ...     time_plan={"interval": 0.1, "loops": 2},
     ...     stage_positions=[(1, 1, 1)],
-    ...     grid_plan={"rows": 2, "cols": 2},
+    ...     grid_plan={"rows": 2, "columns": 2},
     ...     z_plan={"range": 3, "step": 1},
     ...     channels=[{"config": "DAPI", "exposure": 1}]
     ... )
