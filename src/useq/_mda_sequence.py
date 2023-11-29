@@ -79,9 +79,10 @@ class MDASequence(UseqModel):
 
     Examples
     --------
-    # Create a MDASequence
+    ### Create a MDASequence
     >>> from useq import MDASequence, Position, Channel, TIntervalDuration
     >>> seq = MDASequence(
+    ...     axis_order="tpgcz",
     ...     time_plan={"interval": 0.1, "loops": 2},
     ...     stage_positions=[(1, 1, 1)],
     ...     grid_plan={"rows": 2, "columns": 2},
@@ -89,14 +90,47 @@ class MDASequence(UseqModel):
     ...     channels=[{"config": "DAPI", "exposure": 1}]
     ... )
 
-    # Print the sequence to visualize its structure
+    ### Print the sequence to visualize its structure
     >>> print(seq)
+    >>> MDASequence(
+    ...     stage_positions=(Position(x=1.0, y=1.0, z=1.0, name=None, sequence=None),),
+    ...     grid_plan=GridRowsColumns(
+    ...         fov_width=None,
+    ...         fov_height=None,
+    ...         overlap=(0.0, 0.0),
+    ...         mode=<OrderMode.row_wise_snake: 'row_wise_snake'>,
+    ...         rows=2,
+    ...         columns=2,
+    ...         relative_to=<RelativeTo.center: 'center'>
+    ...     ),
+    ...     channels=(
+    ...         ...
+    >>> )
 
-    # Iterate over the events in the sequence and print each one to visualize the structure
+    ### Iterate over the events in the sequence and print each one to visualize the structure
     >>> for event in seq:
     ...     print(event)
+    >>> MDAEvent(
+    ...     index=mappingproxy({'t': 0, 'p': 0, 'g': 0, 'c': 0, 'z': 0}),
+    ...     channel=Channel(config='DAPI'),
+    ...     exposure=1.0,
+    ...     min_start_time=0.0,
+    ...     x_pos=0.5,
+    ...     y_pos=1.5,
+    ...     z_pos=-0.5
+    >>> )
+    >>> MDAEvent(
+    ...     index=mappingproxy({'t': 0, 'p': 0, 'g': 0, 'c': 0, 'z': 1}),
+    ...     channel=Channel(config='DAPI'),
+    ...     exposure=1.0,
+    ...     min_start_time=0.0,
+    ...     x_pos=0.5,
+    ...     y_pos=1.5,
+    ...     z_pos=0.5
+    >>> )
+    >>> ...
 
-    # Print the sequence as yaml
+    ### Print the sequence as yaml
     >>> print(seq.yaml())
     channels:
     - config: DAPI
