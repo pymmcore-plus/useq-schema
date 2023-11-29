@@ -80,6 +80,8 @@ class MDASequence(UseqModel):
     Examples
     --------
     >>> from useq import MDASequence, Position, Channel, TIntervalDuration
+
+    # Create a MDASequence
     >>> seq = MDASequence(
     ...     time_plan={"interval": 0.1, "loops": 2},
     ...     stage_positions=[(1, 1, 1)],
@@ -88,9 +90,15 @@ class MDASequence(UseqModel):
     ...     channels=[{"config": "DAPI", "exposure": 1}]
     ... )
 
+    # print the sequence to visualize its structure
+    >>> print(seq)
+
+    # iterate over the events in the sequence and print each one to visualize the
+    # structure
     >>> for event in seq:
     ...     print(event)
 
+    # print the sequence as yaml
     >>> print(seq.yaml())
     channels:
     - config: DAPI
