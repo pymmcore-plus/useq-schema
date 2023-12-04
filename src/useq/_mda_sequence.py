@@ -79,37 +79,104 @@ class MDASequence(UseqModel):
 
     Examples
     --------
+    Create a MDASequence
+
     >>> from useq import MDASequence, Position, Channel, TIntervalDuration
     >>> seq = MDASequence(
+    ...     axis_order="tpgcz",
     ...     time_plan={"interval": 0.1, "loops": 2},
     ...     stage_positions=[(1, 1, 1)],
-    ...     grid_plan={"rows": 2, "cols": 2},
+    ...     grid_plan={"rows": 2, "columns": 2},
     ...     z_plan={"range": 3, "step": 1},
     ...     channels=[{"config": "DAPI", "exposure": 1}]
     ... )
-    >>> print(seq)
-    Multi-Dimensional Acquisition ▶ nt: 2, np: 1, nc: 1, nz: 4, ng: 4
 
-    >>> for event in seq:
-    ...     print(event)
+    Print the sequence to visualize its structure
+
+    >>> print(seq)
+    ... MDASequence(
+    ...     stage_positions=(Position(x=1.0, y=1.0, z=1.0, name=None),),
+    ...     grid_plan=GridRowsColumns(
+    ...         fov_width=None,
+    ...         fov_height=None,
+    ...         overlap=(0.0, 0.0),
+    ...         mode=<OrderMode.row_wise_snake: 'row_wise_snake'>,
+    ...         rows=2,
+    ...         columns=2,
+    ...         relative_to=<RelativeTo.center: 'center'>
+    ...     ),
+    ...     channels=(
+    ...         Channel(
+    ...             config='DAPI',
+    ...             group='Channel',
+    ...             exposure=1.0,
+    ...             do_stack=True,
+    ...             z_offset=0.0,
+    ...             acquire_every=1,
+    ...             camera=None
+    ...         ),
+    ...     ),
+    ...     time_plan=TIntervalLoops(
+    ...         prioritize_duration=False,
+    ...         interval=datetime.timedelta(microseconds=100000),
+    ...         loops=2
+    ...     ),
+    ...     z_plan=ZRangeAround(go_up=True, range=3.0, step=1.0)
+    ... )
+
+    Iterate over the events in the sequence
+
+    >>> print(list(seq))
+    ... [
+    ...     MDAEvent(
+    ...         index=mappingproxy({'t': 0, 'p': 0, 'g': 0, 'c': 0, 'z': 0}),
+    ...         channel=Channel(config='DAPI'),
+    ...         exposure=1.0,
+    ...         min_start_time=0.0,
+    ...         x_pos=0.5,
+    ...         y_pos=1.5,
+    ...         z_pos=-0.5
+    ...     ),
+    ...     MDAEvent(
+    ...         index=mappingproxy({'t': 0, 'p': 0, 'g': 0, 'c': 0, 'z': 1}),
+    ...         channel=Channel(config='DAPI'),
+    ...         exposure=1.0,
+    ...         min_start_time=0.0,
+    ...         x_pos=0.5,
+    ...         y_pos=1.5,
+    ...         z_pos=0.5
+    ...     ),
+    ...     ...
+    ... ]
+
+    Print the sequence as yaml
 
     >>> print(seq.yaml())
+
+    ```yaml
+    axis_order:
+       - t
+       - p
+       - g
+       - c
+       - z
     channels:
-    - config: DAPI
-      exposure: 1.0
+       - config: DAPI
+         exposure: 1.0
     grid_plan:
-      columns: 2
-      rows: 2
+       columns: 2
+       rows: 2
     stage_positions:
-    - x: 1.0
-      y: 1.0
-      z: 1.0
+       - x: 1.0
+         y: 1.0
+         z: 1.0
     time_plan:
-      interval: '0:00:00.100000'
-      loops: 2
+       interval: '0:00:00.100000'
+       loops: 2
     z_plan:
-      range: 3.0
-      step: 1.0
+       range: 3.0
+       step: 1.0
+    ```
     """
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
