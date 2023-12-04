@@ -11,6 +11,7 @@ from typing import (
     Callable,
     ClassVar,
     Iterator,
+    Literal,  # noqa: F401
     NamedTuple,
     Optional,
     Sequence,
@@ -30,12 +31,36 @@ MIN_RANDOM_POINTS = 5000
 
 
 class RelativeTo(Enum):
-    center = "center"
-    top_left = "top_left"
+    """Where the coordinates of the grid are relative to.
+
+    Attributes
+    ----------
+    center : Literal['center']
+        Grid is centered around the origin.
+    top_left : Literal['top_left']
+        Grid is positioned such that the top left corner is at the origin.
+    """
+
+    center: str = "center"
+    top_left: str = "top_left"
 
 
 class OrderMode(Enum):
-    """Different ways of ordering the grid positions."""
+    """Order in which grid positions will be iterated.
+
+    Attributes
+    ----------
+    row_wise : Literal['row_wise']
+        Iterate row by row.
+    column_wise : Literal['column_wise']
+        Iterate column by column.
+    row_wise_snake : Literal['row_wise_snake']
+        Iterate row by row, but alternate the direction of the columns.
+    column_wise_snake : Literal['column_wise_snake']
+        Iterate column by column, but alternate the direction of the rows.
+    spiral : Literal['spiral']
+        Iterate in a spiral pattern, starting from the center.
+    """
 
     row_wise = "row_wise"
     column_wise = "column_wise"
@@ -416,6 +441,16 @@ class GridWidthHeight(_GridPlan):
 
 
 class Shape(Enum):
+    """Shape of the bounding box for random points.
+
+    Attributes
+    ----------
+    ELLIPSE : Literal['ellipse']
+        The bounding box is an ellipse.
+    RECTANGLE : Literal['rectangle']
+        The bounding box is a rectangle.
+    """
+
     ELLIPSE = "ellipse"
     RECTANGLE = "rectangle"
 
