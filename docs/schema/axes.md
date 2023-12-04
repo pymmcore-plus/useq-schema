@@ -69,3 +69,6 @@ Ways to describe a grid acquisition sequence.
 ::: useq.RandomPoints
     options:
         members: []
+::: useq._grid.RelativeTo
+::: useq._grid.OrderMode
+::: useq._grid.Shape
