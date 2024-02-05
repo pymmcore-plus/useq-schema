@@ -36,13 +36,11 @@ if TYPE_CHECKING:
 
 
 @overload
-def to_pycromanager(obj: MDAEvent) -> PycroManagerEvent:
-    ...
+def to_pycromanager(obj: MDAEvent) -> PycroManagerEvent: ...
 
 
 @overload
-def to_pycromanager(obj: MDASequence) -> list[PycroManagerEvent]:
-    ...
+def to_pycromanager(obj: MDASequence) -> list[PycroManagerEvent]: ...
 
 
 def to_pycromanager(
