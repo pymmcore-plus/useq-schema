@@ -439,3 +439,35 @@ def test_z_plan_num_position():
 
 def test_channel_str():
     assert MDAEvent(channel="DAPI") == MDAEvent(channel={"config": "DAPI"})
+
+
+def test_time_interval_exceeded():
+    main_seq = MDASequence(
+        axis_order="tc",
+        channels=[{"config": "DAPI", "exposure": 100}],
+        time_plan=TIntervalLoops(loops=10, interval=0),
+    )
+    assert not main_seq.estimate_duration().time_interval_exceeded
+
+    p_seq = main_seq.replace(axis_order="tpc", stage_position=[(1, 2, 3)])
+    assert p_seq.estimate_duration().time_interval_exceeded
+
+    p_seq = p_seq.replace(axis_order="ptc")
+    assert not p_seq.estimate_duration().time_interval_exceeded
+
+    g_seq = main_seq.replace(
+        axis_order="tgc", grid_plan=GridRelative(rows=1, columns=2)
+    )
+    assert g_seq.estimate_duration().time_interval_exceeded
+
+    g_seq = g_seq.replace(axis_order="gtc")
+    assert not g_seq.estimate_duration().time_interval_exceeded
+
+    pg_seq = g_seq.replace(axis_order="tpgc", stage_position=[(1, 2, 3)])
+    assert pg_seq.estimate_duration().time_interval_exceeded
+
+    pg_seq = pg_seq.replace(axis_order="ptcg")
+    assert pg_seq.estimate_duration().time_interval_exceeded
+
+    pg_seq = pg_seq.replace(axis_order="pgtc")
+    assert not pg_seq.estimate_duration().time_interval_exceeded
