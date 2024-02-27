@@ -11,6 +11,7 @@ from typing import (
     Callable,
     ClassVar,
     Iterator,
+    Literal,  # noqa: F401
     NamedTuple,
     Optional,
     Sequence,
@@ -30,12 +31,36 @@ MIN_RANDOM_POINTS = 5000
 
 
 class RelativeTo(Enum):
-    center = "center"
-    top_left = "top_left"
+    """Where the coordinates of the grid are relative to.
+
+    Attributes
+    ----------
+    center : Literal['center']
+        Grid is centered around the origin.
+    top_left : Literal['top_left']
+        Grid is positioned such that the top left corner is at the origin.
+    """
+
+    center: str = "center"
+    top_left: str = "top_left"
 
 
 class OrderMode(Enum):
-    """Different ways of ordering the grid positions."""
+    """Order in which grid positions will be iterated.
+
+    Attributes
+    ----------
+    row_wise : Literal['row_wise']
+        Iterate row by row.
+    column_wise : Literal['column_wise']
+        Iterate column by column.
+    row_wise_snake : Literal['row_wise_snake']
+        Iterate row by row, but alternate the direction of the columns.
+    column_wise_snake : Literal['column_wise_snake']
+        Iterate column by column, but alternate the direction of the rows.
+    spiral : Literal['spiral']
+        Iterate in a spiral pattern, starting from the center.
+    """
 
     row_wise = "row_wise"
     column_wise = "column_wise"
@@ -250,6 +275,22 @@ class GridFromEdges(_GridPlan):
         Bottom stage position of the bounding area
     right : float
         Right stage position of the bounding area
+    overlap : float | Tuple[float, float]
+        Overlap between grid positions in percent. If a single value is provided, it is
+        used for both x and y. If a tuple is provided, the first value is used
+        for x and the second for y.
+    mode : OrderMode
+        Define the ways of ordering the grid positions. Options are
+        row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
+        By default, row_wise_snake.
+    fov_width : Optional[float]
+        Width of the field of view in microns.  If not provided, acquisition engines
+        should use current width of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    fov_height : Optional[float]
+        Height of the field of view in microns. If not provided, acquisition engines
+        should use current height of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
     """
 
     # everything but fov_width and fov_height is immutable
@@ -286,6 +327,22 @@ class GridRowsColumns(_GridPlan):
         Point in the grid to which the coordinates are relative. If "center", the grid
         is centered around the origin. If "top_left", the grid is positioned such that
         the top left corner is at the origin.
+    overlap : float | Tuple[float, float]
+        Overlap between grid positions in percent. If a single value is provided, it is
+        used for both x and y. If a tuple is provided, the first value is used
+        for x and the second for y.
+    mode : OrderMode
+        Define the ways of ordering the grid positions. Options are
+        row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
+        By default, row_wise_snake.
+    fov_width : Optional[float]
+        Width of the field of view in microns.  If not provided, acquisition engines
+        should use current width of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    fov_height : Optional[float]
+        Height of the field of view in microns. If not provided, acquisition engines
+        should use current height of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
     """
 
     # everything but fov_width and fov_height is immutable
@@ -333,6 +390,22 @@ class GridWidthHeight(_GridPlan):
         Point in the grid to which the coordinates are relative. If "center", the grid
         is centered around the origin. If "top_left", the grid is positioned such that
         the top left corner is at the origin.
+    overlap : float | Tuple[float, float]
+        Overlap between grid positions in percent. If a single value is provided, it is
+        used for both x and y. If a tuple is provided, the first value is used
+        for x and the second for y.
+    mode : OrderMode
+        Define the ways of ordering the grid positions. Options are
+        row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
+        By default, row_wise_snake.
+    fov_width : Optional[float]
+        Width of the field of view in microns.  If not provided, acquisition engines
+        should use current width of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    fov_height : Optional[float]
+        Height of the field of view in microns. If not provided, acquisition engines
+        should use current height of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
     """
 
     width: float = Field(..., frozen=True, gt=0)
@@ -368,6 +441,16 @@ class GridWidthHeight(_GridPlan):
 
 
 class Shape(Enum):
+    """Shape of the bounding box for random points.
+
+    Attributes
+    ----------
+    ELLIPSE : Literal['ellipse']
+        The bounding box is an ellipse.
+    RECTANGLE : Literal['rectangle']
+        The bounding box is a rectangle.
+    """
+
     ELLIPSE = "ellipse"
     RECTANGLE = "rectangle"
 
