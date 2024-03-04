@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import warnings
 from pathlib import Path
 from types import MappingProxyType
@@ -23,7 +21,6 @@ if TYPE_CHECKING:
     from pydantic import ConfigDict
 
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
-    IncEx = set[int] | set[str] | dict[int, Any] | dict[str, Any] | None
 
 __all__ = ["UseqModel", "FrozenModel"]
 
@@ -32,7 +29,7 @@ _Y = TypeVar("_Y", bound="UseqModel")
 
 
 class FrozenModel(BaseModel):
-    model_config: ClassVar[ConfigDict] = {
+    model_config: ClassVar["ConfigDict"] = {
         "populate_by_name": True,
         "extra": "ignore",
         "frozen": True,
@@ -55,7 +52,7 @@ class FrozenModel(BaseModel):
 
 
 class UseqModel(FrozenModel):
-    def __repr_args__(self) -> ReprArgs:
+    def __repr_args__(self) -> "ReprArgs":
         """Only show fields that are not None or equal to their default value."""
         return [
             (k, val)

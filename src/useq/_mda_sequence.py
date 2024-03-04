@@ -1,15 +1,10 @@
-from __future__ import annotations
-
 import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Iterable,
     Iterator,
-    Optional,
     Sequence,
-    Tuple,
 )
 from uuid import UUID, uuid4
 from warnings import warn
@@ -20,13 +15,13 @@ from pydantic_compat import field_validator, model_validator
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
-from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
+from useq._grid import AnyGridPlan, GridPosition
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._position import Position
-from useq._time import AnyTimePlan  # noqa: TCH001
+from useq._time import AnyTimePlan
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
-from useq._z import AnyZPlan  # noqa: TCH001
+from useq._z import AnyZPlan
 
 if TYPE_CHECKING:
     from useq._mda_event import MDAEvent
@@ -179,25 +174,25 @@ class MDASequence(UseqModel):
     ```
     """
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    axis_order: Tuple[str, ...] = AXES
-    stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
-    grid_plan: Optional[AnyGridPlan] = None
-    channels: Tuple[Channel, ...] = Field(default_factory=tuple)
-    time_plan: Optional[AnyTimePlan] = None
-    z_plan: Optional[AnyZPlan] = None
-    autofocus_plan: Optional[AnyAutofocusPlan] = None
-    keep_shutter_open_across: Tuple[str, ...] = Field(default_factory=tuple)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    axis_order: tuple[str, ...] = AXES
+    stage_positions: tuple[Position, ...] = Field(default_factory=tuple)
+    grid_plan: AnyGridPlan | None = None
+    channels: tuple[Channel, ...] = Field(default_factory=tuple)
+    time_plan: AnyTimePlan | None = None
+    z_plan: AnyZPlan | None = None
+    autofocus_plan: AnyAutofocusPlan | None = None
+    keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
-    _sizes: Optional[Dict[str, int]] = PrivateAttr(default=None)
+    _sizes: dict[str, int] | None = PrivateAttr(default=None)
 
     @property
     def uid(self) -> UUID:
         """A unique identifier for this sequence."""
         return self._uid
 
-    def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
+    def set_fov_size(self, fov_size: tuple[float, float]) -> None:
         """Set the field of view size.
 
         FOV is used to calculate the number of positions in a grid plan.
@@ -221,7 +216,7 @@ class MDASequence(UseqModel):
         return hash(self.uid)
 
     @field_validator("z_plan", mode="before")
-    def _validate_zplan(cls, v: Any) -> Optional[dict]:
+    def _validate_zplan(cls, v: Any) -> dict | None:
         return v or None
 
     @field_validator("keep_shutter_open_across", mode="before")
@@ -236,7 +231,7 @@ class MDASequence(UseqModel):
         return v
 
     @field_validator("channels", mode="before")
-    def _validate_channels(cls, value: Any) -> Tuple[Channel, ...]:
+    def _validate_channels(cls, value: Any) -> tuple[Channel, ...]:
         if isinstance(value, str) or not isinstance(
             value, Sequence
         ):  # pragma: no cover
@@ -254,7 +249,7 @@ class MDASequence(UseqModel):
         return tuple(channels)
 
     @field_validator("stage_positions", mode="before")
-    def _validate_stage_positions(cls, value: Any) -> Tuple[Position, ...]:
+    def _validate_stage_positions(cls, value: Any) -> tuple[Position, ...]:
         if isinstance(value, np.ndarray):
             if value.ndim == 1:
                 value = [value]
@@ -279,7 +274,7 @@ class MDASequence(UseqModel):
         return tuple(positions)
 
     @field_validator("time_plan", mode="before")
-    def _validate_time_plan(cls, v: Any) -> Optional[dict]:
+    def _validate_time_plan(cls, v: Any) -> dict | None:
         return {"phases": v} if isinstance(v, (tuple, list)) else v or None
 
     @field_validator("axis_order", mode="before")
@@ -332,11 +327,11 @@ class MDASequence(UseqModel):
     @staticmethod
     def _check_order(
         order: str,
-        z_plan: Optional[AnyZPlan] = None,
+        z_plan: AnyZPlan | None = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
-        grid_plan: Optional[AnyGridPlan] = None,
-        autofocus_plan: Optional[AnyAutofocusPlan] = None,
+        grid_plan: AnyGridPlan | None = None,
+        autofocus_plan: AnyAutofocusPlan | None = None,
     ) -> None:
         if (
             Axis.Z in order
@@ -405,7 +400,7 @@ class MDASequence(UseqModel):
                     raise ValueError(err)
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         """Return the shape of this sequence.
 
         !!! note
@@ -415,7 +410,7 @@ class MDASequence(UseqModel):
         return tuple(s for s in self.sizes.values() if s)
 
     @property
-    def sizes(self) -> Dict[str, int]:
+    def sizes(self) -> dict[str, int]:
         """Mapping of axis name to size of that axis."""
         if self._sizes is None:
             self._sizes = {k: len(list(self.iter_axis(k))) for k in self.axis_order}
@@ -440,11 +435,11 @@ class MDASequence(UseqModel):
         if plan:
             yield from plan
 
-    def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
+    def __iter__(self) -> Iterator["MDAEvent"]:  # type: ignore [override]
         """Same as `iter_events`. Supports `for event in sequence: ...` syntax."""
         yield from self.iter_events()
 
-    def iter_events(self) -> Iterator[MDAEvent]:
+    def iter_events(self) -> Iterator["MDAEvent"]:
         """Iterate over all events in the MDA sequence.
 
         See source of [useq._mda_sequence.iter_sequence][] for details on how
@@ -457,7 +452,7 @@ class MDASequence(UseqModel):
         """
         return iter_sequence(self)
 
-    def to_pycromanager(self) -> list[PycroManagerEvent]:
+    def to_pycromanager(self) -> list["PycroManagerEvent"]:
         warnings.warn(
             "useq.MDASequence.to_pycromanager() is deprecated and will be removed in a "
             "future version. Useq useq.pycromanager.to_pycromanager(seq) instead.",

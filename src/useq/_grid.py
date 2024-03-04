@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import contextlib
 import math
 import warnings
@@ -142,7 +140,10 @@ class GridPosition(NamedTuple):
 
 class _PointsPlan(FrozenModel):
     # Overriding FrozenModel to make fov_width and fov_height mutable.
-    model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
+    model_config: ClassVar["ConfigDict"] = {
+        "validate_assignment": True,
+        "frozen": False,
+    }
 
     fov_width: Optional[float] = Field(None)
     fov_height: Optional[float] = Field(None)
