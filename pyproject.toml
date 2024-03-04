@@ -40,7 +40,6 @@ dependencies = ["pydantic >=1.7,!=2.4.1", "numpy", "pydantic-compat >=0.0.4"]
 yaml = ["PyYAML"]
 test = ["pytest>=6.0", "pytest-cov", "PyYAML"]
 dev = [
-    "black",
     "ipython",
     "mypy",
     "pdbpp",
