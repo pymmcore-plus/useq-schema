@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Callable, Iterator, Sequence, Union
+from typing import Callable, Iterator, List, Sequence, Union
 
 import numpy as np
 from pydantic_compat import field_validator
@@ -146,7 +146,7 @@ class ZRelativePositions(ZPlan):
         reverse.
     """
 
-    relative: list[float]
+    relative: List[float]
 
     _normrel = _list_cast("relative")
 
@@ -169,7 +169,7 @@ class ZAbsolutePositions(ZPlan):
         reverse.
     """
 
-    absolute: list[float]
+    absolute: List[float]
 
     _normabs = _list_cast("absolute")
 

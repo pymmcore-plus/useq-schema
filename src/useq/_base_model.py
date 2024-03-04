@@ -11,7 +11,9 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Type,
     TypeVar,
+    Union,
 )
 
 import numpy as np
@@ -68,7 +70,7 @@ class UseqModel(FrozenModel):
         ]
 
     @classmethod
-    def from_file(cls: type[_Y], path: str | Path) -> _Y:
+    def from_file(cls: Type[_Y], path: Union[str, Path]) -> _Y:
         """Return an instance of this class from a file.  Supports JSON and YAML."""
         path = Path(path)
         if path.suffix in {".yaml", ".yml"}:
@@ -85,7 +87,7 @@ class UseqModel(FrozenModel):
         return cls.model_validate(obj)
 
     @classmethod
-    def parse_file(cls: type[_Y], path: str | Path, **kwargs: Any) -> _Y:
+    def parse_file(cls: Type[_Y], path: Union[str, Path], **kwargs: Any) -> _Y:
         warnings.warn(  # pragma: no cover
             "parse_file is deprecated. Use from_file instead.",
             DeprecationWarning,
@@ -96,14 +98,14 @@ class UseqModel(FrozenModel):
     def yaml(
         self,
         *,
-        include: set | dict | None = None,
-        exclude: set | dict | None = None,
+        include: Optional[Union[set, dict]] = None,
+        exclude: Optional[Union[set, dict]] = None,
         by_alias: bool = False,
         exclude_unset: bool = True,  # pydantic has False by default
         exclude_defaults: bool = False,
         exclude_none: bool = False,
-        stream: IO[str] | None = None,
-    ) -> str | None:
+        stream: Optional[IO[str]] = None,
+    ) -> Optional[str]:
         """Generate a YAML representation of the model.
 
         Returns

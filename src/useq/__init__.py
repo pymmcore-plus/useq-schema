@@ -1,5 +1,3 @@
-"""Implementation agnostic schema for multi-dimensional microscopy experiments."""
-
 from typing import Any
 
 from useq._actions import AcquireImage, Action, HardwareAutofocus

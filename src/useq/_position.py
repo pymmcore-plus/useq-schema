@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from useq._base_model import FrozenModel
 
@@ -30,8 +30,8 @@ class Position(FrozenModel):
     """
 
     # if None, implies 'do not move this axis'
-    x: float | None = None
-    y: float | None = None
-    z: float | None = None
-    name: str | None = None
-    sequence: MDASequence | None = None
+    x: Optional[float] = None
+    y: Optional[float] = None
+    z: Optional[float] = None
+    name: Optional[str] = None
+    sequence: Optional[MDASequence] = None

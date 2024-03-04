@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from itertools import product
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Iterator, cast
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Tuple, cast
 
 from typing_extensions import TypedDict
 
@@ -44,7 +44,7 @@ class PositionDict(TypedDict, total=False):
 @lru_cache(maxsize=None)
 def _iter_axis(
     seq: MDASequence, ax: str
-) -> tuple[Position | Channel | float | GridPosition, ...]:
+) -> Tuple[Position | Channel | float | GridPosition, ...]:
     return tuple(seq.iter_axis(ax))
 
 
@@ -93,7 +93,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
 
     for next_e in it:
         # set `keep_shutter_open` to `True` if and only if ALL axes whose index
-        # changes between this_event and next_event are in `keep_shutter_open_axes`
+        # changes betwee this_event and next_event are in `keep_shutter_open_axes`
         if all(
             axis in keep_shutter_open_axes
             for axis, idx in this_e.index.items()
@@ -126,7 +126,7 @@ def _iter_sequence(
         The sequence to iterate over.
     base_event_kwargs : MDAEventDict | None
         A dictionary of "global" kwargs to begin with when building the kwargs passed
-        to each MDAEvent.  These will be overridden by event-specific kwargs (e.g. if
+        to each MDAEvent.  These will be overriden by event-specific kwargs (e.g. if
         the event specifies a channel, it will be used instead of the
         `base_event_kwargs`.)
     event_kwarg_overrides : MDAEventDict | None
@@ -351,8 +351,8 @@ def _xyzpos(
         z_pos = position.z
 
     if grid:
-        x_pos: float | None = grid.x
-        y_pos: float | None = grid.y
+        x_pos: Optional[float] = grid.x
+        y_pos: Optional[float] = grid.y
         if grid.is_relative:
             px = getattr(position, "x", 0) or 0
             py = getattr(position, "y", 0) or 0

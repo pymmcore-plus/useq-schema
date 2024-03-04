@@ -13,6 +13,7 @@ from typing import (
     Iterator,
     Literal,  # noqa: F401
     NamedTuple,
+    Optional,
     Sequence,
     Tuple,
     Union,
@@ -70,7 +71,7 @@ class OrderMode(Enum):
 
 def _spiral_indices(
     rows: int, columns: int, center_origin: bool = False
-) -> Iterator[tuple[int, int]]:
+) -> Iterator[Tuple[int, int]]:
     """Return a spiral iterator over a 2D grid.
 
     Parameters
@@ -109,7 +110,7 @@ def _spiral_indices(
 # function that iterates indices (row, col) in a grid where (0, 0) is the top left
 def _rect_indices(
     rows: int, columns: int, snake: bool = False, row_wise: bool = True
-) -> Iterator[tuple[int, int]]:
+) -> Iterator[Tuple[int, int]]:
     """Return a row or column-wise iterator over a 2D grid."""
     c, r = np.meshgrid(np.arange(columns), np.arange(rows))
     if snake:
@@ -143,8 +144,8 @@ class _PointsPlan(FrozenModel):
     # Overriding FrozenModel to make fov_width and fov_height mutable.
     model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
 
-    fov_width: float | None = Field(None)
-    fov_height: float | None = Field(None)
+    fov_width: Optional[float] = Field(None)
+    fov_height: Optional[float] = Field(None)
 
     @property
     def is_relative(self) -> bool:
@@ -180,11 +181,11 @@ class _GridPlan(_PointsPlan):
         Engines MAY override this even if provided.
     """
 
-    overlap: tuple[float, float] = Field((0.0, 0.0), frozen=True)
+    overlap: Tuple[float, float] = Field((0.0, 0.0), frozen=True)
     mode: OrderMode = Field(OrderMode.row_wise_snake, frozen=True)
 
     @field_validator("overlap", mode="before")
-    def _validate_overlap(cls, v: Any) -> tuple[float, float]:
+    def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
         with contextlib.suppress(TypeError, ValueError):
             v = float(v)
         if isinstance(v, float):
@@ -252,7 +253,7 @@ class _GridPlan(_PointsPlan):
     def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
         yield from self.iter_grid_positions()
 
-    def _step_size(self, fov_width: float, fov_height: float) -> tuple[float, float]:
+    def _step_size(self, fov_width: float, fov_height: float) -> Tuple[float, float]:
         dx = fov_width - (fov_width * self.overlap[0]) / 100
         dy = fov_height - (fov_height * self.overlap[1]) / 100
         return dx, dy
@@ -471,15 +472,15 @@ class RandomPoints(_PointsPlan):
         Random numpy seed that should be used to generate the points. If None, a random
         seed will be used.
     allow_overlap : bool
-        By default, True. If False and `fov_width` and `fov_height` are specified,
-        points will not overlap and will be at least `fov_width` and `fov_height apart.
+        By defaut, True. If False and `fov_width` and `fov_height` are specified, points
+        will not overlap and will be at least `fov_width` and `fov_height apart.
     """
 
     num_points: int
     max_width: float
     max_height: float
     shape: Shape
-    random_seed: int | None = None
+    random_seed: Optional[int] = None
     allow_overlap: bool = True
 
     @property
@@ -490,7 +491,7 @@ class RandomPoints(_PointsPlan):
         seed = np.random.RandomState(self.random_seed)
         func = _POINTS_GENERATORS[self.shape]
         n_points = max(self.num_points, MIN_RANDOM_POINTS)
-        points: list[tuple[float, float]] = []
+        points: list[Tuple[float, float]] = []
         for x, y in func(seed, n_points, self.max_width, self.max_height):
             if (
                 self.allow_overlap
@@ -514,7 +515,7 @@ class RandomPoints(_PointsPlan):
 
 
 def _is_a_valid_point(
-    points: list[tuple[float, float]],
+    points: list[Tuple[float, float]],
     x: float,
     y: float,
     min_dist_x: float,
