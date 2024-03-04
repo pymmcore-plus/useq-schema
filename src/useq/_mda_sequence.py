@@ -4,12 +4,9 @@ import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Iterable,
     Iterator,
-    Optional,
     Sequence,
-    Tuple,
 )
 from uuid import UUID, uuid4
 from warnings import warn
@@ -179,25 +176,25 @@ class MDASequence(UseqModel):
     ```
     """
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    axis_order: Tuple[str, ...] = AXES
-    stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
-    grid_plan: Optional[AnyGridPlan] = None
-    channels: Tuple[Channel, ...] = Field(default_factory=tuple)
-    time_plan: Optional[AnyTimePlan] = None
-    z_plan: Optional[AnyZPlan] = None
-    autofocus_plan: Optional[AnyAutofocusPlan] = None
-    keep_shutter_open_across: Tuple[str, ...] = Field(default_factory=tuple)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    axis_order: tuple[str, ...] = AXES
+    stage_positions: tuple[Position, ...] = Field(default_factory=tuple)
+    grid_plan: AnyGridPlan | None = None
+    channels: tuple[Channel, ...] = Field(default_factory=tuple)
+    time_plan: AnyTimePlan | None = None
+    z_plan: AnyZPlan | None = None
+    autofocus_plan: AnyAutofocusPlan | None = None
+    keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
-    _sizes: Optional[Dict[str, int]] = PrivateAttr(default=None)
+    _sizes: dict[str, int] | None = PrivateAttr(default=None)
 
     @property
     def uid(self) -> UUID:
         """A unique identifier for this sequence."""
         return self._uid
 
-    def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
+    def set_fov_size(self, fov_size: tuple[float, float]) -> None:
         """Set the field of view size.
 
         FOV is used to calculate the number of positions in a grid plan.
@@ -221,7 +218,7 @@ class MDASequence(UseqModel):
         return hash(self.uid)
 
     @field_validator("z_plan", mode="before")
-    def _validate_zplan(cls, v: Any) -> Optional[dict]:
+    def _validate_zplan(cls, v: Any) -> dict | None:
         return v or None
 
     @field_validator("keep_shutter_open_across", mode="before")
@@ -236,7 +233,7 @@ class MDASequence(UseqModel):
         return v
 
     @field_validator("channels", mode="before")
-    def _validate_channels(cls, value: Any) -> Tuple[Channel, ...]:
+    def _validate_channels(cls, value: Any) -> tuple[Channel, ...]:
         if isinstance(value, str) or not isinstance(
             value, Sequence
         ):  # pragma: no cover
@@ -254,7 +251,7 @@ class MDASequence(UseqModel):
         return tuple(channels)
 
     @field_validator("stage_positions", mode="before")
-    def _validate_stage_positions(cls, value: Any) -> Tuple[Position, ...]:
+    def _validate_stage_positions(cls, value: Any) -> tuple[Position, ...]:
         if isinstance(value, np.ndarray):
             if value.ndim == 1:
                 value = [value]
@@ -279,7 +276,7 @@ class MDASequence(UseqModel):
         return tuple(positions)
 
     @field_validator("time_plan", mode="before")
-    def _validate_time_plan(cls, v: Any) -> Optional[dict]:
+    def _validate_time_plan(cls, v: Any) -> dict | None:
         return {"phases": v} if isinstance(v, (tuple, list)) else v or None
 
     @field_validator("axis_order", mode="before")
@@ -332,11 +329,11 @@ class MDASequence(UseqModel):
     @staticmethod
     def _check_order(
         order: str,
-        z_plan: Optional[AnyZPlan] = None,
+        z_plan: AnyZPlan | None = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
-        grid_plan: Optional[AnyGridPlan] = None,
-        autofocus_plan: Optional[AnyAutofocusPlan] = None,
+        grid_plan: AnyGridPlan | None = None,
+        autofocus_plan: AnyAutofocusPlan | None = None,
     ) -> None:
         if (
             Axis.Z in order
@@ -405,7 +402,7 @@ class MDASequence(UseqModel):
                     raise ValueError(err)
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         """Return the shape of this sequence.
 
         !!! note
@@ -415,7 +412,7 @@ class MDASequence(UseqModel):
         return tuple(s for s in self.sizes.values() if s)
 
     @property
-    def sizes(self) -> Dict[str, int]:
+    def sizes(self) -> dict[str, int]:
         """Mapping of axis name to size of that axis."""
         if self._sizes is None:
             self._sizes = {k: len(list(self.iter_axis(k))) for k in self.axis_order}
@@ -471,7 +468,7 @@ class MDASequence(UseqModel):
     def estimate_duration(self) -> TimeEstimate:
         """Estimate duration and other timing issues of an MDASequence.
 
-        Notable mis-estimations may include:
+        Notable misestimations may include:
         - when the time interval is shorter than the time it takes to acquire the data
         and any of the channels have `acquire_every` > 1
         - when channel exposure times are omitted. In this case, we assume 1ms exposure.

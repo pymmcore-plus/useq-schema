@@ -70,7 +70,7 @@ class TimeEstimate(NamedTuple):
 def estimate_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
     """Estimate the duration of an MDASequence.
 
-    Notable mis-estimations may include:
+    Notable misestimations may include:
     - when the time interval is shorter than the time it takes to acquire the data
       and any of the channels have `acquire_every` > 1
     - when channel exposure times are omitted. In this case, we assume 1ms exposure.
@@ -117,7 +117,7 @@ def _estimate_simple_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
     num_grid = seq.grid_plan.num_positions() if seq.grid_plan else 1
 
     # NOTE:
-    # technically some channels might have ch.aquire_every > 1
+    # technically some channels might have ch.acquire_every > 1
     # we don't account for that here.  The ONLY case where this will lead to erroneous
     # estimates is when the time plan interval is shorter than the time it takes to
     # acquire the data (i.e. when `time_interval_exceeded` is True`).  In that case,

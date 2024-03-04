@@ -36,10 +36,10 @@ class timedelta(datetime.timedelta):
     ) -> "CoreSchema":
         from pydantic_core.core_schema import (
             no_info_plain_validator_function,
-            plain_serializer_function_ser_schema,
+            plain_serializer_function_set_schema,
         )
 
-        serializer = plain_serializer_function_ser_schema(
+        serializer = plain_serializer_function_set_schema(
             cls._serialize, when_used="json"
         )
 
