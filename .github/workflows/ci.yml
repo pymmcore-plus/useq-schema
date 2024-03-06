@@ -56,6 +56,7 @@ jobs:
       matrix:
         include:
           - repo: pymmcore-plus/pymmcore-plus
+            qt: "pyside6"
           - repo: pymmcore-plus/pymmcore-widgets
             qt: "pyqt6"
           - repo: pymmcore-plus/napari-micromanager
