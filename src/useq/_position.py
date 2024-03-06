@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Optional
 
 from useq._base_model import FrozenModel
@@ -34,4 +32,4 @@ class Position(FrozenModel):
     y: Optional[float] = None
     z: Optional[float] = None
     name: Optional[str] = None
-    sequence: Optional[MDASequence] = None
+    sequence: Optional["MDASequence"] = None

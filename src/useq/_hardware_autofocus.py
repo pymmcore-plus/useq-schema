@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from pydantic import PrivateAttr
 
@@ -42,7 +42,7 @@ class AutoFocusPlan(FrozenModel):
         if not self.should_autofocus(event):
             return None
 
-        updates: dict[str, Any] = {"action": self.as_action()}
+        updates: Dict[str, Any] = {"action": self.as_action()}
         if event.z_pos is not None and event.sequence is not None:
             zplan = event.sequence.z_plan
             if zplan and zplan.is_relative and "z" in event.index:

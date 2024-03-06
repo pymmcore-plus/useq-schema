@@ -40,7 +40,6 @@ dependencies = ["pydantic >=1.7,!=2.4.1", "numpy", "pydantic-compat >=0.0.4"]
 yaml = ["PyYAML"]
 test = ["pytest>=6.0", "pytest-cov", "PyYAML"]
 dev = [
-    "black",
     "ipython",
     "mypy",
     "pdbpp",
@@ -71,6 +70,9 @@ packages = ["src/useq"]
 line-length = 88
 target-version = "py38"
 src = ["src", "tests"]
+
+[tool.ruff.lint]
+pydocstyle = { convention = "numpy" }
 select = [
     "W",    # style warnings
     "E",    # style errors
@@ -90,22 +92,16 @@ select = [
 ]
 ignore = [
     "D100",  # Missing docstring in public module
-    "D104",  # Missing docstring in public package
-    "D107",  # Missing docstring in __init__
-    "D203",  # 1 blank line required before class docstring
-    "D212",  # Multi-line docstring summary should start at the first line
-    "D213",  # Multi-line docstring summary should start at the second line
-    "D401",  # Imperative mood
-    "D413",  # Missing blank line after last section
-    "D416",  # Section name should end with a colon
-    "UP006",
-    "UP007",
+    "D401", # First line should be in imperative mood (remove to opt in)
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["D", "S101", "E501"]
 
-[tool.ruff.flake8-tidy-imports]
+[tool.ruff.lint.flake8-tidy-imports]
 # Disallow all relative imports.
 ban-relative-imports = "all"
 
