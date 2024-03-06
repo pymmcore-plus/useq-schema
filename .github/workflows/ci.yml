@@ -48,9 +48,11 @@ jobs:
       os: windows-latest
       python-version: "3.11"
       dependency-repo: ${{ matrix.repo }}
+      dependency-extras: "test"
       post-install-cmd: "mmcore install"
       qt: ${{ matrix.qt }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - repo: pymmcore-plus/pymmcore-plus
