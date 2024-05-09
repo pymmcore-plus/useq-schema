@@ -45,7 +45,7 @@ jobs:
   test-dependents:
     uses: pyapp-kit/workflows/.github/workflows/test-dependents.yml@v2
     with:
-      os: macos-latest
+      os: macos-13
       python-version: "3.11"
       dependency-repo: ${{ matrix.repo }}
       dependency-extras: "test"
