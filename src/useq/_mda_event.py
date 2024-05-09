@@ -1,7 +1,6 @@
 # don't add __future__.annotations here
 # pydantic2 isn't rebuilding the model correctly
 
-import warnings
 from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
@@ -147,15 +146,6 @@ class MDAEvent(UseqModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage)
     keep_shutter_open: bool = False
-
-    @property
-    def global_index(self) -> int:
-        warnings.warn(
-            "global_index is no longer functional.  Use `enumerate()` "
-            "on an iterable of events instead.",
-            stacklevel=2,
-        )
-        return 0
 
     @field_validator("channel", mode="before")
     def _validate_channel(cls, val: Any) -> Any:
