@@ -1,7 +1,6 @@
 # don't add __future__.annotations here
 # pydantic2 isn't rebuilding the model correctly
 
-import warnings
 from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
@@ -27,7 +26,6 @@ except ImportError:
 
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
-    from useq.pycromanager import PycroManagerEvent
 
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
@@ -149,30 +147,9 @@ class MDAEvent(UseqModel):
     action: AnyAction = Field(default_factory=AcquireImage)
     keep_shutter_open: bool = False
 
-    @property
-    def global_index(self) -> int:
-        warnings.warn(
-            "global_index is no longer functional.  Use `enumerate()` "
-            "on an iterable of events instead.",
-            stacklevel=2,
-        )
-        return 0
-
     @field_validator("channel", mode="before")
     def _validate_channel(cls, val: Any) -> Any:
         return Channel(config=val) if isinstance(val, str) else val
-
-    def to_pycromanager(self) -> "PycroManagerEvent":
-        from useq.pycromanager import to_pycromanager
-
-        warnings.warn(
-            "useq.MDAEvent.to_pycromanager() is deprecated and will be removed in a "
-            "future version. Useq useq.pycromanager.to_pycromanager(event) instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-
-        return to_pycromanager(self)
 
     if field_serializer is not None:
         _si = field_serializer("index", mode="plain")(lambda v: dict(v))

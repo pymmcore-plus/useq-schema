@@ -362,16 +362,6 @@ def test_event_action_union() -> None:
     MDAEvent(action={"autofocus_device_name": "Z", "autofocus_motor_offset": 25})
 
 
-def test_set_fov_deprecation() -> None:
-    seq = MDASequence(grid_plan=GridRelative(overlap=10, rows=1, columns=2))
-    assert seq.grid_plan
-    assert list(seq.grid_plan) == [(-0.45, 0.0, 0, 0, True), (0.45, 0.0, 0, 1, True)]
-    with pytest.warns(match="deprecated"):
-        seq.set_fov_size((20, 20))
-    assert seq.grid_plan.fov_width == 20
-    assert list(seq.grid_plan) == [(-9, 0.0, 0, 0, True), (9, 0.0, 0, 1, True)]
-
-
 def test_keep_shutter_open() -> None:
     # with z as the last axis, the shutter will be left open
     # whenever z is the first index (since there are only 2 z planes)

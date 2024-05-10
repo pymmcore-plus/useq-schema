@@ -1,4 +1,3 @@
-import warnings
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
@@ -82,15 +81,6 @@ class UseqModel(FrozenModel):
             raise ValueError(f"Unknown file type: {path.suffix}")
 
         return cls.model_validate(obj)
-
-    @classmethod
-    def parse_file(cls: Type[_Y], path: Union[str, Path], **kwargs: Any) -> _Y:
-        warnings.warn(  # pragma: no cover
-            "parse_file is deprecated. Use from_file instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return cls.from_file(path)  # pragma: no cover
 
     def yaml(
         self,

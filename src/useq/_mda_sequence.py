@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
     Iterable,
     Iterator,
+    Mapping,
     Optional,
     Sequence,
     Tuple,
@@ -30,7 +30,6 @@ from useq._z import AnyZPlan  # noqa: TCH001
 
 if TYPE_CHECKING:
     from useq._mda_event import MDAEvent
-    from useq.pycromanager import PycroManagerEvent
 
 
 class MDASequence(UseqModel):
@@ -196,26 +195,6 @@ class MDASequence(UseqModel):
     def uid(self) -> UUID:
         """A unique identifier for this sequence."""
         return self._uid
-
-    def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
-        """Set the field of view size.
-
-        FOV is used to calculate the number of positions in a grid plan.
-
-        !!! warning "DEPRECATED"
-
-            Set `fov_width` and `fov_height` directly on the `grid_plan` instead.
-        """
-        warn(
-            "set_fov_size is deprecated and will be removed. Please directly mutate "
-            "fov_width and fov_height on the sequence.grid_plan instead. (They are "
-            "mutable.)",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if self.grid_plan:
-            self.grid_plan.fov_width = fov_size[0]
-            self.grid_plan.fov_height = fov_size[1]
 
     def __hash__(self) -> int:
         return hash(self.uid)
@@ -415,7 +394,7 @@ class MDASequence(UseqModel):
         return tuple(s for s in self.sizes.values() if s)
 
     @property
-    def sizes(self) -> Dict[str, int]:
+    def sizes(self) -> Mapping[str, int]:
         """Mapping of axis name to size of that axis."""
         if self._sizes is None:
             self._sizes = {k: len(list(self.iter_axis(k))) for k in self.axis_order}
@@ -456,17 +435,6 @@ class MDASequence(UseqModel):
             Each event in the MDA sequence.
         """
         return iter_sequence(self)
-
-    def to_pycromanager(self) -> list[PycroManagerEvent]:
-        warnings.warn(
-            "useq.MDASequence.to_pycromanager() is deprecated and will be removed in a "
-            "future version. Useq useq.pycromanager.to_pycromanager(seq) instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-        from useq.pycromanager import to_pycromanager
-
-        return to_pycromanager(self)
 
     def estimate_duration(self) -> TimeEstimate:
         """Estimate duration and other timing issues of an MDASequence.
