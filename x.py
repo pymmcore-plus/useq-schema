@@ -41,12 +41,10 @@ class PlatePlan(BaseModel, Sequence[Position]):
         return len(self.selected_wells) * self.points_per_well
 
     @overload
-    def __getitem__(self, index: int) -> Position:
-        ...
+    def __getitem__(self, index: int) -> Position: ...
 
     @overload
-    def __getitem__(self, index: slice) -> Sequence[Position]:
-        ...
+    def __getitem__(self, index: slice) -> Sequence[Position]: ...
 
     def __getitem__(self, index: int | slice) -> Position | Sequence[Position]:
         return self._selected_well_centers[index]
