@@ -26,4 +26,3 @@ repos:
         additional_dependencies:
           - types-PyYAML
           - pydantic >=2
-          - pydantic-compat >=0.0.4

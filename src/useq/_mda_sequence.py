@@ -15,8 +15,7 @@ from uuid import UUID, uuid4
 from warnings import warn
 
 import numpy as np
-from pydantic import Field, PrivateAttr
-from pydantic_compat import field_validator, model_validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
