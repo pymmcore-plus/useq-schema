@@ -63,8 +63,8 @@ class FrozenModel(BaseModel):
             )
         ]
 
-class UseqModel(FrozenModel):
 
+class UseqModel(FrozenModel):
     @classmethod
     def from_file(cls: Type[_Y], path: Union[str, Path]) -> _Y:
         """Return an instance of this class from a file.  Supports JSON and YAML."""

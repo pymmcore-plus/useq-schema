@@ -16,9 +16,9 @@ import numpy as np
 from pydantic import Field, field_validator, model_validator
 from pydantic_core import core_schema
 
-from useq import Position
 from useq._base_model import FrozenModel
 from useq._grid import GridRowsColumns, RandomPoints
+from useq._position import Position
 
 
 class _SliceType:
@@ -29,8 +29,6 @@ class _SliceType:
         def _to_slice(value: Any) -> slice:
             if isinstance(value, slice):
                 return value
-            if isinstance(value, range):
-                return slice(value.start, value.stop, value.step)
             if isinstance(value, str):
                 if value.startswith("slice(") and value.endswith(")"):
                     with suppress(Exception):
@@ -61,6 +59,11 @@ class Plate(FrozenModel):
     circular_wells: bool = True
     name: str = ""
 
+    @property
+    def size(self) -> int:
+        """Return the total number of wells."""
+        return self.rows * self.columns
+
     @field_validator("well_spacing", "well_size", mode="before")
     def _validate_well_spacing_and_size(cls, value: Any) -> Any:
         if isinstance(value, (int, float)):
@@ -75,7 +78,7 @@ class Plate(FrozenModel):
         if isinstance(value, str):
             try:
                 return cls.lookup(value)
-            except KeyError as e:
+            except KeyError as e:  # pragma: no cover
                 raise ValueError(f"Unknown plate name {value!r}") from e
         return value
 
@@ -122,7 +125,7 @@ class PlatePlan(FrozenModel, Sequence[Position]):
     @field_validator("plate", mode="before")
     @classmethod
     def _validate_plate(cls, value: Any) -> Any:
-        return Plate.validate_plate(value)
+        return Plate.validate_plate(value)  # type: ignore [operator]
 
     @field_validator("rotation", mode="before")
     @classmethod
@@ -134,9 +137,9 @@ class PlatePlan(FrozenModel, Sequence[Position]):
                 value = value.replace("rad", "").strip()
                 # convert to degrees
                 return np.degrees(float(value))
-            if "°" in value or "deg" in value:
-                value = value.replace("°", "").replace("deg", "").strip()
-                return float(value)
+            if "°" in value or "˚" in value or "deg" in value:
+                value = value.replace("°", "").replace("˚", "").replace("deg", "")
+                return float(value.strip())
         if isinstance(value, (tuple, list)):
             ary = np.array(value).flatten()
             if len(ary) not in (2, 4):
@@ -160,7 +163,7 @@ class PlatePlan(FrozenModel, Sequence[Position]):
         """Return the total number of points (stage positions) to be acquired."""
         dummy = np.empty((self.plate.rows, self.plate.columns))
         indexed = dummy[self.selected_wells]
-        return indexed.size * self.points_per_well
+        return indexed.size * self.points_per_well  # type: ignore
 
     @overload
     def __getitem__(self, index: int) -> Position: ...
@@ -214,9 +217,9 @@ class PlatePlan(FrozenModel, Sequence[Position]):
         )
 
     @property
-    def selected_well_names(self) -> Sequence[str]:
+    def selected_well_names(self) -> list[str]:
         """Return the names of selected wells."""
-        return self.all_well_names[self.selected_wells].reshape(-1)  # type: ignore
+        return list(self.all_well_names[self.selected_wells].reshape(-1))
 
     def _transorm_coords(self, coords: np.ndarray) -> np.ndarray:
         """Transform coordinates to the plate coordinate system."""
@@ -225,7 +228,7 @@ class PlatePlan(FrozenModel, Sequence[Position]):
         # transform
         transformed = self.affine_transform @ h_coords.T
         # strip homogenous coordinate
-        return (transformed[:2].T).reshape(coords.shape)  # type: ignore[no-any-return]
+        return (transformed[:2].T).reshape(coords.shape)
 
     @property
     def all_positions(self) -> Sequence[Position]:
@@ -257,7 +260,7 @@ class PlatePlan(FrozenModel, Sequence[Position]):
         3. translation to a1_center_xy
         """
         translation = np.eye(3)
-        translation[:2, 2] = self.a1_center_xy
+        translation[:2, 2] = self.a1_center_xy[::-1]
 
         rotation = np.eye(3)
         rotation[:2, :2] = self.rotation_matrix
@@ -265,7 +268,7 @@ class PlatePlan(FrozenModel, Sequence[Position]):
         scaling = np.eye(3)
         scaling[:2, :2] = np.diag(self.plate.well_spacing)
 
-        return translation @ rotation @ scaling  # type: ignore
+        return translation @ rotation @ scaling
 
     def plot(self) -> None:
         """Plot the selected positions on the plate."""
@@ -304,7 +307,7 @@ class PlatePlan(FrozenModel, Sequence[Position]):
             ax.add_patch(sh)
 
         for well in self.selected_positions:
-            x, y = float(well.x), -float(well.y)
+            x, y = float(well.x), -float(well.y)  # type: ignore[arg-type]
             plt.plot(x, y, "mo")
             # draw name next to spot
             txt = f"{well.name}\n({x:.1f}, {y:.1f})"

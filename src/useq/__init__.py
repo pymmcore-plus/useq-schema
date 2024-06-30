@@ -14,6 +14,7 @@ from useq._grid import (
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent, PropertyTuple
 from useq._mda_sequence import MDASequence
+from useq._plate import PlatePlan
 from useq._position import Position
 from useq._time import (
     AnyTimePlan,
@@ -49,6 +50,7 @@ __all__ = [
     "MDAEvent",
     "MDASequence",
     "MultiPhaseTimePlan",
+    "PlatePlan",
     "Position",
     "PropertyTuple",
     "RandomPoints",
