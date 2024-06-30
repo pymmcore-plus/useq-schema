@@ -5,7 +5,7 @@ import useq
 
 
 def test_plate_plan() -> None:
-    pp = useq.PlatePlan(
+    pp = useq.WellPlatePlan(
         plate=96, a1_center_xy=(500, 200), rotation=5, selected_wells=np.s_[1:5:2, :6:3]
     )
     assert pp.plate.rows == 8
@@ -22,19 +22,19 @@ def test_plate_plan() -> None:
 
     js = pp.model_dump_json()
 
-    pp2 = useq.PlatePlan.model_validate_json(js)
+    pp2 = useq.WellPlatePlan.model_validate_json(js)
     assert pp2 == pp
 
 
 def test_plate_plan_plot(monkeypatch: pytest.MonkeyPatch) -> None:
     mpl = pytest.importorskip("matplotlib.pyplot")
     monkeypatch.setattr(mpl, "show", lambda: None)
-    pp = useq.PlatePlan(
+    pp = useq.WellPlatePlan(
         plate=96,
         a1_center_xy=(500, 200),
         rotation="4˚",
         selected_wells=np.s_[1:5:2, :6:3],
     )
     pp.plot()
-    pp2 = useq.PlatePlan(plate=1536, a1_center_xy=(500, 200))
+    pp2 = useq.WellPlatePlan(plate=1536, a1_center_xy=(500, 200))
     pp2.plot()

@@ -24,7 +24,7 @@ from useq._channel import Channel
 from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
-from useq._plate import PlatePlan  # noqa: TCH001
+from useq._plate import WellPlatePlan  # noqa: TCH001
 from useq._position import Position
 from useq._time import AnyTimePlan  # noqa: TCH001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
@@ -182,7 +182,7 @@ class MDASequence(UseqModel):
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: Tuple[str, ...] = AXES
-    stage_positions: Union[PlatePlan, Tuple[Position, ...]] = Field(
+    stage_positions: Union[WellPlatePlan, Tuple[Position, ...]] = Field(
         default_factory=tuple
     )
     grid_plan: Optional[AnyGridPlan] = None

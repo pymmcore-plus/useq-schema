@@ -49,7 +49,7 @@ Index = int | list[int] | Annotated[slice, _SliceType]
 IndexExpression = tuple[Index, ...] | Index
 
 
-class Plate(FrozenModel):
+class WellPlate(FrozenModel):
     """A multi-well plate definition."""
 
     rows: int
@@ -83,9 +83,9 @@ class Plate(FrozenModel):
         return value
 
     @classmethod
-    def lookup(cls, name: str) -> "Plate":
+    def lookup(cls, name: str) -> "WellPlate":
         """Lookup a plate by name."""
-        return Plate(**cls._PLATES[name])
+        return WellPlate(**cls._PLATES[name])
 
     _PLATES: ClassVar[dict[str, dict]] = {
         "12-well": {"rows": 3, "columns": 4, "well_spacing": 26, "well_size": 22},
@@ -103,11 +103,11 @@ class Plate(FrozenModel):
     }
 
 
-class PlatePlan(FrozenModel, Sequence[Position]):
+class WellPlatePlan(FrozenModel, Sequence[Position]):
     """A plan for acquiring images from a multi-well plate."""
 
     # if expressed as a string, it is assumed to be a key in _PLATES
-    plate: Plate
+    plate: WellPlate
     # stage coordinates of the center of well A1
     a1_center_xy: tuple[float, float]
     # if expressed as a single number, it is assumed to be the angle in degrees
@@ -125,7 +125,7 @@ class PlatePlan(FrozenModel, Sequence[Position]):
     @field_validator("plate", mode="before")
     @classmethod
     def _validate_plate(cls, value: Any) -> Any:
-        return Plate.validate_plate(value)  # type: ignore [operator]
+        return WellPlate.validate_plate(value)  # type: ignore [operator]
 
     @field_validator("rotation", mode="before")
     @classmethod
