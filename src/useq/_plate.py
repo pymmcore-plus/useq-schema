@@ -22,7 +22,7 @@ from pydantic import (
 from pydantic_core import core_schema
 
 from useq._base_model import FrozenModel
-from useq._grid import GridPosition, GridRowsColumns, RandomPoints, Shape
+from useq._grid import GridPosition, GridRowsColumns, RandomPoints, Shape, _PointsPlan
 from useq._position import Position
 
 
@@ -388,9 +388,26 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             ax.add_patch(sh)
 
         # ################ plot image positions ################
+        w = h = None
+        if isinstance(self.well_points_plan, _PointsPlan):
+            w, h = self.well_points_plan.fov_width, self.well_points_plan.fov_height
+
         for img_point in self.image_positions:
             x, y = float(img_point.x), -float(img_point.y)  # type: ignore[arg-type]
-            plt.plot(x, y, "mo", markersize=4, alpha=0.5)
+            if w and h:
+                ax.add_patch(
+                    patches.Rectangle(
+                        (x - w / 2, y - h / 2),
+                        width=w,
+                        height=h,
+                        facecolor="magenta",
+                        edgecolor="gray",
+                        linewidth=0.5,
+                        alpha=0.5,
+                    )
+                )
+            else:
+                plt.plot(x, y, "mo", markersize=3, alpha=0.5)
 
         # ################ draw names on used wells ################
         offset_x, offset_y = -width / 2, -height / 2
