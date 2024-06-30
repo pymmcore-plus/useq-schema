@@ -377,10 +377,10 @@ class MDASequence(UseqModel):
         if Axis.Z in order and z_plan and not z_plan.is_relative:
             err = "Absolute Z positions cannot be used with autofocus plan."
             if isinstance(autofocus_plan, AxesBasedAF):
-                raise ValueError(err)
+                raise ValueError(err)  # pragma: no cover
             for p in stage_positions:
                 if p.sequence is not None and p.sequence.autofocus_plan:
-                    raise ValueError(err)
+                    raise ValueError(err)  # pragma: no cover
 
     @property
     def shape(self) -> Tuple[int, ...]:

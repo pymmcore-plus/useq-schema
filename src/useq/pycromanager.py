@@ -63,7 +63,9 @@ def to_pycromanager(
         return _event_to_pycromanager(obj)
     elif isinstance(obj, MDASequence):
         return [_event_to_pycromanager(event) for event in obj]
-    raise TypeError(f"invalid argument: {obj!r}. Must be MDAEvent or MDASequence.")
+    raise TypeError(  # pragma: no cover
+        f"invalid argument: {obj!r}. Must be MDAEvent or MDASequence."
+    )
 
 
 _USEQ_AXIS_TO_PYCRO: dict[str, PycroAxis] = {
