@@ -27,3 +27,4 @@ repos:
           - types-PyYAML
           - pydantic >=2
           - pydantic-compat >=0.0.4
+          - numpy >=2

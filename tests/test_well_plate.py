@@ -38,3 +38,11 @@ def test_plate_plan_plot(monkeypatch: pytest.MonkeyPatch) -> None:
     pp.plot()
     pp2 = useq.WellPlatePlan(plate=1536, a1_center_xy=(500, 200))
     pp2.plot()
+
+
+def test_plate_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    useq.WellPlatePlan(plate=12, a1_center_xy=(0, 0), selected_wells=[(0, 0), (1, 2)])
+    with pytest.raises(ValueError, match="Invalid well selection"):
+        useq.WellPlatePlan(
+            plate=12, a1_center_xy=(0, 0), selected_wells=[(0, 0), (100, 100)]
+        )

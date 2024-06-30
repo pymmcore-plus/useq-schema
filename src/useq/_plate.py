@@ -9,15 +9,20 @@ from typing import (
     Iterable,
     Sequence,
     Union,
+    cast,
     overload,
 )
 
 import numpy as np
-from pydantic import Field, field_validator, model_validator
+from pydantic import (
+    Field,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import core_schema
 
 from useq._base_model import FrozenModel
-from useq._grid import GridRowsColumns, RandomPoints
+from useq._grid import GridPosition, GridRowsColumns, RandomPoints, Shape
 from useq._position import Position
 
 
@@ -64,6 +69,11 @@ class WellPlate(FrozenModel):
         """Return the total number of wells."""
         return self.rows * self.columns
 
+    @property
+    def shape(self) -> tuple[int, int]:
+        """Return the shape of the plate."""
+        return self.rows, self.columns
+
     @field_validator("well_spacing", "well_size", mode="before")
     def _validate_well_spacing_and_size(cls, value: Any) -> Any:
         if isinstance(value, (int, float)):
@@ -85,9 +95,9 @@ class WellPlate(FrozenModel):
     @classmethod
     def lookup(cls, name: str) -> "WellPlate":
         """Lookup a plate by name."""
-        return WellPlate(**cls._PLATES[name])
+        return WellPlate(**cls.KNOWN_PLATES[name])
 
-    _PLATES: ClassVar[dict[str, dict]] = {
+    KNOWN_PLATES: ClassVar[dict[str, dict]] = {
         "12-well": {"rows": 3, "columns": 4, "well_spacing": 26, "well_size": 22},
         "24-well": {"rows": 4, "columns": 6, "well_spacing": 19, "well_size": 15.6},
         "48-well": {"rows": 6, "columns": 8, "well_spacing": 13, "well_size": 11.1},
@@ -104,18 +114,32 @@ class WellPlate(FrozenModel):
 
 
 class WellPlatePlan(FrozenModel, Sequence[Position]):
-    """A plan for acquiring images from a multi-well plate."""
+    """A plan for acquiring images from a multi-well plate.
 
-    # if expressed as a string, it is assumed to be a key in _PLATES
+    Parameters
+    ----------
+    plate : WellPlate | str | int
+        The well-plate definition. Minimally including rows, columns, and well spacing.
+        If expressed as a string, it is assumed to be a key in `WellPlate.KNOWN_PLATES`.
+    a1_center_xy : tuple[float, float]
+        The stage coordinates of the center of well A1 (top-left corner).
+    rotation : float | None
+        The rotation angle in degrees (anti-clockwise) of the plate.
+        If None, no rotation is applied.
+        If expressed as a string, it is assumed to be an angle with units (e.g., "5°",
+        "4 rad", "4.5deg").
+        If expressed as an arraylike, it is assumed to be a 2x2 rotation matrix
+        `[[cos, -sin], [sin, cos]]`, or a 4-tuple `(cos, -sin, sin, cos)`.
+    """
+
     plate: WellPlate
-    # stage coordinates of the center of well A1
     a1_center_xy: tuple[float, float]
     # if expressed as a single number, it is assumed to be the angle in degrees
     # with anti-clockwise rotation
     # if expressed as a string, rad/deg is inferred from the string
     # if expressed as a tuple, it is assumed to be a 2x2 rotation matrix or a 4-tuple
     rotation: float | None = None
-    # Any 2-dimensional index expression, where None means all wells
+    # Any <2-dimensional index expression, where None means all wells
     # and slice(0, 0) means no wells
     selected_wells: IndexExpression | None = None
     well_points_plan: Union[GridRowsColumns | RandomPoints | Position] = Field(
@@ -126,6 +150,28 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     @classmethod
     def _validate_plate(cls, value: Any) -> Any:
         return WellPlate.validate_plate(value)  # type: ignore [operator]
+
+    @field_validator("well_points_plan", mode="wrap")
+    @classmethod
+    def _validate_well_points_plan(
+        cls,
+        value: Any,
+        handler: core_schema.ValidatorFunctionWrapHandler,
+        info: core_schema.ValidationInfo,
+    ) -> Any:
+        value = handler(value)
+        if plate := info.data.get("plate"):
+            if isinstance(value, RandomPoints):
+                plate = cast(WellPlate, plate)
+                # use the well size and shape to bound the random points
+                kwargs = value.model_dump(mode="python")
+                kwargs["max_width"] = plate.well_size[0] - (value.fov_width or 0.1)
+                kwargs["max_height"] = plate.well_size[1] - (value.fov_height or 0.1)
+                kwargs["shape"] = (
+                    Shape.ELLIPSE if plate.circular_wells else Shape.RECTANGLE
+                )
+                value = RandomPoints(**kwargs)
+        return value
 
     @field_validator("rotation", mode="before")
     @classmethod
@@ -142,10 +188,24 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
                 return float(value.strip())
         if isinstance(value, (tuple, list)):
             ary = np.array(value).flatten()
-            if len(ary) not in (2, 4):
-                raise ValueError("Rotation matrix must have 2 or 4 elements")
-            return -np.degrees(np.arctan2(ary[1], ary[0]))
+            if len(ary) != 4:
+                raise ValueError("Rotation matrix must have 4 elements")
+            # convert (cos, -sin, sin, cos) to angle in degrees, anti-clockwise
+            return np.degrees(np.arctan2(ary[2], ary[0]))
         return value
+
+    @model_validator(mode="after")
+    def _validate_self(self) -> "WellPlatePlan":
+        try:
+            # make sure we can index an array of shape (Rows, Cols)
+            # with the selected_wells expression
+            self._dummy_indexed()
+        except Exception as e:
+            raise ValueError(
+                f"Invalid well selection {self.selected_wells!r} for plate of "
+                f"shape {self.plate.shape}: {e}"
+            ) from e
+        return self
 
     @property
     def rotation_matrix(self) -> np.ndarray:
@@ -157,13 +217,15 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
     def __iter__(self) -> Iterable[Position]:  # type: ignore
         """Iterate over the selected positions."""
-        yield from self.selected_positions
+        yield from self.image_positions
 
     def __len__(self) -> int:
         """Return the total number of points (stage positions) to be acquired."""
+        return self._dummy_indexed().size * self.num_points_per_well
+
+    def _dummy_indexed(self) -> np.ndarray:
         dummy = np.empty((self.plate.rows, self.plate.columns))
-        indexed = dummy[self.selected_wells]
-        return indexed.size * self.points_per_well  # type: ignore
+        return dummy[self.selected_wells]
 
     @overload
     def __getitem__(self, index: int) -> Position: ...
@@ -173,10 +235,10 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
     def __getitem__(self, index: int | slice) -> Position | Sequence[Position]:
         """Return the selected position(s) at the given index."""
-        return self.selected_positions[index]
+        return self.image_positions[index]
 
     @property
-    def points_per_well(self) -> int:
+    def num_points_per_well(self) -> int:
         """Return the number of points per well."""
         if isinstance(self.well_points_plan, Position):
             return 1
@@ -228,11 +290,11 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         # transform
         transformed = self.affine_transform @ h_coords.T
         # strip homogenous coordinate
-        return (transformed[:2].T).reshape(coords.shape)
+        return (transformed[:2].T).reshape(coords.shape)  # type: ignore[no-any-return]
 
     @property
-    def all_positions(self) -> Sequence[Position]:
-        """Return all well positions as Position objects."""
+    def all_well_positions(self) -> Sequence[Position]:
+        """Return all wells (centers) as Position objects."""
         return [
             Position(x=x, y=y, name=name)
             for (y, x), name in zip(
@@ -241,13 +303,32 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         ]
 
     @cached_property
-    def selected_positions(self) -> Sequence[Position]:
-        """Return selected wells as Position objects."""
+    def selected_well_positions(self) -> Sequence[Position]:
+        """Return selected wells (centers) as Position objects."""
         return [
             Position(x=x, y=y, name=name)
             for (y, x), name in zip(
                 self.selected_well_coordinates, self.selected_well_names
             )
+        ]
+
+    @cached_property
+    def image_positions(self) -> Sequence[Position]:
+        """All image positions.
+
+        This includes *both* selected wells and the image positions within each well
+        based on the `well_points_plan`.  This is the primary property that gets used
+        when iterating over the plan.
+        """
+        wpp = self.well_points_plan
+        offsets: Iterable[Position | GridPosition] = (
+            [wpp] if isinstance(wpp, Position) else wpp
+        )
+        # TODO: note that all positions within the same well will currently have the
+        # same name.  This could be improved by modifying `Position.__add__` and
+        # adding a `name` to GridPosition.
+        return [
+            well + offset for well in self.selected_well_positions for offset in offsets
         ]
 
     @property
@@ -277,7 +358,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
         _, ax = plt.subplots()
 
-        # draw outline of all wells
+        # ################ draw outline of all wells ################
         if self.plate.well_size is None:
             height, width = self.plate.well_spacing
         else:
@@ -292,7 +373,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             offset_x, offset_y = -width / 2, -height / 2
             kwargs["rotation_point"] = "center"
 
-        for well in self.all_positions:
+        for well in self.all_well_positions:
             sh = patch_type(
                 (well.x + offset_x, -well.y + offset_y),  # type: ignore[operator]
                 width=width,
@@ -306,16 +387,19 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             )
             ax.add_patch(sh)
 
-        for well in self.selected_positions:
+        # ################ plot image positions ################
+        for img_point in self.image_positions:
+            x, y = float(img_point.x), -float(img_point.y)  # type: ignore[arg-type]
+            plt.plot(x, y, "mo", markersize=4, alpha=0.5)
+
+        # ################ draw names on used wells ################
+        offset_x, offset_y = -width / 2, -height / 2
+        for well in self.selected_well_positions:
             x, y = float(well.x), -float(well.y)  # type: ignore[arg-type]
-            plt.plot(x, y, "mo")
             # draw name next to spot
-            txt = f"{well.name}\n({x:.1f}, {y:.1f})"
-            ax.text(x - 2, y + 2, txt, fontsize=7)
+            ax.text(x + offset_x, y - offset_y, well.name, fontsize=7)
 
         ax.axis("equal")
-        ax.xaxis.set_visible(False)
-        ax.yaxis.set_visible(False)
         plt.show()
 
 
