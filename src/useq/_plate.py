@@ -102,7 +102,13 @@ class WellPlate(FrozenModel):
         "24-well": {"rows": 4, "columns": 6, "well_spacing": 19, "well_size": 15.6},
         "48-well": {"rows": 6, "columns": 8, "well_spacing": 13, "well_size": 11.1},
         "96-well": {"rows": 8, "columns": 12, "well_spacing": 9, "well_size": 6.4},
-        "384-well": {"rows": 16, "columns": 24, "well_spacing": 4.5, "well_size": 3.4},
+        "384-well": {
+            "rows": 16,
+            "columns": 24,
+            "well_spacing": 4.5,
+            "well_size": 3.4,
+            "circular_wells": False,
+        },
         "1536-well": {
             "rows": 32,
             "columns": 48,
