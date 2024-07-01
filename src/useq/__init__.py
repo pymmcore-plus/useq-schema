@@ -50,7 +50,6 @@ __all__ = [
     "MDAEvent",
     "MDASequence",
     "MultiPhaseTimePlan",
-    "PositionBase",
     "PropertyTuple",
     "RandomPoints",
     "RelativePosition",
@@ -67,6 +66,7 @@ __all__ = [
 
 MDAEvent.model_rebuild()
 PositionBase.model_rebuild()
+del PositionBase
 
 
 def __getattr__(name: str) -> Any:
