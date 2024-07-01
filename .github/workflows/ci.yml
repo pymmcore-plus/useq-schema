@@ -6,10 +6,8 @@ concurrency:
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - "v*"
+    branches: [main]
+    tags: ["v*"]
   pull_request: {}
   workflow_dispatch:
 
@@ -22,25 +20,25 @@ jobs:
       - run: pip3 install check-manifest && check-manifest
 
   test:
-    uses: pyapp-kit/workflows/.github/workflows/test-pyrepo.yml@main
+    uses: pyapp-kit/workflows/.github/workflows/test-pyrepo.yml@v2
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
-      pip-post-installs: ${{ matrix.pydantic }}
-    secrets:
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+      coverage-upload: artifact
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
         include:
-          - python-version: "3.11"
-            platform: ubuntu-latest
-            pydantic: "'pydantic<2'"
-          - python-version: "3.8"
-            platform: ubuntu-latest
-            pydantic: "'pydantic<2'"
+          - os: ubuntu-latest
+            python-version: "3.8"
+
+  upload_coverage:
+    if: always()
+    needs: [test]
+    uses: pyapp-kit/workflows/.github/workflows/upload-coverage.yml@v2
+    secrets: inherit
 
   test-dependents:
     uses: pyapp-kit/workflows/.github/workflows/test-dependents.yml@v2
@@ -85,4 +83,4 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: './dist/*'
+          files: "./dist/*"

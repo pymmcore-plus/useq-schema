@@ -4,7 +4,7 @@ import math
 from typing import Callable, Iterator, List, Sequence, Union
 
 import numpy as np
-from pydantic_compat import field_validator
+from pydantic import field_validator
 
 from useq._base_model import FrozenModel
 

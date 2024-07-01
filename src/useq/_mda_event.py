@@ -14,7 +14,7 @@ from typing import (
     Tuple,
 )
 
-from pydantic_compat import Field, field_validator
+from pydantic import Field, field_validator
 
 from useq._actions import AcquireImage, AnyAction
 from useq._base_model import UseqModel

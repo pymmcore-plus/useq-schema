@@ -20,7 +20,7 @@ from typing import (
 )
 
 import numpy as np
-from pydantic_compat import Field, field_validator
+from pydantic import Field, field_validator
 
 from useq._base_model import FrozenModel
 

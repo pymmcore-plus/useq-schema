@@ -54,7 +54,7 @@ for more details.
 
 > **Note:** `useq-schema` uses [`pydantic`](https://pydantic-docs.helpmanual.io/) to
 > define models, so you can retrieve the [json schema](https://json-schema.org/)
-> for the `MDAEvent` object with `MDAEvent.schema_json()`
+> for the `MDAEvent` object with `MDAEvent.model_json_schema()`
 
 ## `MDASequence`
 
@@ -80,7 +80,7 @@ Time Plan, a Z Plan, a list of channels and positions, etc.).  A
 See [`useq.MDASequence` documentation](https://pymmcore-plus.github.io/useq-schema/schema/sequence/)
 for more details.
 
-### example `MDASequence` usage:
+### example `MDASequence` usage
 
 ```python
 from useq import MDASequence
@@ -149,6 +149,7 @@ z_plan:
   range: 4.0
   step: 0.5
 ```
+
 ## Executing useq-schema experiments with pymmcore-plus
 
 [pymmcore-plus](https://github.com/pymmcore-plus/pymmcore-plus) implements an

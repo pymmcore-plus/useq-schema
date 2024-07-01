@@ -46,10 +46,10 @@ stage_positions:
   z: 50.0
 time_plan:
   phases:
-  - interval: 0:00:03
+  - interval: 3.0
     loops: 3
-  - duration: 0:40:00
-    interval: 0:00:10
+  - duration: 2400.0
+    interval: 10.0
 z_plan:
   range: 1.0
   step: 0.5

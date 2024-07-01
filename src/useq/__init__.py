@@ -63,9 +63,8 @@ __all__ = [
 ]
 
 
-# type ignores because pydantic-compat consumes the kwargs
-MDAEvent.model_rebuild(MDASequence=MDASequence)  # type: ignore  [call-arg]
-Position.model_rebuild(MDASequence=MDASequence)  # type: ignore  [call-arg]
+MDAEvent.model_rebuild()
+Position.model_rebuild()
 
 
 def __getattr__(name: str) -> Any:
