@@ -14,7 +14,7 @@ from useq._grid import (
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent, PropertyTuple
 from useq._mda_sequence import MDASequence
-from useq._position import Position, PositionBase, RelativePosition
+from useq._position import Position, RelativePosition
 from useq._time import (
     AnyTimePlan,
     MultiPhaseTimePlan,
@@ -65,8 +65,7 @@ __all__ = [
 
 
 MDAEvent.model_rebuild()
-PositionBase.model_rebuild()
-del PositionBase
+Position.model_rebuild()
 
 
 def __getattr__(name: str) -> Any:
