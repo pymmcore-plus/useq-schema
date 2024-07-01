@@ -7,12 +7,12 @@ import pytest
 from pydantic import BaseModel
 
 from useq import (
+    AbsolutePosition,
     Channel,
     GridFromEdges,
     GridRelative,
     MDAEvent,
     MDASequence,
-    Position,
     RandomPoints,
     TDurationLoops,
     TIntervalDuration,
@@ -22,7 +22,7 @@ from useq import (
     ZRangeAround,
     ZRelativePositions,
 )
-from useq._grid import GridPosition
+from useq._position import RelativePosition
 
 _T = List[Tuple[Any, Sequence[float]]]
 
@@ -73,24 +73,24 @@ g_inputs = [
     (
         GridRelative(overlap=10, rows=1, columns=2, relative_to="center"),
         [
-            GridPosition(x=-0.45, y=0.0, row=0, col=0, is_relative=True),
-            GridPosition(x=0.45, y=0.0, row=0, col=1, is_relative=True),
+            RelativePosition(x=-0.45, y=0.0),
+            RelativePosition(x=0.45, y=0.0),
         ],
     ),
     (
         GridRelative(overlap=0, rows=1, columns=2, relative_to="top_left"),
         [
-            GridPosition(x=0.0, y=0.0, row=0, col=0, is_relative=True),
-            GridPosition(x=1.0, y=0.0, row=0, col=1, is_relative=True),
+            RelativePosition(x=0.0, y=0.0),
+            RelativePosition(x=1.0, y=0.0),
         ],
     ),
     (
         GridRelative(overlap=(20, 40), rows=2, columns=2),
         [
-            GridPosition(x=-0.4, y=0.3, row=0, col=0, is_relative=True),
-            GridPosition(x=0.4, y=0.3, row=0, col=1, is_relative=True),
-            GridPosition(x=0.4, y=-0.3, row=1, col=1, is_relative=True),
-            GridPosition(x=-0.4, y=-0.3, row=1, col=0, is_relative=True),
+            RelativePosition(x=-0.4, y=0.3),
+            RelativePosition(x=0.4, y=0.3),
+            RelativePosition(x=0.4, y=-0.3),
+            RelativePosition(x=-0.4, y=-0.3),
         ],
     ),
     (
@@ -98,10 +98,10 @@ g_inputs = [
             overlap=0, top=0, left=0, bottom=20, right=20, fov_height=20, fov_width=20
         ),
         [
-            GridPosition(x=0.0, y=20.0, row=0, col=0, is_relative=False),
-            GridPosition(x=20.0, y=20.0, row=0, col=1, is_relative=False),
-            GridPosition(x=20.0, y=0.0, row=1, col=1, is_relative=False),
-            GridPosition(x=0.0, y=0.0, row=1, col=0, is_relative=False),
+            AbsolutePosition(x=0.0, y=20.0),
+            AbsolutePosition(x=20.0, y=20.0),
+            AbsolutePosition(x=20.0, y=0.0),
+            AbsolutePosition(x=0.0, y=0.0),
         ],
     ),
     (
@@ -116,9 +116,9 @@ g_inputs = [
             random_seed=0,
         ),
         [
-            GridPosition(x=-0.0, y=-2.1, row=0, col=0, is_relative=True),
-            GridPosition(x=0.7, y=1.7, row=0, col=0, is_relative=True),
-            GridPosition(x=-1.0, y=1.3, row=0, col=0, is_relative=True),
+            RelativePosition(x=-0.0, y=-2.1),
+            RelativePosition(x=0.7, y=1.7),
+            RelativePosition(x=-1.0, y=1.3),
         ],
     ),
 ]
@@ -151,7 +151,7 @@ p_inputs = [
     ([np.ones(2)], (1, 1, None)),
     (np.array([[0, 0, 0], [1, 1, 1]]), (0, 0, 0)),
     (np.array([0, 0]), (0, 0, None)),
-    ([Position(x=100, y=200, z=300)], (100, 200, 300)),
+    ([AbsolutePosition(x=100, y=200, z=300)], (100, 200, 300)),
 ]
 
 
@@ -170,10 +170,7 @@ def test_g_plan(gridplan: Any, gridexpectation: Sequence[Any]) -> None:
         # slightly different results in the last few digits
         assert (
             g_plan
-            and [
-                GridPosition(round(x, 1), round(y, 1), _r, _c, rl)
-                for x, y, _r, _c, rl in g_plan
-            ]
+            and [RelativePosition(x=round(gp.x, 1), y=round(gp.y, 1)) for gp in g_plan]
             == gridexpectation
         )
     else:
@@ -413,7 +410,7 @@ def test_keep_shutter_open() -> None:
     mda5 = MDASequence(
         axis_order="pgc",
         channels=["DAPI", "FITC"],
-        stage_positions=[Position(sequence=subseq)],
+        stage_positions=[AbsolutePosition(sequence=subseq)],
         keep_shutter_open_across="g",
     )
     for event in mda5:

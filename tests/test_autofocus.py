@@ -8,8 +8,8 @@ import useq
 from useq import AxesBasedAF, HardwareAutofocus, MDASequence
 
 ZRANGE2 = useq.ZRangeAround(range=2, step=1)
-ZPOS_30 = useq.Position(z=30.0)
-ZPOS_200 = useq.Position(z=200.0)
+ZPOS_30 = useq.AbsolutePosition(z=30.0)
+ZPOS_200 = useq.AbsolutePosition(z=200.0)
 GRID_PLAN = useq.GridRelative(rows=2, columns=1)
 TWO_CH = MDASequence(stage_positions=[ZPOS_30], channels=["DAPI", "FITC"])
 TWO_CH_TWO_P = TWO_CH.replace(stage_positions=[ZPOS_30, ZPOS_200])
@@ -23,10 +23,10 @@ AF_G = AF.model_copy(update={"axes": ("g",)})
 AF_P = AF.model_copy(update={"axes": ("p",)})
 AF_Z = AF.model_copy(update={"axes": ("z",)})
 AF_SEQ_C = MDASequence(autofocus_plan=AF_C)
-SUB_P_AF_C = useq.Position(z=10, sequence=AF_SEQ_C)
-SUB_P_AF_G = useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G))
-SUB_P_AF_P = useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_P))
-SUB_P_AF_Z = useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_Z))
+SUB_P_AF_C = useq.AbsolutePosition(z=10, sequence=AF_SEQ_C)
+SUB_P_AF_G = useq.AbsolutePosition(z=10, sequence=MDASequence(autofocus_plan=AF_G))
+SUB_P_AF_P = useq.AbsolutePosition(z=10, sequence=MDASequence(autofocus_plan=AF_P))
+SUB_P_AF_Z = useq.AbsolutePosition(z=10, sequence=MDASequence(autofocus_plan=AF_Z))
 TWO_CH_SUBPAF_C = TWO_CH.replace(stage_positions=[ZPOS_30, SUB_P_AF_C])
 TWO_CH_SUBPAF_Z = TWO_CH.replace(stage_positions=[ZPOS_30, SUB_P_AF_Z])
 
@@ -53,11 +53,11 @@ AF_TESTS: list[tuple[MDASequence, tuple[str, ...], Iterable[int]]] = [
     (TWO_CH_SUBPAF_Z.replace(z_plan=ZRANGE2), (), range(6, 17, 2)),
     (TWO_CH_SUBPAF_Z.replace(z_plan=ZRANGE2), ("p",), (0, *tuple(range(7, 18, 2)))),
     (TWO_CH_SUBPAF_C.replace(z_plan=ZRANGE2, grid_plan=GRID_PLAN), ("c",), range(0, 29, 4)),
-    (TWO_CH.replace(stage_positions=[ZPOS_30, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_C, grid_plan=GRID_PLAN))]), (), (2, 5)),
-    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.Position(z=10, sequence=MDASequence(autofocus_plan=AF_G, grid_plan=GRID_PLAN))]), (), range(0, 11, 2)),
-    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), ("z",), range(2, 13, 2)),
-    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), ("c",), (0, 2, 4, 8)),
-    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.Position(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), (), ()),
+    (TWO_CH.replace(stage_positions=[ZPOS_30, useq.AbsolutePosition(z=10, sequence=MDASequence(autofocus_plan=AF_C, grid_plan=GRID_PLAN))]), (), (2, 5)),
+    (TWO_CH.replace(stage_positions=[SUB_P_AF_C, useq.AbsolutePosition(z=10, sequence=MDASequence(autofocus_plan=AF_G, grid_plan=GRID_PLAN))]), (), range(0, 11, 2)),
+    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.AbsolutePosition(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), ("z",), range(2, 13, 2)),
+    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.AbsolutePosition(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), ("c",), (0, 2, 4, 8)),
+    (TWO_CH.replace(stage_positions=[ZPOS_200, useq.AbsolutePosition(z=10, sequence=MDASequence(z_plan=ZRANGE2))]), (), ()),
 ]
 # fmt: on
 

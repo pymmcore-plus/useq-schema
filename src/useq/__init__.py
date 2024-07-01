@@ -14,7 +14,7 @@ from useq._grid import (
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent, PropertyTuple
 from useq._mda_sequence import MDASequence
-from useq._position import Position
+from useq._position import AbsolutePosition, Position, RelativePosition
 from useq._time import (
     AnyTimePlan,
     MultiPhaseTimePlan,
@@ -32,6 +32,7 @@ from useq._z import (
 )
 
 __all__ = [
+    "AbsolutePosition",
     "AcquireImage",
     "Action",
     "AnyAutofocusPlan",
@@ -52,6 +53,7 @@ __all__ = [
     "Position",
     "PropertyTuple",
     "RandomPoints",
+    "RelativePosition",
     "TDurationLoops",
     "TIntervalDuration",
     "TIntervalLoops",

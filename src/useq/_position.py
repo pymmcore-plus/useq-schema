@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, ClassVar, Literal, Optional
 
 from useq._base_model import FrozenModel
 
@@ -7,6 +7,13 @@ if TYPE_CHECKING:
 
 
 class Position(FrozenModel):
+    x: Optional[float] = None
+    y: Optional[float] = None
+    z: Optional[float] = None
+    name: Optional[str] = None
+
+
+class AbsolutePosition(Position):
     """Define a position in 3D space.
 
     Any of the attributes can be `None` to indicate that the position is not
@@ -28,8 +35,9 @@ class Position(FrozenModel):
     """
 
     # if None, implies 'do not move this axis'
-    x: Optional[float] = None
-    y: Optional[float] = None
-    z: Optional[float] = None
-    name: Optional[str] = None
     sequence: Optional["MDASequence"] = None
+    is_relative: ClassVar[Literal[False]] = False
+
+
+class RelativePosition(Position):
+    is_relative: ClassVar[Literal[True]] = True

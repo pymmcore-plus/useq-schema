@@ -12,7 +12,6 @@ from typing import (
     ClassVar,
     Iterator,
     Literal,  # noqa: F401
-    NamedTuple,
     Optional,
     Sequence,
     Tuple,
@@ -23,6 +22,7 @@ import numpy as np
 from pydantic import Field, field_validator
 
 from useq._base_model import FrozenModel
+from useq._position import AbsolutePosition, Position, RelativePosition
 
 if TYPE_CHECKING:
     from pydantic import ConfigDict
@@ -132,14 +132,6 @@ _INDEX_GENERATORS: dict[OrderMode, IndexGenerator] = {
 }
 
 
-class GridPosition(NamedTuple):
-    x: float
-    y: float
-    row: int
-    col: int
-    is_relative: bool
-
-
 class _PointsPlan(FrozenModel):
     # Overriding FrozenModel to make fov_width and fov_height mutable.
     model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
@@ -151,7 +143,7 @@ class _PointsPlan(FrozenModel):
     def is_relative(self) -> bool:
         return False
 
-    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+    def __iter__(self) -> Iterator[RelativePosition]:  # type: ignore
         raise NotImplementedError("This method must be implemented by subclasses.")
 
     def num_positions(self) -> int:
@@ -235,7 +227,7 @@ class _GridPlan(_PointsPlan):
         fov_height: float | None = None,
         *,
         mode: OrderMode | None = None,
-    ) -> Iterator[GridPosition]:
+    ) -> Iterator[Position]:
         """Iterate over all grid positions, given a field of view size."""
         _fov_width = fov_width or self.fov_width or 1.0
         _fov_height = fov_height or self.fov_height or 1.0
@@ -248,9 +240,14 @@ class _GridPlan(_PointsPlan):
         y0 = self._offset_y(dy)
 
         for r, c in _INDEX_GENERATORS[mode](rows, cols):
-            yield GridPosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
+            x = x0 + c * dx
+            y = y0 - r * dy
+            if self.is_relative:
+                yield RelativePosition(x=x, y=y)
+            else:
+                yield AbsolutePosition(x=x, y=y)
 
-    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+    def __iter__(self) -> Iterator[Position]:  # type: ignore
         yield from self.iter_grid_positions()
 
     def _step_size(self, fov_width: float, fov_height: float) -> Tuple[float, float]:
@@ -487,7 +484,7 @@ class RandomPoints(_PointsPlan):
     def is_relative(self) -> bool:
         return True
 
-    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+    def __iter__(self) -> Iterator[RelativePosition]:  # type: ignore
         seed = np.random.RandomState(self.random_seed)
         func = _POINTS_GENERATORS[self.shape]
         n_points = max(self.num_points, MIN_RANDOM_POINTS)
@@ -499,7 +496,7 @@ class RandomPoints(_PointsPlan):
                 or self.fov_height is None
                 or _is_a_valid_point(points, x, y, self.fov_width, self.fov_height)
             ):
-                yield GridPosition(x, y, 0, 0, True)
+                yield RelativePosition(x=x, y=y, is_relative=True)
                 points.append((x, y))
             if len(points) >= self.num_points:
                 break
