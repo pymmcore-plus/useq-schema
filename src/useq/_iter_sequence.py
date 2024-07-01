@@ -8,9 +8,6 @@ from typing import TYPE_CHECKING, Any, Iterator, cast
 from typing_extensions import TypedDict
 
 from useq._channel import Channel  # noqa: TCH001  # noqa: TCH001
-from useq._grid import (  # noqa: TCH001
-    GridPosition,
-)
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent
 from useq._utils import AXES, Axis, _has_axes
@@ -18,7 +15,7 @@ from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
-    from useq._position import Position
+    from useq._position import Position, PositionBase, RelativePosition
 
 
 class MDAEventDict(TypedDict, total=False):
@@ -42,9 +39,7 @@ class PositionDict(TypedDict, total=False):
 
 
 @lru_cache(maxsize=None)
-def _iter_axis(
-    seq: MDASequence, ax: str
-) -> tuple[Position | Channel | float | GridPosition, ...]:
+def _iter_axis(seq: MDASequence, ax: str) -> tuple[Channel | float | PositionBase, ...]:
     return tuple(seq.iter_axis(ax))
 
 
@@ -264,7 +259,7 @@ def _parse_axes(
     dict[str, int],
     float | None,  # time
     Position | None,
-    GridPosition | None,
+    RelativePosition | None,
     Channel | None,
     float | None,  # z
 ]:
@@ -337,7 +332,7 @@ def _xyzpos(
     position: Position | None,
     channel: Channel | None,
     z_plan: AnyZPlan | None,
-    grid: GridPosition | None = None,
+    grid: RelativePosition | None = None,
     z_pos: float | None = None,
 ) -> MDAEventDict:
     if z_pos is not None:

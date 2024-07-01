@@ -56,7 +56,8 @@ def test_channel_in_main_and_position_sub_sequence() -> None:
     # test that a sub-position that specifies channel, overrides the global channel
     expect_mda(
         MDASequence(
-            stage_positions=[EMPTY, useq.Position(sequence=SEQ_1_CH)], channels=[CH_CY5]
+            stage_positions=[EMPTY, useq.Position(sequence=SEQ_1_CH)],
+            channels=[CH_CY5],
         ),
         channel=[CY5, FITC],
         index=[{"p": 0, "c": 0}, {"p": 1, "c": 0}],
@@ -79,7 +80,8 @@ def test_grid_relative_with_multi_stage_positions() -> None:
 
     expect_mda(
         MDASequence(
-            stage_positions=[useq.Position(x=0, y=0), (10, 20)], grid_plan=GRID_2x2
+            stage_positions=[useq.Position(x=0, y=0), (10, 20)],
+            grid_plan=GRID_2x2,
         ),
         index=genindex({"p": 2, "g": 4}),
         x_pos=[-0.5, 0.5, 0.5, -0.5, 9.5, 10.5, 10.5, 9.5],
@@ -322,7 +324,10 @@ def test_z_relative_in_main_and_position_sub_sequence() -> None:
 
 def test_z_absolute_in_main_and_position_sub_sequence() -> None:
     mda = MDASequence(
-        stage_positions=[EMPTY, useq.Position(name=NAME, sequence={"z_plan": Z_28_30})],
+        stage_positions=[
+            EMPTY,
+            useq.Position(name=NAME, sequence={"z_plan": Z_28_30}),
+        ],
         z_plan=Z_58_60,
     )
     expect_mda(
