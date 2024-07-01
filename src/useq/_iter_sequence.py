@@ -15,7 +15,7 @@ from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
-    from useq._position import AbsolutePosition, Position, RelativePosition
+    from useq._position import Position, PositionBase, RelativePosition
 
 
 class MDAEventDict(TypedDict, total=False):
@@ -39,7 +39,7 @@ class PositionDict(TypedDict, total=False):
 
 
 @lru_cache(maxsize=None)
-def _iter_axis(seq: MDASequence, ax: str) -> tuple[Channel | float | Position, ...]:
+def _iter_axis(seq: MDASequence, ax: str) -> tuple[Channel | float | PositionBase, ...]:
     return tuple(seq.iter_axis(ax))
 
 
@@ -229,7 +229,7 @@ def _iter_sequence(
 
 
 def _position_offsets(
-    position: AbsolutePosition, event_kwargs: MDAEventDict
+    position: Position, event_kwargs: MDAEventDict
 ) -> tuple[MDAEventDict, PositionDict]:
     """Determine shifts and position overrides for position subsequences."""
     pos_seq = cast("MDASequence", position.sequence)
@@ -258,7 +258,7 @@ def _parse_axes(
 ) -> tuple[
     dict[str, int],
     float | None,  # time
-    AbsolutePosition | None,
+    Position | None,
     RelativePosition | None,
     Channel | None,
     float | None,  # z
@@ -277,7 +277,7 @@ def _parse_axes(
 
 
 def _should_skip(
-    position: AbsolutePosition | None,
+    position: Position | None,
     channel: Channel | None,
     index: dict[str, int],
     z_plan: AnyZPlan | None,
@@ -329,7 +329,7 @@ def _should_skip(
 
 
 def _xyzpos(
-    position: AbsolutePosition | None,
+    position: Position | None,
     channel: Channel | None,
     z_plan: AnyZPlan | None,
     grid: RelativePosition | None = None,

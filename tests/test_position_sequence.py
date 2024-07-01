@@ -45,7 +45,7 @@ def expect_mda(mda: MDASequence, **expectations: Sequence[Any]) -> None:
 def test_channel_only_in_position_sub_sequence() -> None:
     # test that a sub-position with a sequence has a channel, but not the main sequence
     expect_mda(
-        MDASequence(stage_positions=[EMPTY, useq.AbsolutePosition(sequence=SEQ_1_CH)]),
+        MDASequence(stage_positions=[EMPTY, useq.Position(sequence=SEQ_1_CH)]),
         channel=[None, FITC],
         index=[{"p": 0}, {"p": 1, "c": 0}],
         exposure=[None, 100.0],
@@ -56,7 +56,7 @@ def test_channel_in_main_and_position_sub_sequence() -> None:
     # test that a sub-position that specifies channel, overrides the global channel
     expect_mda(
         MDASequence(
-            stage_positions=[EMPTY, useq.AbsolutePosition(sequence=SEQ_1_CH)],
+            stage_positions=[EMPTY, useq.Position(sequence=SEQ_1_CH)],
             channels=[CH_CY5],
         ),
         channel=[CY5, FITC],
@@ -80,7 +80,7 @@ def test_grid_relative_with_multi_stage_positions() -> None:
 
     expect_mda(
         MDASequence(
-            stage_positions=[useq.AbsolutePosition(x=0, y=0), (10, 20)],
+            stage_positions=[useq.Position(x=0, y=0), (10, 20)],
             grid_plan=GRID_2x2,
         ),
         index=genindex({"p": 2, "g": 4}),
@@ -93,8 +93,8 @@ def test_grid_relative_only_in_position_sub_sequence() -> None:
     # test a relative grid plan in a single stage position sub-sequence
     mda = MDASequence(
         stage_positions=[
-            useq.AbsolutePosition(x=0, y=0),
-            useq.AbsolutePosition(x=10, y=10, sequence={"grid_plan": GRID_2x2}),
+            useq.Position(x=0, y=0),
+            useq.Position(x=10, y=10, sequence={"grid_plan": GRID_2x2}),
         ],
     )
 
@@ -116,8 +116,8 @@ def test_grid_absolute_only_in_position_sub_sequence() -> None:
     # test a relative grid plan in a single stage position sub-sequence
     mda = MDASequence(
         stage_positions=[
-            useq.AbsolutePosition(x=0, y=0),
-            useq.AbsolutePosition(x=10, y=10, sequence={"grid_plan": GRID_1100}),
+            useq.Position(x=0, y=0),
+            useq.Position(x=10, y=10, sequence={"grid_plan": GRID_1100}),
         ],
     )
 
@@ -132,10 +132,8 @@ def test_grid_absolute_only_in_position_sub_sequence() -> None:
 def test_grid_relative_in_main_and_position_sub_sequence() -> None:
     mda = MDASequence(
         stage_positions=[
-            useq.AbsolutePosition(x=0, y=0),
-            useq.AbsolutePosition(
-                name=NAME, x=10, y=10, sequence={"grid_plan": GRID_2x2}
-            ),
+            useq.Position(x=0, y=0),
+            useq.Position(name=NAME, x=10, y=10, sequence={"grid_plan": GRID_2x2}),
         ],
         grid_plan=GRID_2x2,
     )
@@ -152,7 +150,7 @@ def test_grid_absolute_in_main_and_position_sub_sequence() -> None:
     mda = MDASequence(
         stage_positions=[
             EMPTY,
-            useq.AbsolutePosition(name=NAME, sequence={"grid_plan": GRID_2100}),
+            useq.Position(name=NAME, sequence={"grid_plan": GRID_2100}),
         ],
         grid_plan=GRID_1100,
     )
@@ -177,9 +175,7 @@ def test_grid_absolute_in_main_and_grid_relative_in_position_sub_sequence() -> N
     mda = MDASequence(
         stage_positions=[
             EMPTY,
-            useq.AbsolutePosition(
-                name=NAME, x=10, y=10, sequence={"grid_plan": GRID_2x2}
-            ),
+            useq.Position(name=NAME, x=10, y=10, sequence={"grid_plan": GRID_2x2}),
         ],
         grid_plan=GRID_1100,
     )
@@ -204,8 +200,8 @@ def test_grid_absolute_in_main_and_grid_relative_in_position_sub_sequence() -> N
 def test_grid_relative_in_main_and_grid_absolute_in_position_sub_sequence() -> None:
     mda = MDASequence(
         stage_positions=[
-            useq.AbsolutePosition(x=0, y=0),
-            useq.AbsolutePosition(name=NAME, sequence={"grid_plan": GRID_1100}),
+            useq.Position(x=0, y=0),
+            useq.Position(name=NAME, sequence={"grid_plan": GRID_1100}),
         ],
         grid_plan=GRID_2x2,
     )
@@ -266,7 +262,7 @@ def test_z_relative_with_multi_stage_positions() -> None:
 def test_z_absolute_with_multi_stage_positions() -> None:
     expect_mda(
         MDASequence(
-            stage_positions=[useq.AbsolutePosition(x=0, y=0), (10, 20)], z_plan=Z_58_60
+            stage_positions=[useq.Position(x=0, y=0), (10, 20)], z_plan=Z_58_60
         ),
         index=genindex({"p": 2, "z": 3}),
         x_pos=[0.0, 0.0, 0.0, 10.0, 10.0, 10.0],
@@ -278,8 +274,8 @@ def test_z_absolute_with_multi_stage_positions() -> None:
 def test_z_relative_only_in_position_sub_sequence() -> None:
     mda = MDASequence(
         stage_positions=[
-            useq.AbsolutePosition(z=0),
-            useq.AbsolutePosition(name=NAME, z=10, sequence={"z_plan": Z_RANGE2}),
+            useq.Position(z=0),
+            useq.Position(name=NAME, z=10, sequence={"z_plan": Z_RANGE2}),
         ],
     )
 
@@ -294,8 +290,8 @@ def test_z_relative_only_in_position_sub_sequence() -> None:
 def test_z_absolute_only_in_position_sub_sequence() -> None:
     mda = MDASequence(
         stage_positions=[
-            useq.AbsolutePosition(z=0),
-            useq.AbsolutePosition(name=NAME, sequence={"z_plan": Z_58_60}),
+            useq.Position(z=0),
+            useq.Position(name=NAME, sequence={"z_plan": Z_58_60}),
         ],
     )
 
@@ -310,8 +306,8 @@ def test_z_absolute_only_in_position_sub_sequence() -> None:
 def test_z_relative_in_main_and_position_sub_sequence() -> None:
     mda = MDASequence(
         stage_positions=[
-            useq.AbsolutePosition(z=0),
-            useq.AbsolutePosition(name=NAME, z=10, sequence={"z_plan": Z_RANGE3}),
+            useq.Position(z=0),
+            useq.Position(name=NAME, z=10, sequence={"z_plan": Z_RANGE3}),
         ],
         z_plan=Z_RANGE2,
     )
@@ -330,7 +326,7 @@ def test_z_absolute_in_main_and_position_sub_sequence() -> None:
     mda = MDASequence(
         stage_positions=[
             EMPTY,
-            useq.AbsolutePosition(name=NAME, sequence={"z_plan": Z_28_30}),
+            useq.Position(name=NAME, sequence={"z_plan": Z_28_30}),
         ],
         z_plan=Z_58_60,
     )
@@ -346,7 +342,7 @@ def test_z_absolute_in_main_and_z_relative_in_position_sub_sequence() -> None:
     mda = MDASequence(
         stage_positions=[
             EMPTY,
-            useq.AbsolutePosition(name=NAME, z=10, sequence={"z_plan": Z_RANGE3}),
+            useq.Position(name=NAME, z=10, sequence={"z_plan": Z_RANGE3}),
         ],
         z_plan=Z_58_60,
     )
@@ -369,8 +365,8 @@ def test_z_absolute_in_main_and_z_relative_in_position_sub_sequence() -> None:
 def test_z_relative_in_main_and_z_absolute_in_position_sub_sequence() -> None:
     mda = MDASequence(
         stage_positions=[
-            useq.AbsolutePosition(z=0),
-            useq.AbsolutePosition(name=NAME, sequence={"z_plan": Z_58_60}),
+            useq.Position(z=0),
+            useq.Position(name=NAME, sequence={"z_plan": Z_58_60}),
         ],
         z_plan=Z_RANGE3,
     )
@@ -469,8 +465,8 @@ def test_mix_cgz_axes() -> None:
     mda = MDASequence(
         axis_order="tpgcz",
         stage_positions=[
-            useq.AbsolutePosition(x=0, y=0),
-            useq.AbsolutePosition(
+            useq.Position(x=0, y=0),
+            useq.Position(
                 name=NAME,
                 x=10,
                 y=10,
@@ -517,14 +513,14 @@ def test_mix_cgz_axes() -> None:
 
 # axes order????
 def test_order() -> None:
-    sub_pos = useq.AbsolutePosition(
+    sub_pos = useq.Position(
         z=50,
         sequence=MDASequence(
             channels=[CH_FITC, useq.Channel(config=CY3, exposure=200)]
         ),
     )
     mda = MDASequence(
-        stage_positions=[useq.AbsolutePosition(z=0), sub_pos],
+        stage_positions=[useq.Position(z=0), sub_pos],
         channels=[CH_FITC, CH_CY5],
         z_plan=useq.ZRangeAround(range=2, step=1),
     )
@@ -556,7 +552,7 @@ def test_channels_and_pos_grid_plan() -> None:
     sub_seq = MDASequence(grid_plan=useq.GridRelative(rows=2, columns=1))
     mda = MDASequence(
         channels=[CH_CY5, CH_FITC],
-        stage_positions=[useq.AbsolutePosition(x=0, y=0, sequence=sub_seq)],
+        stage_positions=[useq.Position(x=0, y=0, sequence=sub_seq)],
     )
 
     expect_mda(
@@ -572,9 +568,7 @@ def test_channels_and_pos_z_plan() -> None:
     # test that all channels are acquired for each z position
     mda = MDASequence(
         channels=[CH_CY5, CH_FITC],
-        stage_positions=[
-            useq.AbsolutePosition(x=0, y=0, z=0, sequence={"z_plan": Z_RANGE2})
-        ],
+        stage_positions=[useq.Position(x=0, y=0, z=0, sequence={"z_plan": Z_RANGE2})],
     )
     expect_mda(
         mda,
@@ -589,9 +583,7 @@ def test_channels_and_pos_time_plan() -> None:
     mda = MDASequence(
         axis_order="tpgcz",
         channels=[CH_CY5, CH_FITC],
-        stage_positions=[
-            useq.AbsolutePosition(x=0, y=0, sequence={"time_plan": [TLOOP3]})
-        ],
+        stage_positions=[useq.Position(x=0, y=0, sequence={"time_plan": [TLOOP3]})],
     )
     expect_mda(
         mda,
@@ -606,7 +598,7 @@ def test_channels_and_pos_z_grid_and_time_plan() -> None:
     sub_seq = useq.MDASequence(grid_plan=GRID_2x2, z_plan=Z_RANGE2, time_plan=[TLOOP2])
     mda = MDASequence(
         channels=[CH_CY5, CH_FITC],
-        stage_positions=[useq.AbsolutePosition(x=0, y=0, sequence=sub_seq)],
+        stage_positions=[useq.Position(x=0, y=0, sequence=sub_seq)],
     )
 
     expect_mda(mda, channel=[CY5] * 24 + [FITC] * 24)

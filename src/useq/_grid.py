@@ -22,7 +22,7 @@ import numpy as np
 from pydantic import Field, field_validator
 
 from useq._base_model import FrozenModel
-from useq._position import AbsolutePosition, Position, RelativePosition
+from useq._position import Position, PositionBase, RelativePosition
 
 if TYPE_CHECKING:
     from pydantic import ConfigDict
@@ -227,7 +227,7 @@ class _GridPlan(_PointsPlan):
         fov_height: float | None = None,
         *,
         mode: OrderMode | None = None,
-    ) -> Iterator[Position]:
+    ) -> Iterator[PositionBase]:
         """Iterate over all grid positions, given a field of view size."""
         _fov_width = fov_width or self.fov_width or 1.0
         _fov_height = fov_height or self.fov_height or 1.0
@@ -245,9 +245,9 @@ class _GridPlan(_PointsPlan):
             if self.is_relative:
                 yield RelativePosition(x=x, y=y)
             else:
-                yield AbsolutePosition(x=x, y=y)
+                yield Position(x=x, y=y)
 
-    def __iter__(self) -> Iterator[Position]:  # type: ignore
+    def __iter__(self) -> Iterator[PositionBase]:  # type: ignore
         yield from self.iter_grid_positions()
 
     def _step_size(self, fov_width: float, fov_height: float) -> Tuple[float, float]:

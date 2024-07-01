@@ -22,7 +22,7 @@ from useq._channel import Channel
 from useq._grid import AnyGridPlan  # noqa: TCH001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
-from useq._position import AbsolutePosition, Position
+from useq._position import Position, PositionBase
 from useq._time import AnyTimePlan  # noqa: TCH001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TCH001
@@ -179,7 +179,7 @@ class MDASequence(UseqModel):
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: Tuple[str, ...] = AXES
-    stage_positions: Tuple[AbsolutePosition, ...] = Field(default_factory=tuple)
+    stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
     grid_plan: Optional[AnyGridPlan] = None
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: Optional[AnyTimePlan] = None
@@ -232,7 +232,7 @@ class MDASequence(UseqModel):
         return tuple(channels)
 
     @field_validator("stage_positions", mode="before")
-    def _validate_stage_positions(cls, value: Any) -> Tuple[AbsolutePosition, ...]:
+    def _validate_stage_positions(cls, value: Any) -> Tuple[Position, ...]:
         if isinstance(value, np.ndarray):
             if value.ndim == 1:
                 value = [value]
@@ -243,15 +243,15 @@ class MDASequence(UseqModel):
 
         positions = []
         for v in value:
-            if isinstance(v, AbsolutePosition):
+            if isinstance(v, Position):
                 positions.append(v)
             elif isinstance(v, dict):
-                positions.append(AbsolutePosition(**v))
+                positions.append(Position(**v))
             elif isinstance(v, (np.ndarray, tuple)):
                 x, *v = v
                 y, *v = v or (None,)
                 z = v[0] if v else None
-                positions.append(AbsolutePosition(x=x, y=y, z=z))
+                positions.append(Position(x=x, y=y, z=z))
             else:  # pragma: no cover
                 raise ValueError(f"Cannot coerce {v!r} to Position")
         return tuple(positions)
@@ -311,7 +311,7 @@ class MDASequence(UseqModel):
     def _check_order(
         order: str,
         z_plan: Optional[AnyZPlan] = None,
-        stage_positions: Sequence[AbsolutePosition] = (),
+        stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
         grid_plan: Optional[AnyGridPlan] = None,
         autofocus_plan: Optional[AnyAutofocusPlan] = None,
@@ -404,7 +404,7 @@ class MDASequence(UseqModel):
         """Single letter string of axes used in this sequence, e.g. `ztc`."""
         return "".join(k for k in self.axis_order if self.sizes[k])
 
-    def iter_axis(self, axis: str) -> Iterator[Channel | float | Position]:
+    def iter_axis(self, axis: str) -> Iterator[Channel | float | PositionBase]:
         """Iterate over the positions or items of a given axis."""
         plan = {
             Axis.TIME: self.time_plan,

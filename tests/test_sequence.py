@@ -7,12 +7,12 @@ import pytest
 from pydantic import BaseModel
 
 from useq import (
-    AbsolutePosition,
     Channel,
     GridFromEdges,
     GridRelative,
     MDAEvent,
     MDASequence,
+    Position,
     RandomPoints,
     TDurationLoops,
     TIntervalDuration,
@@ -98,10 +98,10 @@ g_inputs = [
             overlap=0, top=0, left=0, bottom=20, right=20, fov_height=20, fov_width=20
         ),
         [
-            AbsolutePosition(x=0.0, y=20.0),
-            AbsolutePosition(x=20.0, y=20.0),
-            AbsolutePosition(x=20.0, y=0.0),
-            AbsolutePosition(x=0.0, y=0.0),
+            Position(x=0.0, y=20.0),
+            Position(x=20.0, y=20.0),
+            Position(x=20.0, y=0.0),
+            Position(x=0.0, y=0.0),
         ],
     ),
     (
@@ -151,7 +151,7 @@ p_inputs = [
     ([np.ones(2)], (1, 1, None)),
     (np.array([[0, 0, 0], [1, 1, 1]]), (0, 0, 0)),
     (np.array([0, 0]), (0, 0, None)),
-    ([AbsolutePosition(x=100, y=200, z=300)], (100, 200, 300)),
+    ([Position(x=100, y=200, z=300)], (100, 200, 300)),
 ]
 
 
@@ -410,7 +410,7 @@ def test_keep_shutter_open() -> None:
     mda5 = MDASequence(
         axis_order="pgc",
         channels=["DAPI", "FITC"],
-        stage_positions=[AbsolutePosition(sequence=subseq)],
+        stage_positions=[Position(sequence=subseq)],
         keep_shutter_open_across="g",
     )
     for event in mda5:
