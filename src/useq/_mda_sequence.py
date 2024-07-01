@@ -16,8 +16,7 @@ from uuid import UUID, uuid4
 from warnings import warn
 
 import numpy as np
-from pydantic import Field, PrivateAttr
-from pydantic_compat import field_validator, model_validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
@@ -382,10 +381,10 @@ class MDASequence(UseqModel):
         if Axis.Z in order and z_plan and not z_plan.is_relative:
             err = "Absolute Z positions cannot be used with autofocus plan."
             if isinstance(autofocus_plan, AxesBasedAF):
-                raise ValueError(err)
+                raise ValueError(err)  # pragma: no cover
             for p in stage_positions:
                 if p.sequence is not None and p.sequence.autofocus_plan:
-                    raise ValueError(err)
+                    raise ValueError(err)  # pragma: no cover
 
     @property
     def shape(self) -> Tuple[int, ...]:

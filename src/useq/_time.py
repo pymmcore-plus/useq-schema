@@ -1,59 +1,18 @@
-import datetime
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    Iterator,
-    Sequence,
-    Union,
-)
+from datetime import timedelta
+from typing import Iterator, Sequence, Union
 
-from pydantic import Field
+from pydantic import BeforeValidator, Field, PlainSerializer
+from typing_extensions import Annotated
 
 from useq._base_model import FrozenModel
-from useq._utils import parse_duration
 
-if TYPE_CHECKING:
-    from pydantic_core import CoreSchema, core_schema
-
-
-# FIXME: please!!
-# This is a gross amalgamation of fixes that tries to work with both pydantic1 and 2
-class timedelta(datetime.timedelta):
-    @classmethod
-    def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v: Any) -> datetime.timedelta:
-        return datetime.timedelta(**v) if isinstance(v, dict) else parse_duration(v)
-
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: Any
-    ) -> "CoreSchema":
-        from pydantic_core.core_schema import (
-            no_info_plain_validator_function,
-            plain_serializer_function_ser_schema,
-        )
-
-        serializer = plain_serializer_function_ser_schema(
-            cls._serialize, when_used="json"
-        )
-
-        return no_info_plain_validator_function(cls.validate, serialization=serializer)
-
-    @classmethod
-    def _serialize(cls, v: datetime.timedelta) -> float:
-        return v.total_seconds()
-
-    @classmethod
-    def __get_pydantic_json_schema__(
-        cls, core_schema: "core_schema.CoreSchema", handler: Any
-    ) -> Dict[str, Any]:
-        return {"type": "number", "format": "float"}
+# slightly modified so that we can accept dict objects as input
+# and serialize to total_seconds
+TimeDelta = Annotated[
+    timedelta,
+    BeforeValidator(lambda v: timedelta(**v) if isinstance(v, dict) else v),
+    PlainSerializer(lambda td: td.total_seconds()),
+]
 
 
 class TimePlan(FrozenModel):
@@ -67,7 +26,7 @@ class TimePlan(FrozenModel):
     def num_timepoints(self) -> int:
         return self.loops  # type: ignore  # TODO
 
-    def deltas(self) -> Iterator[datetime.timedelta]:
+    def deltas(self) -> Iterator[timedelta]:
         current = timedelta(0)
         for _ in range(self.loops):  # type: ignore  # TODO
             yield current
@@ -89,11 +48,11 @@ class TIntervalLoops(TimePlan):
         of conflict. By default, `False`.
     """
 
-    interval: timedelta
+    interval: TimeDelta
     loops: int = Field(..., gt=0)
 
     @property
-    def duration(self) -> datetime.timedelta:
+    def duration(self) -> timedelta:
         return self.interval * (self.loops - 1)
 
 
@@ -112,11 +71,11 @@ class TDurationLoops(TimePlan):
         of conflict. By default, `False`.
     """
 
-    duration: timedelta
+    duration: TimeDelta
     loops: int = Field(..., gt=0)
 
     @property
-    def interval(self) -> datetime.timedelta:
+    def interval(self) -> timedelta:
         # -1 makes it so that the last loop will *occur* at duration, not *finish*
         return self.duration / (self.loops - 1)
 
@@ -136,8 +95,8 @@ class TIntervalDuration(TimePlan):
         of conflict. By default, `True`.
     """
 
-    interval: timedelta
-    duration: timedelta
+    interval: TimeDelta
+    duration: TimeDelta
     prioritize_duration: bool = True
 
     @property
@@ -159,13 +118,13 @@ class MultiPhaseTimePlan(TimePlan):
 
     phases: Sequence[SinglePhaseTimePlan]
 
-    def deltas(self) -> Iterator[datetime.timedelta]:
-        accum = datetime.timedelta(0)
+    def deltas(self) -> Iterator[timedelta]:
+        accum = timedelta(0)
         yield accum
         for phase in self.phases:
             for i, td in enumerate(phase.deltas()):
                 # skip the first timepoint of later phases
-                if i == 0 and td == datetime.timedelta(0):
+                if i == 0 and td == timedelta(0):
                     continue
                 yield td + accum
             accum += td

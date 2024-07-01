@@ -59,7 +59,7 @@ class TimeEstimate(NamedTuple):
     def __add__(self, other: object) -> TimeEstimate:
         """Add two TimeEstimates."""
         if not isinstance(other, TimeEstimate):
-            return NotImplemented
+            return NotImplemented  # pragma: no cover
         return TimeEstimate(
             self.total_duration + other.total_duration,
             self.per_t_duration + other.per_t_duration,

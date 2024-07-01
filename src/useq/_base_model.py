@@ -14,7 +14,7 @@ from typing import (
 )
 
 import numpy as np
-from pydantic_compat import BaseModel
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from pydantic import ConfigDict
