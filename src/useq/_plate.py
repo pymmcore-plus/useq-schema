@@ -2,12 +2,15 @@ from ast import literal_eval
 from contextlib import suppress
 from functools import cached_property
 from typing import (
+    TYPE_CHECKING,
     Annotated,
     Any,
     Callable,
-    ClassVar,
     Iterable,
+    Mapping,
+    Required,
     Sequence,
+    TypedDict,
     Union,
     cast,
     overload,
@@ -24,6 +27,16 @@ from pydantic_core import core_schema
 from useq._base_model import FrozenModel
 from useq._grid import GridPosition, GridRowsColumns, RandomPoints, Shape, _PointsPlan
 from useq._position import Position
+
+if TYPE_CHECKING:
+
+    class KnownPlateKwargs(TypedDict, total=False):
+        rows: Required[int]
+        columns: Required[int]
+        well_spacing: Required[tuple[float, float] | float]
+        well_size: tuple[float, float] | float | None
+        circular_wells: bool
+        name: str
 
 
 class _SliceType:
@@ -83,40 +96,26 @@ class WellPlate(FrozenModel):
     @model_validator(mode="before")
     @classmethod
     def validate_plate(cls, value: Any) -> Any:
-        if isinstance(value, int):
-            value = f"{value}-well"
+        if isinstance(value, (int, float)):
+            value = f"{int(value)}-well"
         if isinstance(value, str):
-            try:
-                return cls.lookup(value)
-            except KeyError as e:  # pragma: no cover
-                raise ValueError(f"Unknown plate name {value!r}") from e
+            return cls.from_str(value)
         return value
 
     @classmethod
-    def lookup(cls, name: str) -> "WellPlate":
-        """Lookup a plate by name."""
-        return WellPlate(**cls.KNOWN_PLATES[name])
+    def from_str(cls, name: str) -> "WellPlate":
+        """Lookup a plate by registered name.
 
-    KNOWN_PLATES: ClassVar[dict[str, dict]] = {
-        "12-well": {"rows": 3, "columns": 4, "well_spacing": 26, "well_size": 22},
-        "24-well": {"rows": 4, "columns": 6, "well_spacing": 19, "well_size": 15.6},
-        "48-well": {"rows": 6, "columns": 8, "well_spacing": 13, "well_size": 11.1},
-        "96-well": {"rows": 8, "columns": 12, "well_spacing": 9, "well_size": 6.4},
-        "384-well": {
-            "rows": 16,
-            "columns": 24,
-            "well_spacing": 4.5,
-            "well_size": 3.4,
-            "circular_wells": False,
-        },
-        "1536-well": {
-            "rows": 32,
-            "columns": 48,
-            "well_spacing": 2.25,
-            "well_size": 1.7,
-            "circular_wells": False,
-        },
-    }
+        Use `useq.register_well_plates` to add new plates to the registry.
+        """
+        try:
+            obj = _KNOWN_PLATES[name]
+        except KeyError as e:
+            raise ValueError(
+                f"Unknown plate name {name!r}. "
+                "Use `useq.register_well_plates` to add new plate definitions"
+            ) from e
+        return WellPlate.model_validate(obj)
 
 
 class WellPlatePlan(FrozenModel, Sequence[Position]):
@@ -194,7 +193,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
                 return float(value.strip())
         if isinstance(value, (tuple, list)):
             ary = np.array(value).flatten()
-            if len(ary) != 4:
+            if len(ary) != 4:  # pragma: no cover
                 raise ValueError("Rotation matrix must have 4 elements")
             # convert (cos, -sin, sin, cos) to angle in degrees, anti-clockwise
             return np.degrees(np.arctan2(ary[2], ary[0]))
@@ -433,3 +432,83 @@ def _index_to_row_name(index: int) -> str:
         name = chr(index % 26 + 65) + name
         index = index // 26 - 1
     return name
+
+
+# ---------------------------- Known Plates ----------------------------
+
+_KNOWN_PLATES: dict[str, "KnownPlateKwargs | WellPlate"] = {
+    "12-well": {"rows": 3, "columns": 4, "well_spacing": 26, "well_size": 22},
+    "24-well": {"rows": 4, "columns": 6, "well_spacing": 19, "well_size": 15.6},
+    "48-well": {"rows": 6, "columns": 8, "well_spacing": 13, "well_size": 11.1},
+    "96-well": {"rows": 8, "columns": 12, "well_spacing": 9, "well_size": 6.4},
+    "384-well": {
+        "rows": 16,
+        "columns": 24,
+        "well_spacing": 4.5,
+        "well_size": 3.4,
+        "circular_wells": False,
+    },
+    "1536-well": {
+        "rows": 32,
+        "columns": 48,
+        "well_spacing": 2.25,
+        "well_size": 1.7,
+        "circular_wells": False,
+    },
+}
+
+
+@overload
+def register_well_plates(
+    plates: Mapping[str, "KnownPlateKwargs | WellPlate"],
+    /,
+    **kwargs: "KnownPlateKwargs | WellPlate",
+) -> None: ...
+@overload
+def register_well_plates(
+    plates: Iterable[tuple[str, "KnownPlateKwargs | WellPlate"]],
+    /,
+    **kwargs: "KnownPlateKwargs | WellPlate",
+) -> None: ...
+@overload
+def register_well_plates(**kwargs: "KnownPlateKwargs | WellPlate") -> None: ...
+def register_well_plates(
+    plates: Mapping[str, "KnownPlateKwargs | WellPlate"]
+    | Iterable[tuple[str, "KnownPlateKwargs | WellPlate"]] = (),
+    /,
+    **kwargs: "KnownPlateKwargs | WellPlate",
+) -> None:
+    """Register well-plate definitions to allow lookup by key.
+
+    Added keys will override existing keys if they already exist.
+
+    Values may either be WellPlate instances, or dictionaries with the following keys:
+        - rows: Required[int]
+        - columns: Required[int]
+        - well_spacing: Required[tuple[float, float]]
+        - well_size: tuple[float, float] | None
+        - circular_wells: bool
+        - name: str
+
+    Examples
+    --------
+    >>> import useq
+    >>> useq.register_well_plates(
+    ...     {
+    ...         "custom-square-plate": {
+    ...             "rows": 8, "columns": 8, "well_spacing": 9.3, "well_size": 7.1
+    ...         },
+    ...         "silly-plate": {"rows": 1, "columns": 1, "well_spacing": 100}
+    ...     }
+    ... )
+    """
+    _KNOWN_PLATES.update(plates, **kwargs)
+
+
+def known_well_plate_keys() -> set[str]:
+    """Return a set of all registered well-plate keys.
+
+    These keys may be used as an argument to `WellPlatePlan.plate` to select a plate
+    definition.
+    """
+    return set(_KNOWN_PLATES)
