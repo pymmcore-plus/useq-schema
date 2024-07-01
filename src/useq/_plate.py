@@ -5,23 +5,16 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    Callable,
     Iterable,
     Mapping,
-    Required,
     Sequence,
-    TypedDict,
     Union,
     cast,
     overload,
 )
 
 import numpy as np
-from pydantic import (
-    Field,
-    field_validator,
-    model_validator,
-)
+from pydantic import Field, field_validator, model_validator
 from pydantic_core import core_schema
 
 from useq._base_model import FrozenModel
@@ -29,6 +22,7 @@ from useq._grid import GridPosition, GridRowsColumns, RandomPoints, Shape, _Poin
 from useq._position import Position
 
 if TYPE_CHECKING:
+    from typing import Callable, Required, TypedDict
 
     class KnownPlateKwargs(TypedDict, total=False):
         rows: Required[int]
