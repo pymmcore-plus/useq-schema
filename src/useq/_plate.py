@@ -424,7 +424,7 @@ def _index_to_row_name(index: int) -> str:
 
 # ---------------------------- Known Plates ----------------------------
 
-PlateOrKwargs = Union[KnownPlateKwargs, WellPlate]
+PlateOrKwargs = Union["KnownPlateKwargs", WellPlate]
 _KNOWN_PLATES: dict[str, PlateOrKwargs] = {
     "6-well": {"rows": 2, "columns": 3, "well_spacing": 39.12, "well_size": 34.8},
     "12-well": {"rows": 3, "columns": 4, "well_spacing": 26, "well_size": 22},
