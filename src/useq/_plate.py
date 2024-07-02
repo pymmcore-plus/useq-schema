@@ -179,7 +179,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             if "°" in value or "˚" in value or "deg" in value:
                 value = value.replace("°", "").replace("˚", "").replace("deg", "")
                 return float(value.strip())
-        if isinstance(value, tuple | list):
+        if isinstance(value, (tuple, list)):
             ary = np.array(value).flatten()
             if len(ary) != 4:  # pragma: no cover
                 raise ValueError("Rotation matrix must have 4 elements")
@@ -424,7 +424,8 @@ def _index_to_row_name(index: int) -> str:
 
 # ---------------------------- Known Plates ----------------------------
 
-_KNOWN_PLATES: dict[str, KnownPlateKwargs | WellPlate] = {
+PlateOrKwargs = Union[KnownPlateKwargs, WellPlate]
+_KNOWN_PLATES: dict[str, PlateOrKwargs] = {
     "6-well": {"rows": 2, "columns": 3, "well_spacing": 39.12, "well_size": 34.8},
     "12-well": {"rows": 3, "columns": 4, "well_spacing": 26, "well_size": 22},
     "24-well": {"rows": 4, "columns": 6, "well_spacing": 19, "well_size": 15.6},
@@ -449,23 +450,17 @@ _KNOWN_PLATES: dict[str, KnownPlateKwargs | WellPlate] = {
 
 @overload
 def register_well_plates(
-    plates: Mapping[str, KnownPlateKwargs | WellPlate],
-    /,
-    **kwargs: KnownPlateKwargs | WellPlate,
+    plates: Mapping[str, PlateOrKwargs], **kwargs: PlateOrKwargs
 ) -> None: ...
 @overload
 def register_well_plates(
-    plates: Iterable[tuple[str, KnownPlateKwargs | WellPlate]],
-    /,
-    **kwargs: KnownPlateKwargs | WellPlate,
+    plates: Iterable[tuple[str, PlateOrKwargs]], **kwargs: PlateOrKwargs
 ) -> None: ...
 @overload
-def register_well_plates(**kwargs: KnownPlateKwargs | WellPlate) -> None: ...
+def register_well_plates(**kwargs: PlateOrKwargs) -> None: ...
 def register_well_plates(
-    plates: Mapping[str, KnownPlateKwargs | WellPlate]
-    | Iterable[tuple[str, KnownPlateKwargs | WellPlate]] = (),
-    /,
-    **kwargs: KnownPlateKwargs | WellPlate,
+    plates: Mapping[str, PlateOrKwargs] | Iterable[tuple[str, PlateOrKwargs]] = (),
+    **kwargs: PlateOrKwargs,
 ) -> None:
     """Register well-plate definitions to allow lookup by key.
 
