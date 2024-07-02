@@ -4,11 +4,12 @@ from ast import literal_eval
 from collections.abc import Iterable, Mapping, Sequence
 from contextlib import suppress
 from functools import cached_property
-from typing import TYPE_CHECKING, Annotated, Any, List, Tuple, Union, cast, overload
+from typing import TYPE_CHECKING, Any, List, Tuple, Union, cast, overload
 
 import numpy as np
 from pydantic import Field, field_validator, model_validator
 from pydantic_core import core_schema
+from typing_extensions import Annotated
 
 from useq._base_model import FrozenModel
 from useq._grid import GridPosition, GridRowsColumns, RandomPoints, Shape, _PointsPlan
@@ -291,7 +292,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         return [
             Position(x=x, y=y, name=name)
             for (y, x), name in zip(
-                self.all_well_coordinates, self.all_well_names.reshape(-1), strict=False
+                self.all_well_coordinates, self.all_well_names.reshape(-1)
             )
         ]
 
@@ -301,7 +302,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         return [
             Position(x=x, y=y, name=name)
             for (y, x), name in zip(
-                self.selected_well_coordinates, self.selected_well_names, strict=False
+                self.selected_well_coordinates, self.selected_well_names
             )
         ]
 
