@@ -1,10 +1,20 @@
 from __future__ import annotations
 
 from ast import literal_eval
-from collections.abc import Iterable, Mapping, Sequence
 from contextlib import suppress
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, List, Tuple, Union, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    List,
+    Mapping,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+    overload,
+)
 
 import numpy as np
 from pydantic import Field, field_validator, model_validator
