@@ -450,16 +450,21 @@ _KNOWN_PLATES: dict[str, PlateOrKwargs] = {
 
 @overload
 def register_well_plates(
-    plates: Mapping[str, PlateOrKwargs], **kwargs: PlateOrKwargs
+    plates: Mapping[str, PlateOrKwargs],
+    /,
+    **kwargs: PlateOrKwargs,
 ) -> None: ...
 @overload
 def register_well_plates(
-    plates: Iterable[tuple[str, PlateOrKwargs]], **kwargs: PlateOrKwargs
+    plates: Iterable[tuple[str, PlateOrKwargs]],
+    /,
+    **kwargs: PlateOrKwargs,
 ) -> None: ...
 @overload
 def register_well_plates(**kwargs: PlateOrKwargs) -> None: ...
 def register_well_plates(
     plates: Mapping[str, PlateOrKwargs] | Iterable[tuple[str, PlateOrKwargs]] = (),
+    /,
     **kwargs: PlateOrKwargs,
 ) -> None:
     """Register well-plate definitions to allow lookup by key.
