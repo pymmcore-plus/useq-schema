@@ -425,6 +425,7 @@ def _index_to_row_name(index: int) -> str:
 # ---------------------------- Known Plates ----------------------------
 
 _KNOWN_PLATES: dict[str, KnownPlateKwargs | WellPlate] = {
+    "6-well": {"rows": 2, "columns": 3, "well_spacing": 39.12, "well_size": 34.8},
     "12-well": {"rows": 3, "columns": 4, "well_spacing": 26, "well_size": 22},
     "24-well": {"rows": 4, "columns": 6, "well_spacing": 19, "well_size": 15.6},
     "48-well": {"rows": 6, "columns": 8, "well_spacing": 13, "well_size": 11.1},
