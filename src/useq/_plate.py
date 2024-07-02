@@ -73,14 +73,14 @@ class WellPlate(FrozenModel):
 
     @field_validator("well_spacing", "well_size", mode="before")
     def _validate_well_spacing_and_size(cls, value: Any) -> Any:
-        if isinstance(value, int | float):
+        if isinstance(value, (int, float)):
             return value, value
         return value
 
     @model_validator(mode="before")
     @classmethod
     def validate_plate(cls, value: Any) -> Any:
-        if isinstance(value, int | float):
+        if isinstance(value, (int, float)):
             value = f"{int(value)}-well"
         if isinstance(value, str):
             return cls.from_str(value)
