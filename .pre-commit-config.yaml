@@ -26,3 +26,4 @@ repos:
         additional_dependencies:
           - types-PyYAML
           - pydantic >=2
+          - numpy >=2

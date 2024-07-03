@@ -477,9 +477,9 @@ class RandomPoints(_PointsPlan):
     """
 
     num_points: int
-    max_width: float
-    max_height: float
-    shape: Shape
+    max_width: float = np.inf
+    max_height: float = np.inf
+    shape: Shape = Shape.ELLIPSE
     random_seed: Optional[int] = None
     allow_overlap: bool = True
 
