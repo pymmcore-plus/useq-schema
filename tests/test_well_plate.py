@@ -73,10 +73,10 @@ def test_custom_plate(monkeypatch: pytest.MonkeyPatch) -> None:
     useq.register_well_plates(
         {
             "silly": useq.WellPlate(
-                rows=1, columns=1, well_spacing=1, circular_wells=False
+                rows=1, columns=1, well_spacing=1, circular_wells=False, well_size=1
             )
         },
-        myplate={"rows": 8, "columns": 8, "well_spacing": 9},
+        myplate={"rows": 8, "columns": 8, "well_spacing": 9, "well_size": 10},
     )
     assert "myplate" in plates
     assert "silly" in useq.known_well_plate_keys()
@@ -89,3 +89,16 @@ def test_custom_plate(monkeypatch: pytest.MonkeyPatch) -> None:
     assert not pp.plate.circular_wells
     pp = useq.WellPlatePlan(plate="myplate", a1_center_xy=(0, 0))
     assert pp.plate.rows == 8
+
+
+def test_plate_plan_serialization() -> None:
+    pp = useq.WellPlatePlan(
+        plate=96,
+        a1_center_xy=(500, 200),
+        rotation=5,
+        selected_wells=np.s_[1:5:2, :6:3],
+        well_points_plan=useq.RandomPoints(num_points=10),
+    )
+    js = pp.model_dump_json()
+    pp2 = useq.WellPlatePlan.model_validate_json(js)
+    assert pp2 == pp
