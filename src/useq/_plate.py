@@ -72,13 +72,15 @@ class WellPlate(FrozenModel):
     columns : int
         The number of columns in the plate.
     well_spacing : tuple[float, float] | float
-        The spacing between wells in the x and y directions.
-        If a single value is provided, it is used for both x and y.
+        The center-to-center distance in mm (pitch) between wells in the x and y
+        directions. If a single value is provided, it is used for both x and y.
     well_size : tuple[float, float] | float
-        The size of each well in the x and y directions.
-        If a single value is provided, it is used for both x and y.
+        The size in mm of each well in the x and y directions. If the well is squared or
+        rectangular, this is the width and height of the well. If the well is circular,
+        this is the diameter. If a single value is provided, it is used for both x and
+        y.
     circular_wells : bool
-        Whether wells are circular (True) or rectangular (False).
+        Whether wells are circular (True) or squared/rectangular (False).
     name : str
         A name for the plate.
     """
@@ -154,6 +156,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         -   None -> all wells are selected.
         -   0 -> Selects the first row.
         -   [0, 1, 2] -> Selects the first three rows.
+        -   slice(0) -> select no wells
         -   slice(1, 5) -> selects wells from row 1 to row 4.
         -   (2, slice(1, 4)) -> select wells in the second row and only columns 1 to 3.
         -   ([1, 2], [3, 4]) -> select wells in (row, column): (1, 3) and (2, 4)
@@ -378,7 +381,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
         return translation @ rotation @ scaling
 
-    def plot(self) -> None:
+    def plot(self, show_axis: bool = True) -> None:
         """Plot the selected positions on the plate."""
         import matplotlib.pyplot as plt
         from matplotlib import patches
@@ -386,7 +389,8 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         _, ax = plt.subplots()
 
         # hide axes
-        ax.axis("off")
+        if not show_axis:
+            ax.axis("off")
 
         # ################ draw outline of all wells ################
         height, width = self.plate.well_size
