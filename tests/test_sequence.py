@@ -73,24 +73,24 @@ g_inputs = [
     (
         GridRelative(overlap=10, rows=1, columns=2, relative_to="center"),
         [
-            GridPosition(x=-0.45, y=0.0, row=0, col=0, is_relative=True),
-            GridPosition(x=0.45, y=0.0, row=0, col=1, is_relative=True),
+            GridPosition(x=-0.45, y=0.0, row=0, col=0, is_relative=True, name="0000"),
+            GridPosition(x=0.45, y=0.0, row=0, col=1, is_relative=True, name="0001"),
         ],
     ),
     (
         GridRelative(overlap=0, rows=1, columns=2, relative_to="top_left"),
         [
-            GridPosition(x=0.0, y=0.0, row=0, col=0, is_relative=True),
-            GridPosition(x=1.0, y=0.0, row=0, col=1, is_relative=True),
+            GridPosition(x=0.0, y=0.0, row=0, col=0, is_relative=True, name="0000"),
+            GridPosition(x=1.0, y=0.0, row=0, col=1, is_relative=True, name="0001"),
         ],
     ),
     (
         GridRelative(overlap=(20, 40), rows=2, columns=2),
         [
-            GridPosition(x=-0.4, y=0.3, row=0, col=0, is_relative=True),
-            GridPosition(x=0.4, y=0.3, row=0, col=1, is_relative=True),
-            GridPosition(x=0.4, y=-0.3, row=1, col=1, is_relative=True),
-            GridPosition(x=-0.4, y=-0.3, row=1, col=0, is_relative=True),
+            GridPosition(x=-0.4, y=0.3, row=0, col=0, is_relative=True, name="0000"),
+            GridPosition(x=0.4, y=0.3, row=0, col=1, is_relative=True, name="0001"),
+            GridPosition(x=0.4, y=-0.3, row=1, col=1, is_relative=True, name="0002"),
+            GridPosition(x=-0.4, y=-0.3, row=1, col=0, is_relative=True, name="0003"),
         ],
     ),
     (
@@ -98,10 +98,10 @@ g_inputs = [
             overlap=0, top=0, left=0, bottom=20, right=20, fov_height=20, fov_width=20
         ),
         [
-            GridPosition(x=0.0, y=20.0, row=0, col=0, is_relative=False),
-            GridPosition(x=20.0, y=20.0, row=0, col=1, is_relative=False),
-            GridPosition(x=20.0, y=0.0, row=1, col=1, is_relative=False),
-            GridPosition(x=0.0, y=0.0, row=1, col=0, is_relative=False),
+            GridPosition(x=0.0, y=20.0, row=0, col=0, is_relative=False, name="0000"),
+            GridPosition(x=20.0, y=20.0, row=0, col=1, is_relative=False, name="0001"),
+            GridPosition(x=20.0, y=0.0, row=1, col=1, is_relative=False, name="0002"),
+            GridPosition(x=0.0, y=0.0, row=1, col=0, is_relative=False, name="0003"),
         ],
     ),
     (
@@ -116,9 +116,9 @@ g_inputs = [
             random_seed=0,
         ),
         [
-            GridPosition(x=-0.0, y=-2.1, row=0, col=0, is_relative=True),
-            GridPosition(x=0.7, y=1.7, row=0, col=0, is_relative=True),
-            GridPosition(x=-1.0, y=1.3, row=0, col=0, is_relative=True),
+            GridPosition(x=-0.0, y=-2.1, row=0, col=0, is_relative=True, name="0000"),
+            GridPosition(x=0.7, y=1.7, row=0, col=0, is_relative=True, name="0001"),
+            GridPosition(x=-1.0, y=1.3, row=0, col=0, is_relative=True, name="0002"),
         ],
     ),
 ]
@@ -171,8 +171,8 @@ def test_g_plan(gridplan: Any, gridexpectation: Sequence[Any]) -> None:
         assert (
             g_plan
             and [
-                GridPosition(round(x, 1), round(y, 1), _r, _c, rl)
-                for x, y, _r, _c, rl in g_plan
+                GridPosition(round(x, 1), round(y, 1), _r, _c, rl, name)
+                for x, y, _r, _c, rl, name in g_plan
             ]
             == gridexpectation
         )

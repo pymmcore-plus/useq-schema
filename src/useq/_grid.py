@@ -138,6 +138,7 @@ class GridPosition(NamedTuple):
     row: int
     col: int
     is_relative: bool
+    name: str = ""
 
 
 class _PointsPlan(FrozenModel):
@@ -247,8 +248,15 @@ class _GridPlan(_PointsPlan):
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
 
-        for r, c in _INDEX_GENERATORS[mode](rows, cols):
-            yield GridPosition(x0 + c * dx, y0 - r * dy, r, c, self.is_relative)
+        for idx, (r, c) in enumerate(_INDEX_GENERATORS[mode](rows, cols)):
+            yield GridPosition(
+                x0 + c * dx,
+                y0 - r * dy,
+                r,
+                c,
+                self.is_relative,
+                f"{str(idx).zfill(4)}",
+            )
 
     def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
         yield from self.iter_grid_positions()
@@ -492,14 +500,16 @@ class RandomPoints(_PointsPlan):
         func = _POINTS_GENERATORS[self.shape]
         n_points = max(self.num_points, MIN_RANDOM_POINTS)
         points: list[Tuple[float, float]] = []
-        for x, y in func(seed, n_points, self.max_width, self.max_height):
+        for idx, (x, y) in enumerate(
+            func(seed, n_points, self.max_width, self.max_height)
+        ):
             if (
                 self.allow_overlap
                 or self.fov_width is None
                 or self.fov_height is None
                 or _is_a_valid_point(points, x, y, self.fov_width, self.fov_height)
             ):
-                yield GridPosition(x, y, 0, 0, True)
+                yield GridPosition(x, y, 0, 0, True, f"{str(idx).zfill(4)}")
                 points.append((x, y))
             if len(points) >= self.num_points:
                 break

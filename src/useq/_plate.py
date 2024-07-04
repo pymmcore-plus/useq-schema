@@ -63,12 +63,32 @@ class _SliceType:
 
 
 class WellPlate(FrozenModel):
-    """A multi-well plate definition."""
+    """A multi-well plate definition.
+
+    Parameters
+    ----------
+    rows : int
+        The number of rows in the plate.
+    columns : int
+        The number of columns in the plate.
+    well_spacing : tuple[float, float] | float
+        The center-to-center distance in mm (pitch) between wells in the x and y
+        directions. If a single value is provided, it is used for both x and y.
+    well_size : tuple[float, float] | float
+        The size in mm of each well in the x and y directions. If the well is squared or
+        rectangular, this is the width and height of the well. If the well is circular,
+        this is the diameter. If a single value is provided, it is used for both x and
+        y.
+    circular_wells : bool
+        Whether wells are circular (True) or squared/rectangular (False).
+    name : str
+        A name for the plate.
+    """
 
     rows: int
     columns: int
     well_spacing: Tuple[float, float]  # (x, y)
-    well_size: Union[Tuple[float, float], None] = None  # (x, y)
+    well_size: Tuple[float, float]  # (width, height)
     circular_wells: bool = True
     name: str = ""
 
@@ -84,18 +104,14 @@ class WellPlate(FrozenModel):
 
     @field_validator("well_spacing", "well_size", mode="before")
     def _validate_well_spacing_and_size(cls, value: Any) -> Any:
-        if isinstance(value, (int, float)):
-            return value, value
-        return value
+        return (value, value) if isinstance(value, (int, float)) else value
 
     @model_validator(mode="before")
     @classmethod
     def validate_plate(cls, value: Any) -> Any:
         if isinstance(value, (int, float)):
             value = f"{int(value)}-well"
-        if isinstance(value, str):
-            return cls.from_str(value)
-        return value
+        return cls.from_str(value) if isinstance(value, str) else value
 
     @classmethod
     def from_str(cls, name: str) -> WellPlate:
@@ -134,17 +150,25 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         "4 rad", "4.5deg").
         If expressed as an arraylike, it is assumed to be a 2x2 rotation matrix
         `[[cos, -sin], [sin, cos]]`, or a 4-tuple `(cos, -sin, sin, cos)`.
+    selected_wells : IndexExpression | None
+        Any <=2-dimensional index expression for selecting wells.
+        for example:
+        -   None -> all wells are selected.
+        -   0 -> Selects the first row.
+        -   [0, 1, 2] -> Selects the first three rows.
+        -   slice(0) -> select no wells
+        -   slice(1, 5) -> selects wells from row 1 to row 4.
+        -   (2, slice(1, 4)) -> select wells in the second row and only columns 1 to 3.
+        -   ([1, 2], [3, 4]) -> select wells in (row, column): (1, 3) and (2, 4)
+    well_points_plan : GridRowsColumns | RandomPoints | Position
+        A plan for acquiring images within each well. This can be a single position
+        (for a single image per well), a GridRowsColumns (for a grid of images),
+        or RandomPoints (for random points within each well).
     """
 
     plate: WellPlate
     a1_center_xy: Tuple[float, float]
-    # if expressed as a single number, it is assumed to be the angle in degrees
-    # with anti-clockwise rotation
-    # if expressed as a string, rad/deg is inferred from the string
-    # if expressed as a tuple, it is assumed to be a 2x2 rotation matrix or a 4-tuple
     rotation: Union[float, None] = None
-    # Any <2-dimensional index expression, where None means all wells
-    # and slice(0, 0) means no wells
     selected_wells: Union[IndexExpression, None] = None
     well_points_plan: Union[GridRowsColumns, RandomPoints, Position] = Field(
         default_factory=lambda: Position(x=0, y=0)
@@ -167,13 +191,17 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         if plate := info.data.get("plate"):
             if isinstance(value, RandomPoints):
                 plate = cast(WellPlate, plate)
-                # use the well size and shape to bound the random points
                 kwargs = value.model_dump(mode="python")
-                kwargs["max_width"] = plate.well_size[0] - (value.fov_width or 0.1)
-                kwargs["max_height"] = plate.well_size[1] - (value.fov_height or 0.1)
-                kwargs["shape"] = (
-                    Shape.ELLIPSE if plate.circular_wells else Shape.RECTANGLE
-                )
+                if value.max_width == np.inf:
+                    kwargs["max_width"] = plate.well_size[0] - (value.fov_width or 0.1)
+                if value.max_height == np.inf:
+                    kwargs["max_height"] = plate.well_size[1] - (
+                        value.fov_height or 0.1
+                    )
+                if "shape" not in value.__pydantic_fields_set__:
+                    kwargs["shape"] = (
+                        Shape.ELLIPSE if plate.circular_wells else Shape.RECTANGLE
+                    )
                 value = RandomPoints(**kwargs)
         return value
 
@@ -355,18 +383,19 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
         return translation @ rotation @ scaling
 
-    def plot(self) -> None:
+    def plot(self, show_axis: bool = True) -> None:
         """Plot the selected positions on the plate."""
         import matplotlib.pyplot as plt
         from matplotlib import patches
 
         _, ax = plt.subplots()
 
+        # hide axes
+        if not show_axis:
+            ax.axis("off")
+
         # ################ draw outline of all wells ################
-        if self.plate.well_size is None:
-            height, width = self.plate.well_spacing
-        else:
-            height, width = self.plate.well_size
+        height, width = self.plate.well_size
 
         kwargs = {}
         offset_x, offset_y = 0.0, 0.0

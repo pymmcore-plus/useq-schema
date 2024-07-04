@@ -39,12 +39,13 @@ class Position(FrozenModel):
         """Add two positions together to create a new position."""
         if isinstance(other, GridPosition) and not other.is_relative:
             raise ValueError("Cannot add a non-relative GridPosition to a Position")
-        other_name = getattr(other, "name", None)
+        other_name = getattr(other, "name", "")
+        other_name = f"_{other_name}" if other_name else ""
         other_z = getattr(other, "z", None)
         return Position(
             x=self.x + other.x if self.x is not None and other.x is not None else None,
             y=self.y + other.y if self.y is not None and other.y is not None else None,
             z=self.z + other_z if self.z is not None and other_z is not None else None,
-            name=f"{self.name}+{other_name}" if self.name and other_name else self.name,
+            name=f"{self.name}{other_name}" if self.name and other_name else self.name,
             sequence=self.sequence,
         )
