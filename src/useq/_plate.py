@@ -189,17 +189,19 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     ) -> Any:
         value = handler(value)
         if plate := info.data.get("plate"):
-            if isinstance(value, RandomPoints) and (
-                value.max_width == np.inf or value.max_height == np.inf
-            ):
+            if isinstance(value, RandomPoints):
                 plate = cast(WellPlate, plate)
-                # use the well size and shape to bound the random points
                 kwargs = value.model_dump(mode="python")
-                kwargs["max_width"] = plate.well_size[0] - (value.fov_width or 0.1)
-                kwargs["max_height"] = plate.well_size[1] - (value.fov_height or 0.1)
-                kwargs["shape"] = (
-                    Shape.ELLIPSE if plate.circular_wells else Shape.RECTANGLE
-                )
+                if value.max_width == np.inf:
+                    kwargs["max_width"] = plate.well_size[0] - (value.fov_width or 0.1)
+                if value.max_height == np.inf:
+                    kwargs["max_height"] = plate.well_size[1] - (
+                        value.fov_height or 0.1
+                    )
+                if "shape" not in value.__pydantic_fields_set__:
+                    kwargs["shape"] = (
+                        Shape.ELLIPSE if plate.circular_wells else Shape.RECTANGLE
+                    )
                 value = RandomPoints(**kwargs)
         return value
 
