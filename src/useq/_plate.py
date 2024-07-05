@@ -360,7 +360,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         for offset in offsets:
             if isinstance(offset, GridPosition):
                 # invert y axis to use the cartesian coordinate system
-                # (-y is up, +y is down, -x is left, +x is right)
+                # (y is up, -y is down, -x is left, +x is right)
                 offset = GridPosition(
                     x=offset.x,
                     y=-offset.y,
