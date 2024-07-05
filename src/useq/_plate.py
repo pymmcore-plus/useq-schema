@@ -316,13 +316,15 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         return list(self.all_well_names[self.selected_wells].reshape(-1))
 
     def _transorm_coords(self, coords: np.ndarray) -> np.ndarray:
-        """Transform coordinates to the plate coordinate system."""
+        """Transform coordinates to the plate coordinate system and invert Y values."""
         # create homogenous coordinates
         h_coords = np.column_stack((coords, np.ones(coords.shape[0])))
         # transform
         transformed = self.affine_transform @ h_coords.T
-        # strip homogenous coordinate
-        return (transformed[:2].T).reshape(coords.shape)  # type: ignore[no-any-return]
+        transformed_coords = (transformed[:2].T).reshape(coords.shape)
+        # invert Y values
+        transformed_coords[:, 0] = -transformed_coords[:, 0]
+        return transformed_coords  # type: ignore[no-any-return]
 
     @property
     def all_well_positions(self) -> Sequence[Position]:
@@ -358,17 +360,6 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         )
         pos: List[Position] = []
         for offset in offsets:
-            if isinstance(offset, GridPosition):
-                # invert y axis to use the cartesian coordinate system
-                # (y is up, -y is down, -x is left, +x is right)
-                offset = GridPosition(
-                    x=offset.x,
-                    y=-offset.y,
-                    row=offset.row,
-                    col=offset.col,
-                    is_relative=offset.is_relative,
-                    name=offset.name,
-                )
             pos.extend(well + offset for well in self.selected_well_positions)
         return pos
 
@@ -418,7 +409,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
         for well in self.all_well_positions:
             sh = patch_type(
-                (well.x + offset_x, -well.y + offset_y),  # type: ignore[operator]
+                (well.x + offset_x, well.y + offset_y),  # type: ignore[operator]
                 width=width,
                 height=height,
                 angle=self.rotation or 0,
@@ -436,7 +427,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             w, h = self.well_points_plan.fov_width, self.well_points_plan.fov_height
 
         for img_point in self.image_positions:
-            x, y = float(img_point.x), -float(img_point.y)  # type: ignore[arg-type] # µm
+            x, y = float(img_point.x), float(img_point.y)  # type: ignore[arg-type] # µm
             if w and h:
                 ax.add_patch(
                     patches.Rectangle(
@@ -455,7 +446,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         # ################ draw names on used wells ################
         offset_x, offset_y = -width / 2, -height / 2
         for well in self.selected_well_positions:
-            x, y = float(well.x), -float(well.y)  # type: ignore[arg-type]
+            x, y = float(well.x), float(well.y)  # type: ignore[arg-type]
             # draw name next to spot
             ax.text(x + offset_x, y - offset_y, well.name, fontsize=7)
 
