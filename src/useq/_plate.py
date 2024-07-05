@@ -356,9 +356,21 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         offsets: Iterable[Position | GridPosition] = (
             [wpp] if isinstance(wpp, Position) else wpp
         )
-        return [
-            well + offset for well in self.selected_well_positions for offset in offsets
-        ]
+        pos: List[Position] = []
+        for offset in offsets:
+            if isinstance(offset, GridPosition):
+                # invert y axis to use the cartesian coordinate system
+                # (-y is up, +y is down, -x is left, +x is right)
+                offset = GridPosition(
+                    x=offset.x,
+                    y=-offset.y,
+                    row=offset.row,
+                    col=offset.col,
+                    is_relative=offset.is_relative,
+                    name=offset.name,
+                )
+            pos.extend(well + offset for well in self.selected_well_positions)
+        return pos
 
     @property
     def affine_transform(self) -> np.ndarray:
