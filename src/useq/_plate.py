@@ -328,7 +328,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     def all_well_positions(self) -> Sequence[Position]:
         """Return all wells (centers) as Position objects."""
         return [
-            Position(x=x, y=y, name=name)
+            Position(x=x * 1000, y=y * 1000, name=name)  # convert to µm
             for (y, x), name in zip(
                 self.all_well_coordinates, self.all_well_names.reshape(-1)
             )
@@ -338,7 +338,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     def selected_well_positions(self) -> Sequence[Position]:
         """Return selected wells (centers) as Position objects."""
         return [
-            Position(x=x, y=y, name=name)
+            Position(x=x * 1000, y=y * 1000, name=name)  # convert to µm
             for (y, x), name in zip(
                 self.selected_well_coordinates, self.selected_well_names
             )
@@ -356,12 +356,21 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         offsets: Iterable[Position | GridPosition] = (
             [wpp] if isinstance(wpp, Position) else wpp
         )
-        # TODO: note that all positions within the same well will currently have the
-        # same name.  This could be improved by modifying `Position.__add__` and
-        # adding a `name` to GridPosition.
-        return [
-            well + offset for well in self.selected_well_positions for offset in offsets
-        ]
+        pos: List[Position] = []
+        for offset in offsets:
+            if isinstance(offset, GridPosition):
+                # invert y axis to use the cartesian coordinate system
+                # (y is up, -y is down, -x is left, +x is right)
+                offset = GridPosition(
+                    x=offset.x,
+                    y=-offset.y,
+                    row=offset.row,
+                    col=offset.col,
+                    is_relative=offset.is_relative,
+                    name=offset.name,
+                )
+            pos.extend(well + offset for well in self.selected_well_positions)
+        return pos
 
     @property
     def affine_transform(self) -> np.ndarray:
@@ -395,7 +404,8 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             ax.axis("off")
 
         # ################ draw outline of all wells ################
-        height, width = self.plate.well_size
+        height, width = self.plate.well_size  # mm
+        height, width = height * 1000, width * 1000  # µm
 
         kwargs = {}
         offset_x, offset_y = 0.0, 0.0
@@ -420,13 +430,13 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             )
             ax.add_patch(sh)
 
-        # ################ plot image positions ################
+        ################ plot image positions ################
         w = h = None
         if isinstance(self.well_points_plan, _PointsPlan):
             w, h = self.well_points_plan.fov_width, self.well_points_plan.fov_height
 
         for img_point in self.image_positions:
-            x, y = float(img_point.x), -float(img_point.y)  # type: ignore[arg-type]
+            x, y = float(img_point.x), -float(img_point.y)  # type: ignore[arg-type] # µm
             if w and h:
                 ax.add_patch(
                     patches.Rectangle(
