@@ -41,7 +41,7 @@ def make_unit_validator(
     return validate_unit
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class UnitValidator:
     units: UnitLike
     mag_type: MagnitudeT | None = None

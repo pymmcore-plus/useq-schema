@@ -36,6 +36,8 @@ def _sizes_str(seq: useq.MDASequence) -> str:
     return sizes
 
 
+from useq._units import ureg
+
 # a list of (sequence, expected total time)
 SEQS_NO_T: dict[useq.MDASequence, float] = {
     useq.MDASequence(channels=[DAPI_10]): 0.01,
@@ -54,7 +56,7 @@ def _duration_exceeded(seq: useq.MDASequence) -> tuple[float, bool]:
 
 @pytest.mark.parametrize("seq", SEQS_NO_T, ids=_sizes_str)
 def test_time_estimation_without_t(seq: useq.MDASequence) -> None:
-    assert _duration_exceeded(seq) == (SEQS_NO_T[seq], False)
+    assert _duration_exceeded(seq) == (SEQS_NO_T[seq] * ureg.ms, False)
 
 
 SEQS_WITH_T: dict[useq.MDASequence, float | tuple[float, bool]] = {
@@ -78,7 +80,7 @@ SEQS_WITH_T: dict[useq.MDASequence, float | tuple[float, bool]] = {
 
 @pytest.mark.parametrize("seq", SEQS_WITH_T, ids=_sizes_str)
 def test_time_estimation_with_t(seq: useq.MDASequence) -> None:
-    expect = SEQS_WITH_T[seq]
+    expect = SEQS_WITH_T[seq] * ureg.ms
     if not isinstance(expect, tuple):
         expect = (expect, False)
     assert _duration_exceeded(seq) == expect

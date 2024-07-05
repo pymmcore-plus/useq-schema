@@ -46,7 +46,7 @@ class FrozenModel(BaseModel):
         that all objects are valid and will not perform any validation or casting.
         """
         state = self.model_dump(exclude={"uid"})
-        return type(self)(**{**state, **kwargs})
+        return type(self).model_validate({**state, **kwargs})
 
     def __repr_args__(self) -> "ReprArgs":
         """Only show fields that are not None or equal to their default value."""

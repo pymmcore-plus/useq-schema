@@ -4,6 +4,8 @@ import re
 from datetime import timedelta
 from typing import TYPE_CHECKING, Literal, NamedTuple, TypeVar
 
+from useq._units import ureg
+
 if TYPE_CHECKING:
     from typing import Final
 
@@ -150,7 +152,7 @@ def _time_phase_duration(
     phase: SinglePhaseTimePlan, s_per_timepoint: float
 ) -> tuple[float, bool]:
     """Calculate duration for a single time plan phase."""
-    time_interval_s = phase.interval.total_seconds()
+    time_interval_s = phase.interval.total_seconds() * ureg.s
 
     if time_interval_exceeded := (s_per_timepoint > time_interval_s):
         # the real interval between timepoints will be the greater of the
