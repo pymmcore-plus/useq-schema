@@ -73,24 +73,24 @@ g_inputs = [
     (
         GridRelative(overlap=10, rows=1, columns=2, relative_to="center"),
         [
-            RelativePosition(x=-0.45, y=0.0),
-            RelativePosition(x=0.45, y=0.0),
+            RelativePosition(x=-0.45, y=0.0, name="0000"),
+            RelativePosition(x=0.45, y=0.0, name="0001"),
         ],
     ),
     (
         GridRelative(overlap=0, rows=1, columns=2, relative_to="top_left"),
         [
-            RelativePosition(x=0.0, y=0.0),
-            RelativePosition(x=1.0, y=0.0),
+            RelativePosition(x=0.0, y=0.0, name="0000"),
+            RelativePosition(x=1.0, y=0.0, name="0001"),
         ],
     ),
     (
         GridRelative(overlap=(20, 40), rows=2, columns=2),
         [
-            RelativePosition(x=-0.4, y=0.3),
-            RelativePosition(x=0.4, y=0.3),
-            RelativePosition(x=0.4, y=-0.3),
-            RelativePosition(x=-0.4, y=-0.3),
+            RelativePosition(x=-0.4, y=0.3, name="0000"),
+            RelativePosition(x=0.4, y=0.3, name="0001"),
+            RelativePosition(x=0.4, y=-0.3, name="0002"),
+            RelativePosition(x=-0.4, y=-0.3, name="0003"),
         ],
     ),
     (
@@ -98,10 +98,10 @@ g_inputs = [
             overlap=0, top=0, left=0, bottom=20, right=20, fov_height=20, fov_width=20
         ),
         [
-            Position(x=0.0, y=20.0),
-            Position(x=20.0, y=20.0),
-            Position(x=20.0, y=0.0),
-            Position(x=0.0, y=0.0),
+            Position(x=0.0, y=20.0, name="0000"),
+            Position(x=20.0, y=20.0, name="0001"),
+            Position(x=20.0, y=0.0, name="0002"),
+            Position(x=0.0, y=0.0, name="0003"),
         ],
     ),
     (
@@ -116,9 +116,9 @@ g_inputs = [
             random_seed=0,
         ),
         [
-            RelativePosition(x=-0.0, y=-2.1),
-            RelativePosition(x=0.7, y=1.7),
-            RelativePosition(x=-1.0, y=1.3),
+            RelativePosition(x=-0.0, y=-2.1, name="0000"),
+            RelativePosition(x=0.7, y=1.7, name="0001"),
+            RelativePosition(x=-1.0, y=1.3, name="0002"),
         ],
     ),
 ]
@@ -170,7 +170,10 @@ def test_g_plan(gridplan: Any, gridexpectation: Sequence[Any]) -> None:
         # slightly different results in the last few digits
         assert (
             g_plan
-            and [RelativePosition(x=round(gp.x, 1), y=round(gp.y, 1)) for gp in g_plan]
+            and [
+                RelativePosition(x=round(gp.x, 1), y=round(gp.y, 1), name=gp.name)
+                for gp in g_plan
+            ]
             == gridexpectation
         )
     else:

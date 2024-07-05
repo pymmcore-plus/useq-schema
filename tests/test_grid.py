@@ -1,9 +1,10 @@
-from typing import Optional
+from typing import Iterable, Optional
 
 import pytest
 
 from useq import GridFromEdges, GridRowsColumns, GridWidthHeight, RandomPoints
 from useq._grid import OrderMode, _rect_indices, _spiral_indices
+from useq._position import PositionBase
 
 EXPECT = {
     (True, False): [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)],
@@ -41,20 +42,27 @@ def test_spiral_indices() -> None:
 
 def test_position_equality():
     """Order of grid positions should only change the order in which they are yielded"""
+
+    def positions_without_name(
+        positions: Iterable[PositionBase],
+    ) -> set[tuple[float, float, bool]]:
+        """Create a set of tuples of GridPosition attributes excluding 'name'"""
+        return {(pos.x, pos.y, pos.is_relative) for pos in positions}
+
     t1 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.spiral)
-    spiral_pos = set(t1.iter_grid_positions(1, 1))
+    spiral_pos = positions_without_name(t1.iter_grid_positions(1, 1))
 
     t2 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.row_wise)
-    row_pos = set(t2.iter_grid_positions(1, 1))
+    row_pos = positions_without_name(t2.iter_grid_positions(1, 1))
 
     t3 = GridRowsColumns(rows=3, columns=3, mode="row_wise_snake")
-    snake_row_pos = set(t3.iter_grid_positions(1, 1))
+    snake_row_pos = positions_without_name(t3.iter_grid_positions(1, 1))
 
     t4 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.column_wise)
-    col_pos = set(t4.iter_grid_positions(1, 1))
+    col_pos = positions_without_name(t4.iter_grid_positions(1, 1))
 
     t5 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.column_wise_snake)
-    snake_col_pos = set(t5.iter_grid_positions(1, 1))
+    snake_col_pos = positions_without_name(t5.iter_grid_positions(1, 1))
 
     assert spiral_pos == row_pos == snake_row_pos == col_pos == snake_col_pos
 
