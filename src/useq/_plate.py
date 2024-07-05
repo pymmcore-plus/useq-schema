@@ -405,8 +405,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
         # ################ draw outline of all wells ################
         height, width = self.plate.well_size  # mm
-        height = height * 1000  # µm
-        width = width * 1000  # µm
+        height, width = height * 1000, width * 1000  # µm
 
         kwargs = {}
         offset_x, offset_y = 0.0, 0.0
