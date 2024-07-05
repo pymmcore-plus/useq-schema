@@ -359,8 +359,8 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             [wpp] if isinstance(wpp, Position) else wpp
         )
         pos: List[Position] = []
-        for offset in offsets:
-            pos.extend(well + offset for well in self.selected_well_positions)
+        for well in self.selected_well_positions:
+            pos.extend(well + offset for offset in offsets)
         return pos
 
     @property
