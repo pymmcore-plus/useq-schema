@@ -87,14 +87,13 @@ def estimate_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
             Whether the time interval between timepoints is shorter than the time it
             takes to acquire the data
     """
-    stage_positions = tuple(seq.stage_positions)
-    if not any(_has_axes(p.sequence) for p in stage_positions):
+    if not any(_has_axes(p.sequence) for p in seq.stage_positions):
         # the simple case: no axes to iterate over in any of the positions
         return _estimate_simple_sequence_duration(seq)
 
     estimate = TimeEstimate(0.0, 0.0, False)
     parent_seq = seq.replace(stage_positions=[])
-    for p in stage_positions:
+    for p in seq.stage_positions:
         if not _has_axes(p.sequence):
             sub_seq = parent_seq
         else:

@@ -49,6 +49,8 @@ class FrozenModel(BaseModel):
         state = self.model_dump(exclude={"uid"})
         return type(self)(**{**state, **kwargs})
 
+
+class UseqModel(FrozenModel):
     def __repr_args__(self) -> "ReprArgs":
         """Only show fields that are not None or equal to their default value."""
         return [
@@ -63,8 +65,6 @@ class FrozenModel(BaseModel):
             )
         ]
 
-
-class UseqModel(FrozenModel):
     @classmethod
     def from_file(cls: Type[_Y], path: Union[str, Path]) -> _Y:
         """Return an instance of this class from a file.  Supports JSON and YAML."""
