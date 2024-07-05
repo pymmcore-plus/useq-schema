@@ -328,7 +328,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     def all_well_positions(self) -> Sequence[Position]:
         """Return all wells (centers) as Position objects."""
         return [
-            Position(x=x, y=y, name=name)
+            Position(x=x * 1000, y=y * 1000, name=name)  # convert to µm
             for (y, x), name in zip(
                 self.all_well_coordinates, self.all_well_names.reshape(-1)
             )
@@ -338,7 +338,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     def selected_well_positions(self) -> Sequence[Position]:
         """Return selected wells (centers) as Position objects."""
         return [
-            Position(x=x, y=y, name=name)
+            Position(x=x * 1000, y=y * 1000, name=name)  # convert to µm
             for (y, x), name in zip(
                 self.selected_well_coordinates, self.selected_well_names
             )
@@ -393,6 +393,8 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
         # ################ draw outline of all wells ################
         height, width = self.plate.well_size  # mm
+        height = height * 1000  # µm
+        width = width * 1000  # µm
 
         kwargs = {}
         offset_x, offset_y = 0.0, 0.0
@@ -417,15 +419,13 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             )
             ax.add_patch(sh)
 
-        # ################ plot image positions ################
+        ################ plot image positions ################
         w = h = None
         if isinstance(self.well_points_plan, _PointsPlan):
-            w = self.well_points_plan.fov_width / 1000  # type: ignore  # mm
-            h = self.well_points_plan.fov_height / 1000  # type: ignore  # mm
+            w, h = self.well_points_plan.fov_width, self.well_points_plan.fov_height
 
         for img_point in self.image_positions:
-            x = float(img_point.x) / 1000  # type: ignore  # mm
-            y = -float(img_point.y) / 1000  # type: ignore  # mm
+            x, y = float(img_point.x), -float(img_point.y)  # type: ignore[arg-type] # µm
             if w and h:
                 ax.add_patch(
                     patches.Rectangle(
