@@ -29,7 +29,7 @@ class PositionBase(FrozenModel):
         return self.model_validate(kwargs)
 
 
-class Position(PositionBase):
+class AbsolutePosition(PositionBase):
     """Define a position in 3D space.
 
     Any of the attributes can be `None` to indicate that the position is not
@@ -57,3 +57,6 @@ class Position(PositionBase):
 
 class RelativePosition(PositionBase):
     is_relative: ClassVar[Literal[True]] = True
+
+
+Position = AbsolutePosition  # for backwards compatibility
