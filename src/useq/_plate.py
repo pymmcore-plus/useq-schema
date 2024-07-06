@@ -142,7 +142,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         The well-plate definition. Minimally including rows, columns, and well spacing.
         If expressed as a string, it is assumed to be a key in `WellPlate.KNOWN_PLATES`.
     a1_center_xy : tuple[float, float]
-        The stage coordinates of the center of well A1 (top-left corner).
+        The stage coordinates in µm of the center of well A1 (top-left corner).
     rotation : float | None
         The rotation angle in degrees (anti-clockwise) of the plate.
         If None, no rotation is applied.
@@ -245,7 +245,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         if self.rotation is None:
             return np.eye(2)
         rads = np.radians(self.rotation)
-        return np.array([[np.cos(rads), -np.sin(rads)], [np.sin(rads), np.cos(rads)]])
+        return np.array([[np.cos(rads), np.sin(rads)], [-np.sin(rads), np.cos(rads)]])
 
     def __iter__(self) -> Iterable[Position]:  # type: ignore
         """Iterate over the selected positions."""
@@ -321,10 +321,8 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         h_coords = np.column_stack((coords, np.ones(coords.shape[0])))
         # transform
         transformed = self.affine_transform @ h_coords.T
-        transformed_coords = (transformed[:2].T).reshape(coords.shape)
-        # invert Y values
-        transformed_coords[:, 0] = -transformed_coords[:, 0]
-        return transformed_coords  # type: ignore[no-any-return]
+        # strip homogenous coordinate
+        return (transformed[:2].T).reshape(coords.shape)  # type: ignore[no-any-return]
 
     @property
     def all_well_positions(self) -> Sequence[Position]:
@@ -368,18 +366,24 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         """Return transformation matrix.
 
         This includes:
-        1. scaling by plate.well_spacing
+        1. translation to a1_center_xy
         2. rotation by rotation_matrix
-        3. translation to a1_center_xy
+        3. scaling by plate.well_spacing
         """
         translation = np.eye(3)
-        translation[:2, 2] = self.a1_center_xy[::-1]
+        a1_center_xy_mm = np.array(self.a1_center_xy) / 1000  # convert to mm
+        translation[:2, 2] = a1_center_xy_mm[::-1]
 
         rotation = np.eye(3)
         rotation[:2, :2] = self.rotation_matrix
 
         scaling = np.eye(3)
-        scaling[:2, :2] = np.diag(self.plate.well_spacing)
+        # scaling[:2, :2] = np.diag(self.plate.well_spacing)
+        # we invert the Y axis here to go from linearly increasing "index coordinates"
+        # to cartesian "plate" coordinates (where y position decreases with increasing
+        # index)
+        scale_y, scale_x = self.plate.well_spacing
+        scaling[:2, :2] = np.diag([-scale_y, scale_x])
 
         return translation @ rotation @ scaling
 
