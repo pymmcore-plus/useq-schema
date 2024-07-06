@@ -193,11 +193,11 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
                 plate = cast(WellPlate, plate)
                 kwargs = value.model_dump(mode="python")
                 if value.max_width == np.inf:
-                    kwargs["max_width"] = plate.well_size[0] - (value.fov_width or 0.1)
+                    well_size_x = plate.well_size[0] * 1000  # convert to µm
+                    kwargs["max_width"] = well_size_x - (value.fov_width or 0.1)
                 if value.max_height == np.inf:
-                    kwargs["max_height"] = plate.well_size[1] - (
-                        value.fov_height or 0.1
-                    )
+                    well_size_y = plate.well_size[1] * 1000  # convert to µm
+                    kwargs["max_height"] = well_size_y - (value.fov_height or 0.1)
                 if "shape" not in value.__pydantic_fields_set__:
                     kwargs["shape"] = (
                         Shape.ELLIPSE if plate.circular_wells else Shape.RECTANGLE
