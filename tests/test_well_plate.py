@@ -18,8 +18,8 @@ def test_plate_plan() -> None:
     assert isinstance(pos0, useq.Position)
     assert pos0 == pp[0]
     assert pos0.name == "B1"
-    assert round(pos0.x, 2) == 500784.4  # first row, but rotataed slightly, µm
-    assert round(pos0.y, 2) == 208965.75  # second column, µm
+    assert round(pos0.x, 2) == 1284.4  # first row, but rotataed slightly, µm
+    assert round(pos0.y, 2) == -8765.75  # second column, µm
 
     js = pp.model_dump_json()
 
@@ -102,3 +102,19 @@ def test_plate_plan_serialization() -> None:
     js = pp.model_dump_json()
     pp2 = useq.WellPlatePlan.model_validate_json(js)
     assert pp2 == pp
+
+
+def test_plate_plan_position_order() -> None:
+    pp = useq.WellPlatePlan(
+        plate=96,
+        a1_center_xy=(0, 0),
+        rotation=0,
+        selected_wells=np.s_[1:5:2, :6:3],
+        well_points_plan=useq.RandomPoints(num_points=3),
+    )
+    # check that the positions are ordered grouped by well name
+    # e.g. A1_0000, A1_0001, B1_0000, B1_0001, ... and not A1_0000, B1_0000, A1_0001, B1_0001
+    names = [p.name.split("_")[0] for p in pp]
+    for i in range(0, len(names), 3):
+        chunk = names[i : i + 3]
+        assert len(set(chunk)) == 1, f"Chunk {chunk} does not have the same elements"
