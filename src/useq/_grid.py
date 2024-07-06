@@ -24,7 +24,7 @@ import numpy as np
 from pydantic import Field, field_validator
 
 from useq._base_model import FrozenModel
-from useq._position import Position, PositionBase, RelativePosition
+from useq._position import AbsolutePosition, PositionBase, RelativePosition
 
 if TYPE_CHECKING:
     from pydantic import ConfigDict
@@ -244,9 +244,13 @@ class _GridPlan(_PointsPlan[PositionT]):
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
 
-        pos_cls = RelativePosition if self.is_relative else Position
+        pos_cls = RelativePosition if self.is_relative else AbsolutePosition
         for idx, (r, c) in enumerate(_INDEX_GENERATORS[mode](rows, cols)):
-            yield pos_cls(x=x0 + c * dx, y=y0 - r * dy, name=f"{str(idx).zfill(4)}")
+            yield pos_cls(  # type: ignore [misc]
+                x=x0 + c * dx,
+                y=y0 - r * dy,
+                name=f"{str(idx).zfill(4)}",
+            )
 
     def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
         yield from self.iter_grid_positions()
@@ -257,7 +261,7 @@ class _GridPlan(_PointsPlan[PositionT]):
         return dx, dy
 
 
-class GridFromEdges(_GridPlan[Position]):
+class GridFromEdges(_GridPlan[AbsolutePosition]):
     """Yield absolute stage positions to cover a bounded area.
 
     The bounded area is defined by top, left, bottom and right edges in
