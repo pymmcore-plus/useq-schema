@@ -366,9 +366,9 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         """Return transformation matrix.
 
         This includes:
-        1. translation to a1_center_xy
+        1. scaling by plate.well_spacing
         2. rotation by rotation_matrix
-        3. scaling by plate.well_spacing
+        3. translation to a1_center_xy
         """
         translation = np.eye(3)
         a1_center_xy_mm = np.array(self.a1_center_xy) / 1000  # convert to mm
