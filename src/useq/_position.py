@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Optional
 
 from useq._base_model import FrozenModel
 from useq._grid import GridPosition
+from useq._units import Microns
 
 if TYPE_CHECKING:
     from useq import MDASequence
@@ -29,9 +30,9 @@ class Position(FrozenModel):
     """
 
     # if None, implies 'do not move this axis'
-    x: Optional[float] = None
-    y: Optional[float] = None
-    z: Optional[float] = None
+    x: Optional[Microns] = None
+    y: Optional[Microns] = None
+    z: Optional[Microns] = None
     name: Optional[str] = None
     sequence: Optional["MDASequence"] = None
 

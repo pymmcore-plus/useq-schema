@@ -222,7 +222,9 @@ def _iter_sequence(
             elif position.sequence is not None and position.sequence.autofocus_plan:
                 autofocus_plan = position.sequence.autofocus_plan
 
-        event = MDAEvent.model_construct(**event_kwargs)
+        event_kwargs = {k: getattr(v, "magnitude", v) for k, v in event_kwargs.items()}
+        event = MDAEvent.model_validate(event_kwargs)
+        # event = MDAEvent.model_construct(**event_kwargs)
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
             if af_event:
@@ -270,7 +272,7 @@ def _parse_axes(
 ]:
     """Parse an individual event from the product of axis iterators.
 
-    Returns typed objects for each axis, and the index of the event.
+    Returns typed objects for each axis, and the index of the event`.
     """
     # NOTE: this is currently the biggest time sink in iter_sequence.
     # It is called for every event and takes ~40% of the cumulative time.
@@ -343,7 +345,7 @@ def _xyzpos(
     if z_pos is not None:
         # combine z_pos with z_offset
         if channel and channel.z_offset is not None:
-            z_pos += channel.z_offset
+            z_pos = channel.z_offset + z_pos
         if z_plan and z_plan.is_relative:
             # TODO: either disallow without position z, or add concept of "current"
             z_pos += getattr(position, Axis.Z, None) or 0

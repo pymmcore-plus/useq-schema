@@ -7,6 +7,7 @@ import numpy as np
 from pydantic import field_validator
 
 from useq._base_model import FrozenModel
+from useq._units import Microns, ureg
 
 
 def _list_cast(field: str) -> Callable:
@@ -17,11 +18,12 @@ def _list_cast(field: str) -> Callable:
 class ZPlan(FrozenModel):
     go_up: bool = True
 
-    def __iter__(self) -> Iterator[float]:  # type: ignore
+    def __iter__(self) -> Iterator[Microns]:  # type: ignore
         positions = self.positions()
         if not self.go_up:
             positions = positions[::-1]
-        yield from positions
+        for p in positions:
+            yield ureg.Quantity(p, "um")
 
     def _start_stop_step(self) -> tuple[float, float, float]:
         raise NotImplementedError

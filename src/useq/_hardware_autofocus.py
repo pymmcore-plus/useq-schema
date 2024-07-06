@@ -46,7 +46,7 @@ class AutoFocusPlan(FrozenModel):
         if event.z_pos is not None and event.sequence is not None:
             zplan = event.sequence.z_plan
             if zplan and zplan.is_relative and "z" in event.index:
-                updates["z_pos"] = event.z_pos - list(zplan)[event.index["z"]]
+                updates["z_pos"] = event.z_pos - list(zplan)[event.index["z"]].magnitude
 
         return event.model_copy(update=updates)
 

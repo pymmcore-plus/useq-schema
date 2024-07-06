@@ -1,8 +1,10 @@
 from typing import Optional
 
-from pydantic import Field
+from annotated_types import Gt
+from typing_extensions import Annotated
 
 from useq._base_model import FrozenModel
+from useq._units import Microns, Milliseconds
 
 
 class Channel(FrozenModel):
@@ -33,8 +35,8 @@ class Channel(FrozenModel):
 
     config: str
     group: str = "Channel"
-    exposure: Optional[float] = Field(None, gt=0.0)
+    exposure: Optional[Milliseconds] = None
     do_stack: bool = True
-    z_offset: float = 0.0
-    acquire_every: int = Field(default=1, gt=0)  # acquire every n frames
+    z_offset: Microns = 0.0
+    acquire_every: Annotated[int, Gt(0)] = 1
     camera: Optional[str] = None
