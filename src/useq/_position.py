@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, ClassVar, Literal, Optional
+from typing import TYPE_CHECKING, ClassVar, Literal, Optional, SupportsIndex
+
+from pydantic import Field
 
 from useq._base_model import FrozenModel
 
@@ -27,6 +29,10 @@ class PositionBase(FrozenModel):
         Optional name for the position.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
+    row : int | None
+        Optional row index, when used in a grid.
+    col : int | None
+        Optional column index, when used in a grid.
     """
 
     x: Optional[float] = None
@@ -34,6 +40,10 @@ class PositionBase(FrozenModel):
     z: Optional[float] = None
     name: Optional[str] = None
     sequence: Optional["MDASequence"] = None
+
+    # excluded from serialization
+    row: Optional[int] = Field(default=None, exclude=True)
+    col: Optional[int] = Field(default=None, exclude=True)
 
     def __add__(self, other: "RelativePosition") -> "Self":
         """Add two positions together to create a new position."""
@@ -48,6 +58,17 @@ class PositionBase(FrozenModel):
         if (name := self.name) and other.name:
             name = f"{name}_{other.name}"
         kwargs = {**self.model_dump(), "x": x, "y": y, "z": z, "name": name}
+        return type(self).model_construct(**kwargs)  # type: ignore [return-value]
+
+    def __round__(self, ndigits: SupportsIndex | None = None) -> "Self":
+        """Round the position to the given number of decimal places."""
+        kwargs = {
+            **self.model_dump(),
+            "x": round(self.x, ndigits) if self.x is not None else None,
+            "y": round(self.y, ndigits) if self.y is not None else None,
+            "z": round(self.z, ndigits) if self.z is not None else None,
+        }
+        # not sure why these Self types are not working
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
 
 

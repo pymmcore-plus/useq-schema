@@ -249,6 +249,8 @@ class _GridPlan(_PointsPlan[PositionT]):
             yield pos_cls(  # type: ignore [misc]
                 x=x0 + c * dx,
                 y=y0 - r * dy,
+                row=r,
+                col=c,
                 name=f"{str(idx).zfill(4)}",
             )
 
