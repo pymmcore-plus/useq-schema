@@ -47,8 +47,8 @@ class PositionBase(FrozenModel):
 
     def __add__(self, other: "RelativePosition") -> "Self":
         """Add two positions together to create a new position."""
-        if not isinstance(other, RelativePosition):
-            raise ValueError(f"Cannot add a non-relative Position to {type(self)}")
+        if not isinstance(other, RelativePosition):  # pragma: no cover
+            return NotImplemented
         if (x := self.x) is not None and other.x is not None:
             x += other.x
         if (y := self.y) is not None and other.y is not None:
