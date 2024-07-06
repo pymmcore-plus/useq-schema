@@ -60,7 +60,7 @@ class PositionBase(FrozenModel):
         kwargs = {**self.model_dump(), "x": x, "y": y, "z": z, "name": name}
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
 
-    def __round__(self, ndigits: SupportsIndex | None = None) -> "Self":
+    def __round__(self, ndigits: "SupportsIndex | None" = None) -> "Self":
         """Round the position to the given number of decimal places."""
         kwargs = {
             **self.model_dump(),
