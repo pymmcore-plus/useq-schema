@@ -363,12 +363,16 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
     @property
     def affine_transform(self) -> np.ndarray:
-        """Return transformation matrix.
+        """Return transformation matrix that maps well indices to stage coordinates.
 
         This includes:
         1. scaling by plate.well_spacing
         2. rotation by rotation_matrix
         3. translation to a1_center_xy
+
+        Note that the Y axis scale is inverted to go from linearly increasing index
+        coordinates to cartesian "plate" coordinates (where y position decreases with
+        increasing index.
         """
         translation = np.eye(3)
         a1_center_xy_mm = np.array(self.a1_center_xy) / 1000  # convert to mm
@@ -378,10 +382,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         rotation[:2, :2] = self.rotation_matrix
 
         scaling = np.eye(3)
-        # scaling[:2, :2] = np.diag(self.plate.well_spacing)
-        # we invert the Y axis here to go from linearly increasing "index coordinates"
-        # to cartesian "plate" coordinates (where y position decreases with increasing
-        # index)
+        # invert the Y axis to convert "index" to "plate" coordinates.
         scale_y, scale_x = self.plate.well_spacing
         scaling[:2, :2] = np.diag([-scale_y, scale_x])
 
