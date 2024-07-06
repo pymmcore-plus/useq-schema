@@ -316,7 +316,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         return list(self.all_well_names[self.selected_wells].reshape(-1))
 
     def _transorm_coords(self, coords: np.ndarray) -> np.ndarray:
-        """Transform coordinates to the plate coordinate system and invert Y values."""
+        """Transform coordinates to the plate coordinate system."""
         # create homogenous coordinates
         h_coords = np.column_stack((coords, np.ones(coords.shape[0])))
         # transform
