@@ -1,28 +1,29 @@
 from __future__ import annotations
 
-import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
     Iterable,
     Iterator,
+    Mapping,
     Optional,
     Sequence,
     Tuple,
+    Union,
 )
 from uuid import UUID, uuid4
 from warnings import warn
 
 import numpy as np
-from pydantic import Field, PrivateAttr
-from pydantic_compat import field_validator, model_validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
 from useq._grid import AnyGridPlan, GridPosition  # noqa: TCH001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
+from useq._plate import WellPlatePlan  # noqa: TCH001
 from useq._position import Position
 from useq._time import AnyTimePlan  # noqa: TCH001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
@@ -30,7 +31,6 @@ from useq._z import AnyZPlan  # noqa: TCH001
 
 if TYPE_CHECKING:
     from useq._mda_event import MDAEvent
-    from useq.pycromanager import PycroManagerEvent
 
 
 class MDASequence(UseqModel):
@@ -181,7 +181,9 @@ class MDASequence(UseqModel):
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: Tuple[str, ...] = AXES
-    stage_positions: Tuple[Position, ...] = Field(default_factory=tuple)
+    stage_positions: Union[WellPlatePlan, Tuple[Position, ...]] = Field(
+        default_factory=tuple
+    )
     grid_plan: Optional[AnyGridPlan] = None
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: Optional[AnyTimePlan] = None
@@ -196,26 +198,6 @@ class MDASequence(UseqModel):
     def uid(self) -> UUID:
         """A unique identifier for this sequence."""
         return self._uid
-
-    def set_fov_size(self, fov_size: Tuple[float, float]) -> None:
-        """Set the field of view size.
-
-        FOV is used to calculate the number of positions in a grid plan.
-
-        !!! warning "DEPRECATED"
-
-            Set `fov_width` and `fov_height` directly on the `grid_plan` instead.
-        """
-        warn(
-            "set_fov_size is deprecated and will be removed. Please directly mutate "
-            "fov_width and fov_height on the sequence.grid_plan instead. (They are "
-            "mutable.)",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if self.grid_plan:
-            self.grid_plan.fov_width = fov_size[0]
-            self.grid_plan.fov_height = fov_size[1]
 
     def __hash__(self) -> int:
         return hash(self.uid)
@@ -399,10 +381,10 @@ class MDASequence(UseqModel):
         if Axis.Z in order and z_plan and not z_plan.is_relative:
             err = "Absolute Z positions cannot be used with autofocus plan."
             if isinstance(autofocus_plan, AxesBasedAF):
-                raise ValueError(err)
+                raise ValueError(err)  # pragma: no cover
             for p in stage_positions:
                 if p.sequence is not None and p.sequence.autofocus_plan:
-                    raise ValueError(err)
+                    raise ValueError(err)  # pragma: no cover
 
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -415,7 +397,7 @@ class MDASequence(UseqModel):
         return tuple(s for s in self.sizes.values() if s)
 
     @property
-    def sizes(self) -> Dict[str, int]:
+    def sizes(self) -> Mapping[str, int]:
         """Mapping of axis name to size of that axis."""
         if self._sizes is None:
             self._sizes = {k: len(list(self.iter_axis(k))) for k in self.axis_order}
@@ -456,17 +438,6 @@ class MDASequence(UseqModel):
             Each event in the MDA sequence.
         """
         return iter_sequence(self)
-
-    def to_pycromanager(self) -> list[PycroManagerEvent]:
-        warnings.warn(
-            "useq.MDASequence.to_pycromanager() is deprecated and will be removed in a "
-            "future version. Useq useq.pycromanager.to_pycromanager(seq) instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-        from useq.pycromanager import to_pycromanager
-
-        return to_pycromanager(self)
 
     def estimate_duration(self) -> TimeEstimate:
         """Estimate duration and other timing issues of an MDASequence.

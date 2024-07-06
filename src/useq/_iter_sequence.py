@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from itertools import product
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Iterator, cast
 
 from typing_extensions import TypedDict
 
@@ -44,7 +44,7 @@ class PositionDict(TypedDict, total=False):
 @lru_cache(maxsize=None)
 def _iter_axis(
     seq: MDASequence, ax: str
-) -> Tuple[Position | Channel | float | GridPosition, ...]:
+) -> tuple[Position | Channel | float | GridPosition, ...]:
     return tuple(seq.iter_axis(ax))
 
 
@@ -351,8 +351,8 @@ def _xyzpos(
         z_pos = position.z
 
     if grid:
-        x_pos: Optional[float] = grid.x
-        y_pos: Optional[float] = grid.y
+        x_pos: float | None = grid.x
+        y_pos: float | None = grid.y
         if grid.is_relative:
             px = getattr(position, "x", 0) or 0
             py = getattr(position, "y", 0) or 0

@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-import warnings
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
@@ -17,13 +14,12 @@ from typing import (
 )
 
 import numpy as np
-from pydantic_compat import BaseModel
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from pydantic import ConfigDict
 
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
-    IncEx = set[int] | set[str] | dict[int, Any] | dict[str, Any] | None
 
 __all__ = ["UseqModel", "FrozenModel"]
 
@@ -32,7 +28,7 @@ _Y = TypeVar("_Y", bound="UseqModel")
 
 
 class FrozenModel(BaseModel):
-    model_config: ClassVar[ConfigDict] = {
+    model_config: ClassVar["ConfigDict"] = {
         "populate_by_name": True,
         "extra": "ignore",
         "frozen": True,
@@ -53,9 +49,7 @@ class FrozenModel(BaseModel):
         state = self.model_dump(exclude={"uid"})
         return type(self)(**{**state, **kwargs})
 
-
-class UseqModel(FrozenModel):
-    def __repr_args__(self) -> ReprArgs:
+    def __repr_args__(self) -> "ReprArgs":
         """Only show fields that are not None or equal to their default value."""
         return [
             (k, val)
@@ -69,6 +63,8 @@ class UseqModel(FrozenModel):
             )
         ]
 
+
+class UseqModel(FrozenModel):
     @classmethod
     def from_file(cls: Type[_Y], path: Union[str, Path]) -> _Y:
         """Return an instance of this class from a file.  Supports JSON and YAML."""
@@ -85,15 +81,6 @@ class UseqModel(FrozenModel):
             raise ValueError(f"Unknown file type: {path.suffix}")
 
         return cls.model_validate(obj)
-
-    @classmethod
-    def parse_file(cls: Type[_Y], path: Union[str, Path], **kwargs: Any) -> _Y:
-        warnings.warn(  # pragma: no cover
-            "parse_file is deprecated. Use from_file instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return cls.from_file(path)  # pragma: no cover
 
     def yaml(
         self,

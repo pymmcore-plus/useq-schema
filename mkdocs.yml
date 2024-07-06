@@ -22,6 +22,7 @@ nav:
         - schema/hardware_autofocus.md
       - api.md
   - pymmcore-widgets: /pymmcore-widgets/
+  - napari-micromanager: /napari-micromanager/
 
 theme:
   name: "material"

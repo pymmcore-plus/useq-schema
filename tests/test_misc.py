@@ -141,12 +141,3 @@ def test_time_estimation_with_position_seqs(seq: useq.MDASequence) -> None:
     if not isinstance(expect, tuple):
         expect = (expect, False)
     assert _duration_exceeded(seq) == expect
-
-
-def test_pydantic_compat(mda1: useq.MDASequence) -> None:
-    # testing names of deprecated methods and cross-compatible API
-    assert mda1.json()
-    assert mda1.model_dump_json()
-
-    assert mda1.model_dump()
-    assert mda1.dict()
