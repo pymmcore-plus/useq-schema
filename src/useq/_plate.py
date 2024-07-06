@@ -142,7 +142,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         The well-plate definition. Minimally including rows, columns, and well spacing.
         If expressed as a string, it is assumed to be a key in `WellPlate.KNOWN_PLATES`.
     a1_center_xy : tuple[float, float]
-        The stage coordinates of the center of well A1 (top-left corner).
+        The stage coordinates in µm of the center of well A1 (top-left corner).
     rotation : float | None
         The rotation angle in degrees (anti-clockwise) of the plate.
         If None, no rotation is applied.
@@ -193,11 +193,11 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
                 plate = cast(WellPlate, plate)
                 kwargs = value.model_dump(mode="python")
                 if value.max_width == np.inf:
-                    kwargs["max_width"] = plate.well_size[0] - (value.fov_width or 0.1)
+                    well_size_x = plate.well_size[0] * 1000  # convert to µm
+                    kwargs["max_width"] = well_size_x - (value.fov_width or 0.1)
                 if value.max_height == np.inf:
-                    kwargs["max_height"] = plate.well_size[1] - (
-                        value.fov_height or 0.1
-                    )
+                    well_size_y = plate.well_size[1] * 1000  # convert to µm
+                    kwargs["max_height"] = well_size_y - (value.fov_height or 0.1)
                 if "shape" not in value.__pydantic_fields_set__:
                     kwargs["shape"] = (
                         Shape.ELLIPSE if plate.circular_wells else Shape.RECTANGLE
@@ -245,7 +245,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         if self.rotation is None:
             return np.eye(2)
         rads = np.radians(self.rotation)
-        return np.array([[np.cos(rads), -np.sin(rads)], [np.sin(rads), np.cos(rads)]])
+        return np.array([[np.cos(rads), np.sin(rads)], [-np.sin(rads), np.cos(rads)]])
 
     def __iter__(self) -> Iterable[Position]:  # type: ignore
         """Iterate over the selected positions."""
@@ -357,38 +357,34 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             [wpp] if isinstance(wpp, Position) else wpp
         )
         pos: List[Position] = []
-        for offset in offsets:
-            if isinstance(offset, GridPosition):
-                # invert y axis to use the cartesian coordinate system
-                # (y is up, -y is down, -x is left, +x is right)
-                offset = GridPosition(
-                    x=offset.x,
-                    y=-offset.y,
-                    row=offset.row,
-                    col=offset.col,
-                    is_relative=offset.is_relative,
-                    name=offset.name,
-                )
-            pos.extend(well + offset for well in self.selected_well_positions)
+        for well in self.selected_well_positions:
+            pos.extend(well + offset for offset in offsets)
         return pos
 
     @property
     def affine_transform(self) -> np.ndarray:
-        """Return transformation matrix.
+        """Return transformation matrix that maps well indices to stage coordinates.
 
         This includes:
         1. scaling by plate.well_spacing
         2. rotation by rotation_matrix
         3. translation to a1_center_xy
+
+        Note that the Y axis scale is inverted to go from linearly increasing index
+        coordinates to cartesian "plate" coordinates (where y position decreases with
+        increasing index.
         """
         translation = np.eye(3)
-        translation[:2, 2] = self.a1_center_xy[::-1]
+        a1_center_xy_mm = np.array(self.a1_center_xy) / 1000  # convert to mm
+        translation[:2, 2] = a1_center_xy_mm[::-1]
 
         rotation = np.eye(3)
         rotation[:2, :2] = self.rotation_matrix
 
         scaling = np.eye(3)
-        scaling[:2, :2] = np.diag(self.plate.well_spacing)
+        # invert the Y axis to convert "index" to "plate" coordinates.
+        scale_y, scale_x = self.plate.well_spacing
+        scaling[:2, :2] = np.diag([-scale_y, scale_x])
 
         return translation @ rotation @ scaling
 
@@ -418,7 +414,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
         for well in self.all_well_positions:
             sh = patch_type(
-                (well.x + offset_x, -well.y + offset_y),  # type: ignore[operator]
+                (well.x + offset_x, well.y + offset_y),  # type: ignore[operator]
                 width=width,
                 height=height,
                 angle=self.rotation or 0,
@@ -436,7 +432,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             w, h = self.well_points_plan.fov_width, self.well_points_plan.fov_height
 
         for img_point in self.image_positions:
-            x, y = float(img_point.x), -float(img_point.y)  # type: ignore[arg-type] # µm
+            x, y = float(img_point.x), float(img_point.y)  # type: ignore[arg-type] # µm
             if w and h:
                 ax.add_patch(
                     patches.Rectangle(
@@ -455,7 +451,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         # ################ draw names on used wells ################
         offset_x, offset_y = -width / 2, -height / 2
         for well in self.selected_well_positions:
-            x, y = float(well.x), -float(well.y)  # type: ignore[arg-type]
+            x, y = float(well.x), float(well.y)  # type: ignore[arg-type]
             # draw name next to spot
             ax.text(x + offset_x, y - offset_y, well.name, fontsize=7)
 
