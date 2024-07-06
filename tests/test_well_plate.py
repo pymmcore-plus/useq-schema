@@ -18,8 +18,8 @@ def test_plate_plan() -> None:
     assert isinstance(pos0, useq.Position)
     assert pos0 == pp[0]
     assert pos0.name == "B1"
-    assert round(pos0.x, 2) == 500784.4  # first row, but rotataed slightly, µm
-    assert round(pos0.y, 2) == -208965.75  # second column, µm
+    assert round(pos0.x, 2) == 1284.4  # first row, but rotataed slightly, µm
+    assert round(pos0.y, 2) == -8765.75  # second column, µm
 
     js = pp.model_dump_json()
 
