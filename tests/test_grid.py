@@ -1,10 +1,14 @@
-from typing import Iterable, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Iterable, Optional
 
 import pytest
 
 from useq import GridFromEdges, GridRowsColumns, GridWidthHeight, RandomPoints
 from useq._grid import OrderMode, _rect_indices, _spiral_indices
-from useq._position import PositionBase
+
+if TYPE_CHECKING:
+    from useq._position import PositionBase
 
 EXPECT = {
     (True, False): [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)],
