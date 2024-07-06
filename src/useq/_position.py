@@ -1,18 +1,21 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, ClassVar, Literal, Optional, SupportsIndex
+
+from pydantic import Field
 
 from useq._base_model import FrozenModel
-from useq._grid import GridPosition
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from useq import MDASequence
 
 
-class Position(FrozenModel):
+class PositionBase(FrozenModel):
     """Define a position in 3D space.
 
     Any of the attributes can be `None` to indicate that the position is not
-    defined. This is useful for defining a position relative to the current
-    position.
+    defined.  For engines implementing support for useq, a position of `None` implies
+    "do not move" or "stay at current position" on that axis.
 
     Attributes
     ----------
@@ -26,26 +29,59 @@ class Position(FrozenModel):
         Optional name for the position.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
+    row : int | None
+        Optional row index, when used in a grid.
+    col : int | None
+        Optional column index, when used in a grid.
     """
 
-    # if None, implies 'do not move this axis'
     x: Optional[float] = None
     y: Optional[float] = None
     z: Optional[float] = None
     name: Optional[str] = None
     sequence: Optional["MDASequence"] = None
 
-    def __add__(self, other: "Position | GridPosition") -> "Position":
+    # excluded from serialization
+    row: Optional[int] = Field(default=None, exclude=True)
+    col: Optional[int] = Field(default=None, exclude=True)
+
+    def __add__(self, other: "RelativePosition") -> "Self":
         """Add two positions together to create a new position."""
-        if isinstance(other, GridPosition) and not other.is_relative:
-            raise ValueError("Cannot add a non-relative GridPosition to a Position")
-        other_name = getattr(other, "name", "")
-        other_name = f"_{other_name}" if other_name else ""
-        other_z = getattr(other, "z", None)
-        return Position(
-            x=self.x + other.x if self.x is not None and other.x is not None else None,
-            y=self.y + other.y if self.y is not None and other.y is not None else None,
-            z=self.z + other_z if self.z is not None and other_z is not None else None,
-            name=f"{self.name}{other_name}" if self.name and other_name else self.name,
-            sequence=self.sequence,
-        )
+        if not isinstance(other, RelativePosition):  # pragma: no cover
+            return NotImplemented
+        if (x := self.x) is not None and other.x is not None:
+            x += other.x
+        if (y := self.y) is not None and other.y is not None:
+            y += other.y
+        if (z := self.z) is not None and other.z is not None:
+            z += other.z
+        if (name := self.name) and other.name:
+            name = f"{name}_{other.name}"
+        kwargs = {**self.model_dump(), "x": x, "y": y, "z": z, "name": name}
+        return type(self).model_construct(**kwargs)  # type: ignore [return-value]
+
+    def __round__(self, ndigits: "SupportsIndex | None" = None) -> "Self":
+        """Round the position to the given number of decimal places."""
+        kwargs = {
+            **self.model_dump(),
+            "x": round(self.x, ndigits) if self.x is not None else None,
+            "y": round(self.y, ndigits) if self.y is not None else None,
+            "z": round(self.z, ndigits) if self.z is not None else None,
+        }
+        # not sure why these Self types are not working
+        return type(self).model_construct(**kwargs)  # type: ignore [return-value]
+
+
+class AbsolutePosition(PositionBase):
+    """An absolute position in 3D space."""
+
+    is_relative: ClassVar[Literal[False]] = False
+
+
+Position = AbsolutePosition  # for backwards compatibility
+
+
+class RelativePosition(PositionBase):
+    """A relative position in 3D space."""
+
+    is_relative: ClassVar[Literal[True]] = True

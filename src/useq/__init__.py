@@ -20,7 +20,7 @@ from useq._plate import (
     known_well_plate_keys,
     register_well_plates,
 )
-from useq._position import Position
+from useq._position import Position, RelativePosition
 from useq._time import (
     AnyTimePlan,
     MultiPhaseTimePlan,
@@ -38,6 +38,7 @@ from useq._z import (
 )
 
 __all__ = [
+    "Position",
     "AcquireImage",
     "Action",
     "register_well_plates",
@@ -57,9 +58,9 @@ __all__ = [
     "MDAEvent",
     "MDASequence",
     "MultiPhaseTimePlan",
-    "Position",
     "PropertyTuple",
     "RandomPoints",
+    "RelativePosition",
     "TDurationLoops",
     "TIntervalDuration",
     "TIntervalLoops",

@@ -22,8 +22,8 @@ from pydantic_core import core_schema
 from typing_extensions import Annotated
 
 from useq._base_model import FrozenModel
-from useq._grid import GridPosition, GridRowsColumns, RandomPoints, Shape, _PointsPlan
-from useq._position import Position
+from useq._grid import GridRowsColumns, RandomPoints, Shape, _PointsPlan
+from useq._position import Position, PositionBase, RelativePosition
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -170,8 +170,8 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     a1_center_xy: Tuple[float, float]
     rotation: Union[float, None] = None
     selected_wells: Union[IndexExpression, None] = None
-    well_points_plan: Union[GridRowsColumns, RandomPoints, Position] = Field(
-        default_factory=lambda: Position(x=0, y=0)
+    well_points_plan: Union[GridRowsColumns, RandomPoints, RelativePosition] = Field(
+        default_factory=lambda: RelativePosition(x=0, y=0)
     )
 
     @field_validator("plate", mode="before")
@@ -272,7 +272,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     @property
     def num_points_per_well(self) -> int:
         """Return the number of points per well."""
-        if isinstance(self.well_points_plan, Position):
+        if isinstance(self.well_points_plan, PositionBase):
             return 1
         else:
             return self.well_points_plan.num_positions()
@@ -353,9 +353,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
         when iterating over the plan.
         """
         wpp = self.well_points_plan
-        offsets: Iterable[Position | GridPosition] = (
-            [wpp] if isinstance(wpp, Position) else wpp
-        )
+        offsets = [wpp] if isinstance(wpp, RelativePosition) else wpp
         pos: List[Position] = []
         for well in self.selected_well_positions:
             pos.extend(well + offset for offset in offsets)

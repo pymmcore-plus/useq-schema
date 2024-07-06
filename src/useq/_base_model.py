@@ -14,11 +14,9 @@ from typing import (
 )
 
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
-    from pydantic import ConfigDict
-
     ReprArgs = Sequence[Tuple[Optional[str], Any]]
 
 __all__ = ["UseqModel", "FrozenModel"]
@@ -28,12 +26,12 @@ _Y = TypeVar("_Y", bound="UseqModel")
 
 
 class FrozenModel(BaseModel):
-    model_config: ClassVar["ConfigDict"] = {
-        "populate_by_name": True,
-        "extra": "ignore",
-        "frozen": True,
-        "json_encoders": {MappingProxyType: dict},
-    }
+    model_config: ClassVar["ConfigDict"] = ConfigDict(
+        populate_by_name=True,
+        extra="ignore",
+        frozen=True,
+        json_encoders={MappingProxyType: dict},
+    )
 
     def replace(self: _T, **kwargs: Any) -> _T:
         """Return a new instance replacing specified kwargs with new values.

@@ -1,9 +1,14 @@
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Iterable, Optional
 
 import pytest
 
 from useq import GridFromEdges, GridRowsColumns, GridWidthHeight, RandomPoints
 from useq._grid import OrderMode, _rect_indices, _spiral_indices
+
+if TYPE_CHECKING:
+    from useq._position import PositionBase
 
 EXPECT = {
     (True, False): [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)],
@@ -42,11 +47,11 @@ def test_spiral_indices() -> None:
 def test_position_equality():
     """Order of grid positions should only change the order in which they are yielded"""
 
-    def positions_without_name(positions_set):
+    def positions_without_name(
+        positions: Iterable[PositionBase],
+    ) -> set[tuple[float, float, bool]]:
         """Create a set of tuples of GridPosition attributes excluding 'name'"""
-        return {
-            (pos.x, pos.y, pos.row, pos.col, pos.is_relative) for pos in positions_set
-        }
+        return {(pos.x, pos.y, pos.is_relative) for pos in positions}
 
     t1 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.spiral)
     spiral_pos = positions_without_name(t1.iter_grid_positions(1, 1))

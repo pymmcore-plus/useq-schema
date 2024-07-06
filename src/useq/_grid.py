@@ -10,12 +10,13 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Generic,
     Iterator,
     Literal,  # noqa: F401
-    NamedTuple,
     Optional,
     Sequence,
     Tuple,
+    TypeVar,
     Union,
 )
 
@@ -23,6 +24,7 @@ import numpy as np
 from pydantic import Field, field_validator
 
 from useq._base_model import FrozenModel
+from useq._position import AbsolutePosition, PositionBase, RelativePosition
 
 if TYPE_CHECKING:
     from pydantic import ConfigDict
@@ -131,17 +133,10 @@ _INDEX_GENERATORS: dict[OrderMode, IndexGenerator] = {
     OrderMode.spiral: _spiral_indices,
 }
 
-
-class GridPosition(NamedTuple):
-    x: float
-    y: float
-    row: int
-    col: int
-    is_relative: bool
-    name: str = ""
+PositionT = TypeVar("PositionT", bound=PositionBase)
 
 
-class _PointsPlan(FrozenModel):
+class _PointsPlan(FrozenModel, Generic[PositionT]):
     # Overriding FrozenModel to make fov_width and fov_height mutable.
     model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
 
@@ -152,14 +147,14 @@ class _PointsPlan(FrozenModel):
     def is_relative(self) -> bool:
         return False
 
-    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+    def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
         raise NotImplementedError("This method must be implemented by subclasses.")
 
     def num_positions(self) -> int:
         raise NotImplementedError("This method must be implemented by subclasses.")
 
 
-class _GridPlan(_PointsPlan):
+class _GridPlan(_PointsPlan[PositionT]):
     """Base class for all grid plans.
 
     Attributes
@@ -218,7 +213,8 @@ class _GridPlan(_PointsPlan):
         size. If no field of view size is provided, the number of positions will be 1.
         """
         if isinstance(self, (GridFromEdges, GridWidthHeight)) and (
-            self.fov_width is None or self.fov_height is None
+            # type ignore is because mypy thinks self is Never here...
+            self.fov_width is None or self.fov_height is None  # type: ignore [attr-defined]
         ):
             raise ValueError(
                 "Retrieving the number of positions in a GridFromEdges or "
@@ -236,7 +232,7 @@ class _GridPlan(_PointsPlan):
         fov_height: float | None = None,
         *,
         mode: OrderMode | None = None,
-    ) -> Iterator[GridPosition]:
+    ) -> Iterator[PositionT]:
         """Iterate over all grid positions, given a field of view size."""
         _fov_width = fov_width or self.fov_width or 1.0
         _fov_height = fov_height or self.fov_height or 1.0
@@ -248,17 +244,17 @@ class _GridPlan(_PointsPlan):
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
 
+        pos_cls = RelativePosition if self.is_relative else AbsolutePosition
         for idx, (r, c) in enumerate(_INDEX_GENERATORS[mode](rows, cols)):
-            yield GridPosition(
-                x0 + c * dx,
-                y0 - r * dy,
-                r,
-                c,
-                self.is_relative,
-                f"{str(idx).zfill(4)}",
+            yield pos_cls(  # type: ignore [misc]
+                x=x0 + c * dx,
+                y=y0 - r * dy,
+                row=r,
+                col=c,
+                name=f"{str(idx).zfill(4)}",
             )
 
-    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+    def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
         yield from self.iter_grid_positions()
 
     def _step_size(self, fov_width: float, fov_height: float) -> Tuple[float, float]:
@@ -267,7 +263,7 @@ class _GridPlan(_PointsPlan):
         return dx, dy
 
 
-class GridFromEdges(_GridPlan):
+class GridFromEdges(_GridPlan[AbsolutePosition]):
     """Yield absolute stage positions to cover a bounded area.
 
     The bounded area is defined by top, left, bottom and right edges in
@@ -322,7 +318,7 @@ class GridFromEdges(_GridPlan):
         return max(self.top, self.bottom)
 
 
-class GridRowsColumns(_GridPlan):
+class GridRowsColumns(_GridPlan[RelativePosition]):
     """Yield relative delta increments to build a grid acquisition.
 
     Attributes
@@ -384,7 +380,7 @@ class GridRowsColumns(_GridPlan):
 GridRelative = GridRowsColumns
 
 
-class GridWidthHeight(_GridPlan):
+class GridWidthHeight(_GridPlan[RelativePosition]):
     """Yield relative delta increments to build a grid acquisition.
 
     Attributes
@@ -463,7 +459,7 @@ class Shape(Enum):
     RECTANGLE = "rectangle"
 
 
-class RandomPoints(_PointsPlan):
+class RandomPoints(_PointsPlan[RelativePosition]):
     """Yield random points in a specified geometric shape.
 
     Attributes
@@ -495,7 +491,7 @@ class RandomPoints(_PointsPlan):
     def is_relative(self) -> bool:
         return True
 
-    def __iter__(self) -> Iterator[GridPosition]:  # type: ignore
+    def __iter__(self) -> Iterator[RelativePosition]:  # type: ignore [override]
         seed = np.random.RandomState(self.random_seed)
         func = _POINTS_GENERATORS[self.shape]
         n_points = max(self.num_points, MIN_RANDOM_POINTS)
@@ -509,7 +505,7 @@ class RandomPoints(_PointsPlan):
                 or self.fov_height is None
                 or _is_a_valid_point(points, x, y, self.fov_width, self.fov_height)
             ):
-                yield GridPosition(x, y, 0, 0, True, f"{str(idx).zfill(4)}")
+                yield RelativePosition(x=x, y=y, name=f"{str(idx).zfill(4)}")
                 points.append((x, y))
             if len(points) >= self.num_points:
                 break
