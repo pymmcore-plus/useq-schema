@@ -57,6 +57,10 @@ class _ReplaceableModel(BaseModel):
         """
         return type(self).model_validate({**self.model_dump(exclude={"uid"}), **kwargs})
 
+    def __repr_args__(self) -> "ReprArgs":
+        """Only show fields that are not None or equal to their default value."""
+        return _non_default_repr_args(self, super().__repr_args__())
+
 
 class FrozenModel(_ReplaceableModel):
     model_config: ClassVar["ConfigDict"] = ConfigDict(
@@ -66,10 +70,6 @@ class FrozenModel(_ReplaceableModel):
         json_encoders={MappingProxyType: dict},
     )
 
-    def __repr_args__(self) -> "ReprArgs":
-        """Only show fields that are not None or equal to their default value."""
-        return _non_default_repr_args(self, super().__repr_args__())
-
 
 class MutableModel(_ReplaceableModel):
     model_config: ClassVar["ConfigDict"] = ConfigDict(
@@ -78,14 +78,6 @@ class MutableModel(_ReplaceableModel):
         validate_default=True,
         extra="ignore",
     )
-
-    def __repr_args__(self) -> "ReprArgs":
-        """Only show fields that are not None or equal to their default value."""
-        return _non_default_repr_args(self, super().__repr_args__())
-
-    def replace(self, **kwargs: Any) -> "Self":
-        """Return a new instance replacing specified kwargs with new values."""
-        return type(self).model_validate({**self.model_dump(exclude={"uid"}), **kwargs})
 
 
 class UseqModel(FrozenModel):
