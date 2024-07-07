@@ -92,7 +92,7 @@ class _MultiPointPlan(MutableModel, Generic[PositionT]):
 
     @property
     def is_relative(self) -> bool:
-        return False
+        return True
 
     def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
         raise NotImplementedError("This method must be implemented by subclasses.")
@@ -111,10 +111,6 @@ class RelativePosition(PositionBase, _MultiPointPlan["RelativePosition"]):
     x: float = 0
     y: float = 0
     z: float = 0
-
-    @property
-    def is_relative(self) -> bool:
-        return True
 
     def __iter__(self) -> Iterator["RelativePosition"]:  # type: ignore [override]
         yield self

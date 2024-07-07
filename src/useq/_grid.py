@@ -271,6 +271,10 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
     bottom: float = Field(..., frozen=True)
     right: float = Field(..., frozen=True)
 
+    @property
+    def is_relative(self) -> bool:
+        return False
+
     def _nrows(self, dy: float) -> int:
         total_height = abs(self.top - self.bottom) + dy
         return math.ceil(total_height / dy)
@@ -321,10 +325,6 @@ class GridRowsColumns(_GridPlan[RelativePosition]):
     rows: int = Field(..., frozen=True, ge=1)
     columns: int = Field(..., frozen=True, ge=1)
     relative_to: RelativeTo = Field(RelativeTo.center, frozen=True)
-
-    @property
-    def is_relative(self) -> bool:
-        return True
 
     def _nrows(self, dy: float) -> int:
         return self.rows
@@ -383,10 +383,6 @@ class GridWidthHeight(_GridPlan[RelativePosition]):
     width: float = Field(..., frozen=True, gt=0)
     height: float = Field(..., frozen=True, gt=0)
     relative_to: RelativeTo = Field(RelativeTo.center, frozen=True)
-
-    @property
-    def is_relative(self) -> bool:
-        return True
 
     def _nrows(self, dy: float) -> int:
         return math.ceil(self.height / dy)
@@ -454,10 +450,6 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     shape: Shape = Shape.ELLIPSE
     random_seed: Optional[int] = None
     allow_overlap: bool = True
-
-    @property
-    def is_relative(self) -> bool:
-        return True
 
     def __iter__(self) -> Iterator[RelativePosition]:  # type: ignore [override]
         seed = np.random.RandomState(self.random_seed)
