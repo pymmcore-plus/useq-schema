@@ -20,7 +20,7 @@ from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
-from useq._grid import AnyGridPlan  # noqa: TCH001
+from useq._grid import MultiPointPlan  # noqa: TCH001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._plate import WellPlatePlan  # noqa: TCH001
@@ -184,7 +184,7 @@ class MDASequence(UseqModel):
     stage_positions: Union[WellPlatePlan, Tuple[Position, ...]] = Field(
         default_factory=tuple
     )
-    grid_plan: Optional[AnyGridPlan] = None
+    grid_plan: Optional[MultiPointPlan] = None
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: Optional[AnyTimePlan] = None
     z_plan: Optional[AnyZPlan] = None
@@ -317,7 +317,7 @@ class MDASequence(UseqModel):
         z_plan: Optional[AnyZPlan] = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
-        grid_plan: Optional[AnyGridPlan] = None,
+        grid_plan: Optional[MultiPointPlan] = None,
         autofocus_plan: Optional[AnyAutofocusPlan] = None,
     ) -> None:
         if (

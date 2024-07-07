@@ -1,8 +1,17 @@
-from typing import TYPE_CHECKING, ClassVar, Literal, Optional, SupportsIndex
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    Generic,
+    Iterator,
+    Literal,
+    Optional,
+    SupportsIndex,
+    TypeVar,
+)
 
 from pydantic import Field
 
-from useq._base_model import FrozenModel
+from useq._base_model import FrozenModel, MutableModel
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -10,7 +19,7 @@ if TYPE_CHECKING:
     from useq import MDASequence
 
 
-class PositionBase(FrozenModel):
+class PositionBase(MutableModel):
     """Define a position in 3D space.
 
     Any of the attributes can be `None` to indicate that the position is not
@@ -72,16 +81,49 @@ class PositionBase(FrozenModel):
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
 
 
-class AbsolutePosition(PositionBase):
+class AbsolutePosition(PositionBase, FrozenModel):
     """An absolute position in 3D space."""
 
-    is_relative: ClassVar[Literal[False]] = False
+    @property
+    def is_relative(self) -> bool:
+        return False
 
 
 Position = AbsolutePosition  # for backwards compatibility
+PositionT = TypeVar("PositionT", bound=PositionBase)
 
 
-class RelativePosition(PositionBase):
-    """A relative position in 3D space."""
+class _MultiPointPlan(MutableModel, Generic[PositionT]):
+    """Any plan that yields multiple positions."""
 
+    fov_width: Optional[float] = None
+    fov_height: Optional[float] = None
+
+    @property
+    def is_relative(self) -> bool:
+        return False
+
+    def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
+        raise NotImplementedError("This method must be implemented by subclasses.")
+
+    def num_positions(self) -> int:
+        raise NotImplementedError("This method must be implemented by subclasses.")
+
+
+class RelativePosition(PositionBase, _MultiPointPlan):
+    """A relative position in 3D space.
+
+    Relative positions also support `fov_width` and `fov_height` attributes, and can
+    be used to define a single field of view for a "multi-point" plan.
+    """
+
+    x: float = 0
+    y: float = 0
+    z: float = 0
     is_relative: ClassVar[Literal[True]] = True
+
+    def __iter__(self) -> Iterator["RelativePosition"]:  # type: ignore [override]
+        yield self
+
+    def num_positions(self) -> int:
+        return 1

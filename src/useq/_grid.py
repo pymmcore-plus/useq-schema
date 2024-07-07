@@ -5,29 +5,17 @@ import math
 import warnings
 from enum import Enum
 from functools import partial
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    ClassVar,
-    Generic,
-    Iterator,
-    Literal,  # noqa: F401
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Iterator, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from pydantic import Field, field_validator
 
-from useq._base_model import FrozenModel
-from useq._position import AbsolutePosition, PositionBase, RelativePosition
-
-if TYPE_CHECKING:
-    from pydantic import ConfigDict
+from useq._position import (
+    AbsolutePosition,
+    PositionT,
+    RelativePosition,
+    _MultiPointPlan,
+)
 
 MIN_RANDOM_POINTS = 5000
 
@@ -133,28 +121,8 @@ _INDEX_GENERATORS: dict[OrderMode, IndexGenerator] = {
     OrderMode.spiral: _spiral_indices,
 }
 
-PositionT = TypeVar("PositionT", bound=PositionBase)
 
-
-class _PointsPlan(FrozenModel, Generic[PositionT]):
-    # Overriding FrozenModel to make fov_width and fov_height mutable.
-    model_config: ClassVar[ConfigDict] = {"validate_assignment": True, "frozen": False}
-
-    fov_width: Optional[float] = Field(None)
-    fov_height: Optional[float] = Field(None)
-
-    @property
-    def is_relative(self) -> bool:
-        return False
-
-    def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
-        raise NotImplementedError("This method must be implemented by subclasses.")
-
-    def num_positions(self) -> int:
-        raise NotImplementedError("This method must be implemented by subclasses.")
-
-
-class _GridPlan(_PointsPlan[PositionT]):
+class _GridPlan(_MultiPointPlan[PositionT]):
     """Base class for all grid plans.
 
     Attributes
@@ -246,7 +214,7 @@ class _GridPlan(_PointsPlan[PositionT]):
 
         pos_cls = RelativePosition if self.is_relative else AbsolutePosition
         for idx, (r, c) in enumerate(_INDEX_GENERATORS[mode](rows, cols)):
-            yield pos_cls(  # type: ignore [misc]
+            yield pos_cls(
                 x=x0 + c * dx,
                 y=y0 - r * dy,
                 row=r,
@@ -319,7 +287,7 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
 
 
 class GridRowsColumns(_GridPlan[RelativePosition]):
-    """Yield relative delta increments to build a grid acquisition.
+    """Grid plan based on number of rows and columns.
 
     Attributes
     ----------
@@ -381,7 +349,7 @@ GridRelative = GridRowsColumns
 
 
 class GridWidthHeight(_GridPlan[RelativePosition]):
-    """Yield relative delta increments to build a grid acquisition.
+    """Grid plan based on total width and height.
 
     Attributes
     ----------
@@ -459,7 +427,7 @@ class Shape(Enum):
     RECTANGLE = "rectangle"
 
 
-class RandomPoints(_PointsPlan[RelativePosition]):
+class RandomPoints(_MultiPointPlan[RelativePosition]):
     """Yield random points in a specified geometric shape.
 
     Attributes
@@ -571,4 +539,9 @@ _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
 }
 
 
-AnyGridPlan = Union[GridFromEdges, GridRowsColumns, GridWidthHeight, RandomPoints]
+# all of these support __iter__() -> Iterator[PositionBase] and num_positions() -> int
+RelativeMultiPointPlan = Union[
+    GridRowsColumns, GridWidthHeight, RandomPoints, RelativePosition
+]
+AbsoluteMultiPointPlan = Union[GridFromEdges]
+MultiPointPlan = Union[AbsoluteMultiPointPlan, RelativeMultiPointPlan]

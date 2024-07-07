@@ -5,9 +5,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
+    Iterable,
     Optional,
-    Sequence,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -17,12 +16,27 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
-    ReprArgs = Sequence[Tuple[Optional[str], Any]]
+    ReprArgs = Iterable[tuple[str | None, Any]]
 
 __all__ = ["UseqModel", "FrozenModel"]
 
 _T = TypeVar("_T", bound="FrozenModel")
 _Y = TypeVar("_Y", bound="UseqModel")
+
+
+def _non_default_repr_args(obj: BaseModel, fields: "ReprArgs") -> "ReprArgs":
+    """Set fields on a model instance."""
+    return [
+        (k, val)
+        for k, val in fields
+        if k in obj.model_fields
+        and val
+        != (
+            factory()
+            if (factory := obj.model_fields[k].default_factory) is not None
+            else obj.model_fields[k].default
+        )
+    ]
 
 
 class FrozenModel(BaseModel):
@@ -49,17 +63,20 @@ class FrozenModel(BaseModel):
 
     def __repr_args__(self) -> "ReprArgs":
         """Only show fields that are not None or equal to their default value."""
-        return [
-            (k, val)
-            for k, val in super().__repr_args__()
-            if k in self.model_fields
-            and val
-            != (
-                factory()
-                if (factory := self.model_fields[k].default_factory) is not None
-                else self.model_fields[k].default
-            )
-        ]
+        return _non_default_repr_args(self, super().__repr_args__())
+
+
+class MutableModel(BaseModel):
+    model_config: ClassVar["ConfigDict"] = ConfigDict(
+        populate_by_name=True,
+        validate_assignment=True,
+        validate_default=True,
+        extra="ignore",
+    )
+
+    def __repr_args__(self) -> "ReprArgs":
+        """Only show fields that are not None or equal to their default value."""
+        return _non_default_repr_args(self, super().__repr_args__())
 
 
 class UseqModel(FrozenModel):

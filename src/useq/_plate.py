@@ -21,7 +21,7 @@ from pydantic_core import core_schema
 from typing_extensions import Annotated
 
 from useq._base_model import FrozenModel
-from useq._grid import GridRowsColumns, RandomPoints, Shape, _PointsPlan
+from useq._grid import RandomPoints, RelativeMultiPointPlan, Shape
 from useq._plate_registry import _PLATE_REGISTRY
 from useq._position import Position, PositionBase, RelativePosition
 
@@ -159,9 +159,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     a1_center_xy: Tuple[float, float]
     rotation: Union[float, None] = None
     selected_wells: Union[IndexExpression, None] = None
-    well_points_plan: Union[GridRowsColumns, RandomPoints, RelativePosition] = Field(
-        default_factory=lambda: RelativePosition(x=0, y=0)
-    )
+    well_points_plan: RelativeMultiPointPlan = Field(default_factory=RelativePosition)
 
     @field_validator("plate", mode="before")
     @classmethod
@@ -414,9 +412,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             ax.add_patch(sh)
 
         ################ plot image positions ################
-        w = h = None
-        if isinstance(self.well_points_plan, _PointsPlan):
-            w, h = self.well_points_plan.fov_width, self.well_points_plan.fov_height
+        w, h = self.well_points_plan.fov_width, self.well_points_plan.fov_height
 
         for img_point in self.image_positions:
             x, y = float(img_point.x), float(img_point.y)  # type: ignore[arg-type] # µm

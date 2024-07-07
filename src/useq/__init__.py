@@ -1,14 +1,15 @@
 """Implementation agnostic schema for multi-dimensional microscopy experiments."""
 
+import warnings
 from typing import Any
 
 from useq._actions import AcquireImage, Action, HardwareAutofocus
 from useq._channel import Channel
 from useq._grid import (
-    AnyGridPlan,
     GridFromEdges,
     GridRowsColumns,
     GridWidthHeight,
+    MultiPointPlan,
     RandomPoints,
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
@@ -40,7 +41,7 @@ __all__ = [
     "register_well_plates",
     "registered_well_plate_keys",
     "AnyAutofocusPlan",
-    "AnyGridPlan",
+    "MultiPointPlan",
     "AnyTimePlan",
     "AnyZPlan",
     "AutoFocusPlan",
@@ -85,4 +86,11 @@ def __getattr__(name: str) -> Any:
         # )
 
         return GridRowsColumns
+    if name == "AnyGridPlan":
+        warnings.warn(
+            "useq.AnyGridPlan has been renamed to useq.MultiPointPlan",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return MultiPointPlan
     raise AttributeError(f"module {__name__} has no attribute {name}")
