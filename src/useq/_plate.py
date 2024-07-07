@@ -4,11 +4,10 @@ from ast import literal_eval
 from contextlib import suppress
 from functools import cached_property
 from typing import (
-    TYPE_CHECKING,
     Any,
+    Callable,
     Iterable,
     List,
-    Mapping,
     Sequence,
     Tuple,
     Union,
@@ -23,19 +22,8 @@ from typing_extensions import Annotated
 
 from useq._base_model import FrozenModel
 from useq._grid import GridRowsColumns, RandomPoints, Shape, _PointsPlan
+from useq._plate_registry import _PLATE_REGISTRY
 from useq._position import Position, PositionBase, RelativePosition
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-    from typing import Required, TypedDict
-
-    class KnownPlateKwargs(TypedDict, total=False):
-        rows: Required[int]
-        columns: Required[int]
-        well_spacing: Required[tuple[float, float] | float]
-        well_size: tuple[float, float] | float | None
-        circular_wells: bool
-        name: str
 
 
 class _SliceType:
@@ -120,7 +108,7 @@ class WellPlate(FrozenModel):
         Use `useq.register_well_plates` to add new plates to the registry.
         """
         try:
-            obj = _KNOWN_PLATES[name]
+            obj = _PLATE_REGISTRY[name]
         except KeyError as e:
             raise ValueError(
                 f"Unknown plate name {name!r}. "
@@ -140,7 +128,8 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     ----------
     plate : WellPlate | str | int
         The well-plate definition. Minimally including rows, columns, and well spacing.
-        If expressed as a string, it is assumed to be a key in `WellPlate.KNOWN_PLATES`.
+        If expressed as a string, it is assumed to be a key in
+        `useq.registered_well_plate_keys`.
     a1_center_xy : tuple[float, float]
         The stage coordinates in µm of the center of well A1 (top-left corner).
     rotation : float | None
@@ -464,84 +453,3 @@ def _index_to_row_name(index: int) -> str:
         name = chr(index % 26 + 65) + name
         index = index // 26 - 1
     return name
-
-
-# ---------------------------- Known Plates ----------------------------
-
-PlateOrKwargs = Union["KnownPlateKwargs", WellPlate]
-_KNOWN_PLATES: dict[str, PlateOrKwargs] = {
-    "6-well": {"rows": 2, "columns": 3, "well_spacing": 39.12, "well_size": 34.8},
-    "12-well": {"rows": 3, "columns": 4, "well_spacing": 26, "well_size": 22},
-    "24-well": {"rows": 4, "columns": 6, "well_spacing": 19, "well_size": 15.6},
-    "48-well": {"rows": 6, "columns": 8, "well_spacing": 13, "well_size": 11.1},
-    "96-well": {"rows": 8, "columns": 12, "well_spacing": 9, "well_size": 6.4},
-    "384-well": {
-        "rows": 16,
-        "columns": 24,
-        "well_spacing": 4.5,
-        "well_size": 3.4,
-        "circular_wells": False,
-    },
-    "1536-well": {
-        "rows": 32,
-        "columns": 48,
-        "well_spacing": 2.25,
-        "well_size": 1.7,
-        "circular_wells": False,
-    },
-}
-
-
-@overload
-def register_well_plates(
-    plates: Mapping[str, PlateOrKwargs],
-    /,
-    **kwargs: PlateOrKwargs,
-) -> None: ...
-@overload
-def register_well_plates(
-    plates: Iterable[tuple[str, PlateOrKwargs]],
-    /,
-    **kwargs: PlateOrKwargs,
-) -> None: ...
-@overload
-def register_well_plates(**kwargs: PlateOrKwargs) -> None: ...
-def register_well_plates(
-    plates: Mapping[str, PlateOrKwargs] | Iterable[tuple[str, PlateOrKwargs]] = (),
-    /,
-    **kwargs: PlateOrKwargs,
-) -> None:
-    """Register well-plate definitions to allow lookup by key.
-
-    Added keys will override existing keys if they already exist.
-
-    Values may either be WellPlate instances, or dictionaries with the following keys:
-        - rows: Required[int]
-        - columns: Required[int]
-        - well_spacing: Required[tuple[float, float]]
-        - well_size: tuple[float, float] | None
-        - circular_wells: bool
-        - name: str
-
-    Examples
-    --------
-    >>> import useq
-    >>> useq.register_well_plates(
-    ...     {
-    ...         "custom-square-plate": {
-    ...             "rows": 8, "columns": 8, "well_spacing": 9.3, "well_size": 7.1
-    ...         },
-    ...         "silly-plate": {"rows": 1, "columns": 1, "well_spacing": 100}
-    ...     }
-    ... )
-    """
-    _KNOWN_PLATES.update(plates, **kwargs)
-
-
-def known_well_plate_keys() -> set[str]:
-    """Return a set of all registered well-plate keys.
-
-    These keys may be used as an argument to `WellPlatePlan.plate` to select a plate
-    definition.
-    """
-    return set(_KNOWN_PLATES)

@@ -14,12 +14,8 @@ from useq._grid import (
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent, PropertyTuple
 from useq._mda_sequence import MDASequence
-from useq._plate import (
-    WellPlate,
-    WellPlatePlan,
-    known_well_plate_keys,
-    register_well_plates,
-)
+from useq._plate import WellPlate, WellPlatePlan
+from useq._plate_registry import register_well_plates, registered_well_plate_keys
 from useq._position import Position, RelativePosition
 from useq._time import (
     AnyTimePlan,
@@ -42,6 +38,7 @@ __all__ = [
     "AcquireImage",
     "Action",
     "register_well_plates",
+    "registered_well_plate_keys",
     "AnyAutofocusPlan",
     "AnyGridPlan",
     "AnyTimePlan",
@@ -54,7 +51,6 @@ __all__ = [
     "GridRowsColumns",
     "GridWidthHeight",
     "HardwareAutofocus",
-    "known_well_plate_keys",
     "MDAEvent",
     "MDASequence",
     "MultiPhaseTimePlan",

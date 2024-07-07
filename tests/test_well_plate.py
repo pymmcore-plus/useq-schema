@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import useq
-from useq import _plate
+from useq import _plate, _plate_registry
 
 
 def test_plate_plan() -> None:
@@ -68,7 +68,8 @@ def test_plate_errors() -> None:
 
 def test_custom_plate(monkeypatch: pytest.MonkeyPatch) -> None:
     plates: dict = {}
-    monkeypatch.setattr(_plate, "_KNOWN_PLATES", plates)
+    monkeypatch.setattr(_plate_registry, "_PLATE_REGISTRY", plates)
+    monkeypatch.setattr(_plate, "_PLATE_REGISTRY", plates)
 
     useq.register_well_plates(
         {
@@ -79,7 +80,7 @@ def test_custom_plate(monkeypatch: pytest.MonkeyPatch) -> None:
         myplate={"rows": 8, "columns": 8, "well_spacing": 9, "well_size": 10},
     )
     assert "myplate" in plates
-    assert "silly" in useq.known_well_plate_keys()
+    assert "silly" in useq.registered_well_plate_keys()
 
     with pytest.raises(ValueError, match="Unknown plate name"):
         useq.WellPlatePlan(plate="bad", a1_center_xy=(0, 0))
