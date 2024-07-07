@@ -1,10 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Iterable, Optional, get_args
 
 import pytest
 
-from useq import GridFromEdges, GridRowsColumns, GridWidthHeight, RandomPoints
+from useq import (
+    GridFromEdges,
+    GridRowsColumns,
+    GridWidthHeight,
+    RandomPoints,
+    RelativeMultiPointPlan,
+    RelativePosition,
+)
 from useq._grid import OrderMode, _rect_indices, _spiral_indices
 
 if TYPE_CHECKING:
@@ -147,3 +154,21 @@ def test_random_points(n_points: int, shape: str, seed: Optional[int]) -> None:
     else:
         with pytest.raises(UserWarning, match="Unable to generate"):
             list(rp)
+
+
+fov = {"fov_height": 200, "fov_width": 200}
+
+
+@pytest.mark.parametrize(
+    "obj",
+    [
+        GridRowsColumns(rows=1, columns=2, **fov),
+        GridWidthHeight(width=10, height=10, **fov),
+        RandomPoints(num_points=10, **fov),
+        RelativePosition(**fov),
+    ],
+)
+def test_points_plans(obj: RelativeMultiPointPlan):
+    assert isinstance(obj, get_args(RelativeMultiPointPlan))
+    assert all(isinstance(x, RelativePosition) for x in obj)
+    assert isinstance(obj.num_positions(), int)

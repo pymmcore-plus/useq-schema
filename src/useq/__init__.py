@@ -10,8 +10,10 @@ from useq._grid import (
     GridRowsColumns,
     GridWidthHeight,
     MultiPointPlan,
+    OrderMode,
     RandomPoints,
     RelativeMultiPointPlan,
+    Shape,
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent, PropertyTuple
@@ -54,6 +56,7 @@ __all__ = [
     "MDASequence",
     "MultiPhaseTimePlan",
     "MultiPointPlan",
+    "OrderMode",
     "Position",  # alias for AbsolutePosition
     "PropertyTuple",
     "RandomPoints",
@@ -61,6 +64,7 @@ __all__ = [
     "registered_well_plate_keys",
     "RelativeMultiPointPlan",
     "RelativePosition",
+    "Shape",
     "TDurationLoops",
     "TIntervalDuration",
     "TIntervalLoops",
@@ -89,7 +93,7 @@ def __getattr__(name: str) -> Any:
         # )
 
         return GridRowsColumns
-    if name == "AnyGridPlan":
+    if name == "AnyGridPlan":  # pragma: no cover
         warnings.warn(
             "useq.AnyGridPlan has been renamed to useq.MultiPointPlan",
             DeprecationWarning,
