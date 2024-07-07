@@ -11,13 +11,14 @@ from useq._grid import (
     GridWidthHeight,
     MultiPointPlan,
     RandomPoints,
+    RelativeMultiPointPlan,
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent, PropertyTuple
 from useq._mda_sequence import MDASequence
 from useq._plate import WellPlate, WellPlatePlan
 from useq._plate_registry import register_well_plates, registered_well_plate_keys
-from useq._position import Position, RelativePosition
+from useq._position import AbsolutePosition, Position, RelativePosition
 from useq._time import (
     AnyTimePlan,
     MultiPhaseTimePlan,
@@ -35,13 +36,10 @@ from useq._z import (
 )
 
 __all__ = [
-    "Position",
+    "AbsolutePosition",
     "AcquireImage",
     "Action",
-    "register_well_plates",
-    "registered_well_plate_keys",
     "AnyAutofocusPlan",
-    "MultiPointPlan",
     "AnyTimePlan",
     "AnyZPlan",
     "AutoFocusPlan",
@@ -55,14 +53,19 @@ __all__ = [
     "MDAEvent",
     "MDASequence",
     "MultiPhaseTimePlan",
+    "MultiPointPlan",
+    "Position",  # alias for AbsolutePosition
     "PropertyTuple",
     "RandomPoints",
+    "register_well_plates",
+    "registered_well_plate_keys",
+    "RelativeMultiPointPlan",
     "RelativePosition",
     "TDurationLoops",
     "TIntervalDuration",
     "TIntervalLoops",
-    "WellPlatePlan",
     "WellPlate",
+    "WellPlatePlan",
     "ZAboveBelow",
     "ZAbsolutePositions",
     "ZRangeAround",

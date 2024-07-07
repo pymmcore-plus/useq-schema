@@ -16,6 +16,8 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     ReprArgs = Iterable[tuple[str | None, Any]]
 
 __all__ = ["UseqModel", "FrozenModel"]
@@ -39,7 +41,24 @@ def _non_default_repr_args(obj: BaseModel, fields: "ReprArgs") -> "ReprArgs":
     ]
 
 
-class FrozenModel(BaseModel):
+# TODO: consider removing this and using model_copy directly
+class _ReplaceableModel(BaseModel):
+    def replace(self, **kwargs: Any) -> "Self":
+        """Return a new instance replacing specified kwargs with new values.
+
+        This model is immutable, so this method is useful for creating a new
+        sequence with only a few fields changed.  The uid of the new sequence will
+        be different from the original.
+
+        The difference between this and `self.model_copy(update={...})` is that this
+        method will perform validation and casting on the new values, whereas `copy`
+        assumes that all objects are valid and will not perform any validation or
+        casting.
+        """
+        return type(self).model_validate({**self.model_dump(exclude={"uid"}), **kwargs})
+
+
+class FrozenModel(_ReplaceableModel):
     model_config: ClassVar["ConfigDict"] = ConfigDict(
         populate_by_name=True,
         extra="ignore",
@@ -47,26 +66,12 @@ class FrozenModel(BaseModel):
         json_encoders={MappingProxyType: dict},
     )
 
-    def replace(self: _T, **kwargs: Any) -> _T:
-        """Return a new instance replacing specified kwargs with new values.
-
-        This model is immutable, so this method is useful for creating a new
-        sequence with only a few fields changed.  The uid of the new sequence will
-        be different from the original.
-
-        The difference between this and `self.copy(update={...})` is that this method
-        will perform validation and casting on the new values, whereas `copy` assumes
-        that all objects are valid and will not perform any validation or casting.
-        """
-        state = self.model_dump(exclude={"uid"})
-        return type(self)(**{**state, **kwargs})
-
     def __repr_args__(self) -> "ReprArgs":
         """Only show fields that are not None or equal to their default value."""
         return _non_default_repr_args(self, super().__repr_args__())
 
 
-class MutableModel(BaseModel):
+class MutableModel(_ReplaceableModel):
     model_config: ClassVar["ConfigDict"] = ConfigDict(
         populate_by_name=True,
         validate_assignment=True,
@@ -77,6 +82,10 @@ class MutableModel(BaseModel):
     def __repr_args__(self) -> "ReprArgs":
         """Only show fields that are not None or equal to their default value."""
         return _non_default_repr_args(self, super().__repr_args__())
+
+    def replace(self, **kwargs: Any) -> "Self":
+        """Return a new instance replacing specified kwargs with new values."""
+        return type(self).model_validate({**self.model_dump(exclude={"uid"}), **kwargs})
 
 
 class UseqModel(FrozenModel):
