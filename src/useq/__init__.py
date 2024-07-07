@@ -1,22 +1,26 @@
 """Implementation agnostic schema for multi-dimensional microscopy experiments."""
 
+import warnings
 from typing import Any
 
 from useq._actions import AcquireImage, Action, HardwareAutofocus
 from useq._channel import Channel
 from useq._grid import (
-    AnyGridPlan,
     GridFromEdges,
     GridRowsColumns,
     GridWidthHeight,
+    MultiPointPlan,
+    OrderMode,
     RandomPoints,
+    RelativeMultiPointPlan,
+    Shape,
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent, PropertyTuple
 from useq._mda_sequence import MDASequence
 from useq._plate import WellPlate, WellPlatePlan
 from useq._plate_registry import register_well_plates, registered_well_plate_keys
-from useq._position import Position, RelativePosition
+from useq._position import AbsolutePosition, Position, RelativePosition
 from useq._time import (
     AnyTimePlan,
     MultiPhaseTimePlan,
@@ -34,13 +38,10 @@ from useq._z import (
 )
 
 __all__ = [
-    "Position",
+    "AbsolutePosition",
     "AcquireImage",
     "Action",
-    "register_well_plates",
-    "registered_well_plate_keys",
     "AnyAutofocusPlan",
-    "AnyGridPlan",
     "AnyTimePlan",
     "AnyZPlan",
     "AutoFocusPlan",
@@ -54,14 +55,21 @@ __all__ = [
     "MDAEvent",
     "MDASequence",
     "MultiPhaseTimePlan",
+    "MultiPointPlan",
+    "OrderMode",
+    "Position",  # alias for AbsolutePosition
     "PropertyTuple",
     "RandomPoints",
+    "register_well_plates",
+    "registered_well_plate_keys",
+    "RelativeMultiPointPlan",
     "RelativePosition",
+    "Shape",
     "TDurationLoops",
     "TIntervalDuration",
     "TIntervalLoops",
-    "WellPlatePlan",
     "WellPlate",
+    "WellPlatePlan",
     "ZAboveBelow",
     "ZAbsolutePositions",
     "ZRangeAround",
@@ -85,4 +93,11 @@ def __getattr__(name: str) -> Any:
         # )
 
         return GridRowsColumns
+    if name == "AnyGridPlan":  # pragma: no cover
+        warnings.warn(
+            "useq.AnyGridPlan has been renamed to useq.MultiPointPlan",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return MultiPointPlan
     raise AttributeError(f"module {__name__} has no attribute {name}")

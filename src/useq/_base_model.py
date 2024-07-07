@@ -5,9 +5,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
+    Iterable,
     Optional,
-    Sequence,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -17,7 +16,9 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
-    ReprArgs = Sequence[Tuple[Optional[str], Any]]
+    from typing_extensions import Self
+
+    ReprArgs = Iterable[tuple[str | None, Any]]
 
 __all__ = ["UseqModel", "FrozenModel"]
 
@@ -25,7 +26,43 @@ _T = TypeVar("_T", bound="FrozenModel")
 _Y = TypeVar("_Y", bound="UseqModel")
 
 
-class FrozenModel(BaseModel):
+def _non_default_repr_args(obj: BaseModel, fields: "ReprArgs") -> "ReprArgs":
+    """Set fields on a model instance."""
+    return [
+        (k, val)
+        for k, val in fields
+        if k in obj.model_fields
+        and val
+        != (
+            factory()
+            if (factory := obj.model_fields[k].default_factory) is not None
+            else obj.model_fields[k].default
+        )
+    ]
+
+
+# TODO: consider removing this and using model_copy directly
+class _ReplaceableModel(BaseModel):
+    def replace(self, **kwargs: Any) -> "Self":
+        """Return a new instance replacing specified kwargs with new values.
+
+        This model is immutable, so this method is useful for creating a new
+        sequence with only a few fields changed.  The uid of the new sequence will
+        be different from the original.
+
+        The difference between this and `self.model_copy(update={...})` is that this
+        method will perform validation and casting on the new values, whereas `copy`
+        assumes that all objects are valid and will not perform any validation or
+        casting.
+        """
+        return type(self).model_validate({**self.model_dump(exclude={"uid"}), **kwargs})
+
+    def __repr_args__(self) -> "ReprArgs":
+        """Only show fields that are not None or equal to their default value."""
+        return _non_default_repr_args(self, super().__repr_args__())
+
+
+class FrozenModel(_ReplaceableModel):
     model_config: ClassVar["ConfigDict"] = ConfigDict(
         populate_by_name=True,
         extra="ignore",
@@ -33,33 +70,14 @@ class FrozenModel(BaseModel):
         json_encoders={MappingProxyType: dict},
     )
 
-    def replace(self: _T, **kwargs: Any) -> _T:
-        """Return a new instance replacing specified kwargs with new values.
 
-        This model is immutable, so this method is useful for creating a new
-        sequence with only a few fields changed.  The uid of the new sequence will
-        be different from the original.
-
-        The difference between this and `self.copy(update={...})` is that this method
-        will perform validation and casting on the new values, whereas `copy` assumes
-        that all objects are valid and will not perform any validation or casting.
-        """
-        state = self.model_dump(exclude={"uid"})
-        return type(self)(**{**state, **kwargs})
-
-    def __repr_args__(self) -> "ReprArgs":
-        """Only show fields that are not None or equal to their default value."""
-        return [
-            (k, val)
-            for k, val in super().__repr_args__()
-            if k in self.model_fields
-            and val
-            != (
-                factory()
-                if (factory := self.model_fields[k].default_factory) is not None
-                else self.model_fields[k].default
-            )
-        ]
+class MutableModel(_ReplaceableModel):
+    model_config: ClassVar["ConfigDict"] = ConfigDict(
+        populate_by_name=True,
+        validate_assignment=True,
+        validate_default=True,
+        extra="ignore",
+    )
 
 
 class UseqModel(FrozenModel):
