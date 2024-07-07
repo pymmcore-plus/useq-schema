@@ -1,13 +1,4 @@
-from typing import (
-    TYPE_CHECKING,
-    ClassVar,
-    Generic,
-    Iterator,
-    Literal,
-    Optional,
-    SupportsIndex,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Generic, Iterator, Optional, SupportsIndex, TypeVar
 
 from pydantic import Field
 
@@ -110,7 +101,7 @@ class _MultiPointPlan(MutableModel, Generic[PositionT]):
         raise NotImplementedError("This method must be implemented by subclasses.")
 
 
-class RelativePosition(PositionBase, _MultiPointPlan):
+class RelativePosition(PositionBase, _MultiPointPlan["RelativePosition"]):
     """A relative position in 3D space.
 
     Relative positions also support `fov_width` and `fov_height` attributes, and can
@@ -120,7 +111,10 @@ class RelativePosition(PositionBase, _MultiPointPlan):
     x: float = 0
     y: float = 0
     z: float = 0
-    is_relative: ClassVar[Literal[True]] = True
+
+    @property
+    def is_relative(self) -> bool:
+        return True
 
     def __iter__(self) -> Iterator["RelativePosition"]:  # type: ignore [override]
         yield self
