@@ -108,6 +108,8 @@ class TraversalOrder(Enum):
 
     def order_points(self, points: np.ndarray, start_at: int = 0) -> np.ndarray:
         """Return the order of points based on the traversal order."""
+        if len(points) <= 2:  # no sense in optimizing
+            return np.arange(len(points))
         start_at = min(start_at, len(points) - 1)
         if self == TraversalOrder.NEAREST_NEIGHBOR:
             return _nearest_neighbor_order(points, start_at)
