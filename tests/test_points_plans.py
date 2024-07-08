@@ -11,8 +11,9 @@ from useq import (
     RandomPoints,
     RelativeMultiPointPlan,
     RelativePosition,
+    TraversalOrder,
 )
-from useq._grid import OrderMode, _rect_indices, _spiral_indices
+from useq._point_visiting import OrderMode, _rect_indices, _spiral_indices
 
 if TYPE_CHECKING:
     from useq._position import PositionBase
@@ -126,7 +127,7 @@ def test_num_position_error() -> None:
 
 
 expected_rectangle = [(0.2, 1.1), (0.4, 0.2), (-0.3, 0.7)]
-expected_ellipse = [(-0.0, -2.1), (0.7, 1.7), (-1.0, 1.3)]
+expected_ellipse = [(-0.9, -1.1), (0.9, -0.5), (-0.8, -0.4)]
 
 
 @pytest.mark.parametrize("n_points", [3, 100])
@@ -156,6 +157,22 @@ def test_random_points(n_points: int, shape: str, seed: Optional[int]) -> None:
             list(rp)
 
 
+@pytest.mark.parametrize("order", list(TraversalOrder))
+def test_traversal(order: TraversalOrder):
+    pp = RandomPoints(
+        num_points=30,
+        max_height=3000,
+        max_width=3000,
+        order=order,
+        random_seed=1,
+        start_at=10,
+        fov_height=300,
+        fov_width=300,
+        allow_overlap=False,
+    )
+    list(pp)
+
+
 fov = {"fov_height": 200, "fov_width": 200}
 
 
@@ -168,7 +185,12 @@ fov = {"fov_height": 200, "fov_width": 200}
         RelativePosition(**fov),
     ],
 )
-def test_points_plans(obj: RelativeMultiPointPlan):
+def test_points_plans(obj: RelativeMultiPointPlan, monkeypatch: pytest.MonkeyPatch):
+    mpl = pytest.importorskip("matplotlib.pyplot")
+    monkeypatch.setattr(mpl, "show", lambda: None)
+
     assert isinstance(obj, get_args(RelativeMultiPointPlan))
     assert all(isinstance(x, RelativePosition) for x in obj)
     assert isinstance(obj.num_positions(), int)
+
+    obj.plot()
