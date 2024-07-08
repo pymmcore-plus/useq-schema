@@ -378,9 +378,12 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
         Order in which the points will be visited. If None, order is simply the order
         in which the points are generated (random).  Use 'nearest_neighbor' or
         'two_opt' to order the points in a more structured way.
-    start_at : int
-        Index of the point to start at. This is only used if `order` is
-        'nearest_neighbor' or 'two_opt'.
+    start_at : int | RelativePosition
+        Position or index of the point to start at. This is only used if `order` is
+        'nearest_neighbor' or 'two_opt'.  If a position is provided, it will *always*
+        be included in the list of points. If an index is provided, it must be less than
+        the number of points, and corresponds to the index of the (randomly generated)
+        points; this likely only makes sense when `random_seed` is provided.
     """
 
     num_points: Annotated[int, Gt(0)]
@@ -390,11 +393,11 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     random_seed: Optional[int] = None
     allow_overlap: bool = True
     order: Optional[TraversalOrder] = TraversalOrder.TWO_OPT
-    start_at: Annotated[int, Ge(0)] = 0
+    start_at: Union[RelativePosition, Annotated[int, Ge(0)]] = 0
 
     @model_validator(mode="after")
     def _validate_startat(self) -> Self:
-        if self.start_at > (self.num_points - 1):
+        if isinstance(self.start_at, int) and self.start_at > (self.num_points - 1):
             warnings.warn(
                 "start_at is greater than the number of points. "
                 "Setting start_at to last point.",
@@ -407,16 +410,23 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
         seed = np.random.RandomState(self.random_seed)
         func = _POINTS_GENERATORS[self.shape]
 
-        points: Iterable[Tuple[float, float]]
+        points: list[Tuple[float, float]] = []
+        needed_points = self.num_points
+        start_at = self.start_at
+        if isinstance(start_at, RelativePosition):
+            points = [(start_at.x, start_at.y)]
+            needed_points -= 1
+            start_at = 0
+
         # in the easy case, just generate the requested number of points
         if self.allow_overlap or self.fov_width is None or self.fov_height is None:
-            points = func(seed, self.num_points, self.max_width, self.max_height)
+            _points = func(seed, needed_points, self.max_width, self.max_height)
+            points.extend(_points)
 
         else:
             # if we need to avoid overlap, generate points, check if they are valid, and
             # repeat until we have enough
-            points = []
-            per_iter = 100
+            per_iter = needed_points
             tries = 0
             while tries < MIN_RANDOM_POINTS and len(points) < self.num_points:
                 candidates = func(seed, per_iter, self.max_width, self.max_height)
@@ -435,7 +445,7 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
                 )
 
         if self.order is not None:
-            points = self.order(points, start_at=self.start_at)
+            points = self.order(points, start_at=start_at)  # type: ignore [assignment]
 
         for idx, (x, y) in enumerate(points):
             yield RelativePosition(x=x, y=y, name=f"{str(idx).zfill(4)}")
