@@ -5,7 +5,6 @@ from contextlib import suppress
 from functools import cached_property
 from typing import (
     Any,
-    Callable,
     Iterable,
     List,
     Sequence,
@@ -375,71 +374,9 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
     def plot(self, show_axis: bool = True) -> None:
         """Plot the selected positions on the plate."""
-        import matplotlib.pyplot as plt
-        from matplotlib import patches
+        from useq._plot import plot_plate
 
-        _, ax = plt.subplots()
-
-        # hide axes
-        if not show_axis:
-            ax.axis("off")
-
-        # ################ draw outline of all wells ################
-        height, width = self.plate.well_size  # mm
-        height, width = height * 1000, width * 1000  # µm
-
-        kwargs = {}
-        offset_x, offset_y = 0.0, 0.0
-        if self.plate.circular_wells:
-            patch_type: Callable = patches.Ellipse
-        else:
-            patch_type = patches.Rectangle
-            offset_x, offset_y = -width / 2, -height / 2
-            kwargs["rotation_point"] = "center"
-
-        for well in self.all_well_positions:
-            sh = patch_type(
-                (well.x + offset_x, well.y + offset_y),  # type: ignore[operator]
-                width=width,
-                height=height,
-                angle=self.rotation or 0,
-                facecolor="none",
-                edgecolor="gray",
-                linewidth=0.5,
-                linestyle="--",
-                **kwargs,
-            )
-            ax.add_patch(sh)
-
-        ################ plot image positions ################
-        w, h = self.well_points_plan.fov_width, self.well_points_plan.fov_height
-
-        for img_point in self.image_positions:
-            x, y = float(img_point.x), float(img_point.y)  # type: ignore[arg-type] # µm
-            if w and h:
-                ax.add_patch(
-                    patches.Rectangle(
-                        (x - w / 2, y - h / 2),
-                        width=w,
-                        height=h,
-                        facecolor="magenta",
-                        edgecolor="gray",
-                        linewidth=0.5,
-                        alpha=0.5,
-                    )
-                )
-            else:
-                plt.plot(x, y, "mo", markersize=3, alpha=0.5)
-
-        # ################ draw names on used wells ################
-        offset_x, offset_y = -width / 2, -height / 2
-        for well in self.selected_well_positions:
-            x, y = float(well.x), float(well.y)  # type: ignore[arg-type]
-            # draw name next to spot
-            ax.text(x + offset_x, y - offset_y, well.name, fontsize=7)
-
-        ax.axis("equal")
-        plt.show()
+        plot_plate(self, show_axis=show_axis)
 
 
 def _index_to_row_name(index: int) -> str:

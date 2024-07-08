@@ -4,10 +4,20 @@ import contextlib
 import math
 import warnings
 from enum import Enum
-from typing import Any, Callable, Iterator, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Iterator,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import numpy as np
+from annotated_types import Gt  # noqa: TCH002
 from pydantic import Field, field_validator
+from typing_extensions import Annotated
 
 from useq._point_visiting import GridOrder
 from useq._position import (
@@ -17,7 +27,7 @@ from useq._position import (
     _MultiPointPlan,
 )
 
-MIN_RANDOM_POINTS = 5000
+MIN_RANDOM_POINTS = 10000
 
 
 class RelativeTo(Enum):
@@ -359,8 +369,8 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     """
 
     num_points: int
-    max_width: float = np.inf
-    max_height: float = np.inf
+    max_width: Annotated[float, Gt(0)] = 1
+    max_height: Annotated[float, Gt(0)] = 1
     shape: Shape = Shape.ELLIPSE
     random_seed: Optional[int] = None
     allow_overlap: bool = True
@@ -368,27 +378,36 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     def __iter__(self) -> Iterator[RelativePosition]:  # type: ignore [override]
         seed = np.random.RandomState(self.random_seed)
         func = _POINTS_GENERATORS[self.shape]
-        n_points = max(self.num_points, MIN_RANDOM_POINTS)
-        points: list[Tuple[float, float]] = []
-        for idx, (x, y) in enumerate(
-            func(seed, n_points, self.max_width, self.max_height)
-        ):
-            if (
-                self.allow_overlap
-                or self.fov_width is None
-                or self.fov_height is None
-                or _is_a_valid_point(points, x, y, self.fov_width, self.fov_height)
+
+        # in the easy case, just generate the requested number of points
+        if self.allow_overlap or self.fov_width is None or self.fov_height is None:
+            for idx, (x, y) in enumerate(
+                func(seed, self.num_points, self.max_width, self.max_height)
             ):
                 yield RelativePosition(x=x, y=y, name=f"{str(idx).zfill(4)}")
-                points.append((x, y))
-            if len(points) >= self.num_points:
-                break
-        else:
-            warnings.warn(
-                f"Unable to generate {self.num_points} non-overlapping points. "
-                f"Only {len(points)} points were found.",
-                stacklevel=2,
-            )
+            return
+
+        # if we need to avoid overlap, generate points, check if they are valid, and
+        # repeat until we have enough
+        points: list[Tuple[float, float]] = []
+        points_per_iter = 100
+        tries = 0
+        while tries < MIN_RANDOM_POINTS:
+            candidates = func(seed, points_per_iter, self.max_width, self.max_height)
+            tries += points_per_iter
+            for x, y in candidates:
+                if _is_a_valid_point(points, x, y, self.fov_width, self.fov_height):
+                    points.append((x, y))
+                    hits = len(points)
+                    yield RelativePosition(x=x, y=y, name=f"{str(hits-1).zfill(4)}")
+                    if hits >= self.num_points:
+                        return
+
+        warnings.warn(
+            f"Unable to generate {self.num_points} non-overlapping points. "
+            f"Only {len(points)} points were found.",
+            stacklevel=2,
+        )
 
     def num_positions(self) -> int:
         return self.num_points
@@ -418,8 +437,9 @@ def _random_points_in_ellipse(
 
     The point is within +/- radius_x and +/- radius_y at a random angle.
     """
-    xy = np.sqrt(seed.uniform(0, 1, size=(n_points, 2)))
-    angle = seed.uniform(0, 2 * np.pi, size=n_points)
+    points = seed.uniform(0, 1, size=(n_points, 3))
+    xy = points[:, :2]
+    angle = points[:, 2] * 2 * np.pi
     xy[:, 0] *= (max_width / 2) * np.cos(angle)
     xy[:, 1] *= (max_height / 2) * np.sin(angle)
     return xy

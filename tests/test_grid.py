@@ -126,7 +126,7 @@ def test_num_position_error() -> None:
 
 
 expected_rectangle = [(0.2, 1.1), (0.4, 0.2), (-0.3, 0.7)]
-expected_ellipse = [(-0.0, -2.1), (0.7, 1.7), (-1.0, 1.3)]
+expected_ellipse = [(-0.9, -1.1), (0.9, -0.5), (-0.8, -0.4)]
 
 
 @pytest.mark.parametrize("n_points", [3, 100])

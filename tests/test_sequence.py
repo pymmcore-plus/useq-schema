@@ -116,9 +116,9 @@ g_inputs = [
             random_seed=0,
         ),
         [
-            RelativePosition(x=-0.0, y=-2.1, name="0000"),
-            RelativePosition(x=0.7, y=1.7, name="0001"),
-            RelativePosition(x=-1.0, y=1.3, name="0002"),
+            RelativePosition(x=-0.9, y=-1.1, name="0000"),
+            RelativePosition(x=0.9, y=-0.5, name="0001"),
+            RelativePosition(x=-0.8, y=-0.4, name="0002"),
         ],
     ),
 ]
