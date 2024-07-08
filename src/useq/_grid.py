@@ -29,7 +29,11 @@ from useq._position import (
 )
 
 if TYPE_CHECKING:
-    from typing_extensions import Annotated, Self
+    from typing_extensions import Annotated, Self, TypeAlias
+
+    PointGenerator: TypeAlias = Callable[
+        [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
+    ]
 
 MIN_RANDOM_POINTS = 10000
 
@@ -485,9 +489,6 @@ def _random_points_in_rectangle(
     return xy
 
 
-PointGenerator = Callable[
-    [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
-]
 _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
     Shape.ELLIPSE: _random_points_in_ellipse,
     Shape.RECTANGLE: _random_points_in_rectangle,
