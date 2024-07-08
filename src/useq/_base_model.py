@@ -55,7 +55,9 @@ class _ReplaceableModel(BaseModel):
         assumes that all objects are valid and will not perform any validation or
         casting.
         """
-        return type(self).model_validate({**self.model_dump(exclude={"uid"}), **kwargs})
+        # only get values for top level fields
+        d = {k: getattr(self, k) for k in self.model_fields if k != "uid"}
+        return type(self).model_validate({**d, **kwargs})
 
     def __repr_args__(self) -> "ReprArgs":
         """Only show fields that are not None or equal to their default value."""
