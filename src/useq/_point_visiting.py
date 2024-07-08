@@ -1,6 +1,6 @@
 from enum import Enum
 from functools import partial
-from typing import Callable, Iterator, Tuple
+from typing import Callable, Iterable, Iterator, Tuple
 
 import numpy as np
 
@@ -100,25 +100,28 @@ _INDEX_GENERATORS: dict[GridOrder, IndexGenerator] = {
 
 
 class TraversalOrder(Enum):
-    NEAREST_NEIGHBOR = "Nearest Neighbor"
-    SHORTEST_TOUR = "Shortest Tour (TSP)"
-    RANDOM_WALK = "Random Walk"
-    SPIRAL = "Spiral Traversal"
+    NEAREST_NEIGHBOR = "nearest_neighbor"
+    TWO_OPT = "two_opt"
+    RANDOM = "random"
 
-    def sort_points(self, points: np.ndarray) -> np.ndarray:
-        """Sort the points based on the traversal order."""
+    def order_points(self, points: np.ndarray, start_at: int = 0) -> np.ndarray:
+        """Return the order of points based on the traversal order."""
+        start_at = min(start_at, len(points) - 1)
         if self == TraversalOrder.NEAREST_NEIGHBOR:
-            return _nearest_neighbor_order(points)
-        if self == TraversalOrder.SHORTEST_TOUR:
-            return _shortest_tour_order(points)
-        if self == TraversalOrder.RANDOM_WALK:
-            return _random_walk_sort(points)
-        if self == TraversalOrder.SPIRAL:
-            return _spiral_sort(points)
+            return _nearest_neighbor_order(points, start_at)
+        if self == TraversalOrder.TWO_OPT:
+            return _two_opt_order(points, start_at)
+        if self == TraversalOrder.RANDOM:
+            return np.random.permutation(len(points))
         raise ValueError(f"Unknown traversal order: {self}")
 
-
-LARGE_NUMBER = 1e9
+    def __call__(
+        self, points: Iterable[tuple[float, float]], start_at: int = 0
+    ) -> np.ndarray:
+        """Sort the points based on the traversal order."""
+        points = np.asarray(points)
+        order = self.order_points(points, start_at=start_at)
+        return points[order]  # type: ignore [no-any-return]
 
 
 def _nearest_neighbor_order(points: np.ndarray, start_at: int = 0) -> np.ndarray:
@@ -129,7 +132,7 @@ def _nearest_neighbor_order(points: np.ndarray, start_at: int = 0) -> np.ndarray
     points : np.ndarray
         Array of 2D (Y, X) points in the format (n, 2).
     start_at : int, optional
-        Index of the point to start at. If None, the first point is used.
+        Index of the point to start at.  By default, the first point is used.
 
     Examples
     --------
@@ -143,74 +146,86 @@ def _nearest_neighbor_order(points: np.ndarray, start_at: int = 0) -> np.ndarray
     order[0] = start_at
     visited[start_at] = True
 
-    # NOTE: > ~500 of points, scipy.spatial.cKDTree would begin to be faster
+    LARGE_NUMBER = 1e9
+    # NOTE: at ~500+ points, scipy.spatial.cKDTree would begin to be faster
     # but it's a new dependency and may not be a common use case
     for i in range(1, n):
-        # get the last point
-        last = points[order[i - 1]]
-        # calculate the distance to all other points
-        dist = np.linalg.norm(points - last, axis=1)
+        # calculate the distance from the last visited point to all other points
+        dist = np.linalg.norm(points - points[order[i - 1]], axis=1)
         # find the nearest point that has not been visited
         next_point = np.argmin(dist + visited * LARGE_NUMBER)
-        # store the index of the next point
+        # store it and mark it as visited
         order[i] = next_point
-        # mark the point as visited
         visited[next_point] = True
 
-    return order  # type: ignore [no-any-return]
+    return order
 
 
-def _shortest_tour_order(points: np.ndarray, start_at: int = 0) -> np.ndarray:
-    """Return the order of points based on the shortest tour (TSP).
+def _two_opt_order(
+    points: np.ndarray, start_at: int = 0, improvement_threshold: float = 0.05
+) -> np.ndarray:
+    """Return the order of points based on the 2-opt algorithm.
 
-    Parameters.
+    https://en.wikipedia.org/wiki/2-opt
+
+    Parameters
     ----------
     points : np.ndarray
         Array of 2D (Y, X) points in the format (n, 2).
     start_at : int, optional
-        Index of the point to start at. If None, the first point is used.
+        Index of the point to start at. By default, the first point is used.
+    improvement_threshold : float, optional
+        The minimum improvement factor required to continue the optimization.
+        By default, 0.05.
+
+    Examples
+    --------
+    >>> points = np.random.rand(100, 2)
+    >>> order = _two_opt_order(points)
+    >>> sorted = points[order]
     """
-    raise NotImplementedError("Shortest tour is not implemented yet.")
+    n = points.shape[0]
+    route = np.arange(n)
 
+    if start_at != 0:
+        route = np.roll(route, -start_at)
 
-def _path_distance(r: np.ndarray, c: np.ndarray) -> float:
-    # Calculate the euclidian distance in n-space of the route r traversing cities c,
-    # ending at the path start.
-    return np.sum([np.linalg.norm(c[r[p]] - c[r[p - 1]]) for p in range(len(r))])
+    dist_matrix = _distance_matrix(points)
 
-
-def _two_opt_swap(r: np.ndarray, i: int, k: int) -> np.ndarray:
-    # Reverse the order of all elements from element i to element k in array r.
-    return np.concatenate((r[0:i], r[k : -len(r) + i - 1 : -1], r[k + 1 : len(r)]))
-
-
-def two_opt(points: np.ndarray, improvement_threshold: float = 0.01) -> np.ndarray:
-    # 2-opt Algorithm adapted from https://en.wikipedia.org/wiki/2-opt
-    # https://stackoverflow.com/questions/25585401/travelling-salesman-in-scipy
-    # Make an array of row numbers corresponding to cities.
-    route = np.arange(points.shape[0])
-    # Initialize the improvement factor.
+    # this will track the best distance found so far
+    best_distance = _total_distance(points[route])
     improvement_factor = 1.0
-    # Calculate the distance of the initial path.
-    best_distance = _path_distance(route, points)
-    # If the route is still improving, keep going!
     while improvement_factor > improvement_threshold:
-        # Record the distance at the beginning of the loop.
         distance_to_beat = best_distance
-        # From each city except the first and last,
-        for swap_first in range(1, len(route) - 2):
-            # to each of the points following,
-            for swap_last in range(swap_first + 1, len(route)):
-                # try reversing the order of these points
-                new_route = _two_opt_swap(route, swap_first, swap_last)
-                # and check the total distance with this modification.
-                new_distance = _path_distance(new_route, points)
-                # If the path distance is an improvement,
-                if new_distance < best_distance:
-                    # make this the accepted best route
-                    route = new_route
-                    # and update the distance corresponding to this route.
-                    best_distance = new_distance
-        # Calculate how much the route has improved.
+        for i in range(1, n - 2):
+            for k in range(i + 1, n):
+                # Calculate the distances involved in the potential swap
+                ri = route[i]
+                ri1 = route[i - 1]
+                rk = route[k]
+                y = route[(k + 1) % n]
+
+                dist_before = dist_matrix[ri1, ri] + dist_matrix[rk, y]
+                dist_after = dist_matrix[ri1, rk] + dist_matrix[ri, y]
+
+                # If the new distance is better, perform the swap
+                if dist_after < dist_before:
+                    # Reverse the order of all elements from element i to element k.
+                    route[i : k + 1] = route[i : k + 1][::-1]
+                    best_distance = best_distance - dist_before + dist_after
+
         improvement_factor = 1 - best_distance / distance_to_beat
-    return route  # When the route is no longer improving substan
+
+    return route
+
+
+def _total_distance(points: np.ndarray) -> float:
+    # Calculate the total Euclidean distance of the route traversing the given points
+    # in the order provided
+    diffs = points - np.roll(points, shift=1, axis=0)
+    return np.sum(np.linalg.norm(diffs, axis=1))  # type: ignore [no-any-return]
+
+
+def _distance_matrix(points: np.ndarray) -> np.ndarray:
+    # Calculate the distance matrix (euclidean distance between each pair of points)
+    return np.sqrt(np.sum((points[:, None] - points) ** 2, axis=2))  # type: ignore [no-any-return]

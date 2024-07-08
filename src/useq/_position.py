@@ -100,6 +100,12 @@ class _MultiPointPlan(MutableModel, Generic[PositionT]):
     def num_positions(self) -> int:
         raise NotImplementedError("This method must be implemented by subclasses.")
 
+    def plot(self) -> None:
+        """Plot the positions in the plan."""
+        from useq._plot import plot_points
+
+        plot_points(self)
+
 
 class RelativePosition(PositionBase, _MultiPointPlan["RelativePosition"]):
     """A relative position in 3D space.

@@ -17,12 +17,25 @@ if TYPE_CHECKING:
     from useq._position import PositionBase
 
 
-def plot_positions(positions: Iterable[PositionBase], ax: Axes | None = None): ...
+def plot_points(points: Iterable[PositionBase], ax: Axes | None = None) -> None:
+    """Plot a list of positions.
+
+    Can be used with any iterable of PositionBase objects.
+    """
+    if ax is None:
+        _, ax = plt.subplots()
+
+    x, y = zip(*[(point.x, point.y) for point in points])
+    ax.scatter(x, y)
+    ax.scatter(x[0], y[0], color="red")  # mark the first point
+    ax.plot(x, y, alpha=0.5, color="gray")  # connect the points
+    ax.axis("equal")
+    plt.show()
 
 
 def plot_plate(
     plate_plan: WellPlatePlan, show_axis: bool = True, ax: Axes | None = None
-):
+) -> None:
     if ax is None:
         _, ax = plt.subplots()
 

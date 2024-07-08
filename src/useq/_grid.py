@@ -5,8 +5,10 @@ import math
 import warnings
 from enum import Enum
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
+    Iterable,
     Iterator,
     Optional,
     Sequence,
@@ -16,16 +18,18 @@ from typing import (
 
 import numpy as np
 from annotated_types import Gt  # noqa: TCH002
-from pydantic import Field, field_validator
-from typing_extensions import Annotated
+from pydantic import Field, field_validator, model_validator
 
-from useq._point_visiting import GridOrder
+from useq._point_visiting import GridOrder, TraversalOrder
 from useq._position import (
     AbsolutePosition,
     PositionT,
     RelativePosition,
     _MultiPointPlan,
 )
+
+if TYPE_CHECKING:
+    from typing_extensions import Annotated, Self
 
 MIN_RANDOM_POINTS = 10000
 
@@ -123,12 +127,12 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         fov_width: float | None = None,
         fov_height: float | None = None,
         *,
-        mode: GridOrder | None = None,
+        order: GridOrder | None = None,
     ) -> Iterator[PositionT]:
         """Iterate over all grid positions, given a field of view size."""
         _fov_width = fov_width or self.fov_width or 1.0
         _fov_height = fov_height or self.fov_height or 1.0
-        mode = self.mode if mode is None else GridOrder(mode)
+        order = self.mode if order is None else GridOrder(order)
 
         dx, dy = self._step_size(_fov_width, _fov_height)
         rows = self._nrows(dy)
@@ -137,7 +141,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         y0 = self._offset_y(dy)
 
         pos_cls = RelativePosition if self.is_relative else AbsolutePosition
-        for idx, (r, c) in enumerate(mode.generate_indices(rows, cols)):
+        for idx, (r, c) in enumerate(order.generate_indices(rows, cols)):
             yield pos_cls(
                 x=x0 + c * dx,
                 y=y0 - r * dy,
@@ -366,6 +370,13 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     allow_overlap : bool
         By defaut, True. If False and `fov_width` and `fov_height` are specified, points
         will not overlap and will be at least `fov_width` and `fov_height apart.
+    order : TraversalOrder
+        Order in which the points will be visited. If None, order is simply the order
+        in which the points are generated (random).  Use 'nearest_neighbor' or
+        'two_opt' to order the points in a more structured way.
+    start_at : int
+        Index of the point to start at. This is only used if `order` is
+        'nearest_neighbor' or 'two_opt'.
     """
 
     num_points: int
@@ -374,40 +385,56 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     shape: Shape = Shape.ELLIPSE
     random_seed: Optional[int] = None
     allow_overlap: bool = True
+    order: TraversalOrder | None = None
+    start_at: int = 0
+
+    @model_validator(mode="after")
+    def _validate_startat(self) -> Self:
+        if self.start_at > (self.num_points - 1):
+            warnings.warn(
+                "start_at is greater than the number of points. "
+                "Setting start_at to last point.",
+                stacklevel=2,
+            )
+            self.start_at = self.num_points - 1
+        return self
 
     def __iter__(self) -> Iterator[RelativePosition]:  # type: ignore [override]
         seed = np.random.RandomState(self.random_seed)
         func = _POINTS_GENERATORS[self.shape]
 
+        points: Iterable[Tuple[float, float]]
         # in the easy case, just generate the requested number of points
         if self.allow_overlap or self.fov_width is None or self.fov_height is None:
-            for idx, (x, y) in enumerate(
-                func(seed, self.num_points, self.max_width, self.max_height)
-            ):
-                yield RelativePosition(x=x, y=y, name=f"{str(idx).zfill(4)}")
-            return
+            points = func(seed, self.num_points, self.max_width, self.max_height)
 
-        # if we need to avoid overlap, generate points, check if they are valid, and
-        # repeat until we have enough
-        points: list[Tuple[float, float]] = []
-        points_per_iter = 100
-        tries = 0
-        while tries < MIN_RANDOM_POINTS:
-            candidates = func(seed, points_per_iter, self.max_width, self.max_height)
-            tries += points_per_iter
-            for x, y in candidates:
-                if _is_a_valid_point(points, x, y, self.fov_width, self.fov_height):
-                    points.append((x, y))
-                    hits = len(points)
-                    yield RelativePosition(x=x, y=y, name=f"{str(hits-1).zfill(4)}")
-                    if hits >= self.num_points:
-                        return
+        else:
+            # if we need to avoid overlap, generate points, check if they are valid, and
+            # repeat until we have enough
+            points = []
+            per_iter = 100
+            tries = 0
+            while tries < MIN_RANDOM_POINTS and len(points) < self.num_points:
+                candidates = func(seed, per_iter, self.max_width, self.max_height)
+                tries += per_iter
+                for p in candidates:
+                    if _is_a_valid_point(points, *p, self.fov_width, self.fov_height):
+                        points.append(p)
+                        if len(points) >= self.num_points:
+                            break
 
-        warnings.warn(
-            f"Unable to generate {self.num_points} non-overlapping points. "
-            f"Only {len(points)} points were found.",
-            stacklevel=2,
-        )
+            if len(points) < self.num_points:
+                warnings.warn(
+                    f"Unable to generate {self.num_points} non-overlapping points. "
+                    f"Only {len(points)} points were found.",
+                    stacklevel=2,
+                )
+
+        if self.order is not None:
+            points = self.order(points, start_at=self.start_at)
+
+        for idx, (x, y) in enumerate(points):
+            yield RelativePosition(x=x, y=y, name=f"{str(idx).zfill(4)}")
 
     def num_positions(self) -> int:
         return self.num_points
@@ -458,7 +485,9 @@ def _random_points_in_rectangle(
     return xy
 
 
-PointGenerator = Callable[[np.random.RandomState, int, float, float], np.ndarray]
+PointGenerator = Callable[
+    [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
+]
 _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
     Shape.ELLIPSE: _random_points_in_ellipse,
     Shape.RECTANGLE: _random_points_in_rectangle,
