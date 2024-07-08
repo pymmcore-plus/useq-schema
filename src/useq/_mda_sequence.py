@@ -184,7 +184,9 @@ class MDASequence(UseqModel):
     stage_positions: Union[WellPlatePlan, Tuple[Position, ...]] = Field(
         default_factory=tuple
     )
-    grid_plan: Optional[MultiPointPlan] = None
+    grid_plan: Optional[MultiPointPlan] = Field(
+        default=None, union_mode="left_to_right"
+    )
     channels: Tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: Optional[AnyTimePlan] = None
     z_plan: Optional[AnyZPlan] = None
