@@ -363,9 +363,9 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     num_points : int
         Number of points to generate.
     max_width : float
-        Maximum width of the bounding box.
+        Maximum width of the bounding box in microns.
     max_height : float
-        Maximum height of the bounding box.
+        Maximum height of the bounding box in microns.
     shape : Shape
         Shape of the bounding box. Current options are "ellipse" and "rectangle".
     random_seed : Optional[int]
