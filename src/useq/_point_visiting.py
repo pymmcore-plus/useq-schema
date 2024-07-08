@@ -173,9 +173,6 @@ def _shortest_tour_order(points: np.ndarray, start_at: int = 0) -> np.ndarray:
     raise NotImplementedError("Shortest tour is not implemented yet.")
 
 
-
-
-
 def _path_distance(r: np.ndarray, c: np.ndarray) -> float:
     # Calculate the euclidian distance in n-space of the route r traversing cities c,
     # ending at the path start.
