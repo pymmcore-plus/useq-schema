@@ -35,7 +35,7 @@ jobs:
             python-version: "3.8"
 
   test-minreqs:
-    uses: pyapp-kit/workflows/.github/workflows/test-pyrepo.yml@v2
+    uses: pyapp-kit/workflows/.github/workflows/test-pyrepo.yml@main
     with:
       os: ubuntu-latest
       python-version: ${{ matrix.python-version }}
