@@ -113,7 +113,7 @@ class TraversalOrder(Enum):
             return _two_opt_order(points, start_at)
         if self == TraversalOrder.RANDOM:
             return np.random.permutation(len(points))
-        raise ValueError(f"Unknown traversal order: {self}")
+        raise ValueError(f"Unknown traversal order: {self}")  # pragma: no cover
 
     def __call__(
         self, points: Iterable[tuple[float, float]], start_at: int = 0
