@@ -385,7 +385,7 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     shape: Shape = Shape.ELLIPSE
     random_seed: Optional[int] = None
     allow_overlap: bool = True
-    order: TraversalOrder | None = None
+    order: Optional[TraversalOrder] = None
     start_at: int = 0
 
     @model_validator(mode="after")
