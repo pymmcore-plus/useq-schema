@@ -10,7 +10,6 @@ from useq._grid import (
     GridRowsColumns,
     GridWidthHeight,
     MultiPointPlan,
-    OrderMode,
     RandomPoints,
     RelativeMultiPointPlan,
     Shape,
@@ -20,6 +19,7 @@ from useq._mda_event import MDAEvent, PropertyTuple
 from useq._mda_sequence import MDASequence
 from useq._plate import WellPlate, WellPlatePlan
 from useq._plate_registry import register_well_plates, registered_well_plate_keys
+from useq._point_visiting import GridOrder
 from useq._position import AbsolutePosition, Position, RelativePosition
 from useq._time import (
     AnyTimePlan,
@@ -56,7 +56,7 @@ __all__ = [
     "MDASequence",
     "MultiPhaseTimePlan",
     "MultiPointPlan",
-    "OrderMode",
+    "GridOrder",
     "Position",  # alias for AbsolutePosition
     "PropertyTuple",
     "RandomPoints",

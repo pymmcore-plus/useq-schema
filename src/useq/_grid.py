@@ -4,12 +4,12 @@ import contextlib
 import math
 import warnings
 from enum import Enum
-from functools import partial
 from typing import Any, Callable, Iterator, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from pydantic import Field, field_validator
 
+from useq._point_visiting import GridOrder
 from useq._position import (
     AbsolutePosition,
     PositionT,
@@ -35,93 +35,7 @@ class RelativeTo(Enum):
     top_left: str = "top_left"
 
 
-class OrderMode(Enum):
-    """Order in which grid positions will be iterated.
-
-    Attributes
-    ----------
-    row_wise : Literal['row_wise']
-        Iterate row by row.
-    column_wise : Literal['column_wise']
-        Iterate column by column.
-    row_wise_snake : Literal['row_wise_snake']
-        Iterate row by row, but alternate the direction of the columns.
-    column_wise_snake : Literal['column_wise_snake']
-        Iterate column by column, but alternate the direction of the rows.
-    spiral : Literal['spiral']
-        Iterate in a spiral pattern, starting from the center.
-    """
-
-    row_wise = "row_wise"
-    column_wise = "column_wise"
-    row_wise_snake = "row_wise_snake"
-    column_wise_snake = "column_wise_snake"
-    spiral = "spiral"
-
-
-def _spiral_indices(
-    rows: int, columns: int, center_origin: bool = False
-) -> Iterator[Tuple[int, int]]:
-    """Return a spiral iterator over a 2D grid.
-
-    Parameters
-    ----------
-    rows : int
-        Number of rows.
-    columns : int
-        Number of columns.
-    center_origin : bool
-        If center_origin is True, all indices are centered around (0, 0), and some will
-        be negative. Otherwise, the indices are centered around (rows//2, columns//2)
-
-    Yields
-    ------
-    (x, y) : tuple[int, int]
-        Indices of the next element in the spiral.
-    """
-    # direction: first down and then clockwise (assuming positive Y is down)
-
-    x = y = 0
-    if center_origin:  # see docstring
-        xshift = yshift = 0
-    else:
-        xshift = (columns - 1) // 2
-        yshift = (rows - 1) // 2
-    dx = 0
-    dy = -1
-    for _ in range(max(columns, rows) ** 2):
-        if (-columns / 2 < x <= columns / 2) and (-rows / 2 < y <= rows / 2):
-            yield y + yshift, x + xshift
-        if x == y or (x < 0 and x == -y) or (x > 0 and x == 1 - y):
-            dx, dy = -dy, dx
-        x, y = x + dx, y + dy
-
-
-# function that iterates indices (row, col) in a grid where (0, 0) is the top left
-def _rect_indices(
-    rows: int, columns: int, snake: bool = False, row_wise: bool = True
-) -> Iterator[Tuple[int, int]]:
-    """Return a row or column-wise iterator over a 2D grid."""
-    c, r = np.meshgrid(np.arange(columns), np.arange(rows))
-    if snake:
-        if row_wise:
-            c[1::2, :] = c[1::2, :][:, ::-1]
-        else:
-            r[:, 1::2] = r[:, 1::2][::-1, :]
-    return zip(r.ravel(), c.ravel()) if row_wise else zip(r.T.ravel(), c.T.ravel())
-
-
 # used in iter_indices below, to determine the order in which indices are yielded
-IndexGenerator = Callable[[int, int], Iterator[Tuple[int, int]]]
-_INDEX_GENERATORS: dict[OrderMode, IndexGenerator] = {
-    OrderMode.row_wise: partial(_rect_indices, snake=False, row_wise=True),
-    OrderMode.column_wise: partial(_rect_indices, snake=False, row_wise=False),
-    OrderMode.row_wise_snake: partial(_rect_indices, snake=True, row_wise=True),
-    OrderMode.column_wise_snake: partial(_rect_indices, snake=True, row_wise=False),
-    OrderMode.spiral: _spiral_indices,
-}
-
-
 class _GridPlan(_MultiPointPlan[PositionT]):
     """Base class for all grid plans.
 
@@ -146,7 +60,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
     """
 
     overlap: Tuple[float, float] = Field((0.0, 0.0), frozen=True)
-    mode: OrderMode = Field(OrderMode.row_wise_snake, frozen=True)
+    mode: GridOrder = Field(GridOrder.row_wise_snake, frozen=True)
 
     @field_validator("overlap", mode="before")
     def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
@@ -199,12 +113,12 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         fov_width: float | None = None,
         fov_height: float | None = None,
         *,
-        mode: OrderMode | None = None,
+        mode: GridOrder | None = None,
     ) -> Iterator[PositionT]:
         """Iterate over all grid positions, given a field of view size."""
         _fov_width = fov_width or self.fov_width or 1.0
         _fov_height = fov_height or self.fov_height or 1.0
-        mode = self.mode if mode is None else OrderMode(mode)
+        mode = self.mode if mode is None else GridOrder(mode)
 
         dx, dy = self._step_size(_fov_width, _fov_height)
         rows = self._nrows(dy)
@@ -213,7 +127,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         y0 = self._offset_y(dy)
 
         pos_cls = RelativePosition if self.is_relative else AbsolutePosition
-        for idx, (r, c) in enumerate(_INDEX_GENERATORS[mode](rows, cols)):
+        for idx, (r, c) in enumerate(mode.generate_indices(rows, cols)):
             yield pos_cls(
                 x=x0 + c * dx,
                 y=y0 - r * dy,
