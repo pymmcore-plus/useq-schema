@@ -23,13 +23,15 @@ from useq._channel import Channel
 from useq._grid import MultiPointPlan  # noqa: TCH001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
-from useq._plate import WellPlatePlan  # noqa: TCH001
+from useq._plate import WellPlatePlan
 from useq._position import Position, PositionBase
 from useq._time import AnyTimePlan  # noqa: TCH001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TCH001
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from useq._mda_event import MDAEvent
 
 
@@ -282,19 +284,18 @@ class MDASequence(UseqModel):
         return order
 
     @model_validator(mode="after")
-    @classmethod
-    def _validate_mda(cls, values: Any) -> Any:
-        if values.axis_order:
-            cls._check_order(
-                values.axis_order,
-                z_plan=values.z_plan,
-                stage_positions=values.stage_positions,
-                channels=values.channels,
-                grid_plan=values.grid_plan,
-                autofocus_plan=values.autofocus_plan,
+    def _validate_mda(self) -> Self:
+        if self.axis_order:
+            self._check_order(
+                self.axis_order,
+                z_plan=self.z_plan,
+                stage_positions=self.stage_positions,
+                channels=self.channels,
+                grid_plan=self.grid_plan,
+                autofocus_plan=self.autofocus_plan,
             )
-        if values.stage_positions:
-            for p in values.stage_positions:
+        if self.stage_positions and not isinstance(self.stage_positions, WellPlatePlan):
+            for p in self.stage_positions:
                 if hasattr(p, "sequence") and getattr(
                     p.sequence, "keep_shutter_open_across", None
                 ):  # pragma: no cover
@@ -302,7 +303,7 @@ class MDASequence(UseqModel):
                         "keep_shutter_open_across cannot currently be set on a "
                         "Position sequence"
                     )
-        return values
+        return self
 
     def __eq__(self, other: Any) -> bool:
         """Return `True` if two `MDASequences` are equal (uid is excluded)."""
@@ -315,7 +316,7 @@ class MDASequence(UseqModel):
 
     @staticmethod
     def _check_order(
-        order: str,
+        order: tuple[str, ...],
         z_plan: Optional[AnyZPlan] = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),

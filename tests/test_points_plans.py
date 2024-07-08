@@ -13,7 +13,7 @@ from useq import (
     RelativePosition,
     TraversalOrder,
 )
-from useq._point_visiting import GridOrder, _rect_indices, _spiral_indices
+from useq._point_visiting import OrderMode, _rect_indices, _spiral_indices
 
 if TYPE_CHECKING:
     from useq._position import PositionBase
@@ -61,19 +61,19 @@ def test_position_equality():
         """Create a set of tuples of GridPosition attributes excluding 'name'"""
         return {(pos.x, pos.y, pos.is_relative) for pos in positions}
 
-    t1 = GridRowsColumns(rows=3, columns=3, mode=GridOrder.spiral)
+    t1 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.spiral)
     spiral_pos = positions_without_name(t1.iter_grid_positions(1, 1))
 
-    t2 = GridRowsColumns(rows=3, columns=3, mode=GridOrder.row_wise)
+    t2 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.row_wise)
     row_pos = positions_without_name(t2.iter_grid_positions(1, 1))
 
     t3 = GridRowsColumns(rows=3, columns=3, mode="row_wise_snake")
     snake_row_pos = positions_without_name(t3.iter_grid_positions(1, 1))
 
-    t4 = GridRowsColumns(rows=3, columns=3, mode=GridOrder.column_wise)
+    t4 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.column_wise)
     col_pos = positions_without_name(t4.iter_grid_positions(1, 1))
 
-    t5 = GridRowsColumns(rows=3, columns=3, mode=GridOrder.column_wise_snake)
+    t5 = GridRowsColumns(rows=3, columns=3, mode=OrderMode.column_wise_snake)
     snake_col_pos = positions_without_name(t5.iter_grid_positions(1, 1))
 
     assert spiral_pos == row_pos == snake_row_pos == col_pos == snake_col_pos

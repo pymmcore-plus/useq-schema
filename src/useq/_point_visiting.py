@@ -7,7 +7,7 @@ import numpy as np
 # ----------------------------- Random Points -----------------------------------
 
 
-class GridOrder(Enum):
+class OrderMode(Enum):
     """Order in which grid positions will be iterated.
 
     Attributes
@@ -88,12 +88,12 @@ def _rect_indices(
 
 
 IndexGenerator = Callable[[int, int], Iterator[Tuple[int, int]]]
-_INDEX_GENERATORS: dict[GridOrder, IndexGenerator] = {
-    GridOrder.row_wise: partial(_rect_indices, snake=False, row_wise=True),
-    GridOrder.column_wise: partial(_rect_indices, snake=False, row_wise=False),
-    GridOrder.row_wise_snake: partial(_rect_indices, snake=True, row_wise=True),
-    GridOrder.column_wise_snake: partial(_rect_indices, snake=True, row_wise=False),
-    GridOrder.spiral: _spiral_indices,
+_INDEX_GENERATORS: dict[OrderMode, IndexGenerator] = {
+    OrderMode.row_wise: partial(_rect_indices, snake=False, row_wise=True),
+    OrderMode.column_wise: partial(_rect_indices, snake=False, row_wise=False),
+    OrderMode.row_wise_snake: partial(_rect_indices, snake=True, row_wise=True),
+    OrderMode.column_wise_snake: partial(_rect_indices, snake=True, row_wise=False),
+    OrderMode.spiral: _spiral_indices,
 }
 
 # ----------------------------- Random Points -----------------------------------

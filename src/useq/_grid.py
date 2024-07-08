@@ -17,10 +17,10 @@ from typing import (
 )
 
 import numpy as np
-from annotated_types import Gt  # noqa: TCH002
+from annotated_types import Ge, Gt  # noqa: TCH002
 from pydantic import Field, field_validator, model_validator
 
-from useq._point_visiting import GridOrder, TraversalOrder
+from useq._point_visiting import OrderMode, TraversalOrder
 from useq._position import (
     AbsolutePosition,
     PositionT,
@@ -74,7 +74,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
     """
 
     overlap: Tuple[float, float] = Field((0.0, 0.0), frozen=True)
-    mode: GridOrder = Field(GridOrder.row_wise_snake, frozen=True)
+    mode: OrderMode = Field(OrderMode.row_wise_snake, frozen=True)
 
     @field_validator("overlap", mode="before")
     def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
@@ -127,12 +127,12 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         fov_width: float | None = None,
         fov_height: float | None = None,
         *,
-        order: GridOrder | None = None,
+        order: OrderMode | None = None,
     ) -> Iterator[PositionT]:
         """Iterate over all grid positions, given a field of view size."""
         _fov_width = fov_width or self.fov_width or 1.0
         _fov_height = fov_height or self.fov_height or 1.0
-        order = self.mode if order is None else GridOrder(order)
+        order = self.mode if order is None else OrderMode(order)
 
         dx, dy = self._step_size(_fov_width, _fov_height)
         rows = self._nrows(dy)
@@ -379,14 +379,14 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
         'nearest_neighbor' or 'two_opt'.
     """
 
-    num_points: int
+    num_points: Annotated[int, Gt(1)]
     max_width: Annotated[float, Gt(0)] = 1
     max_height: Annotated[float, Gt(0)] = 1
     shape: Shape = Shape.ELLIPSE
     random_seed: Optional[int] = None
     allow_overlap: bool = True
-    order: Optional[TraversalOrder] = None
-    start_at: int = 0
+    order: TraversalOrder = TraversalOrder.TWO_OPT
+    start_at: Annotated[int, Ge(0)] = 0
 
     @model_validator(mode="after")
     def _validate_startat(self) -> Self:
