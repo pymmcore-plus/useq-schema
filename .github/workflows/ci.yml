@@ -34,9 +34,21 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.8"
 
+  test-minreqs:
+    uses: pyapp-kit/workflows/.github/workflows/test-pyrepo.yml@main
+    with:
+      os: ubuntu-latest
+      python-version: ${{ matrix.python-version }}
+      pip-install-min-reqs: true
+      coverage-upload: artifact
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+
   upload_coverage:
     if: always()
-    needs: [test]
+    needs: [test, test-minreqs]
     uses: pyapp-kit/workflows/.github/workflows/upload-coverage.yml@v2
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
