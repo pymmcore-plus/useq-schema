@@ -383,7 +383,7 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
         'nearest_neighbor' or 'two_opt'.
     """
 
-    num_points: Annotated[int, Gt(1)]
+    num_points: Annotated[int, Gt(0)]
     max_width: Annotated[float, Gt(0)] = 1
     max_height: Annotated[float, Gt(0)] = 1
     shape: Shape = Shape.ELLIPSE
