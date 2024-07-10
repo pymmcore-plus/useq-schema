@@ -15,6 +15,7 @@ from typing import (
 )
 
 import numpy as np
+from annotated_types import Gt  # noqa: TCH002
 from pydantic import Field, field_validator, model_validator
 from pydantic_core import core_schema
 from typing_extensions import Annotated
@@ -55,9 +56,9 @@ class WellPlate(FrozenModel):
     Parameters
     ----------
     rows : int
-        The number of rows in the plate.
+        The number of rows in the plate. Must be > 0.
     columns : int
-        The number of columns in the plate.
+        The number of columns in the plate. Must be > 0.
     well_spacing : tuple[float, float] | float
         The center-to-center distance in mm (pitch) between wells in the x and y
         directions. If a single value is provided, it is used for both x and y.
@@ -72,8 +73,8 @@ class WellPlate(FrozenModel):
         A name for the plate.
     """
 
-    rows: int
-    columns: int
+    rows: Annotated[int, Gt(0)]
+    columns: Annotated[int, Gt(0)]
     well_spacing: Tuple[float, float]  # (x, y)
     well_size: Tuple[float, float]  # (width, height)
     circular_wells: bool = True
