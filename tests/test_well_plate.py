@@ -122,6 +122,7 @@ def test_plate_plan_position_order() -> None:
 
 
 def test_plate_plan_equality() -> None:
+    """Various ways of selecting wells should result in the same plan."""
     pp = useq.WellPlatePlan(
         plate=96, a1_center_xy=(0, 0), selected_wells=np.s_[1:5:2, :6:3]
     )
