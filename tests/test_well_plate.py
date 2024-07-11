@@ -141,16 +141,22 @@ def test_plate_repr() -> None:
     pp = useq.WellPlatePlan(
         plate=96, a1_center_xy=(0, 0), selected_wells=np.s_[1:5, 3:12:2]
     )
-    assert "selected_wells=(slice(1, 5), slice(3, 12, 2))" in repr(pp)
+    rpp = repr(pp)
+    assert "selected_wells=(slice(1, 5), slice(3, 12, 2))" in rpp
+    assert eval(rpp, vars(useq)) == pp  # noqa: S307
 
     # can't be reduced
     pp = useq.WellPlatePlan(
         plate=96, a1_center_xy=(0, 0), selected_wells=[(1, 1, 1, 2), (7, 3, 4, 2)]
     )
-    assert "selected_wells=((1, 1, 1, 2), (7, 3, 4, 2))" in repr(pp)
+    rpp = repr(pp)
+    assert "selected_wells=((1, 1, 1, 2), (7, 3, 4, 2))" in rpp
+    assert eval(rpp, vars(useq)) == pp  # noqa: S307
 
     # one can be reduced
     pp = useq.WellPlatePlan(
         plate=96, a1_center_xy=(0, 0), selected_wells=np.s_[(1, 2, 2, 3), 1:5]
     )
-    assert "selected_wells=((1, 2, 2, 3), slice(1, 5))" in repr(pp)
+    rpp = repr(pp)
+    assert "selected_wells=((1, 2, 2, 3), slice(1, 5))" in rpp
+    assert eval(rpp, vars(useq)) == pp  # noqa: S307
