@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from ast import literal_eval
-from contextlib import suppress
 from functools import cached_property
 from typing import (
+    TYPE_CHECKING,
     Any,
     Iterable,
     List,
@@ -16,8 +15,13 @@ from typing import (
 
 import numpy as np
 from annotated_types import Gt  # noqa: TCH002
-from pydantic import Field, field_validator, model_validator
-from pydantic_core import core_schema
+from pydantic import (
+    Field,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    field_validator,
+    model_validator,
+)
 from typing_extensions import Annotated
 
 from useq._base_model import FrozenModel
@@ -25,29 +29,11 @@ from useq._grid import RandomPoints, RelativeMultiPointPlan, Shape
 from useq._plate_registry import _PLATE_REGISTRY
 from useq._position import Position, PositionBase, RelativePosition
 
+if TYPE_CHECKING:
+    from pydantic_core import core_schema
 
-class _SliceType:
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: Any
-    ) -> core_schema.CoreSchema:
-        def _to_slice(value: Any) -> slice:
-            if isinstance(value, slice):
-                return value
-            if isinstance(value, str):
-                if value.startswith("slice(") and value.endswith(")"):
-                    with suppress(Exception):
-                        return slice(*literal_eval(value.replace("slice", "")))
-            raise ValueError(f"Invalid slice expression {value}")
-
-        return core_schema.no_info_before_validator_function(
-            _to_slice,
-            schema=core_schema.any_schema(),
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                repr,
-                return_schema=core_schema.str_schema(),
-            ),
-        )
+    Index = Union[int, List[int], slice]
+    IndexExpression = Union[Tuple[Index, ...], Index]
 
 
 class WellPlate(FrozenModel):
@@ -90,6 +76,26 @@ class WellPlate(FrozenModel):
         """Return the shape of the plate."""
         return self.rows, self.columns
 
+    @property
+    def all_well_indices(self) -> np.ndarray:
+        """Return the indices of all wells as array with shape (Rows, Cols, 2)."""
+        Y, X = np.meshgrid(np.arange(self.rows), np.arange(self.columns), indexing="ij")
+        return np.stack([Y, X], axis=-1)
+
+    def indices(self, expr: IndexExpression) -> np.ndarray:
+        """Return the indices for any index expression as array with shape (N, 2)."""
+        return self.all_well_indices[expr].reshape(-1, 2).T
+
+    @property
+    def all_well_names(self) -> np.ndarray:
+        """Return the names of all wells as array of strings with shape (Rows, Cols)."""
+        return np.array(
+            [
+                [f"{_index_to_row_name(r)}{c+1}" for c in range(self.columns)]
+                for r in range(self.rows)
+            ]
+        )
+
     @field_validator("well_spacing", "well_size", mode="before")
     def _validate_well_spacing_and_size(cls, value: Any) -> Any:
         return (value, value) if isinstance(value, (int, float)) else value
@@ -115,10 +121,6 @@ class WellPlate(FrozenModel):
                 "Use `useq.register_well_plates` to add new plate definitions"
             ) from e
         return WellPlate.model_validate(obj)
-
-
-Index = Union[int, List[int], Annotated[slice, _SliceType]]
-IndexExpression = Union[Tuple[Index, ...], Index]
 
 
 class WellPlatePlan(FrozenModel, Sequence[Position]):
@@ -158,7 +160,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     plate: WellPlate
     a1_center_xy: Tuple[float, float]
     rotation: Union[float, None] = None
-    selected_wells: Union[IndexExpression, None] = None
+    selected_wells: Union[Tuple[Tuple[int, ...], Tuple[int, ...]], None] = None
     well_points_plan: RelativeMultiPointPlan = Field(default_factory=RelativePosition)
 
     @field_validator("plate", mode="before")
@@ -213,18 +215,18 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
             return np.degrees(np.arctan2(ary[2], ary[0]))
         return value
 
-    @model_validator(mode="after")
-    def _validate_self(self) -> WellPlatePlan:
-        try:
-            # make sure we can index an array of shape (Rows, Cols)
-            # with the selected_wells expression
-            self._dummy_indexed()
-        except Exception as e:
-            raise ValueError(
-                f"Invalid well selection {self.selected_wells!r} for plate of "
-                f"shape {self.plate.shape}: {e}"
-            ) from e
-        return self
+    @field_validator("selected_wells", mode="wrap")
+    @classmethod
+    def _validate_selected_wells(
+        cls, value: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo
+    ) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
+        plate = info.data.get("plate")
+        if not isinstance(plate, WellPlate):
+            raise ValueError("Plate must be defined before selecting wells")
+
+        if isinstance(value, list):
+            value = tuple(value)
+        return handler(plate.indices(value))  # type: ignore [no-any-return]
 
     @property
     def rotation_matrix(self) -> np.ndarray:
@@ -240,11 +242,11 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
     def __len__(self) -> int:
         """Return the total number of points (stage positions) to be acquired."""
-        return self._dummy_indexed().size * self.num_points_per_well
-
-    def _dummy_indexed(self) -> np.ndarray:
-        dummy = np.empty((self.plate.rows, self.plate.columns))
-        return dummy[self.selected_wells]
+        if self.selected_wells is None:
+            n_wells = self.plate.size
+        else:
+            n_wells = len(self.selected_wells[0])
+        return n_wells * self.num_points_per_well
 
     @overload
     def __getitem__(self, index: int) -> Position: ...
@@ -267,20 +269,17 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     @property
     def all_well_indices(self) -> np.ndarray:
         """Return the indices of all wells as array with shape (Rows, Cols, 2)."""
-        Y, X = np.meshgrid(
-            np.arange(self.plate.rows), np.arange(self.plate.columns), indexing="ij"
-        )
-        return np.stack([Y, X], axis=-1)
+        return self.plate.all_well_indices
 
     @property
     def selected_well_indices(self) -> np.ndarray:
         """Return the indices of selected wells as array with shape (N, 2)."""
-        return self.all_well_indices[self.selected_wells].reshape(-1, 2)
+        return self.plate.all_well_indices[self.selected_wells].reshape(-1, 2)
 
     @cached_property
     def all_well_coordinates(self) -> np.ndarray:
         """Return the stage coordinates of all wells as array with shape (N, 2)."""
-        return self._transorm_coords(self.all_well_indices.reshape(-1, 2))
+        return self._transorm_coords(self.plate.all_well_indices.reshape(-1, 2))
 
     @cached_property
     def selected_well_coordinates(self) -> np.ndarray:
@@ -290,12 +289,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     @property
     def all_well_names(self) -> np.ndarray:
         """Return the names of all wells as array of strings with shape (Rows, Cols)."""
-        return np.array(
-            [
-                [f"{_index_to_row_name(r)}{c+1}" for c in range(self.plate.columns)]
-                for r in range(self.plate.rows)
-            ]
-        )
+        return self.plate.all_well_names
 
     @property
     def selected_well_names(self) -> list[str]:
