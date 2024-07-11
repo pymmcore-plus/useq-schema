@@ -418,7 +418,10 @@ def _pattern_repr(pattern: Sequence[int]) -> str:
     """Turn pattern into a slice object if possible."""
     start = pattern[0]
     stop = pattern[-1] + 1
-    step = pattern[1] - pattern[0]
+    if len(pattern) > 1:
+        step = pattern[1] - pattern[0]
+    else:
+        step = 1
     if all(pattern[i] == pattern[0] + i * step for i in range(1, len(pattern))):
         if step == 1:
             if start == 0:
