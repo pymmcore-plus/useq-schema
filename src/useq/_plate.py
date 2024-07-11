@@ -368,7 +368,7 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
         scaling = np.eye(3)
         # invert the Y axis to convert "index" to "plate" coordinates.
-        scale_y, scale_x = self.plate.well_spacing
+        scale_x, scale_y = self.plate.well_spacing
         scaling[:2, :2] = np.diag([-scale_y, scale_x])
 
         return translation @ rotation @ scaling
