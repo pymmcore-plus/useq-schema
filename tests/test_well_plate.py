@@ -160,3 +160,8 @@ def test_plate_repr() -> None:
     rpp = repr(pp)
     assert "selected_wells=((1, 2, 2, 3), slice(1, 5))" in rpp
     assert eval(rpp, vars(useq)) == pp  # noqa: S307
+
+    pp = useq.WellPlatePlan(plate=96, a1_center_xy=(0, 0), selected_wells=np.s_[:, 1:2])
+    rpp = repr(pp)
+    assert "selected_wells=(slice(8), slice(1, 2))" in rpp
+    assert eval(rpp, vars(useq)) == pp  # noqa: S307
