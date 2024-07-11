@@ -130,5 +130,6 @@ def test_plate_plan_equality() -> None:
         a1_center_xy=(0, 0),
         selected_wells=[(1, 1, 3, 3), (0, 3, 0, 3)],
     )
+    pp3 = useq.WellPlatePlan.model_validate_json(pp.model_dump_json())
 
-    assert pp == pp2
+    assert pp == pp2 == pp3
