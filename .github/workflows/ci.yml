@@ -70,8 +70,8 @@ jobs:
             qt: "pyside6"
           - repo: pymmcore-plus/pymmcore-widgets
             qt: "pyqt6"
-          - repo: pymmcore-plus/napari-micromanager
-            qt: "pyqt5"
+          # - repo: pymmcore-plus/napari-micromanager
+          #   qt: "pyqt5"
 
   deploy:
     needs: test
