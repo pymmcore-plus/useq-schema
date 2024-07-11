@@ -226,7 +226,15 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
 
         if isinstance(value, list):
             value = tuple(value)
-        return handler(plate.indices(value))  # type: ignore [no-any-return]
+        try:
+            selected = plate.indices(value)
+        except (TypeError, IndexError) as e:
+            raise ValueError(
+                f"Invalid well selection {value!r} for plate of "
+                f"shape {plate.shape}: {e}"
+            ) from e
+
+        return handler(selected)  # type: ignore [no-any-return]
 
     @property
     def rotation_matrix(self) -> np.ndarray:
