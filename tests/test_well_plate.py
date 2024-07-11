@@ -119,3 +119,44 @@ def test_plate_plan_position_order() -> None:
     for i in range(0, len(names), 3):
         chunk = names[i : i + 3]
         assert len(set(chunk)) == 1, f"Chunk {chunk} does not have the same elements"
+
+
+def test_plate_plan_equality() -> None:
+    """Various ways of selecting wells should result in the same plan."""
+    pp = useq.WellPlatePlan(
+        plate=96, a1_center_xy=(0, 0), selected_wells=np.s_[1:5:2, :6:3]
+    )
+    pp2 = useq.WellPlatePlan(
+        plate="96-well",
+        a1_center_xy=(0, 0),
+        selected_wells=[(1, 1, 3, 3), (0, 3, 0, 3)],
+    )
+    pp3 = useq.WellPlatePlan.model_validate_json(pp.model_dump_json())
+
+    assert pp == pp2 == pp3
+
+
+def test_plate_repr() -> None:
+    # both can be reduced
+    pp = useq.WellPlatePlan(
+        plate=96, a1_center_xy=(0, 0), selected_wells=np.s_[1:5, 3:12:2]
+    )
+    rpp = repr(pp)
+    assert "selected_wells=(slice(1, 5), slice(3, 12, 2))" in rpp
+    assert eval(rpp, vars(useq)) == pp  # noqa: S307
+
+    # can't be reduced
+    pp = useq.WellPlatePlan(
+        plate=96, a1_center_xy=(0, 0), selected_wells=[(1, 1, 1, 2), (7, 3, 4, 2)]
+    )
+    rpp = repr(pp)
+    assert "selected_wells=((1, 1, 1, 2), (7, 3, 4, 2))" in rpp
+    assert eval(rpp, vars(useq)) == pp  # noqa: S307
+
+    # one can be reduced
+    pp = useq.WellPlatePlan(
+        plate=96, a1_center_xy=(0, 0), selected_wells=np.s_[(1, 2, 2, 3), 1:5]
+    )
+    rpp = repr(pp)
+    assert "selected_wells=((1, 2, 2, 3), slice(1, 5))" in rpp
+    assert eval(rpp, vars(useq)) == pp  # noqa: S307
