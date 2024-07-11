@@ -134,3 +134,23 @@ def test_plate_plan_equality() -> None:
     pp3 = useq.WellPlatePlan.model_validate_json(pp.model_dump_json())
 
     assert pp == pp2 == pp3
+
+
+def test_plate_repr() -> None:
+    # both can be reduced
+    pp = useq.WellPlatePlan(
+        plate=96, a1_center_xy=(0, 0), selected_wells=np.s_[1:5, 3:12:2]
+    )
+    assert "selected_wells=(slice(1, 5), slice(3, 12, 2))" in repr(pp)
+
+    # can't be reduced
+    pp = useq.WellPlatePlan(
+        plate=96, a1_center_xy=(0, 0), selected_wells=[(1, 1, 1, 2), (7, 3, 4, 2)]
+    )
+    assert "selected_wells=((1, 1, 1, 2), (7, 3, 4, 2))" in repr(pp)
+
+    # one can be reduced
+    pp = useq.WellPlatePlan(
+        plate=96, a1_center_xy=(0, 0), selected_wells=np.s_[(1, 2, 2, 3), 1:5]
+    )
+    assert "selected_wells=((1, 2, 2, 3), slice(1, 5))" in repr(pp)

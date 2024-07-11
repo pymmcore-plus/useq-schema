@@ -163,6 +163,14 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     selected_wells: Union[Tuple[Tuple[int, ...], Tuple[int, ...]], None] = None
     well_points_plan: RelativeMultiPointPlan = Field(default_factory=RelativePosition)
 
+    def __repr_args__(self) -> Iterable[Tuple[str | None, Any]]:
+        for item in super().__repr_args__():
+            if item[0] == "selected_wells":
+                # improve repr for selected_wells
+                yield "selected_wells", _expression_repr(item[1])
+            else:
+                yield item
+
     @field_validator("plate", mode="before")
     @classmethod
     def _validate_plate(cls, value: Any) -> Any:
@@ -389,3 +397,50 @@ def _index_to_row_name(index: int) -> str:
         name = chr(index % 26 + 65) + name
         index = index // 26 - 1
     return name
+
+
+def _find_pattern(seq: Sequence[int]) -> tuple[list[int] | None, int | None]:
+    n = len(seq)
+
+    # Try different lengths of the potential repeating pattern
+    for pattern_length in range(1, n // 2 + 1):
+        pattern = list(seq[:pattern_length])
+        repetitions = n // pattern_length
+
+        # Check if the pattern repeats enough times
+        if np.array_equal(pattern * repetitions, seq[: pattern_length * repetitions]):
+            return (pattern, repetitions)
+
+    return None, None
+
+
+def _pattern_repr(pattern: Sequence[int]) -> str:
+    """Turn pattern into a slice object if possible."""
+    start = pattern[0]
+    stop = pattern[-1] + 1
+    step = pattern[1] - pattern[0]
+    if all(pattern[i] == pattern[0] + i * step for i in range(1, len(pattern))):
+        if step == 1:
+            if start == 0:
+                return f"slice({stop})"
+            return f"slice({start}, {stop})"
+        return f"slice({start}, {stop}, {step})"
+    return repr(pattern)
+
+
+class _Repr:
+    def __init__(self, string: str) -> None:
+        self._string = string
+
+    def __repr__(self) -> str:
+        return self._string
+
+
+def _expression_repr(expr: tuple[Sequence[int], Sequence[int]]) -> _Repr:
+    """Try to represent an index expression as slice objects if possible."""
+    e0, e1 = expr
+    ptrn1, repeats = _find_pattern(e1)
+    if ptrn1 is None:
+        return _Repr(str(expr))
+    ptrn0 = e0[:: len(ptrn1)]
+    return _Repr(f"({_pattern_repr(ptrn0)}, {_pattern_repr(ptrn1)})")
