@@ -119,3 +119,16 @@ def test_plate_plan_position_order() -> None:
     for i in range(0, len(names), 3):
         chunk = names[i : i + 3]
         assert len(set(chunk)) == 1, f"Chunk {chunk} does not have the same elements"
+
+
+def test_plate_plan_equality() -> None:
+    pp = useq.WellPlatePlan(
+        plate=96, a1_center_xy=(0, 0), selected_wells=np.s_[1:5:2, :6:3]
+    )
+    pp2 = useq.WellPlatePlan(
+        plate="96-well",
+        a1_center_xy=(0, 0),
+        selected_wells=[(1, 1, 3, 3), (0, 3, 0, 3)],
+    )
+
+    assert pp == pp2
