@@ -24,7 +24,7 @@ from pydantic import (
 )
 from typing_extensions import Annotated
 
-from useq._base_model import FrozenModel
+from useq._base_model import FrozenModel, UseqModel
 from useq._grid import RandomPoints, RelativeMultiPointPlan, Shape
 from useq._plate_registry import _PLATE_REGISTRY
 from useq._position import Position, PositionBase, RelativePosition
@@ -123,7 +123,7 @@ class WellPlate(FrozenModel):
         return WellPlate.model_validate(obj)
 
 
-class WellPlatePlan(FrozenModel, Sequence[Position]):
+class WellPlatePlan(UseqModel, Sequence[Position]):
     """A plan for acquiring images from a multi-well plate.
 
     Parameters
@@ -161,7 +161,9 @@ class WellPlatePlan(FrozenModel, Sequence[Position]):
     a1_center_xy: Tuple[float, float]
     rotation: Union[float, None] = None
     selected_wells: Union[Tuple[Tuple[int, ...], Tuple[int, ...]], None] = None
-    well_points_plan: RelativeMultiPointPlan = Field(default_factory=RelativePosition)
+    well_points_plan: RelativeMultiPointPlan = Field(
+        default_factory=RelativePosition, union_mode="left_to_right"
+    )
 
     def __repr_args__(self) -> Iterable[Tuple[str | None, Any]]:
         for item in super().__repr_args__():

@@ -92,9 +92,7 @@ class UseqModel(FrozenModel):
 
             obj = yaml.safe_load(path.read_bytes())
         elif path.suffix == ".json":
-            import json
-
-            obj = json.loads(path.read_bytes())
+            return cls.model_validate_json(path.read_bytes())
         else:  # pragma: no cover
             raise ValueError(f"Unknown file type: {path.suffix}")
 
