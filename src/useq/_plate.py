@@ -120,6 +120,8 @@ class WellPlate(FrozenModel):
                 f"Unknown plate name {name!r}. "
                 "Use `useq.register_well_plates` to add new plate definitions"
             ) from e
+        if isinstance(obj, dict) and "name" not in obj:
+            obj = {**obj, "name": name}
         return WellPlate.model_validate(obj)
 
 
@@ -144,10 +146,11 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
     selected_wells : IndexExpression | None
         Any <=2-dimensional index expression for selecting wells.
         for example:
-        -   None -> all wells are selected.
+        -   None -> No wells are selected.
+        -   slice(0) -> (also) select no wells.
+        -   slice(None) -> Selects all wells.
         -   0 -> Selects the first row.
         -   [0, 1, 2] -> Selects the first three rows.
-        -   slice(0) -> select no wells
         -   slice(1, 5) -> selects wells from row 1 to row 4.
         -   (2, slice(1, 4)) -> select wells in the second row and only columns 1 to 3.
         -   ([1, 2], [3, 4]) -> select wells in (row, column): (1, 3) and (2, 4)
@@ -236,6 +239,10 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
 
         if isinstance(value, list):
             value = tuple(value)
+        # make falsey values select no wells (rather than all wells)
+        if not value:
+            value = slice(0)
+
         try:
             selected = plate.indices(value)
         except (TypeError, IndexError) as e:
@@ -261,7 +268,7 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
     def __len__(self) -> int:
         """Return the total number of points (stage positions) to be acquired."""
         if self.selected_wells is None:
-            n_wells = self.plate.size
+            n_wells = 0
         else:
             n_wells = len(self.selected_wells[0])
         return n_wells * self.num_points_per_well

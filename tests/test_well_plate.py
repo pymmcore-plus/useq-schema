@@ -33,8 +33,12 @@ def test_plate_plan_well_points() -> None:
         a1_center_xy=(500, 200),
         rotation="0.2rad",
         well_points_plan=useq.RandomPoints(num_points=10),
+        selected_wells=slice(None),
     )
     assert len(pp) == 96 * 10
+
+    pp2 = useq.WellPlatePlan(plate=96, a1_center_xy=(500, 200), selected_wells=None)
+    assert len(pp2) == 0
 
 
 def test_plate_plan_plot(monkeypatch: pytest.MonkeyPatch) -> None:
