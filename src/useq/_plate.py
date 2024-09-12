@@ -273,6 +273,10 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
             n_wells = len(self.selected_wells[0])
         return n_wells * self.num_points_per_well
 
+    def __bool__(self) -> bool:
+        """bool(WellPlatePlan) == True."""
+        return True
+
     @overload
     def __getitem__(self, index: int) -> Position: ...
 
