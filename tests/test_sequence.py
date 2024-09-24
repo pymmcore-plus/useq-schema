@@ -413,12 +413,26 @@ def test_keep_shutter_open() -> None:
         assert event.keep_shutter_open != (event.index["g"] == 3)
 
 
-def test_z_plan_num_position():
+def test_z_plan_num_position() -> None:
     for i in range(1, 100):
         plan = ZRangeAround(range=(i - 1) / 10, step=0.1)
         assert plan.num_positions() == i
         assert len(list(plan)) == i
 
 
-def test_channel_str():
+def test_channel_str() -> None:
     assert MDAEvent(channel="DAPI") == MDAEvent(channel={"config": "DAPI"})
+
+
+def test_reset_event_timer() -> None:
+    events = list(
+        MDASequence(
+            stage_positions=[(100, 100), (0, 0)],
+            time_plan={"interval": 1, "loops": 2},
+            axis_order="ptgcz",
+        )
+    )
+    assert events[0].reset_event_timer
+    assert not events[1].reset_event_timer
+    assert events[2].reset_event_timer
+    assert not events[3].reset_event_timer

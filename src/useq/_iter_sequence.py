@@ -30,6 +30,7 @@ class MDAEventDict(TypedDict, total=False):
     sequence: MDASequence | None
     # properties: list[tuple] | None
     metadata: dict
+    reset_event_timer: bool
 
 
 class PositionDict(TypedDict, total=False):
@@ -106,6 +107,7 @@ def _iter_sequence(
     base_event_kwargs: MDAEventDict | None = None,
     event_kwarg_overrides: MDAEventDict | None = None,
     position_offsets: PositionDict | None = None,
+    _last_t_idx: int = -1,
 ) -> Iterator[MDAEvent]:
     """Helper function for `iter_sequence`.
 
@@ -132,6 +134,9 @@ def _iter_sequence(
         A dictionary of offsets to apply to each position. This can be used to shift
         all positions in a sub-sequence.  Keys must be one of `x_pos`, `y_pos`, or
         `z_pos` and values should be floats.s
+    _last_t_idx : int
+        The index of the last timepoint.  This is used to determine if the event
+        should reset the event timer.
 
     Yields
     ------
@@ -209,6 +214,7 @@ def _iter_sequence(
                     base_event_kwargs=event_kwargs.copy(),
                     event_kwarg_overrides=pos_overrides,
                     position_offsets=_offsets,
+                    _last_t_idx=_last_t_idx,
                 )
                 continue
             # note that position.sequence may be Falsey even if not None, for example
@@ -217,12 +223,15 @@ def _iter_sequence(
             elif position.sequence is not None and position.sequence.autofocus_plan:
                 autofocus_plan = position.sequence.autofocus_plan
 
+        if event_kwargs["index"].get(Axis.TIME) == 0 and _last_t_idx != 0:
+            event_kwargs["reset_event_timer"] = True
         event = MDAEvent.model_construct(**event_kwargs)
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
             if af_event:
                 yield af_event
         yield event
+        _last_t_idx = event.index.get(Axis.TIME, _last_t_idx)
 
 
 # ###################### Helper functions ######################

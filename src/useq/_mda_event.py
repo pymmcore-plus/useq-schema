@@ -96,8 +96,9 @@ class MDAEvent(UseqModel):
         time. By default, `None`.
     min_start_time : float | None
         Minimum start time of this event, in seconds.  If provided, the engine will
-        pause until this time has elapsed (relative to the start of the sequence)
-        before starting this event. By default, `None`.
+        pause until this time has elapsed before starting this event. Times are
+        relative to the start of the sequence, or the last event with
+        `reset_event_timer` set to `True`.
     pos_name : str | None
         The name assigned to the position. By default, `None`.
     x_pos : float | None
@@ -125,11 +126,15 @@ class MDAEvent(UseqModel):
         Example of another action is [`useq.HardwareAutofocus`][] which could be used
         to perform a hardware autofocus.
     keep_shutter_open : bool
-        If True, the illumination shutter should be left open after the event has
+        If `True`, the illumination shutter should be left open after the event has
         been executed, otherwise it should be closed. By default, `False`."
         This is useful when the sequence of events being executed use the same
         illumination scheme (such as a z-stack in a single channel), and closing and
         opening the shutter between events would be slow.
+    reset_event_timer : bool
+        If `True`, the engine should reset the event timer to the time of this event,
+        and future `min_start_time` values will be relative to this event. By default,
+        `False`.
     """
 
     # MappingProxyType is not subscriptable on Python 3.8
@@ -146,6 +151,7 @@ class MDAEvent(UseqModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage)
     keep_shutter_open: bool = False
+    reset_event_timer: bool = False
 
     @field_validator("channel", mode="before")
     def _validate_channel(cls, val: Any) -> Any:
