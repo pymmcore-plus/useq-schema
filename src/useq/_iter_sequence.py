@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import lru_cache
 from itertools import product
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Iterator, cast
@@ -15,7 +14,7 @@ from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
-    from useq._position import Position, PositionBase, RelativePosition
+    from useq._position import Position, RelativePosition
 
 
 class MDAEventDict(TypedDict, total=False):
@@ -37,21 +36,6 @@ class PositionDict(TypedDict, total=False):
     x_pos: float
     y_pos: float
     z_pos: float
-
-
-@lru_cache(maxsize=None)
-def _iter_axis(seq: MDASequence, ax: str) -> tuple[Channel | float | PositionBase, ...]:
-    return tuple(seq.iter_axis(ax))
-
-
-@lru_cache(maxsize=None)
-def _sizes(seq: MDASequence) -> dict[str, int]:
-    return {k: len(list(_iter_axis(seq, k))) for k in seq.axis_order}
-
-
-@lru_cache(maxsize=None)
-def _used_axes(seq: MDASequence) -> str:
-    return "".join(k for k in seq.axis_order if _sizes(seq)[k])
 
 
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
@@ -143,9 +127,8 @@ def _iter_sequence(
     MDAEvent
         Each event in the MDA sequence.
     """
-    order = _used_axes(sequence)
-    # this needs to be tuple(...) to work for mypyc
-    axis_iterators = tuple(enumerate(_iter_axis(sequence, ax)) for ax in order)
+    order = sequence.used_axes
+    axis_iterators = (enumerate(sequence.iter_axis(ax)) for ax in order)
     for item in product(*axis_iterators):
         if not item:  # the case with no events
             continue  # pragma: no cover
@@ -265,11 +248,11 @@ def _position_offsets(
 def _parse_axes(
     event: zip[tuple[str, Any]],
 ) -> tuple[
-    dict[str, int],
+    dict[str, int],  # index
     float | None,  # time
-    Position | None,
-    RelativePosition | None,
-    Channel | None,
+    Position | None,  # position
+    RelativePosition | None,  # grid
+    Channel | None,  # channel
     float | None,  # z
 ]:
     """Parse an individual event from the product of axis iterators.

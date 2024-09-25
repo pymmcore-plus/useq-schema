@@ -24,13 +24,23 @@ class TimePlan(FrozenModel):
             yield td.total_seconds()
 
     def num_timepoints(self) -> int:
+        """Return the number of timepoints in the sequence.
+
+        If the sequence is infinite, returns -1.
+        """
         return self.loops  # type: ignore  # TODO
 
     def deltas(self) -> Iterator[timedelta]:
+        """Iterate over the time deltas between timepoints.
+
+        If the sequence is infinite, yields indefinitely.
+        """
         current = timedelta(0)
-        for _ in range(self.loops):  # type: ignore  # TODO
+        loops = self.num_timepoints()
+        while loops != 0:
             yield current
             current += self.interval  # type: ignore  # TODO
+            loops -= 1
 
 
 class TIntervalLoops(TimePlan):
@@ -101,6 +111,8 @@ class TIntervalDuration(TimePlan):
 
     @property
     def loops(self) -> int:
+        if self.interval == timedelta(0):
+            return -1
         return self.duration // self.interval + 1
 
 
