@@ -11,9 +11,12 @@ readme = "README.md"
 keywords = ["microscopy", "schema"]
 requires-python = ">=3.8"
 license = { text = "BSD 3-Clause License" }
-authors = [{ email = "talley.lambert@gmail.com", name = "Talley Lambert" }]
+authors = [
+    { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
+    { email = "federico.gasparoli@gmail.com", name = "Federico Gasparoli" },
+]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: BSD License",
@@ -24,6 +27,8 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Topic :: Scientific/Engineering :: Image Processing",
