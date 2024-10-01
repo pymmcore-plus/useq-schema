@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -183,8 +184,10 @@ class MDASequence(UseqModel):
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
     axis_order: Tuple[str, ...] = AXES
+    # note that these are BOTH just `Sequence[Position]` but we retain the distinction
+    # here so that WellPlatePlans are preserved in the model instance.
     stage_positions: Union[WellPlatePlan, Tuple[Position, ...]] = Field(
-        default_factory=tuple
+        default_factory=tuple, union_mode="left_to_right"
     )
     grid_plan: Optional[MultiPointPlan] = Field(
         default=None, union_mode="left_to_right"
@@ -240,14 +243,23 @@ class MDASequence(UseqModel):
         return tuple(channels)
 
     @field_validator("stage_positions", mode="before")
-    def _validate_stage_positions(cls, value: Any) -> Tuple[Position, ...]:
+    def _validate_stage_positions(
+        cls, value: Any
+    ) -> Union[WellPlatePlan, Tuple[Position, ...]]:
         if isinstance(value, np.ndarray):
             if value.ndim == 1:
                 value = [value]
             elif value.ndim == 2:
                 value = list(value)
+        else:
+            with suppress(ValueError):
+                val = WellPlatePlan.model_validate(value)
+                return val
         if not isinstance(value, Sequence):  # pragma: no cover
-            raise ValueError(f"stage_positions must be a sequence, got {type(value)}")
+            raise ValueError(
+                "stage_positions must be a WellPlatePlan or Sequence[Position], "
+                f"got {type(value)}"
+            )
 
         positions = []
         for v in value:
