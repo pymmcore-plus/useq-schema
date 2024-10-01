@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 import pytest
 
@@ -169,3 +171,26 @@ def test_plate_repr() -> None:
     rpp = repr(pp)
     assert "selected_wells=(slice(8), slice(1, 2))" in rpp
     assert eval(rpp, vars(useq)) == pp  # noqa: S307
+
+
+@pytest.mark.parametrize(
+    "pp",
+    [
+        useq.WellPlatePlan(
+            plate=96,
+            a1_center_xy=(500, 200),
+            rotation=5,
+            selected_wells=np.s_[1:5:2, :6:3],
+        ),
+        {
+            "plate": 96,
+            "a1_center_xy": (500, 200),
+            "rotation": 5,
+            "selected_wells": np.s_[1:5:2, :6:3],
+        },
+    ],
+)
+def test_plate_plan_in_seq(pp: Any) -> None:
+    seq = useq.MDASequence(stage_positions=pp)
+    assert isinstance(seq.stage_positions, useq.WellPlatePlan)
+    assert seq.stage_positions.plate.size == 96
