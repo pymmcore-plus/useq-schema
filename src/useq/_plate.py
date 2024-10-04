@@ -23,6 +23,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from typing_extensions import Annotated
 
 from useq._base_model import FrozenModel, UseqModel
 from useq._grid import RandomPoints, RelativeMultiPointPlan, Shape
@@ -31,7 +32,6 @@ from useq._position import Position, PositionBase, RelativePosition
 
 if TYPE_CHECKING:
     from pydantic_core import core_schema
-    from typing_extensions import Annotated
 
     Index = Union[int, List[int], slice]
     IndexExpression = Union[Tuple[Index, ...], Index]
