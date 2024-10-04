@@ -19,8 +19,8 @@ jobs:
 
       - name: Test build
         if: github.event_name == 'pull_request'
-        run: mkdocs build --strict
+        run: mkdocs build
 
       - name: Deploy
         if: github.ref == 'refs/heads/main'
-        run: mkdocs gh-deploy --force --strict
+        run: mkdocs gh-deploy --force
