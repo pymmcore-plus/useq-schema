@@ -5,6 +5,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Iterable,
+    Iterator,
     List,
     Sequence,
     Tuple,
@@ -22,7 +23,6 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import Annotated
 
 from useq._base_model import FrozenModel, UseqModel
 from useq._grid import RandomPoints, RelativeMultiPointPlan, Shape
@@ -31,6 +31,7 @@ from useq._position import Position, PositionBase, RelativePosition
 
 if TYPE_CHECKING:
     from pydantic_core import core_schema
+    from typing_extensions import Annotated
 
     Index = Union[int, List[int], slice]
     IndexExpression = Union[Tuple[Index, ...], Index]
@@ -261,7 +262,7 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
         rads = np.radians(self.rotation)
         return np.array([[np.cos(rads), np.sin(rads)], [-np.sin(rads), np.cos(rads)]])
 
-    def __iter__(self) -> Iterable[Position]:  # type: ignore
+    def __iter__(self) -> Iterator[Position]:  # type: ignore
         """Iterate over the selected positions."""
         yield from self.image_positions
 
