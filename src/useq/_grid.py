@@ -146,7 +146,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
 
         pos_cls = RelativePosition if self.is_relative else AbsolutePosition
         for idx, (r, c) in enumerate(order.generate_indices(rows, cols)):
-            yield pos_cls(
+            yield pos_cls(  # type: ignore [misc]
                 x=x0 + c * dx,
                 y=y0 - r * dy,
                 row=r,

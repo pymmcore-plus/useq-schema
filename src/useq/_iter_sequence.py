@@ -283,7 +283,7 @@ def _parse_axes(
     index = {ax: _ev[ax][0] for ax in AXES if ax in _ev}
     # this needs to be tuple(...) to work for mypyc
     axes = tuple(_ev[ax][1] if ax in _ev else None for ax in AXES)
-    return (index, *axes)
+    return (index, *axes)  # type: ignore [return-value]
 
 
 def _should_skip(
