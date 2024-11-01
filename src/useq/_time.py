@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Iterator, Sequence, Union
+from typing import Any, Iterator, Sequence, Union
 
 from pydantic import BeforeValidator, Field, PlainSerializer
 from typing_extensions import Annotated
@@ -22,6 +22,20 @@ class TimePlan(FrozenModel):
     def __iter__(self) -> Iterator[float]:  # type: ignore
         for td in self.deltas():
             yield td.total_seconds()
+
+    def length(self) -> int:
+        return self.num_timepoints()
+
+    def should_skip(cls, kwargs: dict) -> bool:
+        return False
+
+    def create_event_kwargs(cls, val: Any) -> dict:
+        return {"min_start_time": val}
+
+    @property
+    def axis_key(self) -> str:
+        """A string id representing the axis."""
+        return "t"
 
     def num_timepoints(self) -> int:
         """Return the number of timepoints in the sequence.

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Callable, Iterator, List, Sequence, Union
+from typing import Any, Callable, ClassVar, Iterator, List, Sequence, Union
 
 import numpy as np
 from pydantic import field_validator
@@ -22,6 +22,17 @@ class ZPlan(FrozenModel):
         if not self.go_up:
             positions = positions[::-1]
         yield from positions
+
+    def length(self) -> int:
+        return self.num_positions()
+
+    def should_skip(cls, kwargs: dict) -> bool:
+        return False
+
+    def create_event_kwargs(cls, val: Any) -> dict:
+        return {"z_pos": val}
+
+    axis_key: ClassVar[str] = "z"
 
     def _start_stop_step(self) -> tuple[float, float, float]:
         raise NotImplementedError

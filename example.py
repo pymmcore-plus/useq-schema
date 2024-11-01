@@ -17,6 +17,9 @@ class AxisIterator(Iterable[T]):
     def axis_key(self) -> str:
         """A string id representing the axis."""
 
+    def __iter__(self) -> Iterator[T]:
+        """Iterate over the axis."""
+
     def length(self) -> int:
         """Return the number of axis values.
 
@@ -27,7 +30,6 @@ class AxisIterator(Iterable[T]):
     @abc.abstractmethod
     def create_event_kwargs(cls, val: T) -> dict: ...
 
-    @classmethod
     def should_skip(cls, kwargs: dict) -> bool:
         return False
 

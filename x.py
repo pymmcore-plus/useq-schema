@@ -1,8 +1,14 @@
-import useq
+from rich import print
 
-seq = useq.MDASequence(time_plan=useq.TIntervalDuration(interval=0, duration=3))
+from useq import TIntervalLoops, ZRangeAround
+from useq._multi_axis_sequence import MultiDimSequence
 
-for n, _e in enumerate(seq):
-    print("hi", n)
-    if n > 10:
-        break
+seq = MultiDimSequence(
+    axes=(
+        TIntervalLoops(interval=0.2, loops=4),
+        ZRangeAround(range=4, step=2),
+    )
+)
+
+for e in seq:
+    print(e)
