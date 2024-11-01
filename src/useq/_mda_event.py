@@ -163,6 +163,10 @@ class MDAEvent(UseqModel):
     def _validate_channel(cls, val: Any) -> Any:
         return Channel(config=val) if isinstance(val, str) else val
 
+    @field_validator("index", mode="after")
+    def _validate_channel(cls, val: Mapping) -> MappingProxyType:
+        return MappingProxyType(val)
+
     if field_serializer is not None:
         _si = field_serializer("index", mode="plain")(lambda v: dict(v))
         _sx = field_serializer("x_pos", mode="plain")(_float_or_none)

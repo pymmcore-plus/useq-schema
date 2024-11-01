@@ -24,8 +24,11 @@ class MDAEventDict(TypedDict, total=False):
     min_start_time: float | None
     pos_name: str | None
     x_pos: float | None
+    x_pos_rel: float | None
     y_pos: float | None
+    y_pos_rel: float | None
     z_pos: float | None
+    z_pos_rel: float | None
     sequence: MDASequence | None
     # properties: list[tuple] | None
     metadata: dict

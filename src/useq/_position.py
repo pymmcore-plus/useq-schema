@@ -1,6 +1,16 @@
-from typing import TYPE_CHECKING, Generic, Iterator, Optional, SupportsIndex, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Iterator,
+    Optional,
+    Sequence,
+    SupportsIndex,
+    TypeVar,
+)
 
-from pydantic import Field
+import numpy as np
+from pydantic import Field, model_validator
 
 from useq._base_model import FrozenModel, MutableModel
 
@@ -70,6 +80,25 @@ class PositionBase(MutableModel):
         }
         # not sure why these Self types are not working
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_model(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            return value
+        if isinstance(value, Position):
+            return value.model_dump()
+        if isinstance(value, np.ndarray):
+            if value.ndim > 1:
+                raise ValueError(f"stage_positions must be 1D or 2D, got {value.ndim}D")
+            value = value.tolist()
+        if not isinstance(value, Sequence):  # pragma: no cover
+            raise ValueError(f"stage_positions must be a sequence, got {type(value)}")
+
+        x, *v = value
+        y, *v = v or (None,)
+        z = v[0] if v else None
+        return {"x": x, "y": y, "z": z}
 
 
 class AbsolutePosition(PositionBase, FrozenModel):

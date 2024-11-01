@@ -29,7 +29,7 @@ class TimePlan(FrozenModel):
     def should_skip(cls, kwargs: dict) -> bool:
         return False
 
-    def create_event_kwargs(cls, val: Any) -> dict:
+    def create_event_kwargs(self, val: Any) -> dict:
         return {"min_start_time": val}
 
     @property

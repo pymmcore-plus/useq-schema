@@ -29,8 +29,11 @@ class ZPlan(FrozenModel):
     def should_skip(cls, kwargs: dict) -> bool:
         return False
 
-    def create_event_kwargs(cls, val: Any) -> dict:
-        return {"z_pos": val}
+    def create_event_kwargs(self, val: float) -> dict:
+        if self.is_relative:
+            return {"z_pos_rel": val}
+        else:
+            return {"z_pos": val}
 
     axis_key: ClassVar[str] = "z"
 
@@ -42,7 +45,7 @@ class ZPlan(FrozenModel):
         if step == 0:
             return [start]
         stop += step / 2  # make sure we include the last point
-        return list(np.arange(start, stop, step))
+        return [float(x) for x in np.arange(start, stop, step)]
 
     def num_positions(self) -> int:
         start, stop, step = self._start_stop_step()

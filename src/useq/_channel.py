@@ -1,8 +1,12 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Tuple
 
-from pydantic import Field
+from pydantic import Field, RootModel, model_validator
 
+from useq._axis_iterable import AxisIterableBase
 from useq._base_model import FrozenModel
+
+if TYPE_CHECKING:
+    from useq._iter_sequence import MDAEventDict
 
 
 class Channel(FrozenModel):
@@ -38,3 +42,48 @@ class Channel(FrozenModel):
     z_offset: float = 0.0
     acquire_every: int = Field(default=1, gt=0)  # acquire every n frames
     camera: Optional[str] = None
+
+    @model_validator(mode="before")
+    def _validate_model(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return {"config": value}
+        return value
+
+
+class Channels(RootModel, AxisIterableBase):
+    root: Tuple[Channel, ...]
+    axis_key: ClassVar[str] = "c"
+
+    def __iter__(self):
+        return iter(self.root)
+
+    def __getitem__(self, item):
+        return self.root[item]
+
+    def create_event_kwargs(self, val: Channel) -> "MDAEventDict":
+        """Convert a value from the iterator to kwargs for an MDAEvent."""
+        d: MDAEventDict = {"channel": {"config": val.config, "group": val.group}}
+        if val.z_offset:
+            d["z_pos_rel"] = val.z_offset
+        return d
+
+    def length(self) -> int:
+        """Return the number of axis values.
+
+        If the axis is infinite, return -1.
+        """
+        return len(self.root)
+
+    def should_skip(cls, kwargs: dict) -> bool:
+        return False
+        # # skip channels
+        # if Axis.TIME in index and index[Axis.TIME] % channel.acquire_every:
+        #     return True
+
+        # # only acquire on the middle plane:
+        # if (
+        #     not channel.do_stack
+        #     and z_plan is not None
+        #     and index[Axis.Z] != z_plan.num_positions() // 2
+        # ):
+        #     return True

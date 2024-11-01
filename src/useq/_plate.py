@@ -4,6 +4,7 @@ from functools import cached_property
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Iterable,
     List,
     Sequence,
@@ -24,6 +25,7 @@ from pydantic import (
 )
 from typing_extensions import Annotated
 
+from useq._axis_iterable import AxisIterableBase
 from useq._base_model import FrozenModel, UseqModel
 from useq._grid import RandomPoints, RelativeMultiPointPlan, Shape
 from useq._plate_registry import _PLATE_REGISTRY
@@ -125,7 +127,7 @@ class WellPlate(FrozenModel):
         return WellPlate.model_validate(obj)
 
 
-class WellPlatePlan(UseqModel, Sequence[Position]):
+class WellPlatePlan(UseqModel, AxisIterableBase, Sequence[Position]):
     """A plan for acquiring images from a multi-well plate.
 
     Parameters
@@ -167,6 +169,12 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
     well_points_plan: RelativeMultiPointPlan = Field(
         default_factory=RelativePosition, union_mode="left_to_right"
     )
+
+    axis_key: ClassVar[str] = "p"
+
+    def create_event_kwargs(cls, val: Position) -> dict:
+        """Convert a value from the iterator to kwargs for an MDAEvent."""
+        return {"x_pos": val.x, "y_pos": val.y}
 
     def __repr_args__(self) -> Iterable[Tuple[str | None, Any]]:
         for item in super().__repr_args__():
