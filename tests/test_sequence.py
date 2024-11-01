@@ -436,3 +436,29 @@ def test_reset_event_timer() -> None:
     assert not events[1].reset_event_timer
     assert events[2].reset_event_timer
     assert not events[3].reset_event_timer
+
+    events = list(
+        MDASequence(
+            stage_positions=[
+                Position(
+                    x=0,
+                    y=0,
+                    sequence=MDASequence(
+                        channels=["Cy5"], time_plan={"interval": 1, "loops": 2}
+                    ),
+                ),
+                Position(
+                    x=1,
+                    y=1,
+                    sequence=MDASequence(
+                        channels=["DAPI"], time_plan={"interval": 1, "loops": 2}
+                    ),
+                ),
+            ]
+        )
+    )
+
+    assert events[0].reset_event_timer
+    assert not events[1].reset_event_timer
+    assert events[2].reset_event_timer
+    assert not events[3].reset_event_timer
