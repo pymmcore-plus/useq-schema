@@ -22,8 +22,8 @@ potentially switch between different control backends with ease. The goal is to
 encourage a shared standard, making it straightforward for developers to adopt
 useq-schema and enhance compatibility across tools.
 
-We are particularly interested in feedback from developers of microscopy-control
-software.  If you are interested in supporting the useq-schema in your software,
+**We are particularly interested in feedback from developers of microscopy-control
+software**.  If you are interested in supporting the useq-schema in your software,
 please open an issue or pull request to discuss how we can make that easier for
 you, or to request additional features that would be necessary for your use case.
 
