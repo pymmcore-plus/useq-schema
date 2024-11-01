@@ -150,8 +150,7 @@ def _iter_sequence(
         if not item:  # the case with no events
             continue  # pragma: no cover
         # get axes objects for this event
-        index, time, position, grid, channel, z_pos = _parse_axes(
-            zip(order, item))
+        index, time, position, grid, channel, z_pos = _parse_axes(zip(order, item))
 
         # skip if necessary
         if _should_skip(position, channel, index, sequence.z_plan):
@@ -165,8 +164,7 @@ def _iter_sequence(
             {**event_kwargs.get("index", {}), **index}  # type: ignore
         )
         # determine x, y, z positions
-        event_kwargs.update(
-            _xyzpos(position, channel, sequence.z_plan, grid, z_pos))
+        event_kwargs.update(_xyzpos(position, channel, sequence.z_plan, grid, z_pos))
         if position and position.name:
             event_kwargs["pos_name"] = position.name
         if channel:
@@ -199,7 +197,7 @@ def _iter_sequence(
                 _pos, _offsets = _position_offsets(position, event_kwargs)
                 # build overrides for this position
                 pos_overrides = MDAEventDict(sequence=sequence, **_pos)
-                pos_overrides['reset_event_timer'] = False
+                pos_overrides["reset_event_timer"] = False
                 if position.name:
                     pos_overrides["pos_name"] = position.name
 

@@ -64,8 +64,7 @@ t_as_dict: _T = [
         [{"loops": 5, "interval": 0.25}, {"interval": 1, "duration": 4}],
         [0, 0.25, 0.50, 0.75, 1, 2, 3, 4, 5],
     ),
-    ({"loops": 5, "duration": {"milliseconds": 8}},
-     [0, 0.002, 0.004, 0.006, 0.008]),
+    ({"loops": 5, "duration": {"milliseconds": 8}}, [0, 0.002, 0.004, 0.006, 0.008]),
     ({"loops": 5, "duration": {"seconds": 8}}, [0, 2, 4, 6, 8]),
 ]
 t_inputs = t_as_class + t_as_dict
@@ -290,8 +289,7 @@ def test_combinations(
     pexpectation: Sequence[float],
 ) -> None:
     mda = MDASequence(
-        time_plan=tplan, z_plan=zplan, channels=[
-            channel], stage_positions=positions
+        time_plan=tplan, z_plan=zplan, channels=[channel], stage_positions=positions
     )
 
     assert list(mda.z_plan) == zexpectation
@@ -309,8 +307,7 @@ def test_schema(cls: BaseModel) -> None:
 
 
 def test_z_position() -> None:
-    mda = MDASequence(axis_order="tpcz", stage_positions=[
-                      (222, 1, 10), (111, 1, 20)])
+    mda = MDASequence(axis_order="tpcz", stage_positions=[(222, 1, 10), (111, 1, 20)])
     assert not mda.z_plan
     for event in mda:
         assert event.z_pos
@@ -355,8 +352,7 @@ def test_skip_channel_do_stack_no_zplan() -> None:
 
 def test_event_action_union() -> None:
     # test that action unions work
-    MDAEvent(action={"autofocus_device_name": "Z",
-             "autofocus_motor_offset": 25})
+    MDAEvent(action={"autofocus_device_name": "Z", "autofocus_motor_offset": 25})
 
 
 def test_keep_shutter_open() -> None:
@@ -443,12 +439,22 @@ def test_reset_event_timer() -> None:
 
     events = list(
         MDASequence(
-            stage_positions=[Position(x=0, y=0,
-                                      sequence=MDASequence(channels=["Cy5"],
-                                                           time_plan={"interval": 1, "loops": 2})),
-                             Position(x=1, y=1,
-                                      sequence=MDASequence(channels=["DAPI"],
-                                                           time_plan={"interval": 1, "loops": 2}))]
+            stage_positions=[
+                Position(
+                    x=0,
+                    y=0,
+                    sequence=MDASequence(
+                        channels=["Cy5"], time_plan={"interval": 1, "loops": 2}
+                    ),
+                ),
+                Position(
+                    x=1,
+                    y=1,
+                    sequence=MDASequence(
+                        channels=["DAPI"], time_plan={"interval": 1, "loops": 2}
+                    ),
+                ),
+            ]
         )
     )
 
