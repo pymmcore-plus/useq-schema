@@ -15,7 +15,7 @@ from typing import (
 )
 
 import numpy as np
-from annotated_types import Gt  # noqa: TCH002
+from annotated_types import Gt
 from pydantic import (
     Field,
     ValidationInfo,
