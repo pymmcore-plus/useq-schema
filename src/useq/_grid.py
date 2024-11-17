@@ -17,7 +17,7 @@ from typing import (
 )
 
 import numpy as np
-from annotated_types import Ge, Gt  # noqa: TCH002
+from annotated_types import Ge, Gt
 from pydantic import Field, field_validator, model_validator
 
 from useq._point_visiting import OrderMode, TraversalOrder
