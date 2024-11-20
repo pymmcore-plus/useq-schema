@@ -28,6 +28,7 @@ from useq._time import (
     TIntervalDuration,
     TIntervalLoops,
 )
+from useq._utils import Axis
 from useq._z import (
     AnyZPlan,
     ZAboveBelow,
@@ -46,6 +47,7 @@ __all__ = [
     "AnyZPlan",
     "AutoFocusPlan",
     "AxesBasedAF",
+    "Axis",
     "Channel",
     "GridFromEdges",
     "GridRelative",

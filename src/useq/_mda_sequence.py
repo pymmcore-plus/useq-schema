@@ -345,8 +345,8 @@ class MDASequence(UseqModel):
             )
         ):
             raise ValueError(
-                f"{Axis.Z!r} cannot precede {Axis.POSITION!r} in acquisition order if "
-                "any position specifies a z_plan"
+                f"{str(Axis.Z)!r} cannot precede {str(Axis.POSITION)!r} in acquisition "
+                "order if any position specifies a z_plan"
             )
 
         if (
@@ -426,12 +426,12 @@ class MDASequence(UseqModel):
     def iter_axis(self, axis: str) -> Iterator[Channel | float | PositionBase]:
         """Iterate over the positions or items of a given axis."""
         plan = {
-            Axis.TIME: self.time_plan,
-            Axis.POSITION: self.stage_positions,
-            Axis.Z: self.z_plan,
-            Axis.CHANNEL: self.channels,
-            Axis.GRID: self.grid_plan,
-        }[axis]
+            str(Axis.TIME): self.time_plan,
+            str(Axis.POSITION): self.stage_positions,
+            str(Axis.Z): self.z_plan,
+            str(Axis.CHANNEL): self.channels,
+            str(Axis.GRID): self.grid_plan,
+        }[str(axis).lower()]
         if plan:
             yield from plan
 
