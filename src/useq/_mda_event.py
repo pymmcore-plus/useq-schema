@@ -14,7 +14,9 @@ from typing import (
     Tuple,
 )
 
-from pydantic import Field, field_validator
+import numpy as np
+import numpy.typing as npt
+from pydantic import Field, field_validator, model_validator
 
 from useq._actions import AcquireImage, AnyAction
 from useq._base_model import UseqModel
@@ -50,6 +52,40 @@ class Channel(UseqModel):
         if isinstance(_value, str):
             return self.config == _value
         return super().__eq__(_value)
+
+
+class SLMImage(UseqModel):
+    """SLM Image in a MDA event.
+
+    This object can be cast to a numpy.array using `np.asarray` or `np.array`.
+
+    Attributes
+    ----------
+    data: npt.ArrayLike
+        Image data. Anything that can be cast to a numpy array. For pydantic simplicity,
+        we mark this as Any, but in practice it should be numpy.typing.ArrayLike (which
+        is anything that can be cast to a numpy array using `np.asarray`).
+    device: Optional[str]
+        Optional name of the SLM device to use. If not provided, the "default" SLM
+        device should be used. (It is left to the backend to determine what device that
+        is). By default, `None`.
+    """
+
+    data: Any
+    device: Optional[str] = None
+
+    @model_validator(mode="before")
+    def _cast_data(cls, v: Any) -> Any:
+        """Can single, non-dict values to be the data."""
+        if not isinstance(v, dict):
+            v = {"data": v}
+        return v
+
+    def __array__(
+        self, dtype: "npt.DTypeLike | None" = None, copy: "bool | None" = None
+    ) -> npt.NDArray:
+        """Cast the image data to a numpy array."""
+        return np.asarray(self.data, dtype=dtype, copy=copy)
 
 
 class PropertyTuple(NamedTuple):
@@ -110,6 +146,12 @@ class MDAEvent(UseqModel):
     z_pos : float | None
         Z position in microns. If not provided, implies use current position. By
         default, `None`.
+    slm_image : SLMImage | None
+        Image data to display on an SLM device. `SLMImage` is a simple pydantic object
+        with two attributes: `data` and `device`. `data` is the image data (anything
+        that can be cast to a numpy array), `device` is the name of the SLM device to
+        use. If not provided, the "default" SLM device should be used. By default,
+        `None`.
     sequence : MDASequence | None
         A reference to the [`useq.MDASequence`][] this event belongs to. This is a
         read-only attribute. By default, `None`.
@@ -146,6 +188,7 @@ class MDAEvent(UseqModel):
     x_pos: Optional[float] = None
     y_pos: Optional[float] = None
     z_pos: Optional[float] = None
+    slm_image: Optional[SLMImage] = None
     sequence: Optional["MDASequence"] = Field(default=None, repr=False)
     properties: Optional[List[PropertyTuple]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
