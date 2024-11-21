@@ -1,17 +1,13 @@
 # don't add __future__.annotations here
 # pydantic2 isn't rebuilding the model correctly
 
+from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Mapping,
     NamedTuple,
     Optional,
-    Sequence,
-    Tuple,
 )
 
 import numpy as np
@@ -29,7 +25,7 @@ except ImportError:
 if TYPE_CHECKING:
     from useq._mda_sequence import MDASequence
 
-    ReprArgs = Sequence[Tuple[Optional[str], Any]]
+    ReprArgs = Sequence[tuple[Optional[str], Any]]
 
 
 class Channel(UseqModel):
@@ -182,7 +178,6 @@ class MDAEvent(UseqModel):
         `False`.
     """
 
-    # MappingProxyType is not subscriptable on Python 3.8
     index: Mapping[str, int] = Field(default_factory=lambda: MappingProxyType({}))
     channel: Optional[Channel] = None
     exposure: Optional[float] = Field(default=None, gt=0.0)
@@ -193,8 +188,8 @@ class MDAEvent(UseqModel):
     z_pos: Optional[float] = None
     slm_image: Optional[SLMImage] = None
     sequence: Optional["MDASequence"] = Field(default=None, repr=False)
-    properties: Optional[List[PropertyTuple]] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    properties: Optional[list[PropertyTuple]] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage)
     keep_shutter_open: bool = False
     reset_event_timer: bool = False

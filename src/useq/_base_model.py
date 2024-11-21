@@ -5,9 +5,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Iterable,
     Optional,
-    Type,
     TypeVar,
     Union,
 )
@@ -16,6 +14,8 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from typing_extensions import Self
 
     ReprArgs = Iterable[tuple[str | None, Any]]
@@ -84,7 +84,7 @@ class MutableModel(_ReplaceableModel):
 
 class UseqModel(FrozenModel):
     @classmethod
-    def from_file(cls: Type[_Y], path: Union[str, Path]) -> _Y:
+    def from_file(cls: type[_Y], path: Union[str, Path]) -> _Y:
         """Return an instance of this class from a file.  Supports JSON and YAML."""
         path = Path(path)
         if path.suffix in {".yaml", ".yml"}:
