@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Protocol, TypeAlias, Union, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, Union, runtime_checkable
+
+from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
