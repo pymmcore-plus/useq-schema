@@ -69,10 +69,15 @@ class SLMImage(UseqModel):
         Optional name of the SLM device to use. If not provided, the "default" SLM
         device should be used. (It is left to the backend to determine what device that
         is). By default, `None`.
+    exposure: Optional[float]
+        Exposure time for the SLM specifically (if different from the detector), in
+        milliseconds. If not provided, the exposure on the owning MDAEvent should be
+        used. By default, `None`.
     """
 
     data: Any
     device: Optional[str] = None
+    exposure: Optional[float] = None
 
     @model_validator(mode="before")
     def _cast_data(cls, v: Any) -> Any:
