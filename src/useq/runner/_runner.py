@@ -4,7 +4,7 @@ import logging
 import time
 import warnings
 from contextlib import contextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 from unittest.mock import MagicMock
 
 from useq._mda_sequence import MDASequence
@@ -32,7 +32,7 @@ def _exceptions_logged(logger: logging.Logger) -> Iterator[None]:
 
 
 class GeneratorMDASequence(MDASequence):
-    axis_order: tuple[str, ...] = ()
+    axis_order: Tuple[str, ...] = ()
 
     @property
     def sizes(self) -> dict[str, int]:  # pragma: no cover
