@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Iterable
+from typing import TYPE_CHECKING, Callable
 
 try:
     import matplotlib.pyplot as plt
@@ -11,6 +11,8 @@ except ImportError as e:
     ) from e
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from matplotlib.axes import Axes
 
     from useq._plate import WellPlatePlan

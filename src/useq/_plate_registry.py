@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, overload
 
 if TYPE_CHECKING:
-    from typing import Iterable, Mapping, Required, TypeAlias, TypedDict
+    from collections.abc import Iterable, Mapping
+    from typing import Required, TypeAlias, TypedDict
 
     from useq._plate import WellPlate
 

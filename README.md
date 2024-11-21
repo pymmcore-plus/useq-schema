@@ -18,14 +18,27 @@ microscopy experiments.*
 The `useq-schema` library defines a structured schema to represent a sequence of
 microscope acquisition events. By adopting this schema, various microscopy
 software tools can facilitate interoperability, allowing end users to
-potentially switch between different control backends with ease. The goal is to
+potentially switch between different control backends with ease. *The goal is to
 encourage a shared standard, making it straightforward for developers to adopt
-useq-schema and enhance compatibility across tools.
+useq-schema and enhance compatibility across tools.*
 
-**We are particularly interested in feedback from developers of microscopy-control
-software**.  If you are interested in supporting the useq-schema in your software,
-please open an issue or pull request to discuss how we can make that easier for
-you, or to request additional features that would be necessary for your use case.
+> [!IMPORTANT]
+>
+> **Hey developers! :wave: Not convinced?  Don't leave yet!**  
+>
+> We are particularly interested in feedback from developers of microscopy-control
+> software.
+> 
+> If you are considering supporting `useq-schema` in your software, but don't
+> see all the fields in `MDAEvent` that you would need to support your complex use case,
+> please [open an issue](https://github.com/pymmcore-plus/useq-schema/issues/new) or pull
+> request to discuss additional features.
+>
+> :carrot: The carrot for you?
+> 
+> Anyone who is already using `useq-schema` to describe a sequence of events
+> in some other software (that supports it) can easily try out your solution, with
+> (hopefully) minimal changes to their code.
 
 ## `useq.MDAEvent`
 

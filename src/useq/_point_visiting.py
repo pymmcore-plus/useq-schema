@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator
 from enum import Enum
 from functools import partial
-from typing import Callable, Iterable, Iterator, Tuple
+from typing import Callable
 
 import numpy as np
 
@@ -32,14 +33,14 @@ class OrderMode(Enum):
     column_wise_snake = "column_wise_snake"
     spiral = "spiral"
 
-    def generate_indices(self, rows: int, columns: int) -> Iterator[Tuple[int, int]]:
+    def generate_indices(self, rows: int, columns: int) -> Iterator[tuple[int, int]]:
         """Generate indices for the given grid size."""
         return _INDEX_GENERATORS[self](rows, columns)
 
 
 def _spiral_indices(
     rows: int, columns: int, center_origin: bool = False
-) -> Iterator[Tuple[int, int]]:
+) -> Iterator[tuple[int, int]]:
     """Return a spiral iterator over a 2D grid.
 
     Parameters
@@ -78,7 +79,7 @@ def _spiral_indices(
 # function that iterates indices (row, col) in a grid where (0, 0) is the top left
 def _rect_indices(
     rows: int, columns: int, snake: bool = False, row_wise: bool = True
-) -> Iterator[Tuple[int, int]]:
+) -> Iterator[tuple[int, int]]:
     """Return a row or column-wise iterator over a 2D grid."""
     c, r = np.meshgrid(np.arange(columns), np.arange(rows))
     if snake:
@@ -89,7 +90,7 @@ def _rect_indices(
     return zip(r.ravel(), c.ravel()) if row_wise else zip(r.T.ravel(), c.T.ravel())
 
 
-IndexGenerator = Callable[[int, int], Iterator[Tuple[int, int]]]
+IndexGenerator = Callable[[int, int], Iterator[tuple[int, int]]]
 _INDEX_GENERATORS: dict[OrderMode, IndexGenerator] = {
     OrderMode.row_wise: partial(_rect_indices, snake=False, row_wise=True),
     OrderMode.column_wise: partial(_rect_indices, snake=False, row_wise=False),

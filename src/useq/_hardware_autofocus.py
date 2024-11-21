@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from pydantic import PrivateAttr
 
@@ -42,7 +42,7 @@ class AutoFocusPlan(FrozenModel):
         if not self.should_autofocus(event):
             return None
 
-        updates: Dict[str, Any] = {"action": self.as_action()}
+        updates: dict[str, Any] = {"action": self.as_action()}
         if event.z_pos is not None and event.sequence is not None:
             zplan = event.sequence.z_plan
             if zplan and zplan.is_relative and "z" in event.index:
@@ -71,7 +71,7 @@ class AxesBasedAF(AutoFocusPlan):
         is change, (in other words: every time the position is changed.).
     """
 
-    axes: Tuple[str, ...]
+    axes: tuple[str, ...]
     _previous: dict = PrivateAttr(default_factory=dict)
 
     def should_autofocus(self, event: MDAEvent) -> bool:

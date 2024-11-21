@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Optional, get_args
+from typing import TYPE_CHECKING, Optional, get_args
 
 import pytest
 
@@ -16,6 +16,8 @@ from useq import (
 from useq._point_visiting import OrderMode, _rect_indices, _spiral_indices
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from useq._position import PositionBase
 
 EXPECT = {

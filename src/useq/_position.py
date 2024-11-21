@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Generic, Iterator, Optional, SupportsIndex, TypeVar
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Generic, Optional, SupportsIndex, TypeVar
 
 from pydantic import Field
 

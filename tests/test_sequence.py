@@ -1,6 +1,7 @@
 import itertools
 import json
-from typing import Any, List, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 import pytest
@@ -22,9 +23,10 @@ from useq import (
     ZRangeAround,
     ZRelativePositions,
 )
+from useq._mda_event import SLMImage
 from useq._position import RelativePosition
 
-_T = List[Tuple[Any, Sequence[float]]]
+_T = list[tuple[Any, Sequence[float]]]
 
 z_as_class: _T = [
     (ZAboveBelow(above=8, below=4, step=2), [-4, -2, 0, 2, 4, 6, 8]),
@@ -462,3 +464,21 @@ def test_reset_event_timer() -> None:
     assert not events[1].reset_event_timer
     assert events[2].reset_event_timer
     assert not events[3].reset_event_timer
+
+
+def test_slm_image() -> None:
+    data = [[0, 0], [1, 1]]
+
+    # directly passing data
+    event = MDAEvent(slm_image=data)
+    assert isinstance(event.slm_image, SLMImage)
+
+    # we can cast SLMIamge to a numpy array
+    assert isinstance(np.asarray(event.slm_image), np.ndarray)
+    np.testing.assert_array_equal(event.slm_image, np.array(data))
+
+    # variant that also specifies device label
+    event2 = MDAEvent(slm_image={"data": data, "device": "SLM"})
+    assert event2.slm_image is not None
+    np.testing.assert_array_equal(event2.slm_image, np.array(data))
+    assert event2.slm_image.device == "SLM"

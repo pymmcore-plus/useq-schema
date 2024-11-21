@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import TYPE_CHECKING
 
 import pytest
 
 import useq
 from useq import AxesBasedAF, HardwareAutofocus, MDASequence
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 ZRANGE2 = useq.ZRangeAround(range=2, step=1)
 ZPOS_30 = useq.Position(z=30.0)
