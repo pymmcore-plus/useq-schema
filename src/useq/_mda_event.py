@@ -81,11 +81,9 @@ class SLMImage(UseqModel):
             v = {"data": v}
         return v
 
-    def __array__(
-        self, dtype: "npt.DTypeLike | None" = None, copy: "bool | None" = None
-    ) -> npt.NDArray:
+    def __array__(self, *args: Any, **kwargs: Any) -> npt.NDArray:
         """Cast the image data to a numpy array."""
-        return np.asarray(self.data, dtype=dtype, copy=copy)
+        return np.asarray(self.data, *args, **kwargs)
 
 
 class PropertyTuple(NamedTuple):
