@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable
+import time
+from queue import Queue
+from threading import Thread
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -11,6 +14,8 @@ from useq.runner import MDARunner
 from useq.runner.pysgnals import MDASignaler
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from useq.runner.protocols import PImagePayload
 
 
@@ -43,7 +48,9 @@ MDA = MDASequence(
 
 def test_mda_runner() -> None:
     runner = MDARunner(MDASignaler())
-    runner.set_engine(GoodEngine())
+    engine = GoodEngine()
+    runner.set_engine(engine)
+    assert runner.engine is engine
 
     start_mock = Mock()
     frame_mock = Mock()
@@ -56,6 +63,45 @@ def test_mda_runner() -> None:
     start_mock.assert_called_once_with(MDA, {})
     frame_mock.assert_called()
     finished_mock.assert_called_once_with(MDA)
+
+
+def test_mda_runner_pause_cancel() -> None:
+    runner = MDARunner(MDASignaler())
+    runner.set_engine(GoodEngine())
+
+    pause_mock = Mock()
+    cancel_mock = Mock()
+    runner.events.sequencePauseToggled.connect(pause_mock)
+    runner.events.sequenceCanceled.connect(cancel_mock)
+
+    q: Queue[MDAEvent] = Queue()
+
+    thread = Thread(target=runner.run, args=(iter(q.get, None),))
+    thread.start()
+
+    # this is a little bit of a hack/bug for the Queue case, but if we don't process at
+    # least one event, the runner will never check for cancellation
+    q.put(MDAEvent())
+
+    t0 = time.time()
+    while not runner.is_running():
+        if time.time() - t0 > 1:
+            raise TimeoutError("timeout")
+        time.sleep(0.01)
+
+    assert not runner.is_paused()
+    runner.toggle_pause()
+    assert runner.is_paused()
+    pause_mock.assert_called_once_with(True)
+
+    runner.toggle_pause()
+    assert not runner.is_paused()
+    pause_mock.assert_called_with(False)
+
+    runner.cancel()
+    q.put(MDAEvent())  # same bug here
+    thread.join()
+    assert not runner.is_running()
 
 
 def test_mda_failures() -> None:

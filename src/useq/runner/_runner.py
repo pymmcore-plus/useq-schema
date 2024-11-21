@@ -4,7 +4,7 @@ import logging
 import time
 import warnings
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 from useq._mda_sequence import MDASequence
@@ -32,7 +32,7 @@ def _exceptions_logged(logger: logging.Logger) -> Iterator[None]:
 
 
 class GeneratorMDASequence(MDASequence):
-    axis_order: Tuple[str, ...] = ()
+    axis_order: tuple[str, ...] = ()
 
     @property
     def sizes(self) -> dict[str, int]:  # pragma: no cover
@@ -43,7 +43,7 @@ class GeneratorMDASequence(MDASequence):
         warnings.warn(MSG, stacklevel=2)
         yield from []
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # pragma: no cover
         return "GeneratorMDASequence()"
 
 
@@ -83,7 +83,7 @@ class MDARunner:
         """Set the [`PMDAEngine`][pymmcore_plus.mda.PMDAEngine] to use for the MDA run."""  # noqa: E501
         # MagicMock on py312 no longer satisfies isinstance ... so we explicitly
         # allow it here just for the sake of testing.
-        if not isinstance(engine, (PMDAEngine, MagicMock)):
+        if not isinstance(engine, (PMDAEngine, MagicMock)):  # pragma: no cover
             raise TypeError("Engine does not conform to the Engine protocol.")
 
         if self.is_running():  # pragma: no cover
