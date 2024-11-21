@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -11,6 +11,8 @@ from useq.runner import MDARunner
 from useq.runner.pysgnals import MDASignaler
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from useq.runner.protocols import PImagePayload
 
 
