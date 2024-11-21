@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 import useq
 from useq import MDASequence
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 FITC = "FITC"
 CY5 = "Cy5"

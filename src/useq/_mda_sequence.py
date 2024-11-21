@@ -1,16 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    Iterable,
-    Iterator,
-    Mapping,
     Optional,
-    Sequence,
-    Tuple,
     Union,
 )
 from uuid import UUID, uuid4
@@ -182,24 +177,24 @@ class MDASequence(UseqModel):
     ```
     """
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    axis_order: Tuple[str, ...] = AXES
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    axis_order: tuple[str, ...] = AXES
     # note that these are BOTH just `Sequence[Position]` but we retain the distinction
     # here so that WellPlatePlans are preserved in the model instance.
-    stage_positions: Union[WellPlatePlan, Tuple[Position, ...]] = Field(
+    stage_positions: Union[WellPlatePlan, tuple[Position, ...]] = Field(
         default_factory=tuple, union_mode="left_to_right"
     )
     grid_plan: Optional[MultiPointPlan] = Field(
         default=None, union_mode="left_to_right"
     )
-    channels: Tuple[Channel, ...] = Field(default_factory=tuple)
+    channels: tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: Optional[AnyTimePlan] = None
     z_plan: Optional[AnyZPlan] = None
     autofocus_plan: Optional[AnyAutofocusPlan] = None
-    keep_shutter_open_across: Tuple[str, ...] = Field(default_factory=tuple)
+    keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
-    _sizes: Optional[Dict[str, int]] = PrivateAttr(default=None)
+    _sizes: Optional[dict[str, int]] = PrivateAttr(default=None)
 
     @property
     def uid(self) -> UUID:
@@ -225,7 +220,7 @@ class MDASequence(UseqModel):
         return v
 
     @field_validator("channels", mode="before")
-    def _validate_channels(cls, value: Any) -> Tuple[Channel, ...]:
+    def _validate_channels(cls, value: Any) -> tuple[Channel, ...]:
         if isinstance(value, str) or not isinstance(
             value, Sequence
         ):  # pragma: no cover
@@ -245,7 +240,7 @@ class MDASequence(UseqModel):
     @field_validator("stage_positions", mode="before")
     def _validate_stage_positions(
         cls, value: Any
-    ) -> Union[WellPlatePlan, Tuple[Position, ...]]:
+    ) -> Union[WellPlatePlan, tuple[Position, ...]]:
         if isinstance(value, np.ndarray):
             if value.ndim == 1:
                 value = [value]
@@ -402,7 +397,7 @@ class MDASequence(UseqModel):
                     raise ValueError(err)  # pragma: no cover
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         """Return the shape of this sequence.
 
         !!! note

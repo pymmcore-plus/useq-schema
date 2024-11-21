@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from functools import lru_cache
+from functools import cache
 from itertools import product
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Iterator, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import TypedDict
 
@@ -14,6 +14,8 @@ from useq._utils import AXES, Axis, _has_axes
 from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from useq._mda_sequence import MDASequence
     from useq._position import Position, PositionBase, RelativePosition
 
@@ -39,17 +41,17 @@ class PositionDict(TypedDict, total=False):
     z_pos: float
 
 
-@lru_cache(maxsize=None)
+@cache
 def _iter_axis(seq: MDASequence, ax: str) -> tuple[Channel | float | PositionBase, ...]:
     return tuple(seq.iter_axis(ax))
 
 
-@lru_cache(maxsize=None)
+@cache
 def _sizes(seq: MDASequence) -> dict[str, int]:
     return {k: len(list(_iter_axis(seq, k))) for k in seq.axis_order}
 
 
-@lru_cache(maxsize=None)
+@cache
 def _used_axes(seq: MDASequence) -> str:
     return "".join(k for k in seq.axis_order if _sizes(seq)[k])
 

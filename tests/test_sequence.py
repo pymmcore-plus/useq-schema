@@ -1,6 +1,7 @@
 import itertools
 import json
-from typing import Any, List, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 import pytest
@@ -25,7 +26,7 @@ from useq import (
 from useq._mda_event import SLMImage
 from useq._position import RelativePosition
 
-_T = List[Tuple[Any, Sequence[float]]]
+_T = list[tuple[Any, Sequence[float]]]
 
 z_as_class: _T = [
     (ZAboveBelow(above=8, below=4, step=2), [-4, -2, 0, 2, 4, 6, 8]),

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import math
-from typing import Callable, Iterator, List, Sequence, Union
+from typing import TYPE_CHECKING, Callable, Union
 
 import numpy as np
 from pydantic import field_validator
 
 from useq._base_model import FrozenModel
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
 
 
 def _list_cast(field: str) -> Callable:
@@ -146,7 +149,7 @@ class ZRelativePositions(ZPlan):
         reverse.
     """
 
-    relative: List[float]
+    relative: list[float]
 
     _normrel = _list_cast("relative")
 
@@ -169,7 +172,7 @@ class ZAbsolutePositions(ZPlan):
         reverse.
     """
 
-    absolute: List[float]
+    absolute: list[float]
 
     _normabs = _list_cast("absolute")
 

@@ -3,23 +3,21 @@ from __future__ import annotations
 import contextlib
 import math
 import warnings
+from collections.abc import Iterable, Iterator, Sequence
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     Callable,
-    Iterable,
-    Iterator,
     Optional,
-    Sequence,
-    Tuple,
     Union,
 )
 
 import numpy as np
 from annotated_types import Ge, Gt
 from pydantic import Field, field_validator, model_validator
-from typing_extensions import Annotated, Self, TypeAlias
+from typing_extensions import Self, TypeAlias
 
 from useq._point_visiting import OrderMode, TraversalOrder
 from useq._position import (
@@ -76,11 +74,11 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         Engines MAY override this even if provided.
     """
 
-    overlap: Tuple[float, float] = Field((0.0, 0.0), frozen=True)
+    overlap: tuple[float, float] = Field((0.0, 0.0), frozen=True)
     mode: OrderMode = Field(OrderMode.row_wise_snake, frozen=True)
 
     @field_validator("overlap", mode="before")
-    def _validate_overlap(cls, v: Any) -> Tuple[float, float]:
+    def _validate_overlap(cls, v: Any) -> tuple[float, float]:
         with contextlib.suppress(TypeError, ValueError):
             v = float(v)
         if isinstance(v, float):
@@ -156,7 +154,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
     def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
         yield from self.iter_grid_positions()
 
-    def _step_size(self, fov_width: float, fov_height: float) -> Tuple[float, float]:
+    def _step_size(self, fov_width: float, fov_height: float) -> tuple[float, float]:
         dx = fov_width - (fov_width * self.overlap[0]) / 100
         dy = fov_height - (fov_height * self.overlap[1]) / 100
         return dx, dy
@@ -409,7 +407,7 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
         seed = np.random.RandomState(self.random_seed)
         func = _POINTS_GENERATORS[self.shape]
 
-        points: list[Tuple[float, float]] = []
+        points: list[tuple[float, float]] = []
         needed_points = self.num_points
         start_at = self.start_at
         if isinstance(start_at, RelativePosition):
@@ -454,7 +452,7 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
 
 
 def _is_a_valid_point(
-    points: list[Tuple[float, float]],
+    points: list[tuple[float, float]],
     x: float,
     y: float,
     min_dist_x: float,
