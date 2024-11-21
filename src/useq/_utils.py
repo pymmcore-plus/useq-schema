@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import re
 from datetime import timedelta
-from typing import TYPE_CHECKING, Literal, NamedTuple, TypeVar
+from enum import Enum
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from typing import Final
+    from typing import Final, Literal, TypeVar
 
     from typing_extensions import TypeGuard
 
@@ -17,18 +18,35 @@ if TYPE_CHECKING:
 
 
 # could be an enum, but this more easily allows Axis.Z to be a string
-class Axis:
-    """Recognized axis names."""
+class Axis(str, Enum):
+    """Recognized useq-schema axis keys.
 
-    TIME: Final[Literal["t"]] = "t"
-    POSITION: Final[Literal["p"]] = "p"
-    GRID: Final[Literal["g"]] = "g"
-    CHANNEL: Final[Literal["c"]] = "c"
-    Z: Final[Literal["z"]] = "z"
+    Attributes
+    ----------
+    TIME : Literal["t"]
+        Time axis.
+    POSITION : Literal["p"]
+        XY Stage Position axis.
+    GRID : Literal["g"]
+        Grid axis (usually an additional row/column iteration around a position).
+    CHANNEL : Literal["c"]
+        Channel axis.
+    Z : Literal["z"]
+        Z axis.
+    """
+
+    TIME: Literal["t"] = "t"
+    POSITION: Literal["p"] = "p"
+    GRID: Literal["g"] = "g"
+    CHANNEL: Literal["c"] = "c"
+    Z: Literal["z"] = "z"
+
+    def __str__(self) -> Literal["t", "p", "g", "c", "z"]:
+        return self.value  # type: ignore [no-any-return]
 
 
 # note: order affects the default axis_order in MDASequence
-AXES: Final[tuple[str, ...]] = (
+AXES: Final[tuple[Axis, ...]] = (
     Axis.TIME,
     Axis.POSITION,
     Axis.GRID,

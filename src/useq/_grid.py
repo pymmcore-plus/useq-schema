@@ -17,8 +17,9 @@ from typing import (
 )
 
 import numpy as np
-from annotated_types import Ge, Gt  # noqa: TCH002
+from annotated_types import Ge, Gt
 from pydantic import Field, field_validator, model_validator
+from typing_extensions import Annotated, Self, TypeAlias
 
 from useq._point_visiting import OrderMode, TraversalOrder
 from useq._position import (
@@ -29,8 +30,6 @@ from useq._position import (
 )
 
 if TYPE_CHECKING:
-    from typing_extensions import Annotated, Self, TypeAlias
-
     PointGenerator: TypeAlias = Callable[
         [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
     ]
