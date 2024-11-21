@@ -22,6 +22,7 @@ from useq import (
     ZRangeAround,
     ZRelativePositions,
 )
+from useq._mda_event import SLMImage
 from useq._position import RelativePosition
 
 _T = List[Tuple[Any, Sequence[float]]]
@@ -469,7 +470,7 @@ def test_slm_image() -> None:
 
     # directly passing data
     event = MDAEvent(slm_image=data)
-    assert event.slm_image is not None
+    assert isinstance(event.slm_image, SLMImage)
 
     # we can cast SLMIamge to a numpy array
     assert isinstance(np.asarray(event.slm_image), np.ndarray)
