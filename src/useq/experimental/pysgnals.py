@@ -8,7 +8,7 @@ from useq._mda_event import MDAEvent
 from useq._mda_sequence import MDASequence
 
 if TYPE_CHECKING:
-    from useq.runner.protocols import PSignal
+    from useq.experimental.protocols import PSignal
 
 try:
     from psygnal import Signal, SignalGroup

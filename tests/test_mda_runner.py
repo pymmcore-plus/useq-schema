@@ -10,13 +10,13 @@ import numpy as np
 import pytest
 
 from useq import MDAEvent, MDASequence
-from useq.runner import MDARunner
-from useq.runner.pysgnals import MDASignaler
+from useq.experimental import MDARunner
+from useq.experimental.pysgnals import MDASignaler
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from useq.runner.protocols import PImagePayload
+    from useq.experimental.protocols import PImagePayload
 
 
 class GoodEngine:

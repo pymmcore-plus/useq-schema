@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 from useq._mda_sequence import MDASequence
-from useq.runner.protocols import PMDAEngine, PMDASignaler
+from useq.experimental.protocols import PMDAEngine, PMDASignaler
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
