@@ -472,6 +472,7 @@ def test_slm_image() -> None:
     # directly passing data
     event = MDAEvent(slm_image=data)
     assert isinstance(event.slm_image, SLMImage)
+    repr(event)
 
     # we can cast SLMIamge to a numpy array
     assert isinstance(np.asarray(event.slm_image), np.ndarray)
@@ -482,3 +483,8 @@ def test_slm_image() -> None:
     assert event2.slm_image is not None
     np.testing.assert_array_equal(event2.slm_image, np.array(data))
     assert event2.slm_image.device == "SLM"
+    repr(event2)
+
+    # directly provide numpy array
+    event3 = MDAEvent(slm_image=SLMImage(data=np.ones((10, 10))))
+    print(repr(event3))

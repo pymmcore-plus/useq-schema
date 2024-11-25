@@ -16,14 +16,14 @@ from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
-from useq._grid import MultiPointPlan  # noqa: TCH001
+from useq._grid import MultiPointPlan  # noqa: TC001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._plate import WellPlatePlan
 from useq._position import Position, PositionBase
-from useq._time import AnyTimePlan  # noqa: TCH001
+from useq._time import AnyTimePlan  # noqa: TC001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
-from useq._z import AnyZPlan  # noqa: TCH001
+from useq._z import AnyZPlan  # noqa: TC001
 
 if TYPE_CHECKING:
     from typing_extensions import Self

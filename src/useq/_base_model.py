@@ -11,6 +11,7 @@ from typing import (
 )
 
 import numpy as np
+import pydantic
 from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
@@ -20,28 +21,17 @@ if TYPE_CHECKING:
 
     ReprArgs = Iterable[tuple[str | None, Any]]
 
-__all__ = ["UseqModel", "FrozenModel"]
+__all__ = ["FrozenModel", "UseqModel"]
 
 _T = TypeVar("_T", bound="FrozenModel")
 _Y = TypeVar("_Y", bound="UseqModel")
 
-
-def _non_default_repr_args(obj: BaseModel, fields: "ReprArgs") -> "ReprArgs":
-    """Set fields on a model instance."""
-    return [
-        (k, val)
-        for k, val in fields
-        if k in obj.model_fields
-        and val
-        != (
-            factory()
-            if (factory := obj.model_fields[k].default_factory) is not None
-            else obj.model_fields[k].default
-        )
-    ]
+PYDANTIC_VERSION = tuple(int(x) for x in pydantic.__version__.split(".")[:3])
+GET_DEFAULT_KWARGS: dict = {}
+if PYDANTIC_VERSION >= (2, 10):
+    GET_DEFAULT_KWARGS = {"validated_data": {}}
 
 
-# TODO: consider removing this and using model_copy directly
 class _ReplaceableModel(BaseModel):
     def replace(self, **kwargs: Any) -> "Self":
         """Return a new instance replacing specified kwargs with new values.
@@ -62,6 +52,20 @@ class _ReplaceableModel(BaseModel):
     def __repr_args__(self) -> "ReprArgs":
         """Only show fields that are not None or equal to their default value."""
         return _non_default_repr_args(self, super().__repr_args__())
+
+
+def _non_default_repr_args(obj: BaseModel, fields: "ReprArgs") -> "ReprArgs":
+    """Set fields on a model instance."""
+    for k, val in fields:
+        if k and (field := obj.model_fields.get(k)) and field.repr:
+            default = field.get_default(call_default_factory=True, **GET_DEFAULT_KWARGS)
+            try:
+                if val == default:
+                    continue
+            except ValueError:
+                if np.array_equal(val, default):
+                    continue
+        yield k, val
 
 
 class FrozenModel(_ReplaceableModel):

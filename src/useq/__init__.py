@@ -15,7 +15,8 @@ from useq._grid import (
     Shape,
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
-from useq._mda_event import MDAEvent, PropertyTuple
+from useq._mda_event import Channel as EventChannel
+from useq._mda_event import MDAEvent, PropertyTuple, SLMImage
 from useq._mda_sequence import MDASequence
 from useq._plate import WellPlate, WellPlatePlan
 from useq._plate_registry import register_well_plates, registered_well_plate_keys
@@ -49,6 +50,7 @@ __all__ = [
     "AxesBasedAF",
     "Axis",
     "Channel",
+    "EventChannel",
     "GridFromEdges",
     "GridRelative",
     "GridRowsColumns",
@@ -62,10 +64,10 @@ __all__ = [
     "Position",  # alias for AbsolutePosition
     "PropertyTuple",
     "RandomPoints",
-    "register_well_plates",
-    "registered_well_plate_keys",
     "RelativeMultiPointPlan",
     "RelativePosition",
+    "SLMImage",
+    "SLMImages",
     "Shape",
     "TDurationLoops",
     "TIntervalDuration",
@@ -78,6 +80,8 @@ __all__ = [
     "ZRangeAround",
     "ZRelativePositions",
     "ZTopBottom",
+    "register_well_plates",
+    "registered_well_plate_keys",
 ]
 
 
