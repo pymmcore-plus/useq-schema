@@ -88,7 +88,7 @@ select = [
     "C4",   # comprehensions
     "B",    # bugbear
     "A001", # Variable shadowing a python builtin
-    "TCH",  # flake8-type-checking
+    "TC",   # flake8-type-checking
     "TID",  # flake8-tidy-imports
     "RUF",  # ruff-specific rules
     "PERF", # performance
