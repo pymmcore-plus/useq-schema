@@ -67,7 +67,6 @@ __all__ = [
     "RelativeMultiPointPlan",
     "RelativePosition",
     "SLMImage",
-    "SLMImages",
     "Shape",
     "TDurationLoops",
     "TIntervalDuration",
