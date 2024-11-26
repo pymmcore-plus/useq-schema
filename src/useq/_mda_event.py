@@ -71,7 +71,7 @@ class SLMImage(UseqModel):
         used. By default, `None`.
     """
 
-    data: Any
+    data: Any = Field(..., repr=False)
     device: Optional[str] = None
     exposure: Optional[float] = None
 
@@ -85,6 +85,15 @@ class SLMImage(UseqModel):
     def __array__(self, *args: Any, **kwargs: Any) -> npt.NDArray:
         """Cast the image data to a numpy array."""
         return np.asarray(self.data, *args, **kwargs)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SLMImage):
+            return False
+        return (
+            self.device == other.device
+            and self.exposure == other.exposure
+            and np.array_equal(self.data, other.data)
+        )
 
 
 class PropertyTuple(NamedTuple):
