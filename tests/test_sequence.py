@@ -488,3 +488,5 @@ def test_slm_image() -> None:
     # directly provide numpy array
     event3 = MDAEvent(slm_image=SLMImage(data=np.ones((10, 10))))
     print(repr(event3))
+
+    assert event3 != event2
