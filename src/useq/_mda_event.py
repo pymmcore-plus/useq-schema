@@ -73,7 +73,7 @@ class SLMImage(UseqModel):
 
     data: Any = Field(..., repr=False)
     device: Optional[str] = None
-    exposure: Optional[float] = None
+    exposure: Optional[float] = Field(default=None, gt=0.0)
 
     @model_validator(mode="before")
     def _cast_data(cls, v: Any) -> Any:
