@@ -5,7 +5,7 @@ from typing import Any
 
 import numpy as np
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from useq import (
     Channel,
@@ -23,6 +23,7 @@ from useq import (
     ZRangeAround,
     ZRelativePositions,
 )
+from useq._actions import CustomAction, HardwareAutofocus
 from useq._mda_event import SLMImage
 from useq._position import RelativePosition
 
@@ -354,7 +355,34 @@ def test_skip_channel_do_stack_no_zplan() -> None:
 
 def test_event_action_union() -> None:
     # test that action unions work
-    MDAEvent(action={"autofocus_device_name": "Z", "autofocus_motor_offset": 25})
+    event = MDAEvent(
+        action={
+            "type": "hardware_autofocus",
+            "autofocus_device_name": "Z",
+            "autofocus_motor_offset": 25,
+        }
+    )
+    assert isinstance(event.action, HardwareAutofocus)
+
+
+def test_custom_action() -> None:
+    event = MDAEvent(action={"type": "custom"})
+    assert isinstance(event.action, CustomAction)
+
+    event2 = MDAEvent(
+        action=CustomAction(
+            data={
+                "foo": "bar",
+                "alist": [1, 2, 3],
+                "nested": {"a": 1, "b": 2},
+                "nested_list": [{"a": 1}, {"b": 2}],
+            }
+        )
+    )
+    assert isinstance(event2.action, CustomAction)
+
+    with pytest.raises(ValidationError, match="must be JSON serializable"):
+        CustomAction(data={"not-serializable": lambda x: x})
 
 
 def test_keep_shutter_open() -> None:

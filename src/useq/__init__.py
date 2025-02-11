@@ -3,7 +3,7 @@
 import warnings
 from typing import Any
 
-from useq._actions import AcquireImage, Action, HardwareAutofocus
+from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
 from useq._grid import (
     GridFromEdges,
@@ -50,6 +50,7 @@ __all__ = [
     "AxesBasedAF",
     "Axis",
     "Channel",
+    "CustomAction",
     "EventChannel",
     "GridFromEdges",
     "GridRelative",
