@@ -174,7 +174,10 @@ class MDAEvent(UseqModel):
     action : Action
         The action to perform for this event.  By default, [`useq.AcquireImage`][].
         Example of another action is [`useq.HardwareAutofocus`][] which could be used
-        to perform a hardware autofocus.
+        to perform a hardware autofocus.  For backwards compatibility, an `action` of
+        `None` implies `AcquireImage`.  You may use `CustomAction` to indicate any
+        custom action, with the `data` attribute containing any data required to
+        perform the custom action.
     keep_shutter_open : bool
         If `True`, the illumination shutter should be left open after the event has
         been executed, otherwise it should be closed. By default, `False`."
@@ -199,7 +202,7 @@ class MDAEvent(UseqModel):
     sequence: Optional["MDASequence"] = Field(default=None, repr=False)
     properties: Optional[list[PropertyTuple]] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
-    action: AnyAction = Field(default_factory=AcquireImage)
+    action: AnyAction = Field(default_factory=AcquireImage, discriminator="type")
     keep_shutter_open: bool = False
     reset_event_timer: bool = False
 
