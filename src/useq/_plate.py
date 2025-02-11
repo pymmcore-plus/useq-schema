@@ -88,7 +88,7 @@ class WellPlate(FrozenModel):
         """Return the names of all wells as array of strings with shape (Rows, Cols)."""
         return np.array(
             [
-                [f"{_index_to_row_name(r)}{c+1}" for c in range(self.columns)]
+                [f"{_index_to_row_name(r)}{c + 1}" for c in range(self.columns)]
                 for r in range(self.rows)
             ]
         )

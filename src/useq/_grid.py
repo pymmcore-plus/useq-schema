@@ -46,8 +46,8 @@ class RelativeTo(Enum):
         Grid is positioned such that the top left corner is at the origin.
     """
 
-    center: str = "center"
-    top_left: str = "top_left"
+    center = "center"
+    top_left = "top_left"
 
 
 # used in iter_indices below, to determine the order in which indices are yielded

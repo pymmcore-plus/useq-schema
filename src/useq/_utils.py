@@ -35,14 +35,14 @@ class Axis(str, Enum):
         Z axis.
     """
 
-    TIME: Literal["t"] = "t"
-    POSITION: Literal["p"] = "p"
-    GRID: Literal["g"] = "g"
-    CHANNEL: Literal["c"] = "c"
-    Z: Literal["z"] = "z"
+    TIME = "t"
+    POSITION = "p"
+    GRID = "g"
+    CHANNEL = "c"
+    Z = "z"
 
     def __str__(self) -> Literal["t", "p", "g", "c", "z"]:
-        return self.value  # type: ignore [no-any-return]
+        return self.value
 
 
 # note: order affects the default axis_order in MDASequence
