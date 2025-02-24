@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from functools import cache
 from itertools import product
-from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import TypedDict
 
 from useq._channel import Channel  # noqa: TC001  # noqa: TCH001
 from useq._mda_event import Channel as EventChannel
-from useq._mda_event import MDAEvent
+from useq._mda_event import MDAEvent, ReadOnlyDict
 from useq._utils import AXES, Axis, _has_axes
 from useq._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
 
@@ -21,7 +20,7 @@ if TYPE_CHECKING:
 
 
 class MDAEventDict(TypedDict, total=False):
-    index: MappingProxyType[str, int]
+    index: ReadOnlyDict
     channel: EventChannel | None
     exposure: float | None
     min_start_time: float | None
@@ -162,7 +161,7 @@ def _iter_sequence(
         event_kwargs = base_event_kwargs or MDAEventDict(sequence=sequence)
         # the .update() here lets us build on top of the base_event.index if present
 
-        event_kwargs["index"] = MappingProxyType(
+        event_kwargs["index"] = ReadOnlyDict(
             {**event_kwargs.get("index", {}), **index}  # type: ignore
         )
         # determine x, y, z positions

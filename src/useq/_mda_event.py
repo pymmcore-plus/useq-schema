@@ -1,8 +1,7 @@
 # don't add __future__.annotations here
 # pydantic2 isn't rebuilding the model correctly
 
-from collections.abc import Mapping, Sequence
-from types import MappingProxyType
+from collections import UserDict
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -12,7 +11,8 @@ from typing import (
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, GetCoreSchemaHandler, field_validator, model_validator
+from pydantic_core import core_schema
 
 from useq._actions import AcquireImage, AnyAction
 from useq._base_model import UseqModel
@@ -23,6 +23,8 @@ except ImportError:
     field_serializer = None  # type: ignore
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from useq._mda_sequence import MDASequence
 
     ReprArgs = Sequence[tuple[Optional[str], Any]]
@@ -118,6 +120,33 @@ def _float_or_none(v: Any) -> Optional[float]:
     return float(v) if v is not None else v
 
 
+class ReadOnlyDict(UserDict[str, int]):
+    """A read-only dictionary."""
+
+    _initialized: bool = False
+    if not TYPE_CHECKING:
+
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
+            self._initialized = True
+
+    def __setitem__(self, key: str, value: int) -> None:
+        if self._initialized:
+            raise TypeError("Read-only dictionary")
+        super().__setitem__(key, value)
+
+    def __repr__(self) -> str:
+        return repr({str(x): v for x, v in self.data.items()})
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: type[Any], handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        return core_schema.dict_schema(
+            keys_schema=core_schema.str_schema(), values_schema=core_schema.int_schema()
+        )
+
+
 class MDAEvent(UseqModel):
     """Define a single event in a [`MDASequence`][useq.MDASequence].
 
@@ -190,7 +219,7 @@ class MDAEvent(UseqModel):
         `False`.
     """
 
-    index: Mapping[str, int] = Field(default_factory=lambda: MappingProxyType({}))
+    index: ReadOnlyDict = Field(default_factory=ReadOnlyDict)
     channel: Optional[Channel] = None
     exposure: Optional[float] = Field(default=None, gt=0.0)
     min_start_time: Optional[float] = None  # time in sec
