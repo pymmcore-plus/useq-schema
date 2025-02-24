@@ -1,129 +1,71 @@
 {
-  "autofocus_plan": {
-    "autofocus_device_name": "Z",
-    "autofocus_motor_offset": 50.0,
-    "axes": [
-      "c"
-    ]
-  },
-  "axis_order": [
-    "t",
-    "p",
-    "g",
-    "c",
-    "z"
-  ],
-  "channels": [
-    {
-      "acquire_every": 1,
-      "camera": null,
-      "config": "Cy5",
-      "do_stack": true,
-      "exposure": 50.0,
-      "group": "Channel",
-      "z_offset": 0.0
-    },
-    {
-      "acquire_every": 1,
-      "camera": null,
-      "config": "FITC",
-      "do_stack": true,
-      "exposure": 100.0,
-      "group": "Channel",
-      "z_offset": 0.0
-    },
-    {
-      "acquire_every": 3,
-      "camera": null,
-      "config": "DAPI",
-      "do_stack": false,
-      "exposure": null,
-      "group": "Channel",
-      "z_offset": 0.0
-    }
-  ],
-  "grid_plan": {
-    "columns": 1,
-    "fov_height": null,
-    "fov_width": null,
-    "mode": "row_wise_snake",
-    "overlap": [
-      0.0,
-      0.0
-    ],
-    "relative_to": "center",
-    "rows": 2
-  },
-  "keep_shutter_open_across": [],
   "metadata": {
-    "some info": "something"
+    "some_info": "something"
   },
+  "axis_order": ["t", "p", "g", "c", "z"],
   "stage_positions": [
     {
-      "name": null,
-      "sequence": null,
       "x": 10.0,
-      "y": 20.0,
-      "z": null
+      "y": 20.0
     },
     {
+      "x": 10.0,
+      "y": 20.0,
+      "z": 50.0,
       "name": "test_name",
       "sequence": {
-        "autofocus_plan": null,
-        "axis_order": [
-          "t",
-          "p",
-          "g",
-          "c",
-          "z"
-        ],
-        "channels": [],
+        "axis_order": ["t", "p", "g", "c", "z"],
         "grid_plan": {
-          "columns": 3,
-          "fov_height": null,
-          "fov_width": null,
           "mode": "row_wise_snake",
-          "overlap": [
-            0.0,
-            0.0
-          ],
-          "relative_to": "center",
-          "rows": 2
+          "rows": 2,
+          "columns": 3
         },
-        "keep_shutter_open_across": [],
-        "metadata": {},
-        "stage_positions": [],
-        "time_plan": null,
         "z_plan": {
           "above": 10.0,
           "below": 0.0,
-          "go_up": true,
           "step": 1.0
         }
-      },
-      "x": 10.0,
-      "y": 20.0,
-      "z": 50.0
+      }
+    }
+  ],
+  "grid_plan": {
+    "rows": 2,
+    "columns": 1
+  },
+  "channels": [
+    {
+      "config": "Cy5",
+      "exposure": 50.0
+    },
+    {
+      "config": "FITC",
+      "exposure": 100.0
+    },
+    {
+      "config": "DAPI",
+      "do_stack": false,
+      "acquire_every": 3
     }
   ],
   "time_plan": {
     "phases": [
       {
         "interval": 3.0,
-        "loops": 3,
-        "prioritize_duration": false
+        "loops": 3
       },
       {
-        "duration": 2400.0,
         "interval": 10.0,
-        "prioritize_duration": true
+        "duration": 2400.0
       }
-    ],
-    "prioritize_duration": false
+    ]
   },
   "z_plan": {
-    "go_up": true,
     "range": 1.0,
     "step": 0.5
+  },
+  "autofocus_plan": {
+    "autofocus_device_name": "Z",
+    "autofocus_motor_offset": 50.0,
+    "axes": ["c"]
   }
 }

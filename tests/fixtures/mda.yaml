@@ -21,7 +21,7 @@ grid_plan:
   columns: 1
   rows: 2
 metadata:
-  some info: something
+  some_info: something
 stage_positions:
 - x: 10.0
   y: 20.0

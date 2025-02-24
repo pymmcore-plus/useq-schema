@@ -345,9 +345,11 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
     def selected_well_positions(self) -> Sequence[Position]:
         """Return selected wells (centers) as Position objects."""
         return [
-            Position(x=x * 1000, y=y * 1000, name=name)  # convert to µm
-            for (y, x), name in zip(
-                self.selected_well_coordinates, self.selected_well_names
+            Position(x=x * 1000, y=y * 1000, name=name, row=r, col=c)  # convert to µm
+            for (y, x), name, (r, c) in zip(
+                self.selected_well_coordinates,
+                self.selected_well_names,
+                zip(*self.selected_wells or ()),
             )
         ]
 
