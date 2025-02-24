@@ -143,7 +143,9 @@ class ReadOnlyDict(UserDict[str, int]):
         cls, source: type[Any], handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
         return core_schema.dict_schema(
-            keys_schema=core_schema.str_schema(), values_schema=core_schema.int_schema()
+            keys_schema=core_schema.str_schema(),
+            values_schema=core_schema.int_schema(),
+            serialization=core_schema.plain_serializer_function_ser_schema(dict),
         )
 
 
@@ -247,7 +249,6 @@ class MDAEvent(UseqModel):
         return Channel(config=val) if isinstance(val, str) else val
 
     if field_serializer is not None:
-        _si = field_serializer("index", mode="plain")(lambda v: dict(v))
         _sx = field_serializer("x_pos", mode="plain")(_float_or_none)
         _sy = field_serializer("y_pos", mode="plain")(_float_or_none)
         _sz = field_serializer("z_pos", mode="plain")(_float_or_none)
