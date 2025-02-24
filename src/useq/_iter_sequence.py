@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 class MDAEventDict(TypedDict, total=False):
     index: ReadOnlyDict
+    non_dimension_coords: ReadOnlyDict
     channel: EventChannel | None
     exposure: float | None
     min_start_time: float | None
@@ -152,7 +153,6 @@ def _iter_sequence(
             continue  # pragma: no cover
         # get axes objects for this event
         index, time, position, grid, channel, z_pos = _parse_axes(zip(order, item))
-
         # skip if necessary
         if _should_skip(position, channel, index, sequence.z_plan):
             continue
@@ -166,8 +166,21 @@ def _iter_sequence(
         )
         # determine x, y, z positions
         event_kwargs.update(_xyzpos(position, channel, sequence.z_plan, grid, z_pos))
-        if position and position.name:
-            event_kwargs["pos_name"] = position.name
+        if position:
+            if position.name:
+                event_kwargs["pos_name"] = position.name
+
+            pr = position.row
+            pc = position.col
+            if pr is not None or pc is not None:
+                nd_coords = event_kwargs.setdefault(
+                    "non_dimension_coords", ReadOnlyDict()
+                )
+                if pr is not None:
+                    nd_coords.data["r"] = pr
+                if pc is not None:
+                    nd_coords.data["c"] = pc
+
         if channel:
             event_kwargs["channel"] = EventChannel.model_construct(
                 config=channel.config, group=channel.group

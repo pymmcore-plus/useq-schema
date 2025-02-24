@@ -30,7 +30,7 @@ class PositionBase(MutableModel):
         Optional name for the position.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
-    row : int | None
+    row : int | str | None
         Optional row index, when used in a grid.
     col : int | None
         Optional column index, when used in a grid.
@@ -58,7 +58,16 @@ class PositionBase(MutableModel):
             z += other.z
         if (name := self.name) and other.name:
             name = f"{name}_{other.name}"
-        kwargs = {**self.model_dump(), "x": x, "y": y, "z": z, "name": name}
+        kwargs = {
+            **self.model_dump(),
+            "x": x,
+            "y": y,
+            "z": z,
+            "name": name,
+            # need to explicitly include these due to the exclude=True
+            "row": self.row,
+            "col": self.col,
+        }
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
 
     def __round__(self, ndigits: "SupportsIndex | None" = None) -> "Self":

@@ -158,6 +158,12 @@ class MDAEvent(UseqModel):
     index : dict[str, int]
         Index of this event in the sequence. This is a mapping of axis name
         to index.  For example: `{'t': 4, 'c': 0, 'z': 5},`
+    non_dimension_coords : dict[str, int]
+        Additional coordinates to associate with this event. This is a mapping of
+        coordinate name to index.  For example: `{'r': 2, 'c': 3}` for a row/column
+        declaration.  In that case, there will likely be a 1-dimensional axis for
+        position (e.g. `{'p': 0}`, `{'p': 1}`) in `index`, while the row/column
+        provides additional context (but is not a true axis of the sequence).
     channel : Channel | None
         Channel to use for this event. If `None`, implies use current channel.
         By default, `None`.  `Channel` is a simple pydantic object with two attributes:
@@ -220,6 +226,7 @@ class MDAEvent(UseqModel):
     """
 
     index: ReadOnlyDict = Field(default_factory=ReadOnlyDict)
+    non_dimension_coords: ReadOnlyDict = Field(default_factory=ReadOnlyDict)
     channel: Optional[Channel] = None
     exposure: Optional[float] = Field(default=None, gt=0.0)
     min_start_time: Optional[float] = None  # time in sec
