@@ -30,7 +30,7 @@ class PositionBase(MutableModel):
         Optional name for the position.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
-    row : int | str | None
+    row : int | None
         Optional row index, when used in a grid.
     col : int | None
         Optional column index, when used in a grid.
