@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import pytest
@@ -13,7 +12,11 @@ def test_serialization(mda1: MDASequence, ext: str) -> None:
     mda = MDASequence.from_file(str(FILE))
     assert mda == mda1
     if ext == "json":
-        assert json.loads(mda.model_dump_json(exclude={"uid"})) == json.loads(text)
+        # NOTE: this is extremely sensitive to the format of the JSON fixture file
+        # things MUST be in the same order there... so if you get errors here, double
+        # check the order of the fields in the fixture file.
+        dump = mda.model_dump_json(exclude_unset=True)
+        assert dump == text.replace("\n", "").replace(" ", "")
     else:
         assert mda.yaml() == text
 
