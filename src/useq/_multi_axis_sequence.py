@@ -1,4 +1,5 @@
 from collections.abc import Iterable, Iterator, Sequence
+from http.client import VARIANT_ALSO_NEGOTIATES
 from itertools import islice, product
 from typing import (
     TYPE_CHECKING,
@@ -12,6 +13,7 @@ from pydantic import ConfigDict, field_validator
 from useq._axis_iterable import AxisIterable, IterItem
 from useq._base_model import UseqModel
 from useq._mda_event import MDAEvent
+from useq._position import Position
 from useq._utils import Axis
 
 if TYPE_CHECKING:
@@ -19,7 +21,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-INFINITE = NotImplemented
+INFINITE = float("inf")
 
 
 class MultiDimSequence(UseqModel):
@@ -81,9 +83,12 @@ class MultiDimSequence(UseqModel):
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
         return self.iterate()
 
-    def iterate(self, axis_order: Sequence[str] | None = None) -> Iterator[MDAEvent]:
-        _last_t_idx: int = -1
-
+    def iterate(
+        self,
+        axis_order: Sequence[str] | None = None,
+        _iter_items: tuple[IterItem, ...] = (),
+        _last_t_idx: int = -1,
+    ) -> Iterator[MDAEvent]:
         ax_map: dict[str, AxisIterable] = {ax.axis_key: ax for ax in self.axes}
         _axis_order = axis_order or self.axis_order or list(ax_map)
         if unknown_keys := set(_axis_order) - set(ax_map):
@@ -96,21 +101,50 @@ class MultiDimSequence(UseqModel):
 
         for axis_items in self._iter_inner(sorted_axes):
             event_index = {}
-            values: dict[str, IterItem] = {}
+            iter_items: dict[str, IterItem] = {}
+
             for axis_key, idx, value, iterable in axis_items:
-                values[axis_key] = IterItem(axis_key, idx, value, iterable)
+                iter_items[axis_key] = IterItem(axis_key, idx, value, iterable)
                 event_index[axis_key] = idx
 
-            if any(ax_type.should_skip(values) for ax_type in ax_map.values()):
+            if any(ax_type.should_skip(iter_items) for ax_type in ax_map.values()):
                 continue
 
-            event = self._build_event(list(values.values()))
-            if event.index.get(Axis.TIME) == 0 and _last_t_idx != 0:
-                object.__setattr__(event, "reset_event_timer", True)
-            yield event
-            _last_t_idx = event.index.get(Axis.TIME, _last_t_idx)
+            item_values = tuple(iter_items.values())z
+            event = self._build_event(_iter_items + item_values)
+
+            for item in item_values:
+                if isinstance(pos := item.value, Position) and isinstance(
+                    seq := getattr(pos, "sequence", None), MultiDimSequence
+                ):
+                    yield from seq.iterate(
+                        _iter_items=item_values, _last_t_idx=_last_t_idx
+                    )
+                    break  # Don't yield a "parent" event if sub-sequence is used
+            else:
+                if event.index.get(Axis.TIME) == 0 and _last_t_idx != 0:
+                    object.__setattr__(event, "reset_event_timer", True)
+                yield event
+                _last_t_idx = event.index.get(Axis.TIME, _last_t_idx)
+
+        # breakpoint()
+        # if pos.x is not None:
+        #     xpos = sub_event.x_pos or 0
+        #     object.__setattr__(sub_event, "x_pos", xpos + pos.x)
+        # if pos.y is not None:
+        #     ypos = sub_event.y_pos or 0
+        #     object.__setattr__(sub_event, "y_pos", ypos + pos.y)
+        # if pos.z is not None:
+        #     zpos = sub_event.z_pos or 0
+        #     object.__setattr__(sub_event, "z_pos", zpos + pos.z)
+        # kwargs = sub_event.model_dump(mode="python", exclude_none=True)
+        # kwargs["index"] = {**event_index, **sub_event.index}
+        # kwargs["metadata"] = {**event.metadata, **sub_event.metadata}
+
+        # sub_event = event.replace(**kwargs)
 
     def _build_event(self, iter_items: Sequence[IterItem]) -> MDAEvent:
+        iter_items = list({i[0]: i for i in iter_items}.values())
         event_dicts: list[MDAEventDict] = []
         # values will look something like this:
         # [

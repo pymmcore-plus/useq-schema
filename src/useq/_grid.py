@@ -76,6 +76,11 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         Engines MAY override this even if provided.
     """
 
+    @property
+    def axis_key(self) -> str:
+        """A string id representing the axis. Prefer lowercase."""
+        return "g"
+
     overlap: tuple[float, float] = Field((0.0, 0.0), frozen=True)
     mode: OrderMode = Field(OrderMode.row_wise_snake, frozen=True)
 

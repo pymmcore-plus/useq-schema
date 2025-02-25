@@ -11,7 +11,9 @@ from typing import (
 import numpy as np
 from pydantic import Field, model_validator
 
+from useq._axis_iterable import IterItem
 from useq._base_model import FrozenModel, MutableModel
+from useq._iter_sequence import MDAEventDict
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -48,7 +50,7 @@ class PositionBase(MutableModel):
     y: Optional[float] = None
     z: Optional[float] = None
     name: Optional[str] = None
-    sequence: Optional["MDASequence"] = None
+    sequence: Optional["MDASequence | Any"] = None
 
     # excluded from serialization
     row: Optional[int] = Field(default=None, exclude=True)
@@ -133,6 +135,25 @@ class _MultiPointPlan(MutableModel, Generic[PositionT]):
         from useq._plot import plot_points
 
         plot_points(self)
+
+    def create_event_kwargs(self, val: PositionT) -> MDAEventDict:
+        """Convert a value from the iterator to kwargs for an MDAEvent."""
+        if isinstance(val, RelativePosition):
+            return {"x_pos_rel": val.x, "y_pos_rel": val.y, "z_pos_rel": val.z}
+        if isinstance(val, AbsolutePosition):
+            return {"x_pos": val.x, "y_pos": val.y, "z_pos": val.z}
+        raise ValueError(f"Unsupported position type: {type(val)}")
+
+    def length(self) -> int:
+        """Return the number of axis values.
+
+        If the axis is infinite, return -1.
+        """
+        return self.num_positions()
+
+    def should_skip(self, kwargs: dict[str, IterItem]) -> bool:
+        """Return True if the event should be skipped."""
+        return False
 
 
 class RelativePosition(PositionBase, _MultiPointPlan["RelativePosition"]):
