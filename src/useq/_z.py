@@ -17,6 +17,8 @@ from useq._base_model import FrozenModel
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
+    from useq._axis_iterable import IterItem
+
 
 def _list_cast(field: str) -> Callable:
     v = field_validator(field, mode="before", check_fields=False)
@@ -35,7 +37,7 @@ class ZPlan(FrozenModel):
     def length(self) -> int:
         return self.num_positions()
 
-    def should_skip(cls, kwargs: dict) -> bool:
+    def should_skip(self, kwargs: dict[str, IterItem]) -> bool:
         return False
 
     def create_event_kwargs(self, val: float) -> dict:

@@ -4,6 +4,7 @@ from typing import Annotated, Any, Union
 
 from pydantic import BeforeValidator, Field, PlainSerializer
 
+from useq._axis_iterable import IterItem
 from useq._base_model import FrozenModel
 
 # slightly modified so that we can accept dict objects as input
@@ -26,7 +27,7 @@ class TimePlan(FrozenModel):
     def length(self) -> int:
         return self.num_timepoints()
 
-    def should_skip(cls, kwargs: dict) -> bool:
+    def should_skip(self, kwargs: dict[str, IterItem]) -> bool:
         return False
 
     def create_event_kwargs(self, val: Any) -> dict:

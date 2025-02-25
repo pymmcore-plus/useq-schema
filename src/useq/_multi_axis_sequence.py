@@ -9,9 +9,10 @@ from typing import (
 
 from pydantic import ConfigDict, field_validator
 
-from useq._axis_iterable import AxisIterable
+from useq._axis_iterable import AxisIterable, IterItem
 from useq._base_model import UseqModel
 from useq._mda_event import MDAEvent
+from useq._utils import Axis
 
 if TYPE_CHECKING:
     from useq._iter_sequence import MDAEventDict
@@ -72,15 +73,17 @@ class MultiDimSequence(UseqModel):
 
     def _enumerate_ax(
         self, key: str, ax: Iterable[T], start: int = 0
-    ) -> Iterable[tuple[str, int, T]]:
+    ) -> Iterable[tuple[str, int, T, Iterable[T]]]:
         """Return the key for an enumerated axis."""
         for idx, val in enumerate(ax, start):
-            yield key, idx, val
+            yield key, idx, val, ax
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
         return self.iterate()
 
     def iterate(self, axis_order: Sequence[str] | None = None) -> Iterator[MDAEvent]:
+        _last_t_idx: int = -1
+
         ax_map: dict[str, AxisIterable] = {ax.axis_key: ax for ax in self.axes}
         _axis_order = axis_order or self.axis_order or list(ax_map)
         if unknown_keys := set(_axis_order) - set(ax_map):
@@ -91,33 +94,65 @@ class MultiDimSequence(UseqModel):
         if not sorted_axes:
             return
 
-        for item in self._iter_inner(sorted_axes):
+        for axis_items in self._iter_inner(sorted_axes):
             event_index = {}
-            values = {}
-            for axis_key, idx, value in item:
+            values: dict[str, IterItem] = {}
+            for axis_key, idx, value, iterable in axis_items:
+                values[axis_key] = IterItem(axis_key, idx, value, iterable)
                 event_index[axis_key] = idx
-                values[axis_key] = ax_map[axis_key].create_event_kwargs(value)
-            # values now looks something like this:
-            # {
-            #     "t": {"min_start_time": 0.0},
-            #     "p": {"x_pos": 0.0, "y_pos": 0.0},
-            #     "c": {"channel": {"config": "DAPI", "group": "Channel"}},
-            #     "z": {"z_pos_rel": -2.0},
-            # }
 
-            # fixme: i think this needs to be smarter...
-            merged_kwargs: MDAEventDict = {}
-            for axis_key, kwargs in values.items():
-                merged_kwargs.update(kwargs)
-            merged_kwargs["index"] = event_index
-            event = MDAEvent(**merged_kwargs)
+            if any(ax_type.should_skip(values) for ax_type in ax_map.values()):
+                continue
 
-            if not any(ax_type.should_skip(event) for ax_type in ax_map.values()):
-                yield event
+            event = self._build_event(list(values.values()))
+            if event.index.get(Axis.TIME) == 0 and _last_t_idx != 0:
+                object.__setattr__(event, "reset_event_timer", True)
+            yield event
+            _last_t_idx = event.index.get(Axis.TIME, _last_t_idx)
+
+    def _build_event(self, iter_items: Sequence[IterItem]) -> MDAEvent:
+        event_dicts: list[MDAEventDict] = []
+        # values will look something like this:
+        # [
+        #     {"min_start_time": 0.0},
+        #     {"x_pos": 0.0, "y_pos": 0.0, "z_pos": 0.0},
+        #     {"channel": {"config": "DAPI", "group": "Channel"}},
+        #     {"z_pos_rel": -2.0},
+        # ]
+        abs_pos: dict[str, float] = {}
+        index: dict[str, int] = {}
+        for item in iter_items:
+            kwargs = item.axis_iterable.create_event_kwargs(item.value)
+            event_dicts.append(kwargs)
+            index[item.axis_key] = item.axis_index
+            for key, val in kwargs.items():
+                if key.endswith("_pos"):
+                    if key in abs_pos and abs_pos[key] != val:
+                        raise ValueError(
+                            "Conflicting absolute position values for "
+                            f"{key}: {abs_pos[key]} and {val}"
+                        )
+                    abs_pos[key] = val
+
+        # add relative positions
+        for kwargs in event_dicts:
+            for key, val in kwargs.items():
+                if key.endswith("_pos_rel"):
+                    abs_key = key.replace("_rel", "")
+                    abs_pos.setdefault(abs_key, 0.0)
+                    abs_pos[abs_key] += val
+
+        # now merge all the kwargs into a single dict
+        event_kwargs: MDAEventDict = {}
+        for kwargs in event_dicts:
+            event_kwargs.update(kwargs)
+        event_kwargs.update(abs_pos)
+        event_kwargs["index"] = index
+        return MDAEvent.model_construct(**event_kwargs)
 
     def _iter_inner(
         self, sorted_axes: Sequence[AxisIterable]
-    ) -> Iterable[tuple[str, int, Any]]:
+    ) -> Iterable[tuple[tuple[str, int, Any, AxisIterable], ...]]:
         """Iterate over the sequence.
 
         Yield tuples of (axis_key, index, value) for each axis.
@@ -133,7 +168,7 @@ class MultiDimSequence(UseqModel):
 
     def _iter_infinite_slice(
         self, sorted_axes: list[AxisIterable], start: int, chunk_size: int
-    ) -> Iterable[tuple[str, int, Any]]:
+    ) -> Iterable[tuple[tuple[str, int, Any, AxisIterable], ...]]:
         """Iterate over a slice of an infinite sequence."""
         iterators = []
         for ax in sorted_axes:

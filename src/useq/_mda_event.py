@@ -11,7 +11,12 @@ from typing import (
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import Field, GetCoreSchemaHandler, field_validator, model_validator
+from pydantic import (
+    Field,
+    GetCoreSchemaHandler,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import core_schema
 
 from useq._actions import AcquireImage, AnyAction
@@ -143,7 +148,11 @@ class ReadOnlyDict(UserDict[str, int]):
         cls, source: type[Any], handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
         return core_schema.dict_schema(
-            keys_schema=core_schema.str_schema(), values_schema=core_schema.int_schema()
+            keys_schema=core_schema.str_schema(),
+            values_schema=core_schema.int_schema(),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                dict, return_schema=core_schema.is_instance_schema(ReadOnlyDict)
+            ),
         )
 
 
@@ -231,7 +240,7 @@ class MDAEvent(UseqModel):
     y_pos: Optional[float] = None
     z_pos: Optional[float] = None
     slm_image: Optional[SLMImage] = None
-    sequence: Optional["MDASequence"] = Field(default=None, repr=False)
+    sequence: Optional["MDASequence"] = Field(default=None, repr=False, exclude=True)
     properties: Optional[list[PropertyTuple]] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage, discriminator="type")
@@ -241,16 +250,19 @@ class MDAEvent(UseqModel):
     min_end_time: Optional[float] = None  # time in sec
     reset_event_timer: bool = False
 
+    def __eq__(self, other: object) -> bool:
+        # exclude sequence from equality check
+        if not isinstance(other, MDAEvent):
+            return False
+        self_dict = self.model_dump(mode="python", exclude={"sequence"})
+        other_dict = other.model_dump(mode="python", exclude={"sequence"})
+        return self_dict == other_dict
+
     @field_validator("channel", mode="before")
     def _validate_channel(cls, val: Any) -> Any:
         return Channel(config=val) if isinstance(val, str) else val
 
-    @field_validator("index", mode="after")
-    def _validate_channel(cls, val: Mapping) -> MappingProxyType:
-        return MappingProxyType(val)
-
     if field_serializer is not None:
-        _si = field_serializer("index", mode="plain")(lambda v: dict(v))
         _sx = field_serializer("x_pos", mode="plain")(_float_or_none)
         _sy = field_serializer("y_pos", mode="plain")(_float_or_none)
         _sz = field_serializer("z_pos", mode="plain")(_float_or_none)

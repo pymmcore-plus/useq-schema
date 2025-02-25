@@ -16,10 +16,15 @@ c = Channels(
         Channel(config="Cy5", acquire_every=2),
     ]
 )
-seq1 = MultiDimSequence(axes=(t, p, c, z))
-seq2 = MDASequence(time_plan=t, z_plan=z, stage_positions=list(p), channels=list(c))
-e1 = list(seq1)
-e2 = list(seq2)
+seq1 = MDASequence(time_plan=t, z_plan=z, stage_positions=list(p), channels=list(c))
+seq2 = MultiDimSequence(axes=(t, p, c, z))
 
-print(e1[:5])
-print(e2[:5])
+for i, (e1, e2) in enumerate(zip(seq1, seq2)):
+    if e1 != e2:
+        print(f"{i} ----")
+        print(e1)
+        print(e2)
+        breakpoint()
+        break
+else:
+    assert list(seq1) == list(seq2)

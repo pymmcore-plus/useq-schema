@@ -1,12 +1,14 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from pydantic import Field, RootModel, model_validator
 
-from useq._axis_iterable import AxisIterableBase
+from useq._axis_iterable import AxisIterableBase, IterItem
 from useq._base_model import FrozenModel
+from useq._utils import Axis
 
 if TYPE_CHECKING:
     from useq._iter_sequence import MDAEventDict
+    from useq._z import ZPlan
 
 
 class Channel(FrozenModel):
@@ -62,7 +64,9 @@ class Channels(RootModel, AxisIterableBase):
 
     def create_event_kwargs(self, val: Channel) -> "MDAEventDict":
         """Convert a value from the iterator to kwargs for an MDAEvent."""
-        d: MDAEventDict = {"channel": {"config": val.config, "group": val.group}}
+        from useq._mda_event import Channel
+
+        d: MDAEventDict = {"channel": Channel(config=val.config, group=val.group)}
         if val.z_offset:
             d["z_pos_rel"] = val.z_offset
         return d
@@ -74,16 +78,21 @@ class Channels(RootModel, AxisIterableBase):
         """
         return len(self.root)
 
-    def should_skip(cls, kwargs: dict) -> bool:
-        return False
-        # # skip channels
-        # if Axis.TIME in index and index[Axis.TIME] % channel.acquire_every:
-        #     return True
+    def should_skip(self, kwargs: dict[str, IterItem]) -> bool:
+        if Axis.CHANNEL not in kwargs:
+            return False
+        channel = cast("Channel", kwargs[Axis.CHANNEL].value)
 
-        # # only acquire on the middle plane:
-        # if (
-        #     not channel.do_stack
-        #     and z_plan is not None
-        #     and index[Axis.Z] != z_plan.num_positions() // 2
-        # ):
-        #     return True
+        if Axis.TIME in kwargs:
+            if kwargs[Axis.TIME].axis_index % channel.acquire_every:
+                return True
+
+        # only acquire on the middle plane:
+        if not channel.do_stack:
+            if Axis.Z in kwargs:
+                z_plan = cast("ZPlan", kwargs[Axis.Z].axis_iterable)
+                z_index = kwargs[Axis.Z].axis_index
+                if z_index != z_plan.num_positions() // 2:
+                    return True
+
+        return False

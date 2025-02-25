@@ -3,7 +3,9 @@ from __future__ import annotations
 from collections.abc import Iterator, Sized
 from typing import (
     TYPE_CHECKING,
+    Any,
     ClassVar,
+    NamedTuple,
     Protocol,
     TypeVar,
     runtime_checkable,
@@ -13,12 +15,20 @@ from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from useq._iter_sequence import MDAEventDict
-    from useq._mda_event import MDAEvent
 
 
 # ------ Protocol that can be used as a field annotation in a Pydantic model ------
 
 T = TypeVar("T")
+
+
+class IterItem(NamedTuple):
+    """An item in an iteration sequence."""
+
+    axis_key: str
+    axis_index: int
+    value: Any
+    axis_iterable: AxisIterable
 
 
 @runtime_checkable
@@ -39,7 +49,7 @@ class AxisIterable(Protocol[T]):
         If the axis is infinite, return -1.
         """
 
-    def should_skip(self, kwargs: MDAEvent) -> bool:
+    def should_skip(self, kwargs: dict[str, IterItem]) -> bool:
         """Return True if the event should be skipped."""
         return False
 
@@ -63,5 +73,5 @@ class AxisIterableBase(BaseModel):
             return len(self)
         raise NotImplementedError
 
-    def should_skip(self, kwargs: dict) -> bool:
+    def should_skip(self, kwargs: dict[str, IterItem]) -> bool:
         return False
