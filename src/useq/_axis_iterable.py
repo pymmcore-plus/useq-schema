@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from useq._iter_sequence import MDAEventDict
+    from useq._mda_event import MDAEvent
 
 
 # ------ Protocol that can be used as a field annotation in a Pydantic model ------
@@ -39,7 +40,7 @@ class AxisIterable(Protocol[T]):
         If the axis is infinite, return -1.
         """
 
-    def should_skip(self, kwargs: dict) -> bool:
+    def should_skip(self, kwargs: MDAEvent) -> bool:
         """Return True if the event should be skipped."""
         return False
 

@@ -1,11 +1,23 @@
 from itertools import islice, product
-from typing import Any, Iterable, Iterator, Sequence, Tuple, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Iterator,
+    Sequence,
+    Tuple,
+    TypeVar,
+    cast,
+)
 
 from pydantic import ConfigDict, field_validator
 
 from useq._axis_iterable import AxisIterable
 from useq._base_model import UseqModel
 from useq._mda_event import MDAEvent
+
+if TYPE_CHECKING:
+    from useq._iter_sequence import MDAEventDict
 
 T = TypeVar("T")
 
@@ -88,15 +100,31 @@ class MultiDimSequence(UseqModel):
             for axis_key, idx, value in item:
                 event_index[axis_key] = idx
                 values[axis_key] = ax_map[axis_key].create_event_kwargs(value)
+            # values now looks something like this:
+            # {
+            #     "t": {"min_start_time": 0.0},
+            #     "p": {"x_pos": 0.0, "y_pos": 0.0},
+            #     "c": {"channel": {"config": "DAPI", "group": "Channel"}},
+            #     "z": {"z_pos_rel": -2.0},
+            # }
+
+            # fixme: i think this needs to be smarter...
+            merged_kwargs: MDAEventDict = {}
+            for axis_key, kwargs in values.items():
+                merged_kwargs.update(kwargs)
+            merged_kwargs["index"] = event_index
+            event = MDAEvent(**merged_kwargs)
 
             if not any(ax_type.should_skip(event) for ax_type in ax_map.values()):
-                yield MDAEvent(**event)
+                yield event
 
     def _iter_inner(
         self, sorted_axes: Sequence[AxisIterable]
     ) -> Iterable[tuple[str, int, Any]]:
-        """Iterate over the sequence."""
+        """Iterate over the sequence.
 
+        Yield tuples of (axis_key, index, value) for each axis.
+        """
         if not self.is_infinite:
             iterators = (self._enumerate_ax(ax.axis_key, ax) for ax in sorted_axes)
             yield from product(*iterators)
