@@ -1,21 +1,19 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     ClassVar,
-    Iterable,
-    List,
-    Sequence,
-    Tuple,
     Union,
     cast,
     overload,
 )
 
 import numpy as np
-from annotated_types import Gt  # noqa: TCH002
+from annotated_types import Gt
 from pydantic import (
     Field,
     ValidationInfo,
@@ -23,7 +21,6 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import Annotated
 
 from useq._axis_iterable import AxisIterableBase
 from useq._base_model import FrozenModel, UseqModel
@@ -32,10 +29,12 @@ from useq._plate_registry import _PLATE_REGISTRY
 from useq._position import Position, PositionBase, RelativePosition
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from pydantic_core import core_schema
 
-    Index = Union[int, List[int], slice]
-    IndexExpression = Union[Tuple[Index, ...], Index]
+    Index = Union[int, list[int], slice]
+    IndexExpression = Union[tuple[Index, ...], Index]
 
 
 class WellPlate(FrozenModel):
@@ -63,8 +62,8 @@ class WellPlate(FrozenModel):
 
     rows: Annotated[int, Gt(0)]
     columns: Annotated[int, Gt(0)]
-    well_spacing: Tuple[float, float]  # (x, y)
-    well_size: Tuple[float, float]  # (width, height)
+    well_spacing: tuple[float, float]  # (x, y)
+    well_size: tuple[float, float]  # (width, height)
     circular_wells: bool = True
     name: str = ""
 
@@ -93,7 +92,7 @@ class WellPlate(FrozenModel):
         """Return the names of all wells as array of strings with shape (Rows, Cols)."""
         return np.array(
             [
-                [f"{_index_to_row_name(r)}{c+1}" for c in range(self.columns)]
+                [f"{_index_to_row_name(r)}{c + 1}" for c in range(self.columns)]
                 for r in range(self.rows)
             ]
         )
@@ -163,9 +162,9 @@ class WellPlatePlan(UseqModel, AxisIterableBase, Sequence[Position]):
     """
 
     plate: WellPlate
-    a1_center_xy: Tuple[float, float]
+    a1_center_xy: tuple[float, float]
     rotation: Union[float, None] = None
-    selected_wells: Union[Tuple[Tuple[int, ...], Tuple[int, ...]], None] = None
+    selected_wells: Union[tuple[tuple[int, ...], tuple[int, ...]], None] = None
     well_points_plan: RelativeMultiPointPlan = Field(
         default_factory=RelativePosition, union_mode="left_to_right"
     )
@@ -176,7 +175,7 @@ class WellPlatePlan(UseqModel, AxisIterableBase, Sequence[Position]):
         """Convert a value from the iterator to kwargs for an MDAEvent."""
         return {"x_pos": val.x, "y_pos": val.y}
 
-    def __repr_args__(self) -> Iterable[Tuple[str | None, Any]]:
+    def __repr_args__(self) -> Iterable[tuple[str | None, Any]]:
         for item in super().__repr_args__():
             if item[0] == "selected_wells":
                 # improve repr for selected_wells
@@ -240,7 +239,7 @@ class WellPlatePlan(UseqModel, AxisIterableBase, Sequence[Position]):
     @classmethod
     def _validate_selected_wells(
         cls, value: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo
-    ) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
+    ) -> tuple[tuple[int, ...], tuple[int, ...]]:
         plate = info.data.get("plate")
         if not isinstance(plate, WellPlate):
             raise ValueError("Plate must be defined before selecting wells")
@@ -269,7 +268,7 @@ class WellPlatePlan(UseqModel, AxisIterableBase, Sequence[Position]):
         rads = np.radians(self.rotation)
         return np.array([[np.cos(rads), np.sin(rads)], [-np.sin(rads), np.cos(rads)]])
 
-    def __iter__(self) -> Iterable[Position]:  # type: ignore
+    def __iter__(self) -> Iterator[Position]:  # type: ignore
         """Iterate over the selected positions."""
         yield from self.image_positions
 
@@ -372,7 +371,7 @@ class WellPlatePlan(UseqModel, AxisIterableBase, Sequence[Position]):
         """
         wpp = self.well_points_plan
         offsets = [wpp] if isinstance(wpp, RelativePosition) else wpp
-        pos: List[Position] = []
+        pos: list[Position] = []
         for well in self.selected_well_positions:
             pos.extend(well + offset for offset in offsets)
         return pos

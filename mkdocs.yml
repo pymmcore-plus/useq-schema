@@ -65,11 +65,13 @@ markdown_extensions:
       alternate_style: true
 
 plugins:
+  - autorefs:
+      resolve_closest: true
   - search
   - mkdocstrings:
       handlers:
         python:
-          import:
+          inventories:
             - https://docs.python.org/3/objects.inv
           options:
             heading_level: 3 # default is 2

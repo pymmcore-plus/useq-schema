@@ -9,7 +9,7 @@ name = "useq-schema"
 description = "Schema for multi-dimensional microscopy experiments"
 readme = "README.md"
 keywords = ["microscopy", "schema"]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { text = "BSD 3-Clause License" }
 authors = [
     { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
@@ -23,7 +23,6 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -43,7 +42,7 @@ dependencies = ["pydantic >=2.6", "numpy", "typing-extensions"]
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
 yaml = ["PyYAML"]
-test = ["pytest>=6.0", "pytest-cov", "PyYAML"]
+test = ["pytest>=6.0", "pytest-cov", "PyYAML", "psygnal"]
 dev = [
     "ipython",
     "mypy",
@@ -73,7 +72,7 @@ packages = ["src/useq"]
 # https://beta.ruff.rs/docs/rules/
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py39"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
@@ -89,7 +88,7 @@ select = [
     "C4",   # comprehensions
     "B",    # bugbear
     "A001", # Variable shadowing a python builtin
-    "TCH",  # flake8-type-checking
+    "TC",   # flake8-type-checking
     "TID",  # flake8-tidy-imports
     "RUF",  # ruff-specific rules
     "PERF", # performance
@@ -104,7 +103,7 @@ ignore = [
 keep-runtime-typing = true
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*.py" = ["D", "S101", "E501"]
+"tests/*.py" = ["D", "S101", "E501", "SLF"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 # Disallow all relative imports.

@@ -1,8 +1,9 @@
 import abc
 import sys
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from itertools import count, islice, product
-from typing import Iterable, Iterator, Sequence, TypeVar, cast
+from typing import TypeVar, cast
 
 from useq._mda_event import MDAEvent
 

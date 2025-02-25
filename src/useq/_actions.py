@@ -1,8 +1,12 @@
 from typing import Optional, Union
 
+from pydantic import ConfigDict, Field, TypeAdapter, field_validator
+from pydantic_core import PydanticSerializationError
 from typing_extensions import Literal
 
 from useq._base_model import FrozenModel
+
+_dict_adapter = TypeAdapter(dict, config=ConfigDict(defer_build=True))
 
 
 class Action(FrozenModel):
@@ -11,7 +15,10 @@ class Action(FrozenModel):
     An `Action` specifies what task should be performed during a
     [`useq.MDAEvent`][]. An `Action` can be for example used to acquire an
     image ([`useq.AcquireImage`][]) or to perform a hardware autofocus
-    ([`useq.HardwareAutofocus`][]).
+    ([`useq.HardwareAutofocus`][]).  An action of `None` implies `AcquireImage`.
+
+    You may use `CustomAction` to indicate any custom action, with the `data` attribute
+    containing any data required to perform the custom action.
 
     Attributes
     ----------
@@ -61,4 +68,42 @@ class HardwareAutofocus(Action):
     max_retries: int = 3
 
 
-AnyAction = Union[HardwareAutofocus, AcquireImage]
+class CustomAction(Action):
+    """[`useq.Action`][] to perform a custom action.
+
+    This is a generic user action that can be used to represent anything that is not
+    covered by the other action types, such as a microfluidic event, or a
+    photostimulation, etc...
+
+    The `data` attribute is a dictionary that can contain any data that is needed to
+    perform the custom action.  It *must* be serializable to JSON by `pydantic`.
+
+    Attributes
+    ----------
+    type : Literal["custom"]
+        This action can be used to perform a custom action.
+    name : str, optional
+        A name for the custom action (not to be confused with the `type` attribute,
+        which must always be `"custom"`).
+    data : dict, optional
+        Custom data associated with the action.
+    """
+
+    type: Literal["custom"] = "custom"
+    name: str = ""
+    data: dict = Field(default_factory=dict)
+
+    @field_validator("data", mode="after")
+    @classmethod
+    def _ensure_serializable(cls, data: dict) -> dict:
+        try:
+            _dict_adapter.serializer.to_json(data)
+        except PydanticSerializationError as e:
+            raise ValueError(
+                f"`CustomAction.data` must be JSON serializable, but is not:\n  {e}.\n"
+                "  (You may use a pydantic object for custom serialization).\n   "
+            ) from e
+        return data
+
+
+AnyAction = Union[HardwareAutofocus, AcquireImage, CustomAction]

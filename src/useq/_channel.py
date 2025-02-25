@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Tuple
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from pydantic import Field, RootModel, model_validator
 
@@ -51,7 +51,7 @@ class Channel(FrozenModel):
 
 
 class Channels(RootModel, AxisIterableBase):
-    root: Tuple[Channel, ...]
+    root: tuple[Channel, ...]
     axis_key: ClassVar[str] = "c"
 
     def __iter__(self):

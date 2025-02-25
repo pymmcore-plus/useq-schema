@@ -1,8 +1,8 @@
+from collections.abc import Iterator, Sequence
 from datetime import timedelta
-from typing import Any, Iterator, Sequence, Union
+from typing import Annotated, Any, Union
 
 from pydantic import BeforeValidator, Field, PlainSerializer
-from typing_extensions import Annotated
 
 from useq._base_model import FrozenModel
 

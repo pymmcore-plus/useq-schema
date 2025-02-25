@@ -1,20 +1,18 @@
 # don't add __future__.annotations here
 # pydantic2 isn't rebuilding the model correctly
 
-from types import MappingProxyType
+from collections import UserDict
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Mapping,
     NamedTuple,
     Optional,
-    Sequence,
-    Tuple,
 )
 
-from pydantic import Field, field_validator
+import numpy as np
+import numpy.typing as npt
+from pydantic import Field, GetCoreSchemaHandler, field_validator, model_validator
+from pydantic_core import core_schema
 
 from useq._actions import AcquireImage, AnyAction
 from useq._base_model import UseqModel
@@ -25,9 +23,11 @@ except ImportError:
     field_serializer = None  # type: ignore
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from useq._mda_sequence import MDASequence
 
-    ReprArgs = Sequence[Tuple[Optional[str], Any]]
+    ReprArgs = Sequence[tuple[Optional[str], Any]]
 
 
 class Channel(UseqModel):
@@ -52,6 +52,52 @@ class Channel(UseqModel):
         return super().__eq__(_value)
 
 
+class SLMImage(UseqModel):
+    """SLM Image in a MDA event.
+
+    This object can be cast to a numpy.array using `np.asarray` or `np.array`.
+
+    Attributes
+    ----------
+    data: npt.ArrayLike
+        Image data. Anything that can be cast to a numpy array. For pydantic simplicity,
+        we mark this as Any, but in practice it should be numpy.typing.ArrayLike (which
+        is anything that can be cast to a numpy array using `np.asarray`).
+    device: Optional[str]
+        Optional name of the SLM device to use. If not provided, the "default" SLM
+        device should be used. (It is left to the backend to determine what device that
+        is). By default, `None`.
+    exposure: Optional[float]
+        Exposure time for the SLM specifically (if different from the detector), in
+        milliseconds. If not provided, the exposure on the owning MDAEvent should be
+        used. By default, `None`.
+    """
+
+    data: Any = Field(..., repr=False)
+    device: Optional[str] = None
+    exposure: Optional[float] = Field(default=None, gt=0.0)
+
+    @model_validator(mode="before")
+    def _cast_data(cls, v: Any) -> Any:
+        """Can single, non-dict values to be the data."""
+        if not isinstance(v, dict):
+            v = {"data": v}
+        return v
+
+    def __array__(self, *args: Any, **kwargs: Any) -> npt.NDArray:
+        """Cast the image data to a numpy array."""
+        return np.asarray(self.data, *args, **kwargs)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SLMImage):
+            return False
+        return (
+            self.device == other.device
+            and self.exposure == other.exposure
+            and np.array_equal(self.data, other.data)
+        )
+
+
 class PropertyTuple(NamedTuple):
     """Three-tuple capturing a device, property, and value.
 
@@ -72,6 +118,33 @@ class PropertyTuple(NamedTuple):
 
 def _float_or_none(v: Any) -> Optional[float]:
     return float(v) if v is not None else v
+
+
+class ReadOnlyDict(UserDict[str, int]):
+    """A read-only dictionary."""
+
+    _initialized: bool = False
+    if not TYPE_CHECKING:
+
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
+            self._initialized = True
+
+    def __setitem__(self, key: str, value: int) -> None:
+        if self._initialized:
+            raise TypeError("Read-only dictionary")
+        super().__setitem__(key, value)
+
+    def __repr__(self) -> str:
+        return repr({str(x): v for x, v in self.data.items()})
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: type[Any], handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        return core_schema.dict_schema(
+            keys_schema=core_schema.str_schema(), values_schema=core_schema.int_schema()
+        )
 
 
 class MDAEvent(UseqModel):
@@ -105,6 +178,12 @@ class MDAEvent(UseqModel):
     z_pos : float | None
         Z position in microns. If not provided, implies use current position. By
         default, `None`.
+    slm_image : SLMImage | None
+        Image data to display on an SLM device. `SLMImage` is a simple pydantic object
+        with two attributes: `data` and `device`. `data` is the image data (anything
+        that can be cast to a numpy array), `device` is the name of the SLM device to
+        use. If not provided, the "default" SLM device should be used. By default,
+        `None`.
     sequence : MDASequence | None
         A reference to the [`useq.MDASequence`][] this event belongs to. This is a
         read-only attribute. By default, `None`.
@@ -119,7 +198,10 @@ class MDAEvent(UseqModel):
     action : Action
         The action to perform for this event.  By default, [`useq.AcquireImage`][].
         Example of another action is [`useq.HardwareAutofocus`][] which could be used
-        to perform a hardware autofocus.
+        to perform a hardware autofocus.  For backwards compatibility, an `action` of
+        `None` implies `AcquireImage`.  You may use `CustomAction` to indicate any
+        custom action, with the `data` attribute containing any data required to
+        perform the custom action.
     keep_shutter_open : bool
         If `True`, the illumination shutter should be left open after the event has
         been executed, otherwise it should be closed. By default, `False`."
@@ -141,18 +223,18 @@ class MDAEvent(UseqModel):
         `False`.
     """
 
-    # MappingProxyType is not subscriptable on Python 3.8
-    index: Mapping[str, int] = Field(default_factory=lambda: MappingProxyType({}))
+    index: ReadOnlyDict = Field(default_factory=ReadOnlyDict)
     channel: Optional[Channel] = None
     exposure: Optional[float] = Field(default=None, gt=0.0)
     pos_name: Optional[str] = None
     x_pos: Optional[float] = None
     y_pos: Optional[float] = None
     z_pos: Optional[float] = None
+    slm_image: Optional[SLMImage] = None
     sequence: Optional["MDASequence"] = Field(default=None, repr=False)
-    properties: Optional[List[PropertyTuple]] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    action: AnyAction = Field(default_factory=AcquireImage)
+    properties: Optional[list[PropertyTuple]] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    action: AnyAction = Field(default_factory=AcquireImage, discriminator="type")
     keep_shutter_open: bool = False
 
     min_start_time: Optional[float] = None  # time in sec

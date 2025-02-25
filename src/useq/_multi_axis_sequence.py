@@ -1,11 +1,8 @@
+from collections.abc import Iterable, Iterator, Sequence
 from itertools import islice, product
 from typing import (
     TYPE_CHECKING,
     Any,
-    Iterable,
-    Iterator,
-    Sequence,
-    Tuple,
     TypeVar,
     cast,
 )
@@ -40,7 +37,7 @@ class MultiDimSequence(UseqModel):
         For infinite sequences, the number of events to generate at a time.
     """
 
-    axes: Tuple[AxisIterable, ...] = ()
+    axes: tuple[AxisIterable, ...] = ()
     # if none, axes are used in order provided
     axis_order: tuple[str, ...] | None = None
     chunk_size: int = 10

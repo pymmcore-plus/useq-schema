@@ -5,43 +5,33 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Iterable,
     Optional,
-    Type,
     TypeVar,
     Union,
 )
 
 import numpy as np
+import pydantic
 from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from typing_extensions import Self
 
     ReprArgs = Iterable[tuple[str | None, Any]]
 
-__all__ = ["UseqModel", "FrozenModel"]
+__all__ = ["FrozenModel", "UseqModel"]
 
 _T = TypeVar("_T", bound="FrozenModel")
 _Y = TypeVar("_Y", bound="UseqModel")
 
-
-def _non_default_repr_args(obj: BaseModel, fields: "ReprArgs") -> "ReprArgs":
-    """Set fields on a model instance."""
-    return [
-        (k, val)
-        for k, val in fields
-        if k in obj.model_fields
-        and val
-        != (
-            factory()
-            if (factory := obj.model_fields[k].default_factory) is not None
-            else obj.model_fields[k].default
-        )
-    ]
+PYDANTIC_VERSION = tuple(int(x) for x in pydantic.__version__.split(".")[:3])
+GET_DEFAULT_KWARGS: dict = {}
+if PYDANTIC_VERSION >= (2, 10):
+    GET_DEFAULT_KWARGS = {"validated_data": {}}
 
 
-# TODO: consider removing this and using model_copy directly
 class _ReplaceableModel(BaseModel):
     def replace(self, **kwargs: Any) -> "Self":
         """Return a new instance replacing specified kwargs with new values.
@@ -64,6 +54,20 @@ class _ReplaceableModel(BaseModel):
         return _non_default_repr_args(self, super().__repr_args__())
 
 
+def _non_default_repr_args(obj: BaseModel, fields: "ReprArgs") -> "ReprArgs":
+    """Set fields on a model instance."""
+    for k, val in fields:
+        if k and (field := obj.model_fields.get(k)) and field.repr:
+            default = field.get_default(call_default_factory=True, **GET_DEFAULT_KWARGS)
+            try:
+                if val == default:
+                    continue
+            except ValueError:
+                if np.array_equal(val, default):
+                    continue
+        yield k, val
+
+
 class FrozenModel(_ReplaceableModel):
     model_config: ClassVar["ConfigDict"] = ConfigDict(
         populate_by_name=True,
@@ -84,7 +88,7 @@ class MutableModel(_ReplaceableModel):
 
 class UseqModel(FrozenModel):
     @classmethod
-    def from_file(cls: Type[_Y], path: Union[str, Path]) -> _Y:
+    def from_file(cls: type[_Y], path: Union[str, Path]) -> _Y:
         """Return an instance of this class from a file.  Supports JSON and YAML."""
         path = Path(path)
         if path.suffix in {".yaml", ".yml"}:

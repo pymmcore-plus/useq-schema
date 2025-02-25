@@ -1,16 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from contextlib import suppress
 from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    Iterable,
-    Iterator,
-    Mapping,
     Optional,
-    Sequence,
-    Tuple,
     Union,
 )
 from uuid import UUID, uuid4
@@ -21,14 +17,14 @@ from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
-from useq._grid import MultiPointPlan  # noqa: TCH001
+from useq._grid import MultiPointPlan  # noqa: TC001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._plate import WellPlatePlan
 from useq._position import Position, PositionBase
-from useq._time import AnyTimePlan  # noqa: TCH001
+from useq._time import AnyTimePlan  # noqa: TC001
 from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
-from useq._z import AnyZPlan  # noqa: TCH001
+from useq._z import AnyZPlan  # noqa: TC001
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -182,22 +178,24 @@ class MDASequence(UseqModel):
     ```
     """
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    axis_order: Tuple[str, ...] = AXES
-    stage_positions: Union[WellPlatePlan, Tuple[Position, ...]] = Field(
-        default_factory=tuple
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    axis_order: tuple[str, ...] = AXES
+    # note that these are BOTH just `Sequence[Position]` but we retain the distinction
+    # here so that WellPlatePlans are preserved in the model instance.
+    stage_positions: Union[WellPlatePlan, tuple[Position, ...]] = Field(  # type: ignore
+        default_factory=tuple, union_mode="left_to_right"
     )
     grid_plan: Optional[MultiPointPlan] = Field(
         default=None, union_mode="left_to_right"
     )
-    channels: Tuple[Channel, ...] = Field(default_factory=tuple)
+    channels: tuple[Channel, ...] = Field(default_factory=tuple)
     time_plan: Optional[AnyTimePlan] = None
     z_plan: Optional[AnyZPlan] = None
     autofocus_plan: Optional[AnyAutofocusPlan] = None
-    keep_shutter_open_across: Tuple[str, ...] = Field(default_factory=tuple)
+    keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
-    _sizes: Optional[Dict[str, int]] = PrivateAttr(default=None)
+    _sizes: Optional[dict[str, int]] = PrivateAttr(default=None)
 
     @property
     def uid(self) -> UUID:
@@ -223,7 +221,7 @@ class MDASequence(UseqModel):
         return v
 
     @field_validator("channels", mode="before")
-    def _validate_channels(cls, value: Any) -> Tuple[Channel, ...]:
+    def _validate_channels(cls, value: Any) -> tuple[Channel, ...]:
         if isinstance(value, str) or not isinstance(
             value, Sequence
         ):  # pragma: no cover
@@ -241,14 +239,23 @@ class MDASequence(UseqModel):
         return tuple(channels)
 
     @field_validator("stage_positions", mode="before")
-    def _validate_stage_positions(cls, value: Any) -> Tuple[Position, ...]:
+    def _validate_stage_positions(
+        cls, value: Any
+    ) -> Union[WellPlatePlan, tuple[Position, ...]]:
         if isinstance(value, np.ndarray):
             if value.ndim == 1:
                 value = [value]
             elif value.ndim == 2:
                 value = list(value)
+        else:
+            with suppress(ValueError):
+                val = WellPlatePlan.model_validate(value)
+                return val
         if not isinstance(value, Sequence):  # pragma: no cover
-            raise ValueError(f"stage_positions must be a sequence, got {type(value)}")
+            raise ValueError(
+                "stage_positions must be a WellPlatePlan or Sequence[Position], "
+                f"got {type(value)}"
+            )
 
         positions = []
         for v in value:
@@ -334,8 +341,8 @@ class MDASequence(UseqModel):
             )
         ):
             raise ValueError(
-                f"{Axis.Z!r} cannot precede {Axis.POSITION!r} in acquisition order if "
-                "any position specifies a z_plan"
+                f"{str(Axis.Z)!r} cannot precede {str(Axis.POSITION)!r} in acquisition "
+                "order if any position specifies a z_plan"
             )
 
         if (
@@ -391,7 +398,7 @@ class MDASequence(UseqModel):
                     raise ValueError(err)  # pragma: no cover
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         """Return the shape of this sequence.
 
         !!! note
@@ -435,12 +442,12 @@ class MDASequence(UseqModel):
     def iter_axis(self, axis: str) -> Iterator[Channel | float | PositionBase]:
         """Iterate over the positions or items of a given axis."""
         plan = {
-            Axis.TIME: self.time_plan,
-            Axis.POSITION: self.stage_positions,
-            Axis.Z: self.z_plan,
-            Axis.CHANNEL: self.channels,
-            Axis.GRID: self.grid_plan,
-        }[axis]
+            str(Axis.TIME): self.time_plan,
+            str(Axis.POSITION): self.stage_positions,
+            str(Axis.Z): self.z_plan,
+            str(Axis.CHANNEL): self.channels,
+            str(Axis.GRID): self.grid_plan,
+        }[str(axis).lower()]
         if plan:
             yield from plan
 

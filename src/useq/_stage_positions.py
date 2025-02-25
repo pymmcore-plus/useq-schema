@@ -1,4 +1,4 @@
-from typing import ClassVar, Tuple
+from typing import ClassVar
 
 from pydantic import RootModel
 
@@ -7,7 +7,7 @@ from useq._axis_iterable import AxisIterableBase
 
 
 class StagePositions(RootModel, AxisIterableBase):
-    root: Tuple[Position, ...]
+    root: tuple[Position, ...]
     axis_key: ClassVar[str] = "p"
 
     def __iter__(self):

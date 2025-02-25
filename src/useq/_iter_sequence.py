@@ -1,24 +1,25 @@
 from __future__ import annotations
 
 from itertools import product
-from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Iterator, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import TypedDict
 
-from useq._channel import Channel  # noqa: TCH001  # noqa: TCH001
+from useq._channel import Channel  # noqa: TC001  # noqa: TCH001
 from useq._mda_event import Channel as EventChannel
-from useq._mda_event import MDAEvent
+from useq._mda_event import MDAEvent, ReadOnlyDict
 from useq._utils import AXES, Axis, _has_axes
-from useq._z import AnyZPlan  # noqa: TCH001  # noqa: TCH001
+from useq._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from useq._mda_sequence import MDASequence
     from useq._position import Position, RelativePosition
 
 
 class MDAEventDict(TypedDict, total=False):
-    index: MappingProxyType[str, int]
+    index: ReadOnlyDict
     channel: EventChannel | None
     exposure: float | None
     min_start_time: float | None
@@ -146,7 +147,7 @@ def _iter_sequence(
         event_kwargs = base_event_kwargs or MDAEventDict(sequence=sequence)
         # the .update() here lets us build on top of the base_event.index if present
 
-        event_kwargs["index"] = MappingProxyType(
+        event_kwargs["index"] = ReadOnlyDict(
             {**event_kwargs.get("index", {}), **index}  # type: ignore
         )
         # determine x, y, z positions
@@ -183,6 +184,7 @@ def _iter_sequence(
                 _pos, _offsets = _position_offsets(position, event_kwargs)
                 # build overrides for this position
                 pos_overrides = MDAEventDict(sequence=sequence, **_pos)
+                pos_overrides["reset_event_timer"] = False
                 if position.name:
                     pos_overrides["pos_name"] = position.name
 
@@ -268,7 +270,7 @@ def _parse_axes(
     index = {ax: _ev[ax][0] for ax in AXES if ax in _ev}
     # this needs to be tuple(...) to work for mypyc
     axes = tuple(_ev[ax][1] if ax in _ev else None for ax in AXES)
-    return (index, *axes)
+    return (index, *axes)  # type: ignore [return-value]
 
 
 def _should_skip(

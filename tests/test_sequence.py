@@ -1,10 +1,11 @@
 import itertools
 import json
-from typing import Any, List, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from useq import (
     Channel,
@@ -22,9 +23,11 @@ from useq import (
     ZRangeAround,
     ZRelativePositions,
 )
+from useq._actions import CustomAction, HardwareAutofocus
+from useq._mda_event import SLMImage
 from useq._position import RelativePosition
 
-_T = List[Tuple[Any, Sequence[float]]]
+_T = list[tuple[Any, Sequence[float]]]
 
 z_as_class: _T = [
     (ZAboveBelow(above=8, below=4, step=2), [-4, -2, 0, 2, 4, 6, 8]),
@@ -352,7 +355,34 @@ def test_skip_channel_do_stack_no_zplan() -> None:
 
 def test_event_action_union() -> None:
     # test that action unions work
-    MDAEvent(action={"autofocus_device_name": "Z", "autofocus_motor_offset": 25})
+    event = MDAEvent(
+        action={
+            "type": "hardware_autofocus",
+            "autofocus_device_name": "Z",
+            "autofocus_motor_offset": 25,
+        }
+    )
+    assert isinstance(event.action, HardwareAutofocus)
+
+
+def test_custom_action() -> None:
+    event = MDAEvent(action={"type": "custom"})
+    assert isinstance(event.action, CustomAction)
+
+    event2 = MDAEvent(
+        action=CustomAction(
+            data={
+                "foo": "bar",
+                "alist": [1, 2, 3],
+                "nested": {"a": 1, "b": 2},
+                "nested_list": [{"a": 1}, {"b": 2}],
+            }
+        )
+    )
+    assert isinstance(event2.action, CustomAction)
+
+    with pytest.raises(ValidationError, match="must be JSON serializable"):
+        CustomAction(data={"not-serializable": lambda x: x})
 
 
 def test_keep_shutter_open() -> None:
@@ -436,3 +466,55 @@ def test_reset_event_timer() -> None:
     assert not events[1].reset_event_timer
     assert events[2].reset_event_timer
     assert not events[3].reset_event_timer
+
+    events = list(
+        MDASequence(
+            stage_positions=[
+                Position(
+                    x=0,
+                    y=0,
+                    sequence=MDASequence(
+                        channels=["Cy5"], time_plan={"interval": 1, "loops": 2}
+                    ),
+                ),
+                Position(
+                    x=1,
+                    y=1,
+                    sequence=MDASequence(
+                        channels=["DAPI"], time_plan={"interval": 1, "loops": 2}
+                    ),
+                ),
+            ]
+        )
+    )
+
+    assert events[0].reset_event_timer
+    assert not events[1].reset_event_timer
+    assert events[2].reset_event_timer
+    assert not events[3].reset_event_timer
+
+
+def test_slm_image() -> None:
+    data = [[0, 0], [1, 1]]
+
+    # directly passing data
+    event = MDAEvent(slm_image=data)
+    assert isinstance(event.slm_image, SLMImage)
+    repr(event)
+
+    # we can cast SLMIamge to a numpy array
+    assert isinstance(np.asarray(event.slm_image), np.ndarray)
+    np.testing.assert_array_equal(event.slm_image, np.array(data))
+
+    # variant that also specifies device label
+    event2 = MDAEvent(slm_image={"data": data, "device": "SLM"})
+    assert event2.slm_image is not None
+    np.testing.assert_array_equal(event2.slm_image, np.array(data))
+    assert event2.slm_image.device == "SLM"
+    repr(event2)
+
+    # directly provide numpy array
+    event3 = MDAEvent(slm_image=SLMImage(data=np.ones((10, 10))))
+    print(repr(event3))
+
+    assert event3 != event2

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Iterator, Sized
 from typing import (
     TYPE_CHECKING,
     ClassVar,
-    Iterator,
     Protocol,
-    Sized,
     TypeVar,
     runtime_checkable,
 )

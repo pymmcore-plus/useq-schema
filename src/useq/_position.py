@@ -1,10 +1,9 @@
+from collections.abc import Iterator, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
-    Iterator,
     Optional,
-    Sequence,
     SupportsIndex,
     TypeVar,
 )
