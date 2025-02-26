@@ -1,5 +1,4 @@
 from collections.abc import Iterable, Iterator, Sequence
-from http.client import VARIANT_ALSO_NEGOTIATES
 from itertools import islice, product
 from typing import (
     TYPE_CHECKING,
@@ -88,6 +87,7 @@ class MultiDimSequence(UseqModel):
         axis_order: Sequence[str] | None = None,
         _iter_items: tuple[IterItem, ...] = (),
         _last_t_idx: int = -1,
+        indent: int = 0,
     ) -> Iterator[MDAEvent]:
         ax_map: dict[str, AxisIterable] = {ax.axis_key: ax for ax in self.axes}
         _axis_order = axis_order or self.axis_order or list(ax_map)
@@ -101,7 +101,7 @@ class MultiDimSequence(UseqModel):
 
         for axis_items in self._iter_inner(sorted_axes):
             event_index = {}
-            iter_items: dict[str, IterItem] = {}
+            iter_items: dict[str, IterItem] = {x[0]: x for x in _iter_items}
 
             for axis_key, idx, value, iterable in axis_items:
                 iter_items[axis_key] = IterItem(axis_key, idx, value, iterable)
@@ -110,20 +110,29 @@ class MultiDimSequence(UseqModel):
             if any(ax_type.should_skip(iter_items) for ax_type in ax_map.values()):
                 continue
 
-            item_values = tuple(iter_items.values())z
+            item_values = tuple(iter_items.values())
             event = self._build_event(_iter_items + item_values)
 
             for item in item_values:
-                if isinstance(pos := item.value, Position) and isinstance(
-                    seq := getattr(pos, "sequence", None), MultiDimSequence
+                if (
+                    not _iter_items
+                    and isinstance(pos := item.value, Position)
+                    and isinstance(
+                        seq := getattr(pos, "sequence", None), MultiDimSequence
+                    )
                 ):
+                    print(" " * (indent + 1) + ">>>r", event_index)
                     yield from seq.iterate(
-                        _iter_items=item_values, _last_t_idx=_last_t_idx
+                        axis_order=axis_order,
+                        _iter_items=item_values,
+                        _last_t_idx=_last_t_idx,
+                        indent=indent + 1,
                     )
                     break  # Don't yield a "parent" event if sub-sequence is used
             else:
                 if event.index.get(Axis.TIME) == 0 and _last_t_idx != 0:
                     object.__setattr__(event, "reset_event_timer", True)
+                print(" " * indent, event.index)
                 yield event
                 _last_t_idx = event.index.get(Axis.TIME, _last_t_idx)
 
@@ -144,6 +153,8 @@ class MultiDimSequence(UseqModel):
         # sub_event = event.replace(**kwargs)
 
     def _build_event(self, iter_items: Sequence[IterItem]) -> MDAEvent:
+        # merge duplicates, with later values taking precedence
+        _orig = list(iter_items)
         iter_items = list({i[0]: i for i in iter_items}.values())
         event_dicts: list[MDAEventDict] = []
         # values will look something like this:
@@ -160,7 +171,7 @@ class MultiDimSequence(UseqModel):
             event_dicts.append(kwargs)
             index[item.axis_key] = item.axis_index
             for key, val in kwargs.items():
-                if key.endswith("_pos"):
+                if key.endswith("_pos") and val is not None:
                     if key in abs_pos and abs_pos[key] != val:
                         raise ValueError(
                             "Conflicting absolute position values for "
@@ -182,6 +193,8 @@ class MultiDimSequence(UseqModel):
             event_kwargs.update(kwargs)
         event_kwargs.update(abs_pos)
         event_kwargs["index"] = index
+        # if index == {'t': 0, 'p': 1, 'c': 0, 'z': 0, 'g': 0}:
+        # breakpoint()
         return MDAEvent.model_construct(**event_kwargs)
 
     def _iter_inner(
