@@ -130,10 +130,7 @@ if __name__ == "__main__":
                     0,
                     AxisValue(
                         1,
-                        sub_axes=[
-                            SimpleAxis("g", ["a1", "a2"]),
-                            SimpleAxis("z", [7, 8, 9]),
-                        ],
+                        sub_axes=[SimpleAxis("z", [7, 8, 9])],
                     ),
                     2,
                 ],
@@ -141,7 +138,7 @@ if __name__ == "__main__":
             SimpleAxis("c", ["red", "green", "blue"]),
             SimpleAxis("z", [0.1, 0.2]),
         ),
-        axis_order=("z", "t", "c"),
+        axis_order=("t", "c", "z"),
     )
 
     for indices in iterate_multi_dim_sequence(multi_dim):
