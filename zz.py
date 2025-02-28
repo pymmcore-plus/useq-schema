@@ -1,18 +1,11 @@
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    NamedTuple,
-    Protocol,
-    Union,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Union, runtime_checkable
 
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterator
 
 
 @runtime_checkable
@@ -21,24 +14,14 @@ class AxisIterable(Protocol):
     def axis_key(self) -> str:
         """A string id representing the axis."""
 
-    def __iter__(self) -> Iterator[Union[Any, AxisValue]]:
-        """Iterate over the axis, yielding either plain values or AxisValue instances."""
-
-
-class AxisValue(NamedTuple):
-    """
-    Wraps a value and optionally declares sub-axes that should be iterated
-    when this value is yielded.
-    """
-
-    value: Any
-    sub_axes: Iterable[AxisIterable] | None = None
+    def __iter__(self) -> Iterator[Union[Any, MultiDimSequence]]:
+        """Iterate over the axis, yielding either plain values or a nested MultiDimSequence."""
 
 
 class SimpleAxis:
-    """
-    A basic axis implementation that yields values directly.
-    If a value needs to declare sub-axes, it should be wrapped in an AxisValue.
+    """A basic axis implementation that yields values directly.
+
+    If a value needs to declare sub-axes, yield a nested MultiDimSequence.
     """
 
     def __init__(self, axis_key: str, values: list[Any]) -> None:
@@ -49,29 +32,53 @@ class SimpleAxis:
     def axis_key(self) -> str:
         return self._axis_key
 
-    def __iter__(self) -> Iterator[Union[Any, AxisValue]]:
+    def __iter__(self) -> Iterator[Union[Any, MultiDimSequence]]:
         yield from self.values
-
-    def __len__(self) -> int:
-        return len(self.values)
 
 
 class MultiDimSequence(BaseModel):
+    """
+    Represents a multidimensional sequence.
+
+    At the top level the `value` field is ignored.
+    When used as a nested override, `value` is the value for that branch and
+    its axes are iterated using its own axis_order if provided;
+    otherwise, it inherits the parent's axis_order.
+    """
+
+    value: Any = None
     axes: tuple[AxisIterable, ...] = ()
     axis_order: tuple[str, ...] | None = None
 
     model_config = {"arbitrary_types_allowed": True}
 
 
-def iterate_axes_recursive(
-    axes: list[AxisIterable], prefix: dict[str, tuple[int, Any]] | None = None
-) -> Iterator[dict[str, tuple[int, Any]]]:
-    """
-    Recursively iterate over the list of axes one at a time.
+def order_axes(
+    seq: MultiDimSequence,
+    parent_order: Optional[tuple[str, ...]] = None,
+) -> list[AxisIterable]:
+    """Returns the axes of a MultiDimSequence in the order specified by seq.axis_order.
 
-    If the current axis yields an AxisValue with sub-axes, then override any
-    remaining outer axes whose keys match those sub-axes. The sub-axes are then
-    appended after the filtered outer axes so that the global ordering is preserved.
+    or if not provided, by the parent's order (if given), or in the declared order.
+    """
+    if order := seq.axis_order if seq.axis_order is not None else parent_order:
+        axes_map = {axis.axis_key: axis for axis in seq.axes}
+        return [axes_map[key] for key in order if key in axes_map]
+    return list(seq.axes)
+
+
+def iterate_axes_recursive(
+    axes: list[AxisIterable],
+    prefix: dict[str, tuple[int, Any]] | None = None,
+    parent_order: Optional[tuple[str, ...]] = None,
+) -> Iterator[dict[str, tuple[int, Any]]]:
+    """Recursively iterate over a list of axes one at a time.
+
+    If an axis yields a nested MultiDimSequence with a non-None value,
+    that nested sequence acts as an override for its axis key.
+    The parent's remaining axes having matching keys are removed, and the nested
+    sequence's axes (ordered by its own axis_order if provided, or else the parent's)
+    are appended.
     """
     if prefix is None:
         prefix = {}
@@ -80,25 +87,32 @@ def iterate_axes_recursive(
         yield prefix
         return
 
-    current_axis = axes[0]
-    remaining_axes = axes[1:]
+    current_axis, *remaining_axes = axes
 
     for idx, item in enumerate(current_axis):
         new_prefix = prefix.copy()
-        if isinstance(item, AxisValue) and item.sub_axes:
+        if isinstance(item, MultiDimSequence) and item.value is not None:
             new_prefix[current_axis.axis_key] = (idx, item.value)
-            # Compute the override keys from the sub-axes.
-            override_keys = {ax.axis_key for ax in item.sub_axes}
+            # Determine override keys from the nested sequence's axes.
+            override_keys = {ax.axis_key for ax in item.axes}
             # Remove from the remaining axes any axis whose key is overridden.
             filtered_remaining = [
                 ax for ax in remaining_axes if ax.axis_key not in override_keys
             ]
-            # Append the sub-axes *after* the filtered remaining axes.
-            new_axes = filtered_remaining + list(item.sub_axes)
-            yield from iterate_axes_recursive(new_axes, new_prefix)
+            # Get the nested sequence's axes, using the parent's order if none is provided.
+            new_axes = filtered_remaining + order_axes(item, parent_order=parent_order)
+            yield from iterate_axes_recursive(
+                new_axes,
+                new_prefix,
+                parent_order=parent_order,
+            )
         else:
             new_prefix[current_axis.axis_key] = (idx, item)
-            yield from iterate_axes_recursive(remaining_axes, new_prefix)
+            yield from iterate_axes_recursive(
+                remaining_axes,
+                new_prefix,
+                parent_order=parent_order,
+            )
 
 
 def iterate_multi_dim_sequence(
@@ -107,30 +121,29 @@ def iterate_multi_dim_sequence(
     """
     Orders the base axes (if an axis_order is provided) and then iterates
     over all index combinations using iterate_axes_recursive.
+    The parent's axis_order is passed down to nested sequences.
     """
-    if seq.axis_order:
-        axes_map = {axis.axis_key: axis for axis in seq.axes}
-        ordered_axes = [axes_map[key] for key in seq.axis_order if key in axes_map]
-    else:
-        ordered_axes = list(seq.axes)
-    yield from iterate_axes_recursive(ordered_axes)
+    ordered_axes = order_axes(seq, seq.axis_order)
+    yield from iterate_axes_recursive(ordered_axes, parent_order=seq.axis_order)
 
 
 # Example usage:
 if __name__ == "__main__":
-    # In this example, the "t" axis yields an AxisValue for 1 that provides sub-axes
-    # overriding the outer "z" axis. The expected behavior is that for t == 1,
-    # the outer "z" axis is replaced by the sub-axis "z" (yielding [7, 8, 9]),
-    # while for t == 0 and t == 2 the outer "z" ([0, 1]) is used.
+    # In this example, the "t" axis yields a nested MultiDimSequence for the value 1.
+    # That nested sequence (with its own axis_order) provides a new definition for "z",
+    # effectively overriding the outer "z" axis when t==1.
     multi_dim = MultiDimSequence(
         axes=(
             SimpleAxis(
                 "t",
                 [
                     0,
-                    AxisValue(
-                        1,
-                        sub_axes=[SimpleAxis("z", [7, 8, 9])],
+                    MultiDimSequence(
+                        value=1,
+                        axes=[
+                            SimpleAxis("c", ["red", "blue"]),
+                            SimpleAxis("z", [7, 8, 9]),
+                        ],
                     ),
                     2,
                 ],
