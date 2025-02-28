@@ -25,8 +25,8 @@ Key Concepts:
 
 - **Prefix and Skip Logic**: As the recursion proceeds, a `prefix` is built up, mapping
   axis keys to a triple: (index, value, axis). Before yielding a final combination,
-  each axis is given an opportunity (via the `skip_combination` method) to veto that
-  combination. By default, `SimpleAxis.skip_combination` returns False, but you can override
+  each axis is given an opportunity (via the `should_skip` method) to veto that
+  combination. By default, `SimpleAxis.should_skip` returns False, but you can override
   it in a subclass to implement conditional skipping.
 
 Usage Examples:
@@ -49,7 +49,7 @@ Usage Examples:
     ... (and so on for all Cartesian products)
 
 2. Sub-Iteration Adding New Axes:
-   Here the "t" axis yields a nested MultiDimSequence that adds an extra "extra" axis.
+   Here the "t" axis yields a nested MultiDimSequence that adds an extra "q" axis.
 
     >>> multi_dim = MultiDimSequence(
     ...     axes=(
@@ -57,7 +57,7 @@ Usage Examples:
     ...             0,
     ...             MultiDimSequence(
     ...                 value=1,
-    ...                 axes=(SimpleAxis("extra", ["a", "b"]),),
+    ...                 axes=(SimpleAxis("q", ["a", "b"]),),
     ...             ),
     ...             2,
     ...         ]),
@@ -70,13 +70,14 @@ Usage Examples:
     {'t': (0, 0), 'c': (0, 'red')}
     {'t': (0, 0), 'c': (1, 'green')}
     {'t': (0, 0), 'c': (2, 'blue')}
-    {'t': (1, 1), 'c': (0, 'red'), 'extra': (0, 'a')}
-    {'t': (1, 1), 'c': (0, 'red'), 'extra': (1, 'b')}
-    {'t': (1, 1), 'c': (1, 'green'), 'extra': (0, 'a')}
+    {'t': (1, 1), 'c': (0, 'red'), 'q': (0, 'a')}
+    {'t': (1, 1), 'c': (0, 'red'), 'q': (1, 'b')}
+    {'t': (1, 1), 'c': (1, 'green'), 'q': (0, 'a')}
     ... (and so on)
 
 3. Overriding Parent Axes:
-   Here the "t" axis yields a nested MultiDimSequence whose axes override the parent's "z" axis.
+   Here the "t" axis yields a nested MultiDimSequence whose axes override the parent's
+   "z" axis.
 
     >>> multi_dim = MultiDimSequence(
     ...     axes=(
@@ -108,11 +109,11 @@ Usage Examples:
     ... (and so on)
 
 4. Conditional Skipping:
-   By subclassing SimpleAxis to override skip_combination, you can filter out combinations.
+   By subclassing SimpleAxis to override should_skip, you can filter out combinations.
    For example, suppose we want to skip any combination where "c" equals "green" and "z" is not 0.2:
 
     >>> class FilteredZ(SimpleAxis):
-    ...     def skip_combination(self, prefix: dict[str, tuple[int, Any, AxisIterable]]) -> bool:
+    ...     def should_skip(self, prefix: dict[str, tuple[int, Any, AxisIterable]]) -> bool:
     ...         c_val = prefix.get("c", (None, None, None))[1]
     ...         z_val = prefix.get("z", (None, None, None))[1]
     ...         if c_val == "green" and z_val != 0.2:
@@ -138,7 +139,7 @@ Usage Notes:
   either extend the iteration with new axes or override existing ones.
 - The ordering of axes is controlled via the `axis_order` property, which is inherited
   by nested sequences if not explicitly provided.
-- The skip_combination mechanism gives each axis an opportunity to veto a final combination.
+- The should_skip mechanism gives each axis an opportunity to veto a final combination.
   By default, SimpleAxis does not skip any combination, but you can subclass it to implement
   custom filtering logic.
 
@@ -149,30 +150,29 @@ where the sequence of events must be generated in a flexible, hierarchical manne
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Protocol, Union, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
 
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
+
+V = TypeVar("V", covariant=True)
 
 
 @runtime_checkable
-class AxisIterable(Protocol):
+class AxisIterable(Protocol[V]):
     @property
     def axis_key(self) -> str:
         """A string id representing the axis."""
 
-    def __iter__(self) -> Iterator[Union[Any, MultiDimSequence]]:
+    def __iter__(self) -> Iterator[V | MultiDimSequence]:
         """Iterate over the axis.
 
         If a value needs to declare sub-axes, yield a nested MultiDimSequence.
         """
 
-    def skip_combination(
-        self,
-        prefix: dict[str, tuple[int, Any, AxisIterable]],
-    ) -> bool:
+    def should_skip(self, prefix: dict[str, tuple[int, Any, AxisIterable]]) -> bool:
         """Return True if this axis wants to skip the combination.
 
         Default implementation returns False.
@@ -180,14 +180,14 @@ class AxisIterable(Protocol):
         return False
 
 
-class SimpleAxis:
+class SimpleAxis(AxisIterable[V]):
     """A basic axis implementation that yields values directly.
 
     If a value needs to declare sub-axes, yield a nested MultiDimSequence.
-    The default skip_combination always returns False.
+    The default should_skip always returns False.
     """
 
-    def __init__(self, axis_key: str, values: list[Any]) -> None:
+    def __init__(self, axis_key: str, values: Iterable[V]) -> None:
         self._axis_key = axis_key
         self.values = values
 
@@ -195,12 +195,10 @@ class SimpleAxis:
     def axis_key(self) -> str:
         return self._axis_key
 
-    def __iter__(self) -> Iterator[Union[Any, MultiDimSequence]]:
+    def __iter__(self) -> Iterator[V | MultiDimSequence]:
         yield from self.values
 
-    def skip_combination(
-        self, prefix: dict[str, tuple[int, Any, AxisIterable]]
-    ) -> bool:
+    def should_skip(self, prefix: dict[str, tuple[int, Any, AxisIterable]]) -> bool:
         return False
 
 
@@ -222,7 +220,7 @@ class MultiDimSequence(BaseModel):
 
 def order_axes(
     seq: MultiDimSequence,
-    parent_order: Optional[tuple[str, ...]] = None,
+    parent_order: tuple[str, ...] | None = None,
 ) -> list[AxisIterable]:
     """Returns the axes of a MultiDimSequence in the order specified by seq.axis_order.
 
@@ -237,7 +235,7 @@ def order_axes(
 def iterate_axes_recursive(
     axes: list[AxisIterable],
     prefix: dict[str, tuple[int, Any, AxisIterable]] | None = None,
-    parent_order: Optional[tuple[str, ...]] = None,
+    parent_order: tuple[str, ...] | None = None,
 ) -> Iterator[dict[str, tuple[int, Any, AxisIterable]]]:
     """Recursively iterate over a list of axes one at a time.
 
@@ -247,14 +245,14 @@ def iterate_axes_recursive(
     sequence's axes (ordered by its own axis_order if provided, or else the parent's)
     are appended.
 
-    Before yielding a final combination (when no axes remain), we call skip_combination
+    Before yielding a final combination (when no axes remain), we call should_skip
     on each axis (using the full prefix).
     """
     if prefix is None:
         prefix = {}
     if not axes:
         # Ask each axis in the prefix if the combination should be skipped
-        if not any(axis.skip_combination(prefix) for *_, axis in prefix.values()):
+        if not any(axis.should_skip(prefix) for *_, axis in prefix.values()):
             yield prefix
         return
 
@@ -309,9 +307,9 @@ if __name__ == "__main__":
         print(clean)
     print("-------------")
 
-    # As an example, we override skip_combination for the "z" axis:
+    # As an example, we override should_skip for the "z" axis:
     class FilteredZ(SimpleAxis):
-        def skip_combination(self, prefix: dict[str, tuple[int, Any]]) -> bool:
+        def should_skip(self, prefix: dict[str, tuple[int, Any]]) -> bool:
             # If c is green, then only allow combinations where z equals 0.2.
             # Get the c value from the prefix:
             c_val = prefix.get("c", (None, None))[1]
