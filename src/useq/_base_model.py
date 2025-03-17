@@ -1,3 +1,4 @@
+from re import findall
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
@@ -26,7 +27,7 @@ __all__ = ["FrozenModel", "UseqModel"]
 _T = TypeVar("_T", bound="FrozenModel")
 _Y = TypeVar("_Y", bound="UseqModel")
 
-PYDANTIC_VERSION = tuple(int(x) for x in pydantic.__version__.split(".")[:3])
+PYDANTIC_VERSION = tuple(int(x) for x in findall(r'\d_', pydantic.__version__)[:3])
 GET_DEFAULT_KWARGS: dict = {}
 if PYDANTIC_VERSION >= (2, 10):
     GET_DEFAULT_KWARGS = {"validated_data": {}}
