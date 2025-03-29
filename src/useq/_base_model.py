@@ -47,7 +47,7 @@ class _ReplaceableModel(BaseModel):
         casting.
         """
         # only get values for top level fields
-        d = {k: getattr(self, k) for k in self.model_fields if k != "uid"}
+        d = {k: getattr(self, k) for k in type(self).model_fields if k != "uid"}
         return type(self).model_validate({**d, **kwargs})
 
     def __repr_args__(self) -> "ReprArgs":
@@ -58,7 +58,7 @@ class _ReplaceableModel(BaseModel):
 def _non_default_repr_args(obj: BaseModel, fields: "ReprArgs") -> "ReprArgs":
     """Set fields on a model instance."""
     for k, val in fields:
-        if k and (field := obj.model_fields.get(k)) and field.repr:
+        if k and (field := type(obj).model_fields.get(k)) and field.repr:
             default = field.get_default(call_default_factory=True, **GET_DEFAULT_KWARGS)
             try:
                 if val == default:
