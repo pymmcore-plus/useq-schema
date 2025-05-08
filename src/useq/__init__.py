@@ -7,9 +7,9 @@ from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
 from useq._grid import (
     GridFromEdges,
+    GridFromPolygon,
     GridRowsColumns,
     GridWidthHeight,
-    GridFromPolygon,
     MultiPointPlan,
     RandomPoints,
     RelativeMultiPointPlan,
@@ -54,10 +54,10 @@ __all__ = [
     "CustomAction",
     "EventChannel",
     "GridFromEdges",
+    "GridFromPolygon",
     "GridRelative",
     "GridRowsColumns",
     "GridWidthHeight",
-    "GridFromPolygon",
     "HardwareAutofocus",
     "MDAEvent",
     "MDASequence",
