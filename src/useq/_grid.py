@@ -26,7 +26,12 @@ from useq._position import (
     RelativePosition,
     _MultiPointPlan,
 )
-
+try:
+    import shapely
+    shapely_installed = True
+except:
+    print("shapely can't be imported, polygon offsetting is not supported")
+    shapely_installed = False
 if TYPE_CHECKING:
     PointGenerator: TypeAlias = Callable[
         [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
@@ -333,6 +338,222 @@ class GridWidthHeight(_GridPlan[RelativePosition]):
             else 0.0
         )
 
+class GridFromPolygon(_GridPlan[AbsolutePosition]):
+    """Yield absolute stage positions to cover a polygon.
+
+    Input:A polygon with(out) hole(s), extra argument to fill holes or not within the polygon,
+        whether to apply a convex hull, and option to offset the polygon with a certain size.
+    Attributes
+    ----------
+    polygon : list[tuple[float,float]]
+        list of minimum 3 points/vertices of a polygon in yx.
+        '[[y,x],[y,x],[y,x].....]
+    convex hull Optional[boolean]: 
+        True to create a convex hull from the polygon
+    overlap : float | tuple[float, float]
+        Overlap between grid positions in percent. If a single value is provided, it is
+        used for both x and y. If a tuple is provided, the first value is used
+        for x and the second for y.
+    mode : OrderMode
+        Define the ways of ordering the grid positions. Options are
+        row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
+        By default, row_wise_snake.
+    fov_width : Optional[float]
+        Width of the field of view in microns.  If not provided, acquisition engines
+        should use current width of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    fov_height : Optional[float]
+        Height of the field of view in microns. If not provided, acquisition engines
+        should use current height of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    """
+    #TODO add buffer argument to vary offset: float = Field((fov_width*fov_height)/2,frozen=False)
+    #TODO remove shapely code in _offset_polygon()
+    #TODO instead of offsetting the polygon, maybe shrink the grid towards the centroid of the polygon?
+        ##Alternative for shapely import:
+        #https://github.com/karimbahgat/Shapy/blob/master/shapy/geometry.py
+        #https://medium.com/@gurbuzkaanakkaya/polygon-buffering-algorithm-generating-buffer-points-228ed062fdf9
+        # python only:
+        # https://github.com/karimbahgat/Shapy #specifically:line 543 https://github.com/karimbahgat/Shapy/blob/master/shapy/geometry.py
+        # https://github.com/chalk-diagrams/planar
+
+    polygon: Annotated[list[tuple[float,float]],Field(
+        ...,
+        min_length=3,
+        description="List of points that define the polygon, must be at least 3 points", 
+        frozen=False
+        )]
+    convex_hull: bool = Field(
+            False, 
+            description="If True, the convex hull will be used.",
+    )
+    top_all: Annotated[Optional[float], Field(None,init=True)]
+    left_all: Annotated[Optional[float], Field(None,init=True)] 
+    bottom_all: Annotated[Optional[float], Field(None,init=True)] 
+    right_all: Annotated[Optional[float], Field(None,init=True)] 
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.top_all, self.left_all, self.bottom_all, self.right_all = self._bounding_box_of_polygon()
+
+    def _max_value(self, edges_list: list = [])-> list[float]:
+        max_values = [0,0,0,0]
+        ##In case of yx points, instead of top,left,bottom,right, duplicate the values. 
+        edges_list = list(edges_list)
+        if len(edges_list[0]) == 2:
+            for idx,value  in enumerate(edges_list):
+                edges_list[idx]=(value+value)
+        for idx in range(len(max_values)):
+            for grid in edges_list:
+                if grid[idx] >= max_values[idx]:
+                    max_values[idx] = grid[idx]
+        print(f'max_values: bounding box: {max_values}')
+        return max_values
+    
+    def _min_value(self, edges_list: list = [])-> list[float]: 
+        min_values = list(self._max_value(edges_list))
+        self.right_all, self.bottom_all, *_ = min_values[::-1]
+        edges_list = list(edges_list)
+        if len(edges_list[0]) == 2:
+            for idx,value  in enumerate(edges_list):
+                edges_list[idx]=(value+value)
+        for idx in range(len(min_values)):
+            for grid in edges_list:
+                if grid[idx] <= min_values[idx]:
+                    min_values[idx] = grid[idx]
+        return min_values#, list(self._max_value())
+
+    def _bounding_box_of_polygon(self) -> list[float, float, float, float]:
+        self.top_all, self.left_all, *_ = self._min_value(self.polygon)
+        #print(f"bounding box of polygon; top: {self.top_all}, left: {self.left_all}, bottom: {self.bottom_all}, right: {self.right_all}")
+        return self.top_all, self.left_all, self.bottom_all, self.right_all
+
+    def _convert_bounding_boxes_to_polygon_vertices(self,list_of_bounding_boxes) -> list:
+        '''
+        generates a list of YX points top_left_bottom_right, rewriting to XY may make more sense.
+        '''
+        if len(list_of_bounding_boxes[0]) == 4:
+            vertices=[]
+            for box in list_of_bounding_boxes:
+                top, left, bottom, right  = box #bottom, right
+                vertices.extend([
+                    (top, left),
+                    (top, right),
+                    (bottom, left),
+                    (bottom, right)
+                ])
+            return vertices
+        else:
+            vertices = list_of_bounding_boxes
+            return vertices
+        
+    
+    def _offset_polygon(self, vertices)-> list:
+        vertices = tuple(vertices)
+        geom = shapely.Polygon(vertices)
+        vertices = geom.buffer(distance=(self.fov_height+self.fov_width)/3,cap_style='round',join_style='round')
+        vertices = list(vertices.exterior.coords)
+        return vertices
+
+    def _convex_hull(self,vertices)-> list:
+        """Computes the convex hull of a set of 2D points.
+        Input: an iterable sequence of (x, y) pairs representing the points.
+        Output: a list of vertices of the convex hull in counter-clockwise order,
+        starting from the vertex with the lexicographically smallest coordinates.
+        Implements Andrew's monotone chain algorithm. O(n log n) complexity.
+        source:
+        https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Python
+        """
+        # Sort the points lexicographically (tuples are compared lexicographically).
+        # Remove duplicates to detect the case we have just one unique point.
+        vertices = sorted(set(vertices))
+        # Boring case: no points or a single point, possibly repeated multiple times.\
+        if len(vertices) <= 1:
+            return vertices
+        # 2D cross product of OA and OB vectors, i.e. z-component of their 3D cross product.
+        # Returns a positive value, if OAB makes a counter-clockwise turn,
+        # negative for clockwise turn, and zero if the points are collinear.
+        def cross(o, a, b):
+            return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+        # Build lower hull 
+        lower = []
+        for p in vertices:
+            while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+                lower.pop()
+            lower.append(p)
+        # Build upper hull
+        upper = []
+        for p in reversed(vertices):
+            while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+                upper.pop()
+            upper.append(p)
+        #Concatenation of the lower and upper hulls gives the convex hull.
+        #Last point of each list is omitted because it is repeated at the beginning of the other list. 
+        return lower[:-1] + upper[:-1]
+
+    def _point_inside_polygon(self, point: PositionT, polygon_vertices: list[float, float]) -> bool:
+    #TODO raycasting or windingnumber
+        """
+        Ray casting algorithm to check for each position if it is inside polygon
+    	"""
+        shift_to_center = True
+        if shift_to_center:
+            x, y = point.x+(self.fov_width*(1-self.overlap[0]/100)/2), point.y+(self.fov_height*(1-self.overlap[1]/100)/2)
+        else:
+            x, y = point.x, point.y
+        inside = False
+        for p1, p2 in zip(polygon_vertices, polygon_vertices[1:] + [polygon_vertices[0]]):
+            p1y, p1x = p1 #edge 1
+            p2y, p2x = p2 #edge 2
+            if (p1y <= y and y < p2y) or (p2y <= y and y < p1y):
+                xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                if x <= xinters:
+                    inside = not inside
+        return inside
+
+    def _intersect_raster_with_polygon(self) -> Iterator[PositionT]:
+        """
+        #TODO determine whether centroid and sort order is to be asserted.
+        #TODO Keeping the refinement step may be cleaner outside the method.
+        Refine the polygon by offsetting and/or 
+        """
+        polygon_vertices=self.polygon
+        if shapely_installed: 
+            ##Dilates the polygon
+            polygon_vertices = self._offset_polygon(polygon_vertices)
+        if self.convex_hull:
+            polygon_vertices = self._convex_hull(polygon_vertices)
+
+        grid_from_bounding_box = self.iter_grid_positions()
+
+        for position in list(grid_from_bounding_box):
+            if self._point_inside_polygon(point=position, polygon_vertices=polygon_vertices):
+                yield position
+            
+    @property
+    def is_relative(self) -> bool:
+        return False
+    
+    def _nrows(self, dy: float) -> int:
+        total_height = abs(self.top_all - self.bottom_all) + dy
+        return math.ceil(total_height / dy)
+
+    def _ncolumns(self, dx: float) -> int:
+        total_width = abs(self.right_all - self.left_all) + dx
+        return math.ceil(total_width / dx)
+
+    def _offset_x(self, dx: float) -> float:
+        return min(self.left_all, self.right_all)
+
+    def _offset_y(self, dy: float) -> float:
+        return max(self.top_all, self.bottom_all)
+    
+    def num_positions(self):
+        #TODO write _num_positions() to not reflect rows * columns, but the actual positions.
+        #return len(list(self.intersect_raster_with_polygon()))
+        return "To get the number of tiles within the polygon: len(list(mda_sequence.grid_plan.__iter__()))" 
+    def __iter__(self) -> Iterator[PositionT]:
+        yield from self._intersect_raster_with_polygon()
 
 # ------------------------ RANDOM ------------------------
 
@@ -506,5 +727,5 @@ _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
 RelativeMultiPointPlan = Union[
     GridRowsColumns, GridWidthHeight, RandomPoints, RelativePosition
 ]
-AbsoluteMultiPointPlan = Union[GridFromEdges]
+AbsoluteMultiPointPlan = Union[GridFromEdges,GridFromPolygon]
 MultiPointPlan = Union[AbsoluteMultiPointPlan, RelativeMultiPointPlan]
