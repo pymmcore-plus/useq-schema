@@ -16,6 +16,7 @@ from typing import (
 
 import numpy as np
 from annotated_types import Ge, Gt
+from matplotlib.axes import Axes
 from pydantic import Field, field_validator, model_validator
 from typing_extensions import Self, TypeAlias
 
@@ -28,6 +29,8 @@ from useq._position import (
 )
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
     PointGenerator: TypeAlias = Callable[
         [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
     ]
@@ -217,6 +220,22 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
 
     def _offset_y(self, dy: float) -> float:
         return max(self.top, self.bottom)
+
+    def plot(self, *, show: bool = True) -> Axes:
+        """Plot the positions in the plan."""
+        from useq._plot import plot_points
+
+        if self.fov_width is not None and self.fov_height is not None:
+            rect = (self.fov_width, self.fov_height)
+        else:
+            rect = None
+
+        return plot_points(
+            self,
+            rect_size=rect,
+            bounding_box=(self.left, self.top, self.right, self.bottom),
+            show=show,
+        )
 
 
 class GridRowsColumns(_GridPlan[RelativePosition]):
