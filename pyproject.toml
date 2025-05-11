@@ -36,26 +36,40 @@ classifiers = [
     "Typing :: Typed",
 ]
 dynamic = ["version"]
-dependencies = ["pydantic >=2.6", "numpy", "typing-extensions"]
+dependencies = [
+    "pydantic >=2.6",
+    "numpy >=2.1.0; python_version >= '3.13'",
+    "numpy >=1.26.0; python_version >= '3.12'",
+    "numpy >=1.25.2",
+    "typing-extensions >=4",
+]
 
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
 yaml = ["PyYAML"]
-test = ["pytest>=6.0", "pytest-cov", "PyYAML", "psygnal"]
+plot = ["matplotlib"]
+
+[dependency-groups]
+test = ["psygnal>=0.13.0", "pytest>=6.0", "pytest-cov>=6.1.1", "pyyaml>=6.0.2"]
 dev = [
-    "ipython",
-    "mypy",
-    "pdbpp; sys_platform != 'win32'",
-    "pre-commit",
-    "pytest-cov",
-    "pytest",
-    "rich",
-    "ruff",
-    "PyYaml",
-    "types-PyYAML",
+    { include-group = "test" },
+    "ipython>=8.18.1",
+    "mypy>=1.15.0",
+    "pdbpp>=0.11.6 ; sys_platform != 'win32'",
+    "pre-commit>=4.2.0",
+    "rich>=14.0.0",
+    "ruff>=0.11.9",
+    "types-pyyaml>=6.0.12.20250402",
 ]
-docs = ["mkdocs >=1.4", "mkdocs-material", "mkdocstrings-python"]
+docs = [
+    "mkdocs >=1.4",
+    "mkdocs-material>=9.6.13",
+    "mkdocstrings-python>=1.16.10",
+]
+
+[tool.uv.sources]
+useq-schema = { workspace = true }
 
 [project.urls]
 Source = "https://github.com/pymmcore-plus/useq-schema"
