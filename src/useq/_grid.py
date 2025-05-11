@@ -16,7 +16,6 @@ from typing import (
 
 import numpy as np
 from annotated_types import Ge, Gt
-from matplotlib.axes import Axes
 from pydantic import Field, field_validator, model_validator
 from typing_extensions import Self, TypeAlias
 
@@ -209,18 +208,34 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         return False
 
     def _nrows(self, dy: float) -> int:
-        total_height = abs(self.top - self.bottom) + dy
-        return math.ceil(total_height / dy)
+        if self.fov_height is None:
+            total_height = abs(self.top - self.bottom) + dy
+            return math.ceil(total_height / dy)
+
+        span = abs(self.top - self.bottom)
+        # if the span is smaller than one FOV, just one row
+        if span <= self.fov_height:
+            return 1
+        # otherwise: one FOV plus (nrows-1)⋅dy must cover span
+        return math.ceil((span - self.fov_height) / dy) + 1
 
     def _ncolumns(self, dx: float) -> int:
-        total_width = abs(self.right - self.left) + dx
-        return math.ceil(total_width / dx)
+        if self.fov_width is None:
+            total_width = abs(self.right - self.left) + dx
+            return math.ceil(total_width / dx)
+
+        span = abs(self.right - self.left)
+        if span <= self.fov_width:
+            return 1
+        return math.ceil((span - self.fov_width) / dx) + 1
 
     def _offset_x(self, dx: float) -> float:
-        return min(self.left, self.right)
+        # start the _centre_ half a FOV in from the left edge
+        return min(self.left, self.right) + (self.fov_width or 0) / 2
 
     def _offset_y(self, dy: float) -> float:
-        return max(self.top, self.bottom)
+        # start the _centre_ half a FOV down from the top edge
+        return max(self.top, self.bottom) - (self.fov_height or 0) / 2
 
     def plot(self, *, show: bool = True) -> Axes:
         """Plot the positions in the plan."""
