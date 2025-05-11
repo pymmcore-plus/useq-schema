@@ -61,11 +61,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        repo: ["pymmcore-plus/pymmcore-plus", "pymmcore-plus/pymmcore-widgets"]
+        # note: hard-coding pymmcore-plus/ org for now
+        repo: ["pymmcore-plus", "pymmcore-widgets"]
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ matrix.repo }}
+          repository: pymmcore-plus/${{ matrix.repo }}
           fetch-depth: 0
       - uses: actions/checkout@v4
         with:
