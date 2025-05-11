@@ -45,7 +45,6 @@ jobs:
 
       - run: uv run --group test --resolution ${{ matrix.resolution || 'highest'}} coverage run -p -m pytest -v --color=yes
 
-
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
@@ -53,49 +52,73 @@ jobs:
           path: ./.coverage*
           include-hidden-files: true
 
-  upload_coverage:
-    if: always()
-    needs: [test]
-    uses: pyapp-kit/workflows/.github/workflows/upload-coverage.yml@v2
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
   test-dependents:
-    uses: pyapp-kit/workflows/.github/workflows/test-dependents.yml@v2
-    with:
-      os: macos-13
-      python-version: "3.11"
-      dependency-repo: ${{ matrix.repo }}
-      dependency-extras: "test"
-      post-install-cmd: "mmcore install"
-      qt: ${{ matrix.qt }}
+    name: ${{ matrix.repo }}
+    runs-on: macos-13
+    env:
+      UV_MANAGED_PYTHON: "1"
+      UV_NO_SYNC: "1"
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - repo: pymmcore-plus/pymmcore-plus
-            qt: "pyqt6"
-          - repo: pymmcore-plus/pymmcore-widgets
-            qt: "pyqt6"
-          # - repo: pymmcore-plus/napari-micromanager
-          #   qt: "pyqt5"
+        repo: ["pymmcore-plus/pymmcore-plus", "pymmcore-plus/pymmcore-widgets"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          path: useq-schema
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - uses: pyvista/setup-headless-display-action@v3
+        with:
+          qt: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --no-dev --group test --extra PyQt6
+          uv run mmcore install
+          uv pip install ./useq-schema
+
+      - run: uv run coverage run -p -m pytest -v --color=yes
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: covreport-${{ matrix.repo }}
+          path: ./.coverage*
+          include-hidden-files: true
+
+  upload_coverage:
+    if: always()
+    needs: [test, test-dependents]
+    uses: pyapp-kit/workflows/.github/workflows/upload-coverage.yml@v2
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   deploy:
     needs: test
     if: ${{ github.repository == 'pymmcore-plus/useq-schema' && contains(github.ref, 'tags') }}
     runs-on: ubuntu-latest
-
     permissions:
       id-token: write
       contents: write
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
       - name: 👷 Build
-        run: pipx run build
+        run: uv build
 
       - name: 🚢 Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
