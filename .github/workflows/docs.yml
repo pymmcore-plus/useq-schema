@@ -1,26 +1,20 @@
 name: docs
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.x
-      - run: pip install -e .[docs]
+      - uses: astral-sh/setup-uv@v6
 
       - name: Test build
         if: github.event_name == 'pull_request'
-        run: mkdocs build
+        run: uv run --group docs mkdocs build --strict
 
       - name: Deploy
         if: github.ref == 'refs/heads/main'
-        run: mkdocs gh-deploy --force
+        run: uv run --group docs mkdocs gh-deploy --strict --force
