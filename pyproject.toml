@@ -47,11 +47,11 @@ dependencies = [
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
-yaml = ["PyYAML"]
-plot = ["matplotlib"]
+yaml = ["PyYAML >=5.0"]
+plot = ["matplotlib >=3.7"]
 
 [dependency-groups]
-test = ["psygnal>=0.13.0", "pytest>=6.0", "pytest-cov>=6.1.1", "pyyaml>=6.0.2"]
+test = ["psygnal>=0.13.0", "pytest>=8.0", "pytest-cov>=6.1.1", "pyyaml>=6.0.2"]
 dev = [
     { include-group = "test" },
     "ipython>=8.18.1",

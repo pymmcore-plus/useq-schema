@@ -20,35 +20,42 @@ jobs:
       - run: pip3 install check-manifest && check-manifest
 
   test:
-    uses: pyapp-kit/workflows/.github/workflows/test-pyrepo.yml@v2
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      coverage-upload: artifact
+    name: ${{ matrix.os }} py${{ matrix.python-version }} ${{ matrix.resolution }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.11", "3.12", "3.13"]
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        python-version: ["3.9", "3.11", "3.13"]
         include:
-          - os: windows-latest
-            python-version: "3.10"
+          - os: ubuntu-latest
+            python-version: "3.11"
+            resolution: "lowest-direct"
+          - os: ubuntu-latest
+            python-version: "3.13"
+            extra: "plot"
 
-  test-minreqs:
-    uses: pyapp-kit/workflows/.github/workflows/test-pyrepo.yml@main
-    with:
-      os: ubuntu-latest
-      python-version: ${{ matrix.python-version }}
-      pip-install-min-reqs: true
-      coverage-upload: artifact
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - run: uv run --group test --resolution ${{ matrix.resolution || 'highest'}} coverage run -p -m pytest -v --color=yes
+
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: covreport-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: ./.coverage*
+          include-hidden-files: true
 
   upload_coverage:
     if: always()
-    needs: [test, test-minreqs]
+    needs: [test]
     uses: pyapp-kit/workflows/.github/workflows/upload-coverage.yml@v2
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
