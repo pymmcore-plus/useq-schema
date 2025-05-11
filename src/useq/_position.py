@@ -106,10 +106,9 @@ class _MultiPointPlan(MutableModel, Generic[PositionT]):
         """Plot the positions in the plan."""
         from useq._plot import plot_points
 
+        rect = None
         if self.fov_width is not None and self.fov_height is not None:
             rect = (self.fov_width, self.fov_height)
-        else:
-            rect = None
 
         return plot_points(self, rect_size=rect, show=show)
 
