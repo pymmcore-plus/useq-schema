@@ -16,7 +16,6 @@ from typing import (
 
 import numpy as np
 from annotated_types import Ge, Gt
-from matplotlib.axes import Axes
 from pydantic import Field, field_validator, model_validator
 from typing_extensions import Self, TypeAlias
 
