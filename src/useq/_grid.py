@@ -167,7 +167,8 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
     """Yield absolute stage positions to cover a bounded area.
 
     The bounded area is defined by top, left, bottom and right edges in
-    stage coordinates.
+    stage coordinates.  The bounds define the *outer* edges of the images, including
+    the field of view and overlap.
 
     Attributes
     ----------
@@ -225,10 +226,9 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         """Plot the positions in the plan."""
         from useq._plot import plot_points
 
+        rect = None
         if self.fov_width is not None and self.fov_height is not None:
             rect = (self.fov_width, self.fov_height)
-        else:
-            rect = None
 
         return plot_points(
             self,
