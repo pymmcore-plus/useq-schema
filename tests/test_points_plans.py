@@ -187,7 +187,9 @@ fov = {"fov_height": 200, "fov_width": 200}
         RelativePosition(**fov),
     ],
 )
-def test_points_plans(obj: RelativeMultiPointPlan, monkeypatch: pytest.MonkeyPatch):
+def test_points_plans_plot(
+    obj: RelativeMultiPointPlan, monkeypatch: pytest.MonkeyPatch
+) -> None:
     mpl = pytest.importorskip("matplotlib.pyplot")
     monkeypatch.setattr(mpl, "show", lambda: None)
 
@@ -196,3 +198,11 @@ def test_points_plans(obj: RelativeMultiPointPlan, monkeypatch: pytest.MonkeyPat
     assert isinstance(obj.num_positions(), int)
 
     obj.plot()
+
+
+def test_grid_from_edges_plot(monkeypatch: pytest.MonkeyPatch) -> None:
+    mpl = pytest.importorskip("matplotlib.pyplot")
+    monkeypatch.setattr(mpl, "show", lambda: None)
+    GridFromEdges(
+        overlap=10, top=0, left=0, bottom=20, right=30, fov_height=10, fov_width=20
+    ).plot()

@@ -6,6 +6,7 @@ from pydantic import Field
 from useq._base_model import FrozenModel, MutableModel
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
     from typing_extensions import Self
 
     from useq import MDASequence
@@ -101,11 +102,15 @@ class _MultiPointPlan(MutableModel, Generic[PositionT]):
     def num_positions(self) -> int:
         raise NotImplementedError("This method must be implemented by subclasses.")
 
-    def plot(self) -> None:
+    def plot(self, *, show: bool = True) -> "Axes":
         """Plot the positions in the plan."""
         from useq._plot import plot_points
 
-        plot_points(self)
+        rect = None
+        if self.fov_width is not None and self.fov_height is not None:
+            rect = (self.fov_width, self.fov_height)
+
+        return plot_points(self, rect_size=rect, show=show)
 
 
 class RelativePosition(PositionBase, _MultiPointPlan["RelativePosition"]):
