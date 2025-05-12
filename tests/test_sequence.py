@@ -101,10 +101,24 @@ g_inputs = [
             overlap=0, top=0, left=0, bottom=20, right=20, fov_height=20, fov_width=20
         ),
         [
-            Position(x=0.0, y=20.0, name="0000", row=0, col=0),
-            Position(x=20.0, y=20.0, name="0001", row=0, col=1),
-            Position(x=20.0, y=0.0, name="0002", row=1, col=1),
-            Position(x=0.0, y=0.0, name="0003", row=1, col=0),
+            Position(x=10.0, y=10.0, name="0000", row=0, col=0),
+        ],
+    ),
+    (
+        GridFromEdges(
+            overlap=20,
+            top=30,
+            left=-10,
+            bottom=-10,
+            right=30,
+            fov_height=25,
+            fov_width=25,
+        ),
+        [
+            Position(x=2.5, y=17.5, name="0000", row=0, col=0),
+            Position(x=22.5, y=17.5, name="0001", row=0, col=1),
+            Position(x=22.5, y=-2.5, name="0002", row=1, col=1),
+            Position(x=2.5, y=-2.5, name="0003", row=1, col=0),
         ],
     ),
     (
