@@ -86,10 +86,12 @@ jobs:
         with:
           qt: true
 
+      - name: Setup MM test adapters
+        uses: pymmcore-plus/setup-mm-test-adapters@main
+
       - name: Install dependencies
         run: |
           uv sync --no-dev --group test --extra PyQt6
-          uv run mmcore install
           uv pip install ./useq-schema
           uv pip list
 
