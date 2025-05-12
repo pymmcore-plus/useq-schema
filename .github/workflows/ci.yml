@@ -42,12 +42,19 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
 
-      - run: uv run --group test --resolution ${{ matrix.resolution || 'highest'}} coverage run -p -m pytest -v --color=yes
+      - name: Run tests
+        shell: bash
+        run: |
+          uv run --group test \
+            ${{ matrix.extra && format('--extra {0}', matrix.extra) }} \
+            --resolution ${{ matrix.resolution || 'highest'}} \
+            coverage run -p -m \
+            pytest -v --color=yes
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
-          name: covreport-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: covreport-${{ matrix.os }}-py${{ matrix.python-version }}-${{ matrix.extra }}
           path: ./.coverage*
           include-hidden-files: true
 

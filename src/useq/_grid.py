@@ -252,6 +252,22 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
             show=show,
         )
 
+    def plot(self, *, show: bool = True) -> Axes:
+        """Plot the positions in the plan."""
+        from useq._plot import plot_points
+
+        if self.fov_width is not None and self.fov_height is not None:
+            rect = (self.fov_width, self.fov_height)
+        else:
+            rect = None
+
+        return plot_points(
+            self,
+            rect_size=rect,
+            bounding_box=(self.left, self.top, self.right, self.bottom),
+            show=show,
+        )
+
 
 class GridRowsColumns(_GridPlan[RelativePosition]):
     """Grid plan based on number of rows and columns.
