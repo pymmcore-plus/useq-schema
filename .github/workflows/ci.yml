@@ -42,7 +42,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
 
-      - run: |
+      - name: Run tests
+        shell: bash
+        run: |
           uv run --group test \
             ${{ matrix.extra && format('--extra {0}', matrix.extra) }} \
             --resolution ${{ matrix.resolution || 'highest'}} \
