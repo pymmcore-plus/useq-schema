@@ -27,9 +27,18 @@ from useq._position import (
     _MultiPointPlan,
 )
 
-if TYPE_CHECKING:
-    from matplotlib.axes import Axes
+try:
+    from shapely.geometry import Polygon, box
+    from shapely.prepared import prep
 
+    shapely_installed = True
+except ImportError:
+    raise ImportError(
+        "plan_polygon_tiling requires shapely. "
+        "Please install it with 'pip install shapely'."
+    ) from None
+
+if TYPE_CHECKING:
     PointGenerator: TypeAlias = Callable[
         [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
     ]
@@ -111,7 +120,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         Note: For GridFromEdges and GridWidthHeight, this will depend on field of view
         size. If no field of view size is provided, the number of positions will be 1.
         """
-        if isinstance(self, (GridFromEdges, GridWidthHeight)) and (
+        if isinstance(self, (GridFromEdges, GridWidthHeight, GridFromPolygon)) and (
             # type ignore is because mypy thinks self is Never here...
             self.fov_width is None or self.fov_height is None  # type: ignore [attr-defined]
         ):
@@ -207,34 +216,50 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         return False
 
     def _nrows(self, dy: float) -> int:
-        total_height = abs(self.top - self.bottom) + dy
-        return math.ceil(total_height / dy)
+        if self.fov_height is None:
+            total_height = abs(self.top - self.bottom) + dy
+            return math.ceil(total_height / dy)
+
+        span = abs(self.top - self.bottom)
+        # if the span is smaller than one FOV, just one row
+        if span <= self.fov_height:
+            return 1
+        # otherwise: one FOV plus (nrows-1)⋅dy must cover span
+        return math.ceil((span - self.fov_height) / dy) + 1
 
     def _ncolumns(self, dx: float) -> int:
-        total_width = abs(self.right - self.left) + dx
-        return math.ceil(total_width / dx)
+        if self.fov_width is None:
+            total_width = abs(self.right - self.left) + dx
+            return math.ceil(total_width / dx)
+
+        span = abs(self.right - self.left)
+        if span <= self.fov_width:
+            return 1
+        return math.ceil((span - self.fov_width) / dx) + 1
 
     def _offset_x(self, dx: float) -> float:
-        return min(self.left, self.right)
+        # start the _centre_ half a FOV in from the left edge
+        return min(self.left, self.right) + (self.fov_width or 0) / 2
 
     def _offset_y(self, dy: float) -> float:
-        return max(self.top, self.bottom)
+        # start the _centre_ half a FOV down from the top edge
+        return max(self.top, self.bottom) - (self.fov_height or 0) / 2
 
-    def plot(self, *, show: bool = True) -> Axes:
-        """Plot the positions in the plan."""
-        from useq._plot import plot_points
+    # def plot(self, *, show: bool = True) -> Axes:
+    #     """Plot the positions in the plan."""
+    #     from useq._plot import plot_points
 
-        if self.fov_width is not None and self.fov_height is not None:
-            rect = (self.fov_width, self.fov_height)
-        else:
-            rect = None
+    #     if self.fov_width is not None and self.fov_height is not None:
+    #         rect = (self.fov_width, self.fov_height)
+    #     else:
+    #         rect = None
 
-        return plot_points(
-            self,
-            rect_size=rect,
-            bounding_box=(self.left, self.top, self.right, self.bottom),
-            show=show,
-        )
+    #     return plot_points(
+    #         self,
+    #         rect_size=rect,
+    #         bounding_box=(self.left, self.top, self.right, self.bottom),
+    #         show=show,
+    #     )
 
 
 class GridRowsColumns(_GridPlan[RelativePosition]):
@@ -350,6 +375,148 @@ class GridWidthHeight(_GridPlan[RelativePosition]):
             if self.relative_to == RelativeTo.center
             else 0.0
         )
+
+
+class GridFromPolygon(_GridPlan[AbsolutePosition]):
+    """Yield absolute stage positions to cover a polygon.
+
+    Ordered list of tiles is created by intersecting the polygon's-bounding-box-grid with the polygon.
+    Additionally the convex hull, and/or a offsetted polygon can be created to improve tile coverage of the polygon.
+
+    Attributes
+    ----------
+    polygon : list[tuple[float,float]]
+        list of minimum 3 vertices of a polygon in XY.
+        '[[x,y],[x,y],[x,y].....]
+    convex hull : Optional[boolean]
+        True to create a convex hull from the polygon
+    offset : Optional[float]
+        Offsets the polygon prior to point-in-polygon check to improve coverage of tiles.
+    overlap : float | tuple[float, float]
+        Overlap between grid positions in percent. If a single value is provided, it is
+        used for both x and y. If a tuple is provided, the first value is used
+        for x and the second for y.
+    mode : OrderMode
+        Define the ways of ordering the grid positions. Options are
+        row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
+        By default, row_wise_snake.
+    fov_width : Optional[float]
+        Width of the field of view in microns.  If not provided, acquisition engines
+        should use current width of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    fov_height : Optional[float]
+        Height of the field of view in microns. If not provided, acquisition engines
+        should use current height of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    #TODO is YX and XY enforcable? Optional conversion method required?
+    """
+
+    polygon: Annotated[
+        list[tuple[float, float]],
+        Field(
+            ...,
+            min_length=3,
+            description="List of points that define the polygon, must be at least 3 points",
+            frozen=True,
+        ),
+    ]
+    convex_hull: Annotated[
+        Optional[bool],
+        Field(
+            False,
+            description="If True, the convex hull of the polygon will be used.",
+        ),
+    ]
+    offset: Annotated[
+        Optional[float],
+        Field(
+            None,
+            frozen=True,
+            description="Offsets the polygon in all directions to improve tile coverage.",
+        ),
+    ]
+    prepared_poly: Annotated[Optional[object], Field(None, init=False)] = None
+    top_bound: Annotated[Optional[float], Field(None, init=False)] = None
+    left_bound: Annotated[Optional[float], Field(None, init=False)] = None
+    bottom_bound: Annotated[Optional[float], Field(None, init=False)] = None
+    right_bound: Annotated[Optional[float], Field(None, init=False)] = None
+
+    def model_post_init(self, __context) -> None:
+        poly = Polygon(self.polygon)
+        if not poly.is_valid:
+            raise ValueError("Invalid or self-intersecting polygon.")
+        self.prepared_poly = prep(poly)
+        # bounds returns minimum bounding region (minx, miny, maxx, maxy).
+        self.left_bound, self.bottom_bound, self.right_bound, self.top_bound = (
+            poly.bounds
+        )
+
+    def _offset_polygon(self, vertices, offset) -> list:
+        """Refine the polygon by buffering with a given distance, and resolving the polygon so it remains valid."""
+        geom = vertices
+        vertices = geom.buffer(distance=offset, cap_style="round", join_style="round")
+        return vertices
+
+    def _intersect_raster_with_polygon(self) -> Iterator[PositionT]:
+        """ """
+        # if self.convex_hull:
+        #     print("Convex hull is not implemented yet.")
+        #     self.prepared_poly = Polygon(self.polygon).convex_hull
+        #     self.prepared_poly = prep(self.prepared_poly)
+        if self.offset is not None:
+            self.prepared_poly = self._offset_polygon(
+                Polygon(self.polygon), self.offset
+            )
+            self.prepared_poly = prep(self.prepared_poly)
+        grid_from_bounding_box = self.iter_grid_positions()
+        for position in list(grid_from_bounding_box):
+            tile = box(
+                position.x,
+                position.y,
+                position.x + self.fov_width,
+                position.y + self.fov_height,
+            )
+            if self.prepared_poly.intersects(tile):
+                yield position
+
+    @property
+    def is_relative(self) -> bool:
+        return False
+
+    def _nrows(self, dy: float) -> int:
+        total_height = (
+            abs(
+                (self.top_bound + self.fov_height / 2)
+                - (self.bottom_bound - self.fov_height / 2)
+            )
+            + dy
+        )
+        return math.ceil(total_height / dy)
+
+    def _ncolumns(self, dx: float) -> int:
+        total_width = (
+            abs(
+                (self.right_bound + self.fov_width / 2)
+                - (self.left_bound - self.fov_width / 2)
+            )
+            + dx
+        )
+        return math.ceil(total_width / dx)
+
+    def _offset_x(self, dx: float) -> float:
+        return min(self.left_bound, self.right_bound) - (self.fov_width or 0) / 2
+
+    def _offset_y(self, dy: float) -> float:
+        return max(self.top_bound, self.bottom_bound) + (self.fov_height or 0) / 2
+
+    def num_positions(self) -> int:
+        """Return the number of positions within the polygon."""
+        if self.fov_width is None or self.fov_height is None:
+            raise ValueError("fov_width and fov_height must be set")
+        return sum(1 for _ in self._intersect_raster_with_polygon())
+
+    def __iter__(self) -> Iterator[PositionT]:
+        yield from self._intersect_raster_with_polygon()
 
 
 # ------------------------ RANDOM ------------------------
@@ -524,5 +691,5 @@ _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
 RelativeMultiPointPlan = Union[
     GridRowsColumns, GridWidthHeight, RandomPoints, RelativePosition
 ]
-AbsoluteMultiPointPlan = Union[GridFromEdges]
+AbsoluteMultiPointPlan = Union[GridFromEdges, GridFromPolygon]
 MultiPointPlan = Union[AbsoluteMultiPointPlan, RelativeMultiPointPlan]
