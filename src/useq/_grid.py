@@ -26,9 +26,11 @@ from useq._position import (
     RelativePosition,
     _MultiPointPlan,
 )
+
 try:
     from shapely.geometry import Polygon, box
     from shapely.prepared import prep
+
     shapely_installed = True
 except ImportError:
     raise ImportError(
@@ -153,8 +155,8 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         pos_cls = RelativePosition if self.is_relative else AbsolutePosition
         for idx, (r, c) in enumerate(order.generate_indices(rows, cols)):
             yield pos_cls(  # type: ignore [misc]
-                x = x0 + c * dx,
-                y = y0 - r * dy,
+                x=x0 + c * dx,
+                y=y0 - r * dy,
                 row=r,
                 col=c,
                 name=f"{str(idx).zfill(4)}",
@@ -224,6 +226,7 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
             return 1
         # otherwise: one FOV plus (nrows-1)⋅dy must cover span
         return math.ceil((span - self.fov_height) / dy) + 1
+
     def _ncolumns(self, dx: float) -> int:
         if self.fov_width is None:
             total_width = abs(self.right - self.left) + dx
@@ -235,13 +238,13 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         return math.ceil((span - self.fov_width) / dx) + 1
 
     def _offset_x(self, dx: float) -> float:
-        # start the _centre_ half a FOV in from the left edge 
+        # start the _centre_ half a FOV in from the left edge
         return min(self.left, self.right) + (self.fov_width or 0) / 2
 
     def _offset_y(self, dy: float) -> float:
         # start the _centre_ half a FOV down from the top edge
         return max(self.top, self.bottom) - (self.fov_height or 0) / 2
-    
+
     # def plot(self, *, show: bool = True) -> Axes:
     #     """Plot the positions in the plan."""
     #     from useq._plot import plot_points
@@ -312,7 +315,7 @@ class GridRowsColumns(_GridPlan[RelativePosition]):
         return (
             ((self.rows - 1) * dy) / 2 if self.relative_to == RelativeTo.center else 0.0
         )
-    
+
 
 GridRelative = GridRowsColumns
 
@@ -373,6 +376,7 @@ class GridWidthHeight(_GridPlan[RelativePosition]):
             else 0.0
         )
 
+
 class GridFromPolygon(_GridPlan[AbsolutePosition]):
     """Yield absolute stage positions to cover a polygon.
 
@@ -387,7 +391,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
     convex hull : Optional[boolean]
         True to create a convex hull from the polygon
     offset : Optional[float]
-        Offsets the polygon prior to point-in-polygon check to improve coverage of tiles.        
+        Offsets the polygon prior to point-in-polygon check to improve coverage of tiles.
     overlap : float | tuple[float, float]
         Overlap between grid positions in percent. If a single value is provided, it is
         used for both x and y. If a tuple is provided, the first value is used
@@ -406,69 +410,97 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         Engines MAY override this even if provided.
     #TODO is YX and XY enforcable? Optional conversion method required?
     """
-    polygon: Annotated[list[tuple[float,float]], Field(
-        ...,
-        min_length=3,
-        description="List of points that define the polygon, must be at least 3 points", 
-        frozen=True
-        )]
-    convex_hull: Annotated[Optional[bool], Field(
+
+    polygon: Annotated[
+        list[tuple[float, float]],
+        Field(
+            ...,
+            min_length=3,
+            description="List of points that define the polygon, must be at least 3 points",
+            frozen=True,
+        ),
+    ]
+    convex_hull: Annotated[
+        Optional[bool],
+        Field(
             False,
             description="If True, the convex hull of the polygon will be used.",
-        )]
-    offset: Annotated[Optional[float], Field(
-        None,
-        frozen=True,
-        description="Offsets the polygon in all directions to improve tile coverage.")]
-    prepared_poly: Annotated[Optional[object], Field(None,init=False)] = None
-    top_bound: Annotated[Optional[float], Field(None,init=False)] = None
-    left_bound: Annotated[Optional[float], Field(None,init=False)] = None
-    bottom_bound: Annotated[Optional[float], Field(None,init=False)] = None
-    right_bound: Annotated[Optional[float], Field(None,init=False)] = None
+        ),
+    ]
+    offset: Annotated[
+        Optional[float],
+        Field(
+            None,
+            frozen=True,
+            description="Offsets the polygon in all directions to improve tile coverage.",
+        ),
+    ]
+    prepared_poly: Annotated[Optional[object], Field(None, init=False)] = None
+    top_bound: Annotated[Optional[float], Field(None, init=False)] = None
+    left_bound: Annotated[Optional[float], Field(None, init=False)] = None
+    bottom_bound: Annotated[Optional[float], Field(None, init=False)] = None
+    right_bound: Annotated[Optional[float], Field(None, init=False)] = None
 
     def model_post_init(self, __context) -> None:
         poly = Polygon(self.polygon)
         if not poly.is_valid:
             raise ValueError("Invalid or self-intersecting polygon.")
         self.prepared_poly = prep(poly)
-        #bounds returns minimum bounding region (minx, miny, maxx, maxy).
-        self.left_bound, self.bottom_bound, self.right_bound, self.top_bound = poly.bounds
+        # bounds returns minimum bounding region (minx, miny, maxx, maxy).
+        self.left_bound, self.bottom_bound, self.right_bound, self.top_bound = (
+            poly.bounds
+        )
 
-    def _offset_polygon(self, vertices, offset)-> list:
-        """
-        Refine the polygon by buffering with a given distance, and resolving the polygon so it remains valid.
-        """
+    def _offset_polygon(self, vertices, offset) -> list:
+        """Refine the polygon by buffering with a given distance, and resolving the polygon so it remains valid."""
         geom = vertices
-        vertices = geom.buffer(distance=offset,cap_style='round',join_style='round')
+        vertices = geom.buffer(distance=offset, cap_style="round", join_style="round")
         return vertices
-    
+
     def _intersect_raster_with_polygon(self) -> Iterator[PositionT]:
-        """
-        """
+        """ """
         # if self.convex_hull:
         #     print("Convex hull is not implemented yet.")
         #     self.prepared_poly = Polygon(self.polygon).convex_hull
         #     self.prepared_poly = prep(self.prepared_poly)
         if self.offset is not None:
-            self.prepared_poly = self._offset_polygon(Polygon(self.polygon), self.offset)
+            self.prepared_poly = self._offset_polygon(
+                Polygon(self.polygon), self.offset
+            )
             self.prepared_poly = prep(self.prepared_poly)
         grid_from_bounding_box = self.iter_grid_positions()
         for position in list(grid_from_bounding_box):
-            tile = box(position.x , position.y,
-                    position.x + self.fov_width, position.y + self.fov_height)
+            tile = box(
+                position.x,
+                position.y,
+                position.x + self.fov_width,
+                position.y + self.fov_height,
+            )
             if self.prepared_poly.intersects(tile):
                 yield position
-            
+
     @property
     def is_relative(self) -> bool:
         return False
-    
+
     def _nrows(self, dy: float) -> int:
-        total_height = abs((self.top_bound+self.fov_height/2) - (self.bottom_bound-self.fov_height/2)) + dy
+        total_height = (
+            abs(
+                (self.top_bound + self.fov_height / 2)
+                - (self.bottom_bound - self.fov_height / 2)
+            )
+            + dy
+        )
         return math.ceil(total_height / dy)
 
     def _ncolumns(self, dx: float) -> int:
-        total_width = abs((self.right_bound+self.fov_width/2) - (self.left_bound-self.fov_width/2)) + dx
+        total_width = (
+            abs(
+                (self.right_bound + self.fov_width / 2)
+                - (self.left_bound - self.fov_width / 2)
+            )
+            + dx
+        )
         return math.ceil(total_width / dx)
 
     def _offset_x(self, dx: float) -> float:
@@ -476,7 +508,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
 
     def _offset_y(self, dy: float) -> float:
         return max(self.top_bound, self.bottom_bound) + (self.fov_height or 0) / 2
-    
+
     def num_positions(self) -> int:
         """Return the number of positions within the polygon."""
         if self.fov_width is None or self.fov_height is None:
@@ -485,6 +517,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
 
     def __iter__(self) -> Iterator[PositionT]:
         yield from self._intersect_raster_with_polygon()
+
 
 # ------------------------ RANDOM ------------------------
 
@@ -658,5 +691,5 @@ _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
 RelativeMultiPointPlan = Union[
     GridRowsColumns, GridWidthHeight, RandomPoints, RelativePosition
 ]
-AbsoluteMultiPointPlan = Union[GridFromEdges,GridFromPolygon]
+AbsoluteMultiPointPlan = Union[GridFromEdges, GridFromPolygon]
 MultiPointPlan = Union[AbsoluteMultiPointPlan, RelativeMultiPointPlan]
