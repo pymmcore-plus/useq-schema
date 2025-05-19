@@ -7,7 +7,7 @@ from useq import MDASequence
 def mda1() -> MDASequence:
     return MDASequence(
         axis_order="tpgcz",
-        metadata={"some info": "something"},
+        metadata={"some_info": "something"},
         stage_positions=[
             (10, 20),
             {

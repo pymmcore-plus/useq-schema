@@ -1,8 +1,6 @@
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Generic, Optional, SupportsIndex, TypeVar
 
-from pydantic import Field
-
 from useq._base_model import FrozenModel, MutableModel
 
 if TYPE_CHECKING:
@@ -43,9 +41,8 @@ class PositionBase(MutableModel):
     name: Optional[str] = None
     sequence: Optional["MDASequence"] = None
 
-    # excluded from serialization
-    row: Optional[int] = Field(default=None, exclude=True)
-    col: Optional[int] = Field(default=None, exclude=True)
+    row: Optional[int] = None
+    col: Optional[int] = None
 
     def __add__(self, other: "RelativePosition") -> "Self":
         """Add two positions together to create a new position."""
@@ -59,7 +56,13 @@ class PositionBase(MutableModel):
             z += other.z
         if (name := self.name) and other.name:
             name = f"{name}_{other.name}"
-        kwargs = {**self.model_dump(), "x": x, "y": y, "z": z, "name": name}
+        kwargs = {
+            **self.model_dump(),
+            "x": x,
+            "y": y,
+            "z": z,
+            "name": name,
+        }
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
 
     def __round__(self, ndigits: "SupportsIndex | None" = None) -> "Self":
