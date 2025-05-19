@@ -19,10 +19,38 @@ if TYPE_CHECKING:
     from useq._position import PositionBase
 
 
-def plot_points(points: Iterable[PositionBase], ax: Axes | None = None) -> None:
+def plot_points(
+    points: Iterable[PositionBase],
+    *,
+    rect_size: tuple[float, float] | None = None,
+    bounding_box: tuple[float, float, float, float] | None = None,
+    ax: Axes | None = None,
+    show: bool = True,
+) -> Axes:
     """Plot a list of positions.
 
     Can be used with any iterable of PositionBase objects.
+
+    Parameters
+    ----------
+    points : Iterable[PositionBase]
+        The points to plot.
+    rect_size : tuple[float, float] | None
+        The size of the rectangles to draw around each point. If None, no rectangles
+        are drawn.
+    bounding_box : tuple[float, float, float, float] | None
+        A bounding box to draw around the points (left, top, right, bottom).
+        If None, no bounding box is drawn.
+    ax : Axes | None
+        The axes to plot on. If None, a new figure and axes are created.
+    show : bool
+        Whether to show the plot. If False, the plot is not shown.
+        Defaults to True.
+
+    Returns
+    -------
+    Axes
+        The axes with the plot.
     """
     if ax is None:
         _, ax = plt.subplots()
@@ -31,13 +59,69 @@ def plot_points(points: Iterable[PositionBase], ax: Axes | None = None) -> None:
     ax.scatter(x, y)
     ax.scatter(x[0], y[0], color="red")  # mark the first point
     ax.plot(x, y, alpha=0.5, color="gray")  # connect the points
+
+    if rect_size is not None:
+        # show FOV rectangles at each point:
+        for point in points:
+            if point.x is not None and point.y is not None:
+                half_width = rect_size[0] / 2
+                half_height = rect_size[1] / 2
+                rect = patches.Rectangle(
+                    (point.x - half_width, point.y - half_height),
+                    width=rect_size[0],
+                    height=rect_size[1],
+                    edgecolor="blue",
+                    alpha=0.2,
+                    facecolor="gray",
+                )
+                ax.add_patch(rect)
+
+                # make sure the entire rectangle is visible
+                ax.set_xlim(min(x) - half_width, max(x) + half_width)
+                ax.set_ylim(min(y) - half_height, max(y) + half_height)
+
+    if bounding_box is not None:
+        # draw a thicker dashed line around the bounding box
+        x0, y0, x1, y1 = bounding_box
+        ax.plot(
+            [x0, x1, x1, x0, x0],
+            [y0, y0, y1, y1, y0],
+            color="black",
+            linestyle="--",
+            linewidth=4,
+            alpha=0.25,
+        )
+        # ensure the bounding box is visible
+        ax.set_xlim(min(x0, x1) - 10, max(x0, x1) + 10)
+        ax.set_ylim(min(y0, y1) - 10, max(y0, y1) + 10)
+
     ax.axis("equal")
-    plt.show()
+    if show:
+        plt.show()
+    return ax
 
 
 def plot_plate(
-    plate_plan: WellPlatePlan, show_axis: bool = True, ax: Axes | None = None
-) -> None:
+    plate_plan: WellPlatePlan,
+    *,
+    show_axis: bool = True,
+    ax: Axes | None = None,
+    show: bool = True,
+) -> Axes:
+    """Plot a well plate with the image positions.
+
+    Parameters
+    ----------
+    plate_plan : WellPlatePlan
+        The plate plan to plot.
+    show_axis : bool
+        Whether to show the axes. Defaults to True.
+    ax : Axes | None
+        The axes to plot on. If None, a new figure and axes are created.
+    show : bool
+        Whether to show the plot. If False, the plot is not shown.
+        Defaults to True.
+    """
     if ax is None:
         _, ax = plt.subplots()
 
@@ -100,4 +184,6 @@ def plot_plate(
         ax.text(x + offset_x, y - offset_y, well.name, fontsize=7)
 
     ax.axis("equal")
-    plt.show()
+    if show:
+        plt.show()
+    return ax

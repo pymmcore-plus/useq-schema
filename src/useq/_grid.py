@@ -28,6 +28,7 @@ from useq._position import (
 )
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
     from typing_extensions import Self, TypeAlias
 
     PointGenerator: TypeAlias = Callable[
@@ -171,7 +172,8 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
     """Yield absolute stage positions to cover a bounded area.
 
     The bounded area is defined by top, left, bottom and right edges in
-    stage coordinates.
+    stage coordinates.  The bounds define the *outer* edges of the images, including
+    the field of view and overlap.
 
     Attributes
     ----------
@@ -212,18 +214,50 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         return False
 
     def _nrows(self, dy: float) -> int:
-        total_height = abs(self.top - self.bottom) + dy
-        return math.ceil(total_height / dy)
+        if self.fov_height is None:
+            total_height = abs(self.top - self.bottom) + dy
+            return math.ceil(total_height / dy)
+
+        span = abs(self.top - self.bottom)
+        # if the span is smaller than one FOV, just one row
+        if span <= self.fov_height:
+            return 1
+        # otherwise: one FOV plus (nrows-1)⋅dy must cover span
+        return math.ceil((span - self.fov_height) / dy) + 1
 
     def _ncolumns(self, dx: float) -> int:
-        total_width = abs(self.right - self.left) + dx
-        return math.ceil(total_width / dx)
+        if self.fov_width is None:
+            total_width = abs(self.right - self.left) + dx
+            return math.ceil(total_width / dx)
+
+        span = abs(self.right - self.left)
+        if span <= self.fov_width:
+            return 1
+        return math.ceil((span - self.fov_width) / dx) + 1
 
     def _offset_x(self, dx: float) -> float:
-        return min(self.left, self.right)
+        # start the _centre_ half a FOV in from the left edge
+        return min(self.left, self.right) + (self.fov_width or 0) / 2
 
     def _offset_y(self, dy: float) -> float:
-        return max(self.top, self.bottom)
+        # start the _centre_ half a FOV down from the top edge
+        return max(self.top, self.bottom) - (self.fov_height or 0) / 2
+
+    def plot(self, *, show: bool = True) -> Axes:
+        """Plot the positions in the plan."""
+        from useq._plot import plot_points
+
+        if self.fov_width is not None and self.fov_height is not None:
+            rect = (self.fov_width, self.fov_height)
+        else:
+            rect = None
+
+        return plot_points(
+            self,
+            rect_size=rect,
+            bounding_box=(self.left, self.top, self.right, self.bottom),
+            show=show,
+        )
 
 
 class GridRowsColumns(_GridPlan[RelativePosition]):

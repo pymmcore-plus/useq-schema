@@ -199,7 +199,7 @@ class WellPlatePlan(UseqModel, AxisIterableBase, Sequence[Position]):
         value = handler(value)
         if plate := info.data.get("plate"):
             if isinstance(value, RandomPoints):
-                plate = cast(WellPlate, plate)
+                plate = cast("WellPlate", plate)
                 kwargs = value.model_dump(mode="python")
                 if value.max_width == np.inf:
                     well_size_x = plate.well_size[0] * 1000  # convert to µm

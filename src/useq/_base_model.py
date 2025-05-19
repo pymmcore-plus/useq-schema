@@ -1,4 +1,5 @@
 from pathlib import Path
+from re import findall
 from types import MappingProxyType
 from typing import (
     IO,
@@ -26,7 +27,7 @@ __all__ = ["FrozenModel", "UseqModel"]
 _T = TypeVar("_T", bound="FrozenModel")
 _Y = TypeVar("_Y", bound="UseqModel")
 
-PYDANTIC_VERSION = tuple(int(x) for x in pydantic.__version__.split(".")[:3])
+PYDANTIC_VERSION = tuple(int(x) for x in findall(r"\d_", pydantic.__version__)[:3])
 GET_DEFAULT_KWARGS: dict = {}
 if PYDANTIC_VERSION >= (2, 10):
     GET_DEFAULT_KWARGS = {"validated_data": {}}
@@ -46,7 +47,7 @@ class _ReplaceableModel(BaseModel):
         casting.
         """
         # only get values for top level fields
-        d = {k: getattr(self, k) for k in self.model_fields if k != "uid"}
+        d = {k: getattr(self, k) for k in type(self).model_fields if k != "uid"}
         return type(self).model_validate({**d, **kwargs})
 
     def __repr_args__(self) -> "ReprArgs":
@@ -57,7 +58,7 @@ class _ReplaceableModel(BaseModel):
 def _non_default_repr_args(obj: BaseModel, fields: "ReprArgs") -> "ReprArgs":
     """Set fields on a model instance."""
     for k, val in fields:
-        if k and (field := obj.model_fields.get(k)) and field.repr:
+        if k and (field := type(obj).model_fields.get(k)) and field.repr:
             default = field.get_default(call_default_factory=True, **GET_DEFAULT_KWARGS)
             try:
                 if val == default:
