@@ -150,34 +150,14 @@ where the sequence of events must be generated in a flexible, hierarchical manne
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
+from useq.new._axis_iterable import AxisIterable, V
+
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
-
-V = TypeVar("V", covariant=True)
-
-
-@runtime_checkable
-class AxisIterable(Protocol[V]):
-    @property
-    def axis_key(self) -> str:
-        """A string id representing the axis."""
-
-    def __iter__(self) -> Iterator[V | MultiDimSequence]:
-        """Iterate over the axis.
-
-        If a value needs to declare sub-axes, yield a nested MultiDimSequence.
-        """
-
-    def should_skip(self, prefix: dict[str, tuple[int, Any, AxisIterable]]) -> bool:
-        """Return True if this axis wants to skip the combination.
-
-        Default implementation returns False.
-        """
-        return False
 
 
 class SimpleAxis(AxisIterable[V]):
@@ -211,120 +191,8 @@ class MultiDimSequence(BaseModel):
     otherwise, it inherits the parent's axis_order.
     """
 
-    value: Any = None
     axes: tuple[AxisIterable, ...] = ()
     axis_order: tuple[str, ...] | None = None
+    value: Any = None
 
     model_config = {"arbitrary_types_allowed": True}
-
-
-def order_axes(
-    seq: MultiDimSequence,
-    parent_order: tuple[str, ...] | None = None,
-) -> list[AxisIterable]:
-    """Returns the axes of a MultiDimSequence in the order specified by seq.axis_order.
-
-    If not provided, order by the parent's order (if given), or in the declared order.
-    """
-    if order := seq.axis_order if seq.axis_order is not None else parent_order:
-        axes_map = {axis.axis_key: axis for axis in seq.axes}
-        return [axes_map[key] for key in order if key in axes_map]
-    return list(seq.axes)
-
-
-def iterate_axes_recursive(
-    axes: list[AxisIterable],
-    prefix: dict[str, tuple[int, Any, AxisIterable]] | None = None,
-    parent_order: tuple[str, ...] | None = None,
-) -> Iterator[dict[str, tuple[int, Any, AxisIterable]]]:
-    """Recursively iterate over a list of axes one at a time.
-
-    If an axis yields a nested MultiDimSequence with a non-None value,
-    that nested sequence acts as an override for its axis key.
-    The parent's remaining axes having matching keys are removed, and the nested
-    sequence's axes (ordered by its own axis_order if provided, or else the parent's)
-    are appended.
-
-    Before yielding a final combination (when no axes remain), we call should_skip
-    on each axis (using the full prefix).
-    """
-    if prefix is None:
-        prefix = {}
-    if not axes:
-        # Ask each axis in the prefix if the combination should be skipped
-        if not any(axis.should_skip(prefix) for *_, axis in prefix.values()):
-            yield prefix
-        return
-
-    current_axis, *remaining_axes = axes
-
-    for idx, item in enumerate(current_axis):
-        if isinstance(item, MultiDimSequence) and item.value is not None:
-            value = item.value
-            override_keys = {ax.axis_key for ax in item.axes}
-            updated_axes = [
-                ax for ax in remaining_axes if ax.axis_key not in override_keys
-            ] + order_axes(item, parent_order=parent_order)
-        else:
-            value = item
-            updated_axes = remaining_axes
-
-        yield from iterate_axes_recursive(
-            updated_axes,
-            {**prefix, current_axis.axis_key: (idx, value, current_axis)},
-            parent_order=parent_order,
-        )
-
-
-def iterate_multi_dim_sequence(
-    seq: MultiDimSequence,
-) -> Iterator[dict[str, tuple[int, Any, AxisIterable]]]:
-    """Iterate over a MultiDimSequence.
-
-    Orders the base axes (if an axis_order is provided) and then iterates
-    over all index combinations using iterate_axes_recursive.
-    The parent's axis_order is passed down to nested sequences.
-    """
-    ordered_axes = order_axes(seq, seq.axis_order)
-    yield from iterate_axes_recursive(ordered_axes, parent_order=seq.axis_order)
-
-
-# Example usage:
-if __name__ == "__main__":
-    # A simple test: no overrides, just yield combinations.
-    multi_dim = MultiDimSequence(
-        axes=(
-            SimpleAxis("t", [0, 1, 2]),
-            SimpleAxis("c", ["red", "green", "blue"]),
-            SimpleAxis("z", [0.1, 0.2, 0.3]),
-        ),
-        axis_order=("t", "c", "z"),
-    )
-
-    for indices in iterate_multi_dim_sequence(multi_dim):
-        # Print a cleaned version that drops the axis objects.
-        clean = {k: v[:2] for k, v in indices.items()}
-        print(clean)
-    print("-------------")
-
-    # As an example, we override should_skip for the "z" axis:
-    class FilteredZ(SimpleAxis):
-        def should_skip(self, prefix: dict[str, tuple[int, Any]]) -> bool:
-            # If c is green, then only allow combinations where z equals 0.2.
-            # Get the c value from the prefix:
-            c_val = prefix.get("c", (None, None))[1]
-            z_val = prefix.get("z", (None, None))[1]
-            return bool(c_val == "green" and z_val != 0.2)
-
-    multi_dim = MultiDimSequence(
-        axes=(
-            SimpleAxis("t", [0, 1, 2]),
-            SimpleAxis("c", ["red", "green", "blue"]),
-            FilteredZ("z", [0.1, 0.2, 0.3]),
-        ),
-        axis_order=("t", "c", "z"),
-    )
-    for indices in iterate_multi_dim_sequence(multi_dim):
-        # Print a cleaned version that drops the axis objects.
-        clean = {k: v[:2] for k, v in indices.items()}
-        print(clean)

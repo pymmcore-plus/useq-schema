@@ -1,66 +1,54 @@
-from rich import print
+from typing import Any
 
-from useq import TIntervalLoops, ZRangeAround
-from useq._channel import Channel, Channels
-from useq._grid import GridRowsColumns
-from useq._mda_sequence import MDASequence
-from useq._multi_axis_sequence import MultiDimSequence
-from useq._stage_positions import StagePositions
+from useq import Axis
+from useq.new import (
+    AxisIterable,
+    MultiDimSequence,
+    SimpleAxis,
+    iterate_multi_dim_sequence,
+)
 
-t = TIntervalLoops(interval=0.2, loops=3)
-z = ZRangeAround(range=4, step=2)
-g = GridRowsColumns(rows=2, columns=2)
-c = Channels(
-    [
-        Channel(config="DAPI"),
-        Channel(config="FITC"),
-        # Channel(config="Cy5", acquire_every=2),
-    ]
-)
-seq1 = MDASequence(
-    time_plan=t,
-    z_plan=z,
-    stage_positions=[
-        (0, 0),
-        {
-            "x": 10,
-            "y": 10,
-            "z": 20,
-            "sequence": MDASequence(grid_plan=g, z_plan=ZRangeAround(range=2, step=1)),
-        },
-    ],
-    channels=list(c),
-    axis_order="tpgcz",
-)
-print(seq1.sizes)
-seq2 = MultiDimSequence(
+# Example usage:
+# A simple test: no overrides, just yield combinations.
+multi_dim = MultiDimSequence(
     axes=(
-        t,
-        StagePositions(
-            [
-                (0, 0),
-                {
-                    "x": 10,
-                    "y": 10,
-                    "z": 20,
-                    "sequence": MultiDimSequence(
-                        axes=(g, ZRangeAround(range=2, step=1))
-                    ),
-                },
-            ]
-        ),
-        c,
-        z,
-    )
+        SimpleAxis(Axis.TIME, [0, 1, 2]),
+        SimpleAxis(Axis.CHANNEL, ["red", "green", "blue"]),
+        SimpleAxis(Axis.Z, [0.1, 0.2, 0.3]),
+    ),
+    axis_order=(Axis.TIME, Axis.CHANNEL, Axis.Z),
 )
-print(len(list(seq1)))
-print(len(list(seq2)))
-# for i, (e1, e2) in enumerate(zip(seq1, seq2)):
-#     print(f"{i} ----")
-#     print(e1)
-#     print(e2)
-#     if e1 != e2:
-#         print("NOT EQUAL")
-#         break
-# else:
-#     assert list(seq1) == list(seq2)
+
+for indices in iterate_multi_dim_sequence(multi_dim):
+    # Print a cleaned version that drops the axis objects.
+    clean = {k: v[:2] for k, v in indices.items()}
+    print(clean)
+
+print("-------------")
+
+
+# As an example, we override should_skip for the Axis.Z axis:
+class FilteredZ(SimpleAxis):
+    """Example of a filtered axis."""
+
+    def should_skip(self, prefix: dict[str, tuple[int, Any, AxisIterable]]) -> bool:
+        """Return True if this axis wants to skip the combination."""
+        # If c is green, then only allow combinations where z equals 0.2.
+        # Get the c value from the prefix:
+        c_val = prefix.get(Axis.CHANNEL, (None, None))[1]
+        z_val = prefix.get(Axis.Z, (None, None))[1]
+        return bool(c_val == "green" and z_val != 0.2)
+
+
+multi_dim = MultiDimSequence(
+    axes=(
+        SimpleAxis(Axis.TIME, [0, 1, 2]),
+        SimpleAxis(Axis.CHANNEL, ["red", "green", "blue"]),
+        FilteredZ(Axis.Z, [0.1, 0.2, 0.3]),
+    ),
+    axis_order=(Axis.TIME, Axis.CHANNEL, Axis.Z),
+)
+for indices in iterate_multi_dim_sequence(multi_dim):
+    # Print a cleaned version that drops the axis objects.
+    clean = {k: v[:2] for k, v in indices.items()}
+    print(clean)
