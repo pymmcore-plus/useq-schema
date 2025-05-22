@@ -25,9 +25,9 @@ def index_and_values(
 def test_new_multidim_simple_seq() -> None:
     multi_dim = MultiDimSequence(
         axes=(
-            SimpleAxis(Axis.TIME, [0, 1]),
-            SimpleAxis(Axis.CHANNEL, ["red", "green", "blue"]),
-            SimpleAxis(Axis.Z, [0.1, 0.3]),
+            SimpleAxis(axis_key=Axis.TIME, values=[0, 1]),
+            SimpleAxis(axis_key=Axis.CHANNEL, values=["red", "green", "blue"]),
+            SimpleAxis(axis_key=Axis.Z, values=[0.1, 0.3]),
         )
     )
 
@@ -49,11 +49,13 @@ def test_new_multidim_simple_seq() -> None:
 
 
 def test_multidim_nested_seq() -> None:
-    inner_seq = MultiDimSequence(value=1, axes=(SimpleAxis("q", ["a", "b"]),))
+    inner_seq = MultiDimSequence(
+        value=1, axes=(SimpleAxis(axis_key="q", values=["a", "b"]),)
+    )
     outer_seq = MultiDimSequence(
         axes=(
-            SimpleAxis("t", [0, inner_seq, 2]),
-            SimpleAxis("c", ["red", "green", "blue"]),
+            SimpleAxis(axis_key="t", values=[0, inner_seq, 2]),
+            SimpleAxis(axis_key="c", values=["red", "green", "blue"]),
         )
     )
 
@@ -91,15 +93,15 @@ def test_override_parent_axes() -> None:
     inner_seq = MultiDimSequence(
         value=1,
         axes=(
-            SimpleAxis("c", ["red", "blue"]),
-            SimpleAxis("z", [7, 8, 9]),
+            SimpleAxis(axis_key="c", values=["red", "blue"]),
+            SimpleAxis(axis_key="z", values=[7, 8, 9]),
         ),
     )
     multi_dim = MultiDimSequence(
         axes=(
-            SimpleAxis("t", [0, inner_seq, 2]),
-            SimpleAxis("c", ["red", "green", "blue"]),
-            SimpleAxis("z", [0.1, 0.2]),
+            SimpleAxis(axis_key="t", values=[0, inner_seq, 2]),
+            SimpleAxis(axis_key="c", values=["red", "green", "blue"]),
+            SimpleAxis(axis_key="z", values=[0.1, 0.2]),
         ),
         axis_order=("t", "c", "z"),
     )
@@ -129,7 +131,7 @@ def test_override_parent_axes() -> None:
 
 class FilteredZ(SimpleAxis):
     def __init__(self, values: Iterable) -> None:
-        super().__init__(Axis.Z, values)
+        super().__init__(axis_key=Axis.Z, values=values)
 
     def should_skip(self, prefix: AxesIndex) -> bool:
         # If c is green, then only allow combinations where z equals 0.2.
@@ -184,18 +186,18 @@ def test_all_together() -> None:
     t1_overrides = MultiDimSequence(
         value=1,
         axes=(
-            SimpleAxis("c", ["red", "blue"]),
-            SimpleAxis("z", [7, 8, 9]),
+            SimpleAxis(axis_key="c", values=["red", "blue"]),
+            SimpleAxis(axis_key="z", values=[7, 8, 9]),
         ),
     )
     c_blue_subseq = MultiDimSequence(
         value="blue",
-        axes=(SimpleAxis("q", ["a", "b"]),),
+        axes=(SimpleAxis(axis_key="q", values=["a", "b"]),),
     )
     multi_dim = MultiDimSequence(
         axes=(
-            SimpleAxis("t", [0, t1_overrides, 2]),
-            SimpleAxis("c", ["red", "green", c_blue_subseq]),
+            SimpleAxis(axis_key="t", values=[0, t1_overrides, 2]),
+            SimpleAxis(axis_key="c", values=["red", "green", c_blue_subseq]),
             FilteredZ([0.1, 0.2, 0.3]),
         ),
     )
