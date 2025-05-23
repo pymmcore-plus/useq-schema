@@ -2,11 +2,11 @@ from typing import Any
 
 from useq import Axis
 from useq.new import (
-    AxisIterable,
     MultiDimSequence,
     SimpleAxis,
     iterate_multi_dim_sequence,
 )
+from useq.new._multidim_seq import AxisIterable
 
 # Example usage:
 # A simple test: no overrides, just yield combinations.

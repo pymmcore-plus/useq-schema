@@ -150,14 +150,54 @@ where the sequence of events must be generated in a flexible, hierarchical manne
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from abc import abstractmethod
+from collections.abc import Iterable, Iterator
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from pydantic import BaseModel
-
-from useq.new._axis_iterable import AxisIterable, V
+from pydantic import BaseModel, field_validator
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from typing import TypeAlias
+
+    AxisKey: TypeAlias = str
+    Value: TypeAlias = Any
+    Index: TypeAlias = int
+    AxesIndex: TypeAlias = dict[AxisKey, tuple[Index, Value, "AxisIterable"]]
+
+    from collections.abc import Iterator
+
+V = TypeVar("V", covariant=True)
+
+
+class AxisIterable(BaseModel, Generic[V]):
+    axis_key: str
+    """A string id representing the axis."""
+
+    @abstractmethod
+    def iter(self) -> Iterator[V | MultiDimSequence]:
+        """Iterate over the axis.
+
+        If a value needs to declare sub-axes, yield a nested MultiDimSequence.
+        """
+
+    @abstractmethod
+    def length(self) -> int:
+        """Return the number of axis values.
+
+        If the axis is infinite, return -1.
+        """
+
+    def should_skip(self, prefix: AxesIndex) -> bool:
+        """Return True if this axis wants to skip the combination.
+
+        Default implementation returns False.
+        """
+        return False
+
+    @property
+    def is_infinite(self) -> bool:
+        """Return `True` if the sequence is infinite."""
+        return self.length() == -1
 
 
 class SimpleAxis(AxisIterable[V]):
@@ -167,19 +207,14 @@ class SimpleAxis(AxisIterable[V]):
     The default should_skip always returns False.
     """
 
-    def __init__(self, axis_key: str, values: Iterable[V]) -> None:
-        self._axis_key = axis_key
-        self.values = values
+    values: list[V]
 
-    @property
-    def axis_key(self) -> str:
-        return self._axis_key
-
-    def __iter__(self) -> Iterator[V | MultiDimSequence]:
+    def iter(self) -> Iterator[V | MultiDimSequence]:
         yield from self.values
 
-    def should_skip(self, prefix: dict[str, tuple[int, Any, AxisIterable]]) -> bool:
-        return False
+    def length(self) -> int:
+        """Return the number of axis values."""
+        return len(self.values)
 
 
 class MultiDimSequence(BaseModel):
@@ -195,4 +230,27 @@ class MultiDimSequence(BaseModel):
     axis_order: tuple[str, ...] | None = None
     value: Any = None
 
-    model_config = {"arbitrary_types_allowed": True}
+    @field_validator("axes", mode="after")
+    def _validate_axes(cls, v: tuple[AxisIterable, ...]) -> tuple[AxisIterable, ...]:
+        keys = [x.axis_key for x in v]
+        if dupes := {k for k in keys if keys.count(k) > 1}:
+            raise ValueError(
+                f"The following axis keys appeared more than once: {dupes}"
+            )
+        return v
+
+    @field_validator("axis_order", mode="before")
+    @classmethod
+    def _validate_axis_order(cls, v: Any) -> tuple[str, ...]:
+        if not isinstance(v, Iterable):
+            raise ValueError(f"axis_order must be iterable, got {type(v)}")
+        order = tuple(str(x).lower() for x in v)
+        if len(set(order)) < len(order):
+            raise ValueError(f"Duplicate entries found in acquisition order: {order}")
+
+        return order
+
+    @property
+    def is_infinite(self) -> bool:
+        """Return `True` if the sequence is infinite."""
+        return any(ax.is_infinite for ax in self.axes)

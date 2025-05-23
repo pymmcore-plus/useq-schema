@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar
 
-from useq.new._multidim_seq import MultiDimSequence
+from useq.new._multidim_seq import AxisIterable, MultiDimSequence
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from useq.new._axis_iterable import AxesIndex, AxisIterable
+    from useq.new._multidim_seq import AxesIndex
 
 
 V = TypeVar("V", covariant=True)
@@ -54,7 +54,7 @@ def iterate_axes_recursive(
 
     current_axis, *remaining_axes = axes
 
-    for idx, item in enumerate(current_axis):
+    for idx, item in enumerate(current_axis.iter()):
         if isinstance(item, MultiDimSequence) and item.value is not None:
             value = item.value
             override_keys = {ax.axis_key for ax in item.axes}

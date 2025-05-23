@@ -1,6 +1,5 @@
-from useq.new._axis_iterable import AxisIterable
 from useq.new._iterate import iterate_multi_dim_sequence
-from useq.new._multidim_seq import MultiDimSequence, SimpleAxis
+from useq.new._multidim_seq import AxisIterable, MultiDimSequence, SimpleAxis
 
 __all__ = [
     "AxisIterable",

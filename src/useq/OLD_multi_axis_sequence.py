@@ -7,7 +7,7 @@ from typing import (
     cast,
 )
 
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict
 
 from useq._axis_iterable import AxisIterable, IterItem
 from useq._base_model import UseqModel
@@ -46,31 +46,26 @@ class MultiDimSequence(UseqModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    @field_validator("axes", mode="after")
-    def _validate_axes(cls, v: tuple[AxisIterable, ...]) -> tuple[AxisIterable, ...]:
-        keys = [x.axis_key for x in v]
-        if not len(keys) == len(set(keys)):
-            dupes = {k for k in keys if keys.count(k) > 1}
-            raise ValueError(
-                f"The following axis keys appeared more than once: {dupes}"
-            )
-        return v
+    # @field_validator("axes", mode="after")
+    # def _validate_axes(cls, v: tuple[AxisIterable, ...]) -> tuple[AxisIterable, ...]:
+    #     keys = [x.axis_key for x in v]
+    #     if not len(keys) == len(set(keys)):
+    #         dupes = {k for k in keys if keys.count(k) > 1}
+    #         raise ValueError(
+    #             f"The following axis keys appeared more than once: {dupes}"
+    #         )
+    #     return v
 
-    @field_validator("axis_order", mode="before")
-    @classmethod
-    def _validate_axis_order(cls, v: Any) -> tuple[str, ...]:
-        if not isinstance(v, Iterable):
-            raise ValueError(f"axis_order must be iterable, got {type(v)}")
-        order = tuple(str(x).lower() for x in v)
-        if len(set(order)) < len(order):
-            raise ValueError(f"Duplicate entries found in acquisition order: {order}")
+    # @field_validator("axis_order", mode="before")
+    # @classmethod
+    # def _validate_axis_order(cls, v: Any) -> tuple[str, ...]:
+    #     if not isinstance(v, Iterable):
+    #         raise ValueError(f"axis_order must be iterable, got {type(v)}")
+    #     order = tuple(str(x).lower() for x in v)
+    #     if len(set(order)) < len(order):
+    #         raise ValueError(f"Duplicate entries found in acquisition order: {order}")
 
-        return order
-
-    @property
-    def is_infinite(self) -> bool:
-        """Return `True` if the sequence is infinite."""
-        return any(ax.length() is INFINITE for ax in self.axes)
+    #     return order
 
     def _enumerate_ax(
         self, key: str, ax: Iterable[T], start: int = 0
@@ -196,6 +191,11 @@ class MultiDimSequence(UseqModel):
         # if index == {'t': 0, 'p': 1, 'c': 0, 'z': 0, 'g': 0}:
         # breakpoint()
         return MDAEvent.model_construct(**event_kwargs)
+
+    @property
+    def is_infinite(self) -> bool:
+        """Return `True` if the sequence is infinite."""
+        return any(ax.length() is INFINITE for ax in self.axes)
 
     def _iter_inner(
         self, sorted_axes: Sequence[AxisIterable]

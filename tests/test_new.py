@@ -1,25 +1,39 @@
 from __future__ import annotations
 
+from itertools import count
 from typing import TYPE_CHECKING, Any
 
+from pydantic import Field
+
 from useq import Axis
-from useq.new import MultiDimSequence, SimpleAxis, iterate_multi_dim_sequence
+from useq.new import (
+    AxisIterable,
+    MultiDimSequence,
+    SimpleAxis,
+    iterate_multi_dim_sequence,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Iterator
 
     from useq.new._iterate import AxesIndex
 
 
 def index_and_values(
-    multi_dim: MultiDimSequence, axis_order: tuple[str, ...] | None = None
+    multi_dim: MultiDimSequence,
+    axis_order: tuple[str, ...] | None = None,
+    max_iters: int | None = None,
 ) -> list[dict[str, tuple[int, Any]]]:
     """Return a list of indices and values for each axis in the MultiDimSequence."""
-    # cleaned version that drops the axis objects.
-    return [
-        {k: (idx, val) for k, (idx, val, _) in indices.items()}
-        for indices in iterate_multi_dim_sequence(multi_dim, axis_order=axis_order)
-    ]
+    result = []
+    for i, indices in enumerate(
+        iterate_multi_dim_sequence(multi_dim, axis_order=axis_order)
+    ):
+        if max_iters is not None and i >= max_iters:
+            break
+        # cleaned version that drops the axis objects.
+        result.append({k: (idx, val) for k, (idx, val, _) in indices.items()})
+    return result
 
 
 def test_new_multidim_simple_seq() -> None:
@@ -46,6 +60,19 @@ def test_new_multidim_simple_seq() -> None:
         {"t": (1, 1), "c": (2, "blue"), "z": (0, 0.1)},
         {"t": (1, 1), "c": (2, "blue"), "z": (1, 0.3)},
     ]
+
+
+class InfiniteAxis(AxisIterable[int]):
+    axis_key: str = "i"
+
+    def length(self) -> int:
+        return -1
+
+    def model_post_init(self, _ctx: Any) -> None:
+        self._counter = count()
+
+    def iter(self) -> Iterator[int]:
+        yield from self._counter
 
 
 def test_multidim_nested_seq() -> None:
@@ -143,8 +170,8 @@ class FilteredZ(SimpleAxis):
 def test_multidim_with_should_skip() -> None:
     multi_dim = MultiDimSequence(
         axes=(
-            SimpleAxis(Axis.TIME, [0, 1, 2]),
-            SimpleAxis(Axis.CHANNEL, ["red", "green", "blue"]),
+            SimpleAxis(axis_key=Axis.TIME, values=[0, 1, 2]),
+            SimpleAxis(axis_key=Axis.CHANNEL, values=["red", "green", "blue"]),
             FilteredZ([0.1, 0.2, 0.3]),
         ),
         axis_order=(Axis.TIME, Axis.CHANNEL, Axis.Z),
@@ -230,4 +257,62 @@ def test_all_together() -> None:
         {"t": (2, 2), "c": (2, "blue"), "z": (1, 0.2), "q": (1, "b")},
         {"t": (2, 2), "c": (2, "blue"), "z": (2, 0.3), "q": (0, "a")},
         {"t": (2, 2), "c": (2, "blue"), "z": (2, 0.3), "q": (1, "b")},
+    ]
+
+
+def test_new_multidim_with_infinite_axis() -> None:
+    # note... we never progress to t=1
+    multi_dim = MultiDimSequence(
+        axes=(
+            SimpleAxis(axis_key=Axis.TIME, values=[0, 1]),
+            InfiniteAxis(),
+            SimpleAxis(axis_key=Axis.Z, values=[0.1, 0.3]),
+        )
+    )
+
+    result = index_and_values(multi_dim, max_iters=10)
+    assert result == [
+        {"t": (0, 0), "i": (0, 0), "z": (0, 0.1)},
+        {"t": (0, 0), "i": (0, 0), "z": (1, 0.3)},
+        {"t": (0, 0), "i": (1, 1), "z": (0, 0.1)},
+        {"t": (0, 0), "i": (1, 1), "z": (1, 0.3)},
+        {"t": (0, 0), "i": (2, 2), "z": (0, 0.1)},
+        {"t": (0, 0), "i": (2, 2), "z": (1, 0.3)},
+        {"t": (0, 0), "i": (3, 3), "z": (0, 0.1)},
+        {"t": (0, 0), "i": (3, 3), "z": (1, 0.3)},
+        {"t": (0, 0), "i": (4, 4), "z": (0, 0.1)},
+        {"t": (0, 0), "i": (4, 4), "z": (1, 0.3)},
+    ]
+
+
+def test_dynamic_roi_addition() -> None:
+    # we add a new roi at each time step
+    class DynamicROIAxis(SimpleAxis[str]):
+        axis_key: str = "r"
+        values: list[str] = Field(default_factory=lambda: ["cell0", "cell1"])
+
+        def iter(self) -> Iterator[str]:
+            yield from self.values
+            self.values.append(f"cell{len(self.values)}")
+
+    multi_dim = MultiDimSequence(axes=(InfiniteAxis(), DynamicROIAxis()))
+
+    result = index_and_values(multi_dim, max_iters=16)
+    assert result == [
+        {"i": (0, 0), "r": (0, "cell0")},
+        {"i": (0, 0), "r": (1, "cell1")},
+        {"i": (1, 1), "r": (0, "cell0")},
+        {"i": (1, 1), "r": (1, "cell1")},
+        {"i": (1, 1), "r": (2, "cell2")},
+        {"i": (2, 2), "r": (0, "cell0")},
+        {"i": (2, 2), "r": (1, "cell1")},
+        {"i": (2, 2), "r": (2, "cell2")},
+        {"i": (2, 2), "r": (3, "cell3")},
+        {"i": (3, 3), "r": (0, "cell0")},
+        {"i": (3, 3), "r": (1, "cell1")},
+        {"i": (3, 3), "r": (2, "cell2")},
+        {"i": (3, 3), "r": (3, "cell3")},
+        {"i": (3, 3), "r": (4, "cell4")},
+        {"i": (4, 4), "r": (0, "cell0")},
+        {"i": (4, 4), "r": (1, "cell1")},
     ]
