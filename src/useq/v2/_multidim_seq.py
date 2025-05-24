@@ -224,6 +224,20 @@ class AxesIterator(BaseModel):
     axis_order: tuple[str, ...] | None = None
     value: Any = None
 
+    def is_finite(self) -> bool:
+        """Return `True` if the sequence is infinite."""
+        return all(isinstance(ax, Sized) for ax in self.axes)
+
+    def iter_axes(
+        self, axis_order: tuple[str, ...] | None = None
+    ) -> Iterator[AxesIndex]:
+        """Iterate over the axes and yield combinations."""
+        from useq.v2._iterate import iterate_multi_dim_sequence
+
+        yield from iterate_multi_dim_sequence(self, axis_order=axis_order)
+
+    # ----------------------- Validation -----------------------
+
     @field_validator("axes", mode="after")
     def _validate_axes(cls, v: tuple[AxisIterable, ...]) -> tuple[AxisIterable, ...]:
         keys = [x.axis_key for x in v]
@@ -243,15 +257,3 @@ class AxesIterator(BaseModel):
             raise ValueError(f"Duplicate entries found in acquisition order: {order}")
 
         return order
-
-    def is_finite(self) -> bool:
-        """Return `True` if the sequence is infinite."""
-        return all(isinstance(ax, Sized) for ax in self.axes)
-
-    def iter_axes(
-        self, axis_order: tuple[str, ...] | None = None
-    ) -> Iterator[AxesIndex]:
-        """Iterate over the axes and yield combinations."""
-        from useq.v2._iterate import iterate_multi_dim_sequence
-
-        yield from iterate_multi_dim_sequence(self, axis_order=axis_order)
