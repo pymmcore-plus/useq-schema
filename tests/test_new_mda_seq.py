@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from useq import Axis
 from useq._mda_event import Channel, MDAEvent
-from useq.new import MDASequence, SimpleAxis
+from useq.v2 import MDASequence, SimpleAxis
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping

@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Any
 from pydantic import Field
 
 from useq import Axis
-from useq.new import AxisIterable, MultiDimSequence, SimpleAxis
+from useq.v2 import AxisIterable, MultiDimSequence, SimpleAxis
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-    from useq.new._multidim_seq import AxesIndex
+    from useq.v2._multidim_seq import AxesIndex
 
 
 def _index_and_values(

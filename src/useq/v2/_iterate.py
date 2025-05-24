@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar
 
-from useq.new._multidim_seq import AxisIterable, MultiDimSequence
+from useq.v2._multidim_seq import AxisIterable, MultiDimSequence
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from useq.new._multidim_seq import AxesIndex
+    from useq.v2._multidim_seq import AxesIndex
 
 
 V = TypeVar("V", covariant=True)

@@ -1,7 +1,7 @@
 """New MDASequence API."""
 
-from useq.new._iterate import iterate_multi_dim_sequence
-from useq.new._multidim_seq import (
+from useq.v2._iterate import iterate_multi_dim_sequence
+from useq.v2._multidim_seq import (
     AxisIterable,
     MDASequence,
     MultiDimSequence,

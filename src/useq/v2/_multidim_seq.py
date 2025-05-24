@@ -307,7 +307,7 @@ class MultiDimSequence(BaseModel):
         self, axis_order: tuple[str, ...] | None = None
     ) -> Iterator[AxesIndex]:
         """Iterate over the axes and yield combinations."""
-        from useq.new._iterate import iterate_multi_dim_sequence
+        from useq.v2._iterate import iterate_multi_dim_sequence
 
         yield from iterate_multi_dim_sequence(self, axis_order=axis_order)
 
