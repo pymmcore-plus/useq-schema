@@ -180,7 +180,7 @@ class AxisIterable(BaseModel, Generic[V]):
     """A string id representing the axis."""
 
     @abstractmethod
-    def iter(self) -> Iterator[V | MultiDimSequence]:
+    def iter(self) -> Iterator[V | AxesIterator]:
         """Iterate over the axis.
 
         If a value needs to declare sub-axes, yield a nested MultiDimSequence.
@@ -203,7 +203,7 @@ class SimpleAxis(AxisIterable[V]):
 
     values: list[V]
 
-    def iter(self) -> Iterator[V | MultiDimSequence]:
+    def iter(self) -> Iterator[V | AxesIterator]:
         yield from self.values
 
     def __len__(self) -> int:
@@ -211,7 +211,7 @@ class SimpleAxis(AxisIterable[V]):
         return len(self.values)
 
 
-class MultiDimSequence(BaseModel):
+class AxesIterator(BaseModel):
     """Represents a multidimensional sequence.
 
     At the top level the `value` field is ignored.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar
 
-from useq.v2._multidim_seq import AxisIterable, MultiDimSequence
+from useq.v2._multidim_seq import AxesIterator, AxisIterable
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -14,7 +14,7 @@ V = TypeVar("V", covariant=True)
 
 
 def order_axes(
-    seq: MultiDimSequence,
+    seq: AxesIterator,
     parent_order: tuple[str, ...] | None = None,
 ) -> list[AxisIterable]:
     """Returns the axes of a MultiDimSequence in the order specified by seq.axis_order.
@@ -55,7 +55,7 @@ def iterate_axes_recursive(
     current_axis, *remaining_axes = axes
 
     for idx, item in enumerate(current_axis.iter()):
-        if isinstance(item, MultiDimSequence) and item.value is not None:
+        if isinstance(item, AxesIterator) and item.value is not None:
             value = item.value
             override_keys = {ax.axis_key for ax in item.axes}
             updated_axes = [
@@ -73,7 +73,7 @@ def iterate_axes_recursive(
 
 
 def iterate_multi_dim_sequence(
-    seq: MultiDimSequence, axis_order: tuple[str, ...] | None = None
+    seq: AxesIterator, axis_order: tuple[str, ...] | None = None
 ) -> Iterator[AxesIndex]:
     """Iterate over a MultiDimSequence.
 

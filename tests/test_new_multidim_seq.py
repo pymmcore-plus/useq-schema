@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import Field
 
 from useq import Axis
-from useq.v2 import AxisIterable, MultiDimSequence, SimpleAxis
+from useq.v2 import AxesIterator, AxisIterable, SimpleAxis
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def _index_and_values(
-    multi_dim: MultiDimSequence,
+    multi_dim: AxesIterator,
     axis_order: tuple[str, ...] | None = None,
     max_iters: int | None = None,
 ) -> list[dict[str, tuple[int, Any]]]:
@@ -30,7 +30,7 @@ def _index_and_values(
 
 
 def test_new_multidim_simple_seq() -> None:
-    multi_dim = MultiDimSequence(
+    multi_dim = AxesIterator(
         axes=(
             SimpleAxis(axis_key=Axis.TIME, values=[0, 1]),
             SimpleAxis(axis_key=Axis.CHANNEL, values=["red", "green", "blue"]),
@@ -67,10 +67,10 @@ class InfiniteAxis(AxisIterable[int]):
 
 
 def test_multidim_nested_seq() -> None:
-    inner_seq = MultiDimSequence(
+    inner_seq = AxesIterator(
         value=1, axes=(SimpleAxis(axis_key="q", values=["a", "b"]),)
     )
-    outer_seq = MultiDimSequence(
+    outer_seq = AxesIterator(
         axes=(
             SimpleAxis(axis_key="t", values=[0, inner_seq, 2]),
             SimpleAxis(axis_key="c", values=["red", "green", "blue"]),
@@ -110,14 +110,14 @@ def test_multidim_nested_seq() -> None:
 
 
 def test_override_parent_axes() -> None:
-    inner_seq = MultiDimSequence(
+    inner_seq = AxesIterator(
         value=1,
         axes=(
             SimpleAxis(axis_key="c", values=["red", "blue"]),
             SimpleAxis(axis_key="z", values=[7, 8, 9]),
         ),
     )
-    multi_dim = MultiDimSequence(
+    multi_dim = AxesIterator(
         axes=(
             SimpleAxis(axis_key="t", values=[0, inner_seq, 2]),
             SimpleAxis(axis_key="c", values=["red", "green", "blue"]),
@@ -162,7 +162,7 @@ class FilteredZ(SimpleAxis):
 
 
 def test_multidim_with_should_skip() -> None:
-    multi_dim = MultiDimSequence(
+    multi_dim = AxesIterator(
         axes=(
             SimpleAxis(axis_key=Axis.TIME, values=[0, 1, 2]),
             SimpleAxis(axis_key=Axis.CHANNEL, values=["red", "green", "blue"]),
@@ -205,18 +205,18 @@ def test_multidim_with_should_skip() -> None:
 
 
 def test_all_together() -> None:
-    t1_overrides = MultiDimSequence(
+    t1_overrides = AxesIterator(
         value=1,
         axes=(
             SimpleAxis(axis_key="c", values=["red", "blue"]),
             SimpleAxis(axis_key="z", values=[7, 8, 9]),
         ),
     )
-    c_blue_subseq = MultiDimSequence(
+    c_blue_subseq = AxesIterator(
         value="blue",
         axes=(SimpleAxis(axis_key="q", values=["a", "b"]),),
     )
-    multi_dim = MultiDimSequence(
+    multi_dim = AxesIterator(
         axes=(
             SimpleAxis(axis_key="t", values=[0, t1_overrides, 2]),
             SimpleAxis(axis_key="c", values=["red", "green", c_blue_subseq]),
@@ -258,7 +258,7 @@ def test_all_together() -> None:
 
 def test_new_multidim_with_infinite_axis() -> None:
     # note... we never progress to t=1
-    multi_dim = MultiDimSequence(
+    multi_dim = AxesIterator(
         axes=(
             SimpleAxis(axis_key=Axis.TIME, values=[0, 1]),
             InfiniteAxis(),
@@ -293,7 +293,7 @@ class DynamicROIAxis(SimpleAxis[str]):
 
 
 def test_dynamic_roi_addition() -> None:
-    multi_dim = MultiDimSequence(axes=(InfiniteAxis(), DynamicROIAxis()))
+    multi_dim = AxesIterator(axes=(InfiniteAxis(), DynamicROIAxis()))
 
     assert not multi_dim.is_finite()
     result = _index_and_values(multi_dim, max_iters=16)

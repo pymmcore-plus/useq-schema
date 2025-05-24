@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
 from pydantic_core import core_schema
 
 from useq._mda_event import MDAEvent
-from useq.v2._multidim_seq import AxisIterable, MultiDimSequence, V
+from useq.v2._multidim_seq import AxesIterator, AxisIterable, V
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -116,7 +116,7 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
         return MDAEvent(**event_data)
 
 
-class MDASequence(MultiDimSequence):
+class MDASequence(AxesIterator):
     axes: tuple[AxisIterable, ...] = ()
     event_builder: EventBuilder[MDAEvent] = MDAEventBuilder()
 
