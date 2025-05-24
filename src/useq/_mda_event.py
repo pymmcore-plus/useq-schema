@@ -99,6 +99,13 @@ class SLMImage(UseqModel):
             and np.array_equal(self.data, other.data)
         )
 
+    if TYPE_CHECKING:
+
+        class Kwargs(TypedDict, total=False):
+            data: npt.ArrayLike
+            device: str
+            exposure: float
+
 
 class PropertyTuple(NamedTuple):
     """Three-tuple capturing a device, property, and value.
@@ -258,10 +265,11 @@ class MDAEvent(UseqModel):
             x_pos: float
             y_pos: float
             z_pos: float
-            slm_image: SLMImage
-            sequence: MDASequence
-            properties: list[PropertyTuple]
+            slm_image: SLMImage | SLMImage.Kwargs
+            properties: list[tuple[str, str, Any]]
             metadata: dict[str, Any]
             action: AnyAction
             keep_shutter_open: bool
             reset_event_timer: bool
+
+            sequence: Any
