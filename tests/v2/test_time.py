@@ -409,3 +409,16 @@ def test_integration_with_mda_axis_iterable() -> None:
     # Test iteration returns float values
     values = list(plan.iter())
     assert all(isinstance(v, float) for v in values)
+
+
+def test_contribute_to_mda_event() -> None:
+    """Test that time plans can contribute to MDA events."""
+    plan = TIntervalLoops(interval=timedelta(seconds=2), loops=3)
+
+    # Test contribution
+    contribution = plan.contribute_to_mda_event(4.0, {"t": 2})
+    assert contribution == {"min_start_time": 4.0}
+
+    # Test with different value
+    contribution = plan.contribute_to_mda_event(0.0, {"t": 0})
+    assert contribution == {"min_start_time": 0.0}

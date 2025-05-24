@@ -1,12 +1,17 @@
 from collections.abc import Generator, Iterator, Sequence
 from datetime import timedelta
-from typing import Annotated, Union, cast
+from typing import TYPE_CHECKING, Annotated, Union, cast
 
 from pydantic import BeforeValidator, Field, PlainSerializer, field_validator
 
 from useq._base_model import FrozenModel
 from useq._utils import Axis
 from useq.v2._mda_seq import MDAAxisIterable
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from useq._mda_event import MDAEvent
 
 # slightly modified so that we can accept dict objects as input
 # and serialize to total_seconds
@@ -27,6 +32,25 @@ class TimePlan(MDAAxisIterable[float], FrozenModel):
         This is used to calculate the time between frames.
         """
         return self.interval.total_seconds()  # type: ignore
+
+    def contribute_to_mda_event(
+        self, value: float, index: "Mapping[str, int]"
+    ) -> "MDAEvent.Kwargs":
+        """Contribute time data to the event being built.
+
+        Parameters
+        ----------
+        value : float
+            The time value for this iteration.
+        index : Mapping[str, int]
+            Current axis indices.
+
+        Returns
+        -------
+        dict
+            Event data to be merged into the MDAEvent.
+        """
+        return {"min_start_time": value}
 
 
 class _SizedTimePlan(TimePlan):
