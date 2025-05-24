@@ -30,15 +30,16 @@ def _index_and_values(
 
 
 def test_new_multidim_simple_seq() -> None:
-    seq = MultiDimSequence(
+    multi_dim = MultiDimSequence(
         axes=(
             SimpleAxis(axis_key=Axis.TIME, values=[0, 1]),
             SimpleAxis(axis_key=Axis.CHANNEL, values=["red", "green", "blue"]),
             SimpleAxis(axis_key=Axis.Z, values=[0.1, 0.3]),
         )
     )
+    assert multi_dim.is_finite()
 
-    result = _index_and_values(seq)
+    result = _index_and_values(multi_dim)
     assert result == [
         {"t": (0, 0), "c": (0, "red"), "z": (0, 0.1)},
         {"t": (0, 0), "c": (0, "red"), "z": (1, 0.3)},
@@ -58,9 +59,6 @@ def test_new_multidim_simple_seq() -> None:
 class InfiniteAxis(AxisIterable[int]):
     axis_key: str = "i"
 
-    def length(self) -> int:
-        return -1
-
     def model_post_init(self, _ctx: Any) -> None:
         self._counter = count()
 
@@ -78,6 +76,8 @@ def test_multidim_nested_seq() -> None:
             SimpleAxis(axis_key="c", values=["red", "green", "blue"]),
         )
     )
+
+    assert outer_seq.is_finite()
 
     result = _index_and_values(outer_seq)
     assert result == [
@@ -126,6 +126,7 @@ def test_override_parent_axes() -> None:
         axis_order=("t", "c", "z"),
     )
 
+    assert multi_dim.is_finite()
     result = _index_and_values(multi_dim)
     assert result == [
         {"t": (0, 0), "c": (0, "red"), "z": (0, 0.1)},
@@ -170,6 +171,7 @@ def test_multidim_with_should_skip() -> None:
         axis_order=(Axis.TIME, Axis.CHANNEL, Axis.Z),
     )
 
+    assert multi_dim.is_finite()
     result = _index_and_values(multi_dim)
 
     # If c is green, then only allow combinations where z equals 0.2.
@@ -222,6 +224,7 @@ def test_all_together() -> None:
         ),
     )
 
+    assert multi_dim.is_finite()
     result = _index_and_values(multi_dim)
     assert result == [
         {"t": (0, 0), "c": (0, "red"), "z": (0, 0.1)},
@@ -263,6 +266,7 @@ def test_new_multidim_with_infinite_axis() -> None:
         )
     )
 
+    assert not multi_dim.is_finite()
     result = _index_and_values(multi_dim, max_iters=10)
     assert result == [
         {"t": (0, 0), "i": (0, 0), "z": (0, 0.1)},
@@ -278,18 +282,20 @@ def test_new_multidim_with_infinite_axis() -> None:
     ]
 
 
-def test_dynamic_roi_addition() -> None:
+class DynamicROIAxis(SimpleAxis[str]):
+    axis_key: str = "r"
+    values: list[str] = Field(default_factory=lambda: ["cell0", "cell1"])
+
     # we add a new roi at each time step
-    class DynamicROIAxis(SimpleAxis[str]):
-        axis_key: str = "r"
-        values: list[str] = Field(default_factory=lambda: ["cell0", "cell1"])
+    def iter(self) -> Iterator[str]:
+        yield from self.values
+        self.values.append(f"cell{len(self.values)}")
 
-        def iter(self) -> Iterator[str]:
-            yield from self.values
-            self.values.append(f"cell{len(self.values)}")
 
+def test_dynamic_roi_addition() -> None:
     multi_dim = MultiDimSequence(axes=(InfiniteAxis(), DynamicROIAxis()))
 
+    assert not multi_dim.is_finite()
     result = _index_and_values(multi_dim, max_iters=16)
     assert result == [
         {"i": (0, 0), "r": (0, "cell0")},

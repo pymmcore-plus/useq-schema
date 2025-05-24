@@ -244,9 +244,9 @@ class MultiDimSequence(BaseModel):
 
         return order
 
-    def is_sized(self) -> bool:
+    def is_finite(self) -> bool:
         """Return `True` if the sequence is infinite."""
-        return any(not isinstance(ax, Sized) for ax in self.axes)
+        return all(isinstance(ax, Sized) for ax in self.axes)
 
     def iter_axes(
         self, axis_order: tuple[str, ...] | None = None
