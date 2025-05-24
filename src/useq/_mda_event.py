@@ -262,9 +262,9 @@ class MDAEvent(UseqModel):
             exposure: float
             min_start_time: float
             pos_name: str
-            x_pos: float
-            y_pos: float
-            z_pos: float
+            x_pos: float | None
+            y_pos: float | None
+            z_pos: float | None
             slm_image: SLMImage | SLMImage.Kwargs
             properties: list[tuple[str, str, Any]]
             metadata: dict[str, Any]
