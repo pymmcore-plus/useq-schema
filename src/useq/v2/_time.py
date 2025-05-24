@@ -18,7 +18,7 @@ TimeDelta = Annotated[
 
 
 class TimePlan(MDAAxisIterable[float], FrozenModel):
-    axis_key: str = Field(default=Axis.TIME, frozen=True)
+    axis_key: str = Field(default=Axis.TIME, frozen=True, init=False)
     prioritize_duration: bool = False  # or prioritize num frames
 
     def _interval_s(self) -> float:
