@@ -29,7 +29,6 @@ from useq._position import (
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
-    from typing_extensions import Self, TypeAlias
 
     PointGenerator: TypeAlias = Callable[
         [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
@@ -76,11 +75,6 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         should use current height of the FOV based on the current objective and camera.
         Engines MAY override this even if provided.
     """
-
-    @property
-    def axis_key(self) -> str:
-        """A string id representing the axis. Prefer lowercase."""
-        return "g"
 
     overlap: tuple[float, float] = Field((0.0, 0.0), frozen=True)
     mode: OrderMode = Field(OrderMode.row_wise_snake, frozen=True)

@@ -11,12 +11,7 @@ from typing import (
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import (
-    Field,
-    GetCoreSchemaHandler,
-    field_validator,
-    model_validator,
-)
+from pydantic import Field, GetCoreSchemaHandler, field_validator, model_validator
 from pydantic_core import core_schema
 
 from useq._actions import AcquireImage, AnyAction
@@ -148,11 +143,7 @@ class ReadOnlyDict(UserDict[str, int]):
         cls, source: type[Any], handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
         return core_schema.dict_schema(
-            keys_schema=core_schema.str_schema(),
-            values_schema=core_schema.int_schema(),
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                dict, return_schema=core_schema.is_instance_schema(ReadOnlyDict)
-            ),
+            keys_schema=core_schema.str_schema(), values_schema=core_schema.int_schema()
         )
 
 
@@ -176,6 +167,11 @@ class MDAEvent(UseqModel):
     exposure : float | None
         Exposure time in milliseconds. If not provided, implies use current exposure
         time. By default, `None`.
+    min_start_time : float | None
+        Minimum start time of this event, in seconds.  If provided, the engine will
+        pause until this time has elapsed before starting this event. Times are
+        relative to the start of the sequence, or the last event with
+        `reset_event_timer` set to `True`.
     pos_name : str | None
         The name assigned to the position. By default, `None`.
     x_pos : float | None
@@ -217,52 +213,34 @@ class MDAEvent(UseqModel):
         This is useful when the sequence of events being executed use the same
         illumination scheme (such as a z-stack in a single channel), and closing and
         opening the shutter between events would be slow.
-    min_start_time : float | None
-        Minimum start time of this event, in seconds.  If provided, the engine should
-        pause until this time has elapsed before starting this event. Times are
-        relative to the start of the sequence, or the last event with
-        `reset_event_timer` set to `True`.
-    min_end_time : float | None
-        If provided, the engine should stop the entire sequence if the current time
-        exceeds this value. Times are relative to the start of the sequence, or the
-        last event with `reset_event_timer` set to `True`.
     reset_event_timer : bool
         If `True`, the engine should reset the event timer to the time of this event,
-        and future `min_start_time` values should be relative to this event. By default,
+        and future `min_start_time` values will be relative to this event. By default,
         `False`.
     """
 
     index: ReadOnlyDict = Field(default_factory=ReadOnlyDict)
     channel: Optional[Channel] = None
     exposure: Optional[float] = Field(default=None, gt=0.0)
+    min_start_time: Optional[float] = None  # time in sec
     pos_name: Optional[str] = None
     x_pos: Optional[float] = None
     y_pos: Optional[float] = None
     z_pos: Optional[float] = None
     slm_image: Optional[SLMImage] = None
-    sequence: Optional["MDASequence"] = Field(default=None, repr=False, exclude=True)
+    sequence: Optional["MDASequence"] = Field(default=None, repr=False)
     properties: Optional[list[PropertyTuple]] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage, discriminator="type")
     keep_shutter_open: bool = False
-
-    min_start_time: Optional[float] = None  # time in sec
-    min_end_time: Optional[float] = None  # time in sec
     reset_event_timer: bool = False
-
-    def __eq__(self, other: object) -> bool:
-        # exclude sequence from equality check
-        if not isinstance(other, MDAEvent):
-            return False
-        self_dict = self.model_dump(mode="python", exclude={"sequence"})
-        other_dict = other.model_dump(mode="python", exclude={"sequence"})
-        return self_dict == other_dict
 
     @field_validator("channel", mode="before")
     def _validate_channel(cls, val: Any) -> Any:
         return Channel(config=val) if isinstance(val, str) else val
 
     if field_serializer is not None:
+        _si = field_serializer("index", mode="plain")(lambda v: dict(v))
         _sx = field_serializer("x_pos", mode="plain")(_float_or_none)
         _sy = field_serializer("y_pos", mode="plain")(_float_or_none)
         _sz = field_serializer("z_pos", mode="plain")(_float_or_none)

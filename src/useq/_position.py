@@ -1,19 +1,9 @@
-from collections.abc import Iterator, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    Optional,
-    SupportsIndex,
-    TypeVar,
-)
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Generic, Optional, SupportsIndex, TypeVar
 
-import numpy as np
-from pydantic import Field, model_validator
+from pydantic import Field
 
-from useq._axis_iterable import IterItem
 from useq._base_model import FrozenModel, MutableModel
-from useq._iter_sequence import MDAEventDict
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -51,7 +41,7 @@ class PositionBase(MutableModel):
     y: Optional[float] = None
     z: Optional[float] = None
     name: Optional[str] = None
-    sequence: Optional["MDASequence | Any"] = None
+    sequence: Optional["MDASequence"] = None
 
     # excluded from serialization
     row: Optional[int] = Field(default=None, exclude=True)
@@ -82,25 +72,6 @@ class PositionBase(MutableModel):
         }
         # not sure why these Self types are not working
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
-
-    @model_validator(mode="before")
-    @classmethod
-    def _validate_model(cls, value: Any) -> Any:
-        if isinstance(value, dict):
-            return value
-        if isinstance(value, Position):
-            return value.model_dump()
-        if isinstance(value, np.ndarray):
-            if value.ndim > 1:
-                raise ValueError(f"stage_positions must be 1D or 2D, got {value.ndim}D")
-            value = value.tolist()
-        if not isinstance(value, Sequence):  # pragma: no cover
-            raise ValueError(f"stage_positions must be a sequence, got {type(value)}")
-
-        x, *v = value
-        y, *v = v or (None,)
-        z = v[0] if v else None
-        return {"x": x, "y": y, "z": z}
 
 
 class AbsolutePosition(PositionBase, FrozenModel):
@@ -140,25 +111,6 @@ class _MultiPointPlan(MutableModel, Generic[PositionT]):
             rect = (self.fov_width, self.fov_height)
 
         return plot_points(self, rect_size=rect, show=show)
-
-    def create_event_kwargs(self, val: PositionT) -> MDAEventDict:
-        """Convert a value from the iterator to kwargs for an MDAEvent."""
-        if isinstance(val, RelativePosition):
-            return {"x_pos_rel": val.x, "y_pos_rel": val.y, "z_pos_rel": val.z}
-        if isinstance(val, AbsolutePosition):
-            return {"x_pos": val.x, "y_pos": val.y, "z_pos": val.z}
-        raise ValueError(f"Unsupported position type: {type(val)}")
-
-    def length(self) -> int:
-        """Return the number of axis values.
-
-        If the axis is infinite, return -1.
-        """
-        return self.num_positions()
-
-    def should_skip(self, kwargs: dict[str, IterItem]) -> bool:
-        """Return True if the event should be skipped."""
-        return False
 
 
 class RelativePosition(PositionBase, _MultiPointPlan["RelativePosition"]):

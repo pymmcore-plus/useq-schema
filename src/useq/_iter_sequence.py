@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import cache
 from itertools import product
 from typing import TYPE_CHECKING, Any, cast
 
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from useq._mda_sequence import MDASequence
-    from useq._position import Position, RelativePosition
+    from useq._position import Position, PositionBase, RelativePosition
 
 
 class MDAEventDict(TypedDict, total=False):
@@ -25,11 +26,8 @@ class MDAEventDict(TypedDict, total=False):
     min_start_time: float | None
     pos_name: str | None
     x_pos: float | None
-    x_pos_rel: float | None
     y_pos: float | None
-    y_pos_rel: float | None
     z_pos: float | None
-    z_pos_rel: float | None
     sequence: MDASequence | None
     # properties: list[tuple] | None
     metadata: dict
@@ -40,6 +38,21 @@ class PositionDict(TypedDict, total=False):
     x_pos: float
     y_pos: float
     z_pos: float
+
+
+@cache
+def _iter_axis(seq: MDASequence, ax: str) -> tuple[Channel | float | PositionBase, ...]:
+    return tuple(seq.iter_axis(ax))
+
+
+@cache
+def _sizes(seq: MDASequence) -> dict[str, int]:
+    return {k: len(list(_iter_axis(seq, k))) for k in seq.axis_order}
+
+
+@cache
+def _used_axes(seq: MDASequence) -> str:
+    return "".join(k for k in seq.axis_order if _sizes(seq)[k])
 
 
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
@@ -131,8 +144,9 @@ def _iter_sequence(
     MDAEvent
         Each event in the MDA sequence.
     """
-    order = sequence.used_axes
-    axis_iterators = (enumerate(sequence.iter_axis(ax)) for ax in order)
+    order = _used_axes(sequence)
+    # this needs to be tuple(...) to work for mypyc
+    axis_iterators = tuple(enumerate(_iter_axis(sequence, ax)) for ax in order)
     for item in product(*axis_iterators):
         if not item:  # the case with no events
             continue  # pragma: no cover
@@ -253,11 +267,11 @@ def _position_offsets(
 def _parse_axes(
     event: zip[tuple[str, Any]],
 ) -> tuple[
-    dict[str, int],  # index
+    dict[str, int],
     float | None,  # time
-    Position | None,  # position
-    RelativePosition | None,  # grid
-    Channel | None,  # channel
+    Position | None,
+    RelativePosition | None,
+    Channel | None,
     float | None,  # z
 ]:
     """Parse an individual event from the product of axis iterators.

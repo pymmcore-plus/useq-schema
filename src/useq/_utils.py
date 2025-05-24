@@ -5,8 +5,6 @@ from datetime import timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, NamedTuple
 
-from useq._time import TIntervalDuration
-
 if TYPE_CHECKING:
     from typing import Final, Literal, TypeVar
 
@@ -178,10 +176,7 @@ def _time_phase_duration(
         # to actually acquire the data
         time_interval_s = s_per_timepoint
 
-    if isinstance(phase, TIntervalDuration):
-        tot_duration = phase.duration.total_seconds()
-    else:
-        tot_duration = (phase.num_timepoints() - 1) * time_interval_s + s_per_timepoint
+    tot_duration = (phase.num_timepoints() - 1) * time_interval_s + s_per_timepoint
     return tot_duration, time_interval_exceeded
 
 

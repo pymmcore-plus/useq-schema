@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import suppress
-from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -407,37 +406,17 @@ class MDASequence(UseqModel):
         """
         return tuple(s for s in self.sizes.values() if s)
 
-    def _axis_size(self, axis: str) -> int:
-        """Return the size of a given axis.
-
-        -1 indicates an infinite iterator.
-        """
-        # TODO: make a generic interface for axes
-        if axis == Axis.TIME:
-            # note that this may be -1, which implies infinite
-            return self.time_plan.num_timepoints() if self.time_plan else 0
-        if axis == Axis.POSITION:
-            return len(self.stage_positions)
-        if axis == Axis.Z:
-            return self.z_plan.num_positions() if self.z_plan else 0
-        if axis == Axis.CHANNEL:
-            return len(self.channels)
-        if axis == Axis.GRID:
-            return self.grid_plan.num_positions() if self.grid_plan else 0
-        raise ValueError(f"Invalid axis: {axis}")
-
     @property
     def sizes(self) -> Mapping[str, int]:
         """Mapping of axis name to size of that axis."""
         if self._sizes is None:
-            self._sizes = {k: self._axis_size(k) for k in self.axis_order}
-        return MappingProxyType(self._sizes)
+            self._sizes = {k: len(list(self.iter_axis(k))) for k in self.axis_order}
+        return self._sizes
 
     @property
     def used_axes(self) -> str:
         """Single letter string of axes used in this sequence, e.g. `ztc`."""
-        sz = self.sizes
-        return "".join(k for k in self.axis_order if sz[k])
+        return "".join(k for k in self.axis_order if self.sizes[k])
 
     def iter_axis(self, axis: str) -> Iterator[Channel | float | PositionBase]:
         """Iterate over the positions or items of a given axis."""

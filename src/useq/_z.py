@@ -1,13 +1,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Iterator, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Callable,
-    ClassVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Callable, Union
 
 import numpy as np
 from pydantic import field_validator
@@ -16,8 +10,6 @@ from useq._base_model import FrozenModel
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
-
-    from useq._axis_iterable import IterItem
 
 
 def _list_cast(field: str) -> Callable:
@@ -33,20 +25,6 @@ class ZPlan(FrozenModel):
         if not self.go_up:
             positions = positions[::-1]
         yield from positions
-
-    def length(self) -> int:
-        return self.num_positions()
-
-    def should_skip(self, kwargs: dict[str, IterItem]) -> bool:
-        return False
-
-    def create_event_kwargs(self, val: float) -> dict:
-        if self.is_relative:
-            return {"z_pos_rel": val}
-        else:
-            return {"z_pos": val}
-
-    axis_key: ClassVar[str] = "z"
 
     def _start_stop_step(self) -> tuple[float, float, float]:
         raise NotImplementedError
