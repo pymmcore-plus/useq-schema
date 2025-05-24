@@ -226,7 +226,7 @@ class AxisIterable(BaseModel, Generic[V]):
 
     def contribute_to_mda_event(
         self, value: V, index: Mapping[str, int]
-    ) -> dict[str, Any]:
+    ) -> MDAEvent.Kwargs:
         """Contribute data to the event being built.
 
         This method allows each axis to contribute its data to the final MDAEvent.
@@ -265,6 +265,58 @@ class SimpleAxis(AxisIterable[V]):
         return len(self.values)
 
 
+class MultiDimSequence(BaseModel):
+    """Represents a multidimensional sequence.
+
+    At the top level the `value` field is ignored.
+    When used as a nested override, `value` is the value for that branch and
+    its axes are iterated using its own axis_order if provided;
+    otherwise, it inherits the parent's axis_order.
+    """
+
+    axes: tuple[AxisIterable, ...] = ()
+    axis_order: tuple[str, ...] | None = None
+    value: Any = None
+
+    @field_validator("axes", mode="after")
+    def _validate_axes(cls, v: tuple[AxisIterable, ...]) -> tuple[AxisIterable, ...]:
+        keys = [x.axis_key for x in v]
+        if dupes := {k for k in keys if keys.count(k) > 1}:
+            raise ValueError(
+                f"The following axis keys appeared more than once: {dupes}"
+            )
+        return v
+
+    @field_validator("axis_order", mode="before")
+    @classmethod
+    def _validate_axis_order(cls, v: Any) -> tuple[str, ...]:
+        if not isinstance(v, Iterable):
+            raise ValueError(f"axis_order must be iterable, got {type(v)}")
+        order = tuple(str(x).lower() for x in v)
+        if len(set(order)) < len(order):
+            raise ValueError(f"Duplicate entries found in acquisition order: {order}")
+
+        return order
+
+    @property
+    def is_infinite(self) -> bool:
+        """Return `True` if the sequence is infinite."""
+        return any(ax.is_infinite for ax in self.axes)
+
+    def iter_axes(
+        self, axis_order: tuple[str, ...] | None = None
+    ) -> Iterator[AxesIndex]:
+        """Iterate over the axes and yield combinations."""
+        from useq.new._iterate import iterate_multi_dim_sequence
+
+        yield from iterate_multi_dim_sequence(self, axis_order=axis_order)
+
+
+# ---------------------------------------------------------------
+# MDAEvent specific stuff...
+# ---------------------------------------------------------------
+
+
 # Example concrete event builder for MDAEvent
 class MDAEventBuilder(EventBuilder[MDAEvent]):
     """Builds MDAEvent objects from AxesIndex."""
@@ -272,7 +324,7 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
     def __call__(self, axes_index: AxesIndex) -> Any:
         """Transform AxesIndex into MDAEvent using axis contributions."""
         index: dict[str, int] = {}
-        contributions: list[tuple[str, dict[str, Any]]] = []
+        contributions: list[tuple[str, Mapping]] = []
 
         # Let each axis contribute to the event
         for axis_key, (idx, value, axis) in axes_index.items():
@@ -283,9 +335,9 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
         return self._merge_contributions(index, contributions)
 
     def _merge_contributions(
-        self, index: dict[str, int], contributions: list[tuple[str, dict[str, Any]]]
+        self, index: dict[str, int], contributions: list[tuple[str, Mapping]]
     ) -> MDAEvent:
-        event_data: dict[str, Any] = {}
+        event_data: dict = {"index": index}
         abs_pos: dict[str, float] = {}
 
         # First pass: collect all contributions and detect conflicts
@@ -317,45 +369,13 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
         return MDAEvent(**event_data)
 
 
-class _MultiDimSequence(BaseModel, Generic[EventT]):
-    """Represents a multidimensional sequence.
-
-    At the top level the `value` field is ignored.
-    When used as a nested override, `value` is the value for that branch and
-    its axes are iterated using its own axis_order if provided;
-    otherwise, it inherits the parent's axis_order.
-    """
-
-    axes: tuple[AxisIterable, ...] = ()
-    axis_order: tuple[str, ...] | None = None
-    value: Any = None
-    event_builder: EventBuilder[EventT]
-
-    @field_validator("axes", mode="after")
-    def _validate_axes(cls, v: tuple[AxisIterable, ...]) -> tuple[AxisIterable, ...]:
-        keys = [x.axis_key for x in v]
-        if dupes := {k for k in keys if keys.count(k) > 1}:
-            raise ValueError(
-                f"The following axis keys appeared more than once: {dupes}"
-            )
-        return v
-
-    @field_validator("axis_order", mode="before")
-    @classmethod
-    def _validate_axis_order(cls, v: Any) -> tuple[str, ...]:
-        if not isinstance(v, Iterable):
-            raise ValueError(f"axis_order must be iterable, got {type(v)}")
-        order = tuple(str(x).lower() for x in v)
-        if len(set(order)) < len(order):
-            raise ValueError(f"Duplicate entries found in acquisition order: {order}")
-
-        return order
-
-    @property
-    def is_infinite(self) -> bool:
-        """Return `True` if the sequence is infinite."""
-        return any(ax.is_infinite for ax in self.axes)
-
-
-class MultiDimSequence(_MultiDimSequence[MDAEvent]):
+class MDASequence(MultiDimSequence):
     event_builder: EventBuilder[MDAEvent] = MDAEventBuilder()
+
+    def iter_events(
+        self, axis_order: tuple[str, ...] | None = None
+    ) -> Iterator[MDAEvent]:
+        """Iterate over the axes and yield events."""
+        if self.event_builder is None:
+            raise ValueError("No event builder provided for this sequence.")
+        yield from map(self.event_builder, self.iter_axes(axis_order=axis_order))

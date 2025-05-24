@@ -142,6 +142,9 @@ show_error_codes = true
 pretty = true
 plugins = ["pydantic.mypy"]
 
+[tool.pyright]
+reportArgumentType = false
+
 # https://coverage.readthedocs.io/en/6.4/config.html
 [tool.coverage.run]
 source = ["useq"]
