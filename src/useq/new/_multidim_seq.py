@@ -110,10 +110,13 @@ Usage Examples:
 
 4. Conditional Skipping:
    By subclassing SimpleAxis to override should_skip, you can filter out combinations.
-   For example, suppose we want to skip any combination where "c" equals "green" and "z" is not 0.2:
+   For example, suppose we want to skip any combination where "c" equals "green" and "z"
+   is not 0.2:
 
     >>> class FilteredZ(SimpleAxis):
-    ...     def should_skip(self, prefix: dict[str, tuple[int, Any, AxisIterable]]) -> bool:
+    ...     def should_skip(
+    ...             self, prefix: dict[str, tuple[int, Any, AxisIterable]]
+    ...         ) -> bool:
     ...         c_val = prefix.get("c", (None, None, None))[1]
     ...         z_val = prefix.get("z", (None, None, None))[1]
     ...         if c_val == "green" and z_val != 0.2:
@@ -134,27 +137,32 @@ Usage Examples:
 
 Usage Notes:
 ------------
-- The module assumes that each axis is finite and that the final prefix (the combination)
-  is built by processing one axis at a time. Nested MultiDimSequence objects allow you to
-  either extend the iteration with new axes or override existing ones.
+- The module assumes that each axis is finite and that the final prefix (the
+  combination) is built by processing one axis at a time. Nested MultiDimSequence
+  objects allow you to either extend the iteration with new axes or override existing
+  ones.
 - The ordering of axes is controlled via the `axis_order` property, which is inherited
   by nested sequences if not explicitly provided.
 - The should_skip mechanism gives each axis an opportunity to veto a final combination.
-  By default, SimpleAxis does not skip any combination, but you can subclass it to implement
-  custom filtering logic.
+  By default, SimpleAxis does not skip any combination, but you can subclass it to
+  implement custom filtering logic.
 
-This module is intended for cases where complex, declarative multidimensional iteration is
-required—such as in microscope acquisitions, high-content imaging, or other experimental designs
-where the sequence of events must be generated in a flexible, hierarchical manner.
+This module is intended for cases where complex, declarative multidimensional iteration
+is required—such as in microscope acquisitions, high-content imaging, or other
+experimental designs where the sequence of events must be generated in a flexible,
+hierarchical manner.
 """
 
 from __future__ import annotations
 
 from abc import abstractmethod
-from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from collections.abc import Iterable, Iterator, Mapping
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar, runtime_checkable
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, GetCoreSchemaHandler, field_validator
+from pydantic_core import core_schema
+
+from useq._mda_event import MDAEvent
 
 if TYPE_CHECKING:
     from typing import TypeAlias
@@ -166,7 +174,24 @@ if TYPE_CHECKING:
 
     from collections.abc import Iterator
 
-V = TypeVar("V", covariant=True)
+V = TypeVar("V")
+EventT = TypeVar("EventT", covariant=True, bound=Any)
+
+
+@runtime_checkable
+class EventBuilder(Protocol[EventT]):
+    """Callable that builds an event from an AxesIndex."""
+
+    @abstractmethod
+    def __call__(self, axes_index: AxesIndex) -> EventT:
+        """Transform an AxesIndex into an event object."""
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: type[Any], handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        """Return the schema for the event builder."""
+        return core_schema.is_instance_schema(EventBuilder)
 
 
 class AxisIterable(BaseModel, Generic[V]):
@@ -199,6 +224,29 @@ class AxisIterable(BaseModel, Generic[V]):
         """Return `True` if the sequence is infinite."""
         return self.length() == -1
 
+    def contribute_to_mda_event(
+        self, value: V, index: Mapping[str, int]
+    ) -> dict[str, Any]:
+        """Contribute data to the event being built.
+
+        This method allows each axis to contribute its data to the final MDAEvent.
+        The default implementation does nothing - subclasses should override
+        to add their specific contributions.
+
+        Parameters
+        ----------
+        value : V
+            The value provided by this axis, for this iteration.
+
+        Returns
+        -------
+        event_data : dict[str, Any]
+            Data to be added to the MDAEvent, it is ultimately up to the
+            EventBuilder to decide how to merge possibly conflicting contributions from
+            different axes.
+        """
+        return {}
+
 
 class SimpleAxis(AxisIterable[V]):
     """A basic axis implementation that yields values directly.
@@ -217,7 +265,59 @@ class SimpleAxis(AxisIterable[V]):
         return len(self.values)
 
 
-class MultiDimSequence(BaseModel):
+# Example concrete event builder for MDAEvent
+class MDAEventBuilder(EventBuilder[MDAEvent]):
+    """Builds MDAEvent objects from AxesIndex."""
+
+    def __call__(self, axes_index: AxesIndex) -> Any:
+        """Transform AxesIndex into MDAEvent using axis contributions."""
+        index: dict[str, int] = {}
+        contributions: list[tuple[str, dict[str, Any]]] = []
+
+        # Let each axis contribute to the event
+        for axis_key, (idx, value, axis) in axes_index.items():
+            index[axis_key] = idx
+            contribution = axis.contribute_to_mda_event(value, index)
+            contributions.append((axis_key, contribution))
+
+        return self._merge_contributions(index, contributions)
+
+    def _merge_contributions(
+        self, index: dict[str, int], contributions: list[tuple[str, dict[str, Any]]]
+    ) -> MDAEvent:
+        event_data: dict[str, Any] = {}
+        abs_pos: dict[str, float] = {}
+
+        # First pass: collect all contributions and detect conflicts
+        for axis_key, contrib in contributions:
+            for key, val in contrib.items():
+                if key.endswith("_pos") and val is not None:
+                    if key in abs_pos and abs_pos[key] != val:
+                        raise ValueError(
+                            f"Conflicting absolute position from {axis_key}: "
+                            f"existing {key}={abs_pos[key]}, new {key}={val}"
+                        )
+                    abs_pos[key] = val
+                elif key in event_data and event_data[key] != val:
+                    # Could implement different strategies here
+                    raise ValueError(f"Conflicting values for {key} from {axis_key}")
+                else:
+                    event_data[key] = val
+
+        # Second pass: handle relative positions
+        for _, contrib in contributions:
+            for key, val in contrib.items():
+                if key.endswith("_pos_rel") and val is not None:
+                    abs_key = key.replace("_rel", "")
+                    abs_pos.setdefault(abs_key, 0.0)
+                    abs_pos[abs_key] += val
+
+        # Merge final positions
+        event_data.update(abs_pos)
+        return MDAEvent(**event_data)
+
+
+class _MultiDimSequence(BaseModel, Generic[EventT]):
     """Represents a multidimensional sequence.
 
     At the top level the `value` field is ignored.
@@ -229,6 +329,7 @@ class MultiDimSequence(BaseModel):
     axes: tuple[AxisIterable, ...] = ()
     axis_order: tuple[str, ...] | None = None
     value: Any = None
+    event_builder: EventBuilder[EventT]
 
     @field_validator("axes", mode="after")
     def _validate_axes(cls, v: tuple[AxisIterable, ...]) -> tuple[AxisIterable, ...]:
@@ -254,3 +355,7 @@ class MultiDimSequence(BaseModel):
     def is_infinite(self) -> bool:
         """Return `True` if the sequence is infinite."""
         return any(ax.is_infinite for ax in self.axes)
+
+
+class MultiDimSequence(_MultiDimSequence[MDAEvent]):
+    event_builder: EventBuilder[MDAEvent] = MDAEventBuilder()
