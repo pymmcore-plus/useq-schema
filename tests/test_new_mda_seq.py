@@ -71,3 +71,5 @@ def test_new_mdasequence_simple() -> None:
         MDAEvent(index={'t': 1, 'c': 2, 'z': 0}, channel=Channel(config='blue'), min_start_time=1.0, z_pos=0.1),
         MDAEvent(index={'t': 1, 'c': 2, 'z': 1}, channel=Channel(config='blue'), min_start_time=1.0, z_pos=0.3)
     ]
+
+    # seq.model_dump_json()
