@@ -225,13 +225,24 @@ class AxesIterator(BaseModel):
     value: Any = None
 
     def is_finite(self) -> bool:
-        """Return `True` if the sequence is infinite."""
+        """Return `True` if the sequence is finite (all axes are Sized)."""
         return all(isinstance(ax, Sized) for ax in self.axes)
 
     def iter_axes(
         self, axis_order: tuple[str, ...] | None = None
     ) -> Iterator[AxesIndex]:
-        """Iterate over the axes and yield combinations."""
+        """Iterate over the axes and yield combinations.
+
+        Yields
+        ------
+        AxesIndex
+            A dictionary mapping axis keys to tuples of (index, value, AxisIterable),
+            where the third element is the Iterable that yielded the value.
+            For example, when iterating over an `AxisIterable` with a single axis "t",
+            with values of [0.1, .2], the yielded AxesIndexes would be:
+            - {'t': (0, 0.1, <AxisIterable>)}
+            - {'t': (1, 0.2, <AxisIterable>)}
+        """
         from useq.v2._iterate import iterate_multi_dim_sequence
 
         yield from iterate_multi_dim_sequence(self, axis_order=axis_order)
