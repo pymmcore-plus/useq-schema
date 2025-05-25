@@ -56,7 +56,7 @@ CASES: list[MDATestCase] = [
         seq=useq.MDASequence(
             stage_positions=[
                 {},
-                useq.AbsolutePosition(
+                useq.Position(
                     sequence=useq.MDASequence(
                         channels=[useq.Channel(config="FITC", exposure=100)]
                     )
@@ -74,7 +74,7 @@ CASES: list[MDATestCase] = [
         seq=useq.MDASequence(
             stage_positions=[
                 {},
-                useq.AbsolutePosition(
+                useq.Position(
                     sequence=useq.MDASequence(
                         channels=[useq.Channel(config="FITC", exposure=100)]
                     )
@@ -110,8 +110,8 @@ CASES: list[MDATestCase] = [
     MDATestCase(
         name="grid_relative_with_multi_stage_positions",
         seq=useq.MDASequence(
-            stage_positions=[useq.AbsolutePosition(x=0, y=0), (10, 20)],
-            grid_plan=useq.GridRelative(rows=2, columns=2),
+            stage_positions=[useq.Position(x=0, y=0), (10, 20)],
+            grid_plan=useq.GridRowsColumns(rows=2, columns=2),
         ),
         expected={
             "index": genindex({"p": 2, "g": 4}),
@@ -123,12 +123,12 @@ CASES: list[MDATestCase] = [
         name="grid_relative_only_in_position_sub_sequence",
         seq=useq.MDASequence(
             stage_positions=[
-                useq.AbsolutePosition(x=0, y=0),
-                useq.AbsolutePosition(
+                useq.Position(x=0, y=0),
+                useq.Position(
                     x=10,
                     y=10,
                     sequence={
-                        "grid_plan": useq.GridRelative(rows=2, columns=2),
+                        "grid_plan": useq.GridRowsColumns(rows=2, columns=2),
                     },
                 ),
             ]
@@ -149,8 +149,8 @@ CASES: list[MDATestCase] = [
         name="grid_absolute_only_in_position_sub_sequence",
         seq=useq.MDASequence(
             stage_positions=[
-                useq.AbsolutePosition(x=0, y=0),
-                useq.AbsolutePosition(
+                useq.Position(x=0, y=0),
+                useq.Position(
                     x=10,
                     y=10,
                     sequence={
@@ -176,15 +176,15 @@ CASES: list[MDATestCase] = [
         name="grid_relative_in_main_and_position_sub_sequence",
         seq=useq.MDASequence(
             stage_positions=[
-                useq.AbsolutePosition(x=0, y=0),
-                useq.AbsolutePosition(
+                useq.Position(x=0, y=0),
+                useq.Position(
                     name="name",
                     x=10,
                     y=10,
-                    sequence={"grid_plan": useq.GridRelative(rows=2, columns=2)},
+                    sequence={"grid_plan": useq.GridRowsColumns(rows=2, columns=2)},
                 ),
             ],
-            grid_plan=useq.GridRelative(rows=2, columns=2),
+            grid_plan=useq.GridRowsColumns(rows=2, columns=2),
         ),
         expected={
             "index": genindex({"p": 2, "g": 4}),
@@ -198,7 +198,7 @@ CASES: list[MDATestCase] = [
         seq=useq.MDASequence(
             stage_positions=[
                 {},
-                useq.AbsolutePosition(
+                useq.Position(
                     name="name",
                     sequence={
                         "grid_plan": useq.GridFromEdges(
@@ -229,11 +229,11 @@ CASES: list[MDATestCase] = [
         seq=useq.MDASequence(
             stage_positions=[
                 {},
-                useq.AbsolutePosition(
+                useq.Position(
                     name="name",
                     x=10,
                     y=10,
-                    sequence={"grid_plan": useq.GridRelative(rows=2, columns=2)},
+                    sequence={"grid_plan": useq.GridRowsColumns(rows=2, columns=2)},
                 ),
             ],
             grid_plan=useq.GridFromEdges(top=1, bottom=-1, left=0, right=0),
@@ -257,8 +257,8 @@ CASES: list[MDATestCase] = [
         name="grid_relative_in_main_and_grid_absolute_in_position_sub_sequence",
         seq=useq.MDASequence(
             stage_positions=[
-                useq.AbsolutePosition(x=0, y=0),
-                useq.AbsolutePosition(
+                useq.Position(x=0, y=0),
+                useq.Position(
                     name="name",
                     sequence={
                         "grid_plan": useq.GridFromEdges(
@@ -267,7 +267,7 @@ CASES: list[MDATestCase] = [
                     },
                 ),
             ],
-            grid_plan=useq.GridRelative(rows=2, columns=2),
+            grid_plan=useq.GridRowsColumns(rows=2, columns=2),
         ),
         expected={
             "index": [
@@ -289,7 +289,7 @@ CASES: list[MDATestCase] = [
         seq=useq.MDASequence(
             stage_positions=[
                 {"sequence": {"grid_plan": {"rows": 1, "columns": 2}}},
-                {"sequence": {"grid_plan": useq.GridRelative(rows=2, columns=2)}},
+                {"sequence": {"grid_plan": useq.GridRowsColumns(rows=2, columns=2)}},
                 {
                     "sequence": {
                         "grid_plan": useq.GridFromEdges(
@@ -331,7 +331,7 @@ CASES: list[MDATestCase] = [
     MDATestCase(
         name="z_absolute_with_multi_stage_positions",
         seq=useq.MDASequence(
-            stage_positions=[useq.AbsolutePosition(x=0, y=0), (10, 20)],
+            stage_positions=[useq.Position(x=0, y=0), (10, 20)],
             z_plan=useq.ZTopBottom(bottom=58, top=60, step=1),
         ),
         expected={
@@ -345,8 +345,8 @@ CASES: list[MDATestCase] = [
         name="z_relative_only_in_position_sub_sequence",
         seq=useq.MDASequence(
             stage_positions=[
-                useq.AbsolutePosition(z=0),
-                useq.AbsolutePosition(
+                useq.Position(z=0),
+                useq.Position(
                     name="name",
                     z=10,
                     sequence={"z_plan": useq.ZRangeAround(range=2, step=1)},
@@ -368,8 +368,8 @@ CASES: list[MDATestCase] = [
         name="z_absolute_only_in_position_sub_sequence",
         seq=useq.MDASequence(
             stage_positions=[
-                useq.AbsolutePosition(z=0),
-                useq.AbsolutePosition(
+                useq.Position(z=0),
+                useq.Position(
                     name="name",
                     sequence={"z_plan": useq.ZTopBottom(bottom=58, top=60, step=1)},
                 ),
@@ -390,8 +390,8 @@ CASES: list[MDATestCase] = [
         name="z_relative_in_main_and_position_sub_sequence",
         seq=useq.MDASequence(
             stage_positions=[
-                useq.AbsolutePosition(z=0),
-                useq.AbsolutePosition(
+                useq.Position(z=0),
+                useq.Position(
                     name="name",
                     z=10,
                     sequence={"z_plan": useq.ZRangeAround(range=3, step=1)},
@@ -411,7 +411,7 @@ CASES: list[MDATestCase] = [
         seq=useq.MDASequence(
             stage_positions=[
                 {},
-                useq.AbsolutePosition(
+                useq.Position(
                     name="name",
                     sequence={"z_plan": useq.ZTopBottom(bottom=28, top=30, step=1)},
                 ),
@@ -429,7 +429,7 @@ CASES: list[MDATestCase] = [
         seq=useq.MDASequence(
             stage_positions=[
                 {},
-                useq.AbsolutePosition(
+                useq.Position(
                     name="name",
                     z=10,
                     sequence={"z_plan": useq.ZRangeAround(range=3, step=1)},
@@ -455,8 +455,8 @@ CASES: list[MDATestCase] = [
         name="z_relative_in_main_and_z_absolute_in_position_sub_sequence",
         seq=useq.MDASequence(
             stage_positions=[
-                useq.AbsolutePosition(z=0),
-                useq.AbsolutePosition(
+                useq.Position(z=0),
+                useq.Position(
                     name="name",
                     sequence={"z_plan": useq.ZTopBottom(bottom=58, top=60, step=1)},
                 ),
@@ -589,8 +589,8 @@ CASES: list[MDATestCase] = [
         seq=useq.MDASequence(
             axis_order="tpgcz",
             stage_positions=[
-                useq.AbsolutePosition(x=0, y=0),
-                useq.AbsolutePosition(
+                useq.Position(x=0, y=0),
+                useq.Position(
                     name="name",
                     x=10,
                     y=10,
@@ -600,7 +600,7 @@ CASES: list[MDATestCase] = [
                             {"config": "FITC", "exposure": 200},
                             {"config": "Cy3", "exposure": 100},
                         ],
-                        grid_plan=useq.GridRelative(rows=2, columns=1),
+                        grid_plan=useq.GridRowsColumns(rows=2, columns=1),
                         z_plan=useq.ZRangeAround(range=2, step=1),
                     ),
                 ),
@@ -637,8 +637,8 @@ CASES: list[MDATestCase] = [
         name="order",
         seq=useq.MDASequence(
             stage_positions=[
-                useq.AbsolutePosition(z=0),
-                useq.AbsolutePosition(
+                useq.Position(z=0),
+                useq.Position(
                     z=50,
                     sequence=useq.MDASequence(
                         channels=[
@@ -694,11 +694,11 @@ CASES: list[MDATestCase] = [
                 useq.Channel(config="FITC", exposure=100),
             ],
             stage_positions=[
-                useq.AbsolutePosition(
+                useq.Position(
                     x=0,
                     y=0,
                     sequence=useq.MDASequence(
-                        grid_plan=useq.GridRelative(rows=2, columns=1)
+                        grid_plan=useq.GridRowsColumns(rows=2, columns=1)
                     ),
                 )
             ],
@@ -718,7 +718,7 @@ CASES: list[MDATestCase] = [
                 useq.Channel(config="FITC", exposure=100),
             ],
             stage_positions=[
-                useq.AbsolutePosition(
+                useq.Position(
                     x=0,
                     y=0,
                     z=0,
@@ -741,7 +741,7 @@ CASES: list[MDATestCase] = [
                 useq.Channel(config="FITC", exposure=100),
             ],
             stage_positions=[
-                useq.AbsolutePosition(
+                useq.Position(
                     x=0,
                     y=0,
                     sequence={"time_plan": [useq.TIntervalLoops(interval=1, loops=3)]},
@@ -762,11 +762,11 @@ CASES: list[MDATestCase] = [
                 useq.Channel(config="FITC", exposure=100),
             ],
             stage_positions=[
-                useq.AbsolutePosition(
+                useq.Position(
                     x=0,
                     y=0,
                     sequence=useq.MDASequence(
-                        grid_plan=useq.GridRelative(rows=2, columns=2),
+                        grid_plan=useq.GridRowsColumns(rows=2, columns=2),
                         z_plan=useq.ZRangeAround(range=2, step=1),
                         time_plan=[useq.TIntervalLoops(interval=1, loops=2)],
                     ),
@@ -780,7 +780,7 @@ CASES: list[MDATestCase] = [
         seq=useq.MDASequence(
             channels=["Cy5", "FITC"],
             stage_positions=[
-                useq.AbsolutePosition(
+                useq.Position(
                     sequence=useq.MDASequence(
                         channels=["FITC"],
                         z_plan=useq.ZRangeAround(range=2, step=1),
