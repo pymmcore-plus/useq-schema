@@ -71,7 +71,12 @@ class ZPlan(AxisIterable[Position], FrozenModel):
         self, value: Position, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
         """Contribute Z position to the MDA event."""
-        return {"z_pos": value.z}
+        if value.z is not None:
+            if self.is_relative:
+                return {"z_pos_rel": value.z}  # type: ignore [typeddict-unknown-key]
+            else:
+                return {"z_pos": value.z}
+        return {}
 
     @deprecated(
         "num_positions() is deprecated, use len(z_plan) instead.",

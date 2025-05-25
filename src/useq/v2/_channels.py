@@ -28,9 +28,9 @@ class ChannelsPlan(SimpleValueAxis[Channel], FrozenModel):
         self, value: Channel, index: Mapping[str, int]
     ) -> "MDAEvent.Kwargs":
         """Contribute channel information to the MDA event."""
-        kwargs: MDAEvent.Kwargs = {
-            "channel": {"config": value.config, "group": value.group},
-        }
+        kwargs: MDAEvent.Kwargs = {}
+        if value.config is not None:
+            kwargs["channel"] = {"config": value.config, "group": value.group}
         if value.exposure is not None:
             kwargs["exposure"] = value.exposure
         return kwargs

@@ -36,13 +36,17 @@ class StagePositions(SimpleValueAxis[Position | AxesIterator], FrozenModel):
 
         return values
 
-    def contribute_to_mda_event(
-        self, value: Position, index: Mapping[str, int]
+    # FIXME: fix type ignores
+    def contribute_to_mda_event(  # type: ignore
+        self,
+        value: Position,  # type: ignore
+        index: Mapping[str, int],
     ) -> "MDAEvent.Kwargs":
         """Contribute channel information to the MDA event."""
-        return {
-            "x_pos": value.x,
-            "y_pos": value.y,
-            "z_pos": value.z,
-            "pos_name": value.name,
-        }
+        kwargs = {}
+        for key in ("x", "y", "z"):
+            if (val := getattr(value, key)) is not None:
+                kwargs[f"{key}_pos"] = val
+        if value.name is not None:
+            kwargs["pos_name"] = value.name
+        return kwargs  # type: ignore[return-value]
