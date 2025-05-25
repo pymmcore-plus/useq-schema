@@ -120,9 +120,9 @@ class RelativePosition(PositionBase, _MultiPointPlan["RelativePosition"]):
     be used to define a single field of view for a "multi-point" plan.
     """
 
-    x: float = 0
-    y: float = 0
-    z: float = 0
+    x: float = 0  # pyright: ignore[reportIncompatibleVariableOverride]
+    y: float = 0  # pyright: ignore[reportIncompatibleVariableOverride]
+    z: float = 0  # pyright: ignore[reportIncompatibleVariableOverride]
 
     def __iter__(self) -> Iterator["RelativePosition"]:  # type: ignore [override]
         yield self

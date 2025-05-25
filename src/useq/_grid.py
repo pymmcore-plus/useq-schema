@@ -76,15 +76,15 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         Engines MAY override this even if provided.
     """
 
-    overlap: tuple[float, float] = Field((0.0, 0.0), frozen=True)
-    mode: OrderMode = Field(OrderMode.row_wise_snake, frozen=True)
+    overlap: tuple[float, float] = Field(default=(0.0, 0.0), frozen=True)
+    mode: OrderMode = Field(default=OrderMode.row_wise_snake, frozen=True)
 
     @field_validator("overlap", mode="before")
     def _validate_overlap(cls, v: Any) -> tuple[float, float]:
         with contextlib.suppress(TypeError, ValueError):
             v = float(v)
         if isinstance(v, float):
-            return (v,) * 2
+            return (v, v)
         if isinstance(v, Sequence) and len(v) == 2:
             return float(v[0]), float(v[1])
         raise ValueError(  # pragma: no cover

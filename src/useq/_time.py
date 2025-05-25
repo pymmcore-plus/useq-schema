@@ -122,12 +122,14 @@ class MultiPhaseTimePlan(TimePlan):
         accum = timedelta(0)
         yield accum
         for phase in self.phases:
+            td = None
             for i, td in enumerate(phase.deltas()):
                 # skip the first timepoint of later phases
                 if i == 0 and td == timedelta(0):
                     continue
                 yield td + accum
-            accum += td
+            if td is not None:
+                accum += td
 
     def num_timepoints(self) -> int:
         # TODO: is this correct?

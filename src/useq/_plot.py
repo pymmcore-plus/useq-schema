@@ -181,7 +181,7 @@ def plot_plate(
     for well in plate_plan.selected_well_positions:
         x, y = float(well.x), float(well.y)  # type: ignore[arg-type]
         # draw name next to spot
-        ax.text(x + offset_x, y - offset_y, well.name, fontsize=7)
+        ax.text(x + offset_x, y - offset_y, well.name or "", fontsize=7)
 
     ax.axis("equal")
     if show:
