@@ -792,6 +792,14 @@ CASES: list[MDATestCase] = [
     ),
 ]
 
+# assert that all test cases are unique
+case_names = [case.name for case in CASES]
+if duplicates := {name for name in case_names if case_names.count(name) > 1}:
+    raise ValueError(
+        f"Duplicate test case names found: {duplicates}. "
+        "Please ensure all test cases have unique names."
+    )
+
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
 def test_mda_sequence(case: MDATestCase) -> None:

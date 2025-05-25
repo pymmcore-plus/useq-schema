@@ -31,6 +31,7 @@ repos:
   - repo: local
     hooks:
       - id: pyright
+        stages: [manual]
         name: pyright
         language: system
         types_or: [python, pyi]
