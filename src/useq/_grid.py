@@ -346,7 +346,7 @@ class GridWidthHeight(_GridPlan[RelativePosition]):
 
     width: float = Field(..., frozen=True, gt=0)
     height: float = Field(..., frozen=True, gt=0)
-    relative_to: RelativeTo = Field(RelativeTo.center, frozen=True)
+    relative_to: RelativeTo = Field(default=RelativeTo.center, frozen=True)
 
     def _nrows(self, dy: float) -> int:
         return math.ceil(self.height / dy)

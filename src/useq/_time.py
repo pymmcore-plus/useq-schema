@@ -1,8 +1,8 @@
 from collections.abc import Iterator, Sequence
 from datetime import timedelta
-from typing import Annotated, Union
+from typing import Annotated, Any, Union
 
-from pydantic import BeforeValidator, Field, PlainSerializer
+from pydantic import BeforeValidator, Field, PlainSerializer, model_validator
 
 from useq._base_model import FrozenModel
 
@@ -134,6 +134,13 @@ class MultiPhaseTimePlan(TimePlan):
     def num_timepoints(self) -> int:
         # TODO: is this correct?
         return sum(phase.loops for phase in self.phases) - 1
+
+    @model_validator(mode="before")
+    @classmethod
+    def _cast(cls, value: Any) -> Any:
+        if isinstance(value, Sequence) and not isinstance(value, str):
+            value = {"phases": value}
+        return value
 
 
 AnyTimePlan = Union[MultiPhaseTimePlan, SinglePhaseTimePlan]
