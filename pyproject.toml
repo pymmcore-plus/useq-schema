@@ -62,6 +62,7 @@ dev = [
     "rich>=14.0.0",
     "ruff>=0.11.9",
     "types-pyyaml>=6.0.12.20250402",
+    "pyright>=1.1.401",
 ]
 docs = [
     "mkdocs >=1.4",
@@ -89,6 +90,8 @@ packages = ["src/useq"]
 line-length = 88
 target-version = "py39"
 src = ["src", "tests"]
+fix = true
+unsafe-fixes = true
 
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }

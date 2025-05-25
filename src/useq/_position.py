@@ -1,7 +1,8 @@
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Generic, Optional, SupportsIndex, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Optional, SupportsIndex, TypeVar
 
-from pydantic import Field
+import numpy as np
+from pydantic import Field, model_validator
 
 from useq._base_model import FrozenModel, MutableModel
 
@@ -73,6 +74,20 @@ class PositionBase(MutableModel):
         # not sure why these Self types are not working
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
 
+    @model_validator(mode="before")
+    @classmethod
+    def _cast(cls, value: Any) -> Any:
+        if isinstance(value, (np.ndarray, tuple)):
+            x = y = z = None
+            if len(value) > 0:
+                x = value[0]
+            if len(value) > 1:
+                y = value[1]
+            if len(value) > 2:
+                z = value[2]
+            value = {"x": x, "y": y, "z": z}
+        return value
+
 
 class AbsolutePosition(PositionBase, FrozenModel):
     """An absolute position in 3D space."""
@@ -120,9 +135,9 @@ class RelativePosition(PositionBase, _MultiPointPlan["RelativePosition"]):
     be used to define a single field of view for a "multi-point" plan.
     """
 
-    x: float = 0
-    y: float = 0
-    z: float = 0
+    x: float = 0  # pyright: ignore[reportIncompatibleVariableOverride]
+    y: float = 0  # pyright: ignore[reportIncompatibleVariableOverride]
+    z: float = 0  # pyright: ignore[reportIncompatibleVariableOverride]
 
     def __iter__(self) -> Iterator["RelativePosition"]:  # type: ignore [override]
         yield self

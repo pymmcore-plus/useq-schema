@@ -38,7 +38,7 @@ class AcquireImage(Action):
         This action can be used to acquire an image.
     """
 
-    type: Literal["acquire_image"] = "acquire_image"
+    type: Literal["acquire_image"] = "acquire_image"  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 class HardwareAutofocus(Action):
@@ -62,7 +62,7 @@ class HardwareAutofocus(Action):
         The number of retries if autofocus fails. By default, 3.
     """
 
-    type: Literal["hardware_autofocus"] = "hardware_autofocus"
+    type: Literal["hardware_autofocus"] = "hardware_autofocus"  # pyright: ignore[reportIncompatibleVariableOverride]
     autofocus_device_name: Optional[str] = None
     autofocus_motor_offset: Optional[float] = None
     max_retries: int = 3
@@ -89,7 +89,7 @@ class CustomAction(Action):
         Custom data associated with the action.
     """
 
-    type: Literal["custom"] = "custom"
+    type: Literal["custom"] = "custom"  # pyright: ignore[reportIncompatibleVariableOverride]
     name: str = ""
     data: dict = Field(default_factory=dict)
 
