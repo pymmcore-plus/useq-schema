@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from useq import Axis
+from pydantic import field_validator
+
+from useq import Axis, _channel
 from useq._mda_event import Channel, MDAEvent
 from useq.v2 import MDASequence, SimpleAxis
+from useq.v2._position import Position
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -22,39 +25,39 @@ class TimePlan(SimpleAxis[float]):
         return {"min_start_time": value}
 
 
-class ChannelPlan(SimpleAxis[str]):
+class ChannelPlan(SimpleAxis[_channel.Channel]):
     axis_key: str = Axis.CHANNEL
 
-    def iter(self) -> Iterator[str]:
-        yield from ["red", "green", "blue"]
+    @field_validator("values", mode="before")
+    def _value_to_channel(cls, values: list[str]) -> list[_channel.Channel]:
+        return [_channel.Channel(config=v, exposure=None) for v in values]
 
     def contribute_to_mda_event(
-        self, value: str, index: Mapping[str, int]
+        self, value: _channel.Channel, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
-        return {"channel": {"config": value}}
+        return {"channel": {"config": value.config}}
 
 
-class ZPlan(SimpleAxis[float]):
+class ZPlan(SimpleAxis[Position]):
     axis_key: str = Axis.Z
 
-    def iter(self) -> Iterator[float]:
-        yield from [0.1, 0.3]
+    @field_validator("values", mode="before")
+    def _value_to_position(cls, values: list[float]) -> list[Position]:
+        return [Position(z=v) for v in values]
 
     def contribute_to_mda_event(
-        self, value: float, index: Mapping[str, int]
+        self, value: Position, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
-        return {"z_pos": value}
+        return {"z_pos": value.z}
 
 
 def test_new_mdasequence_simple() -> None:
     seq = MDASequence(
-        axes=(
-            TimePlan(values=[0, 1]),
-            ChannelPlan(values=["red", "green", "blue"]),
-            ZPlan(values=[0.1, 0.3]),
-        )
+        time_plan=TimePlan(values=[0, 1]),
+        channels=ChannelPlan(values=["red", "green", "blue"]),
+        z_plan=ZPlan(values=[0.1, 0.3]),
     )
-    events = list(seq.iter_events())
+    events = list(seq.iter_events(axis_order=("t", "c", "z")))
 
     # fmt: off
     assert events == [
@@ -71,5 +74,8 @@ def test_new_mdasequence_simple() -> None:
         MDAEvent(index={'t': 1, 'c': 2, 'z': 0}, channel=Channel(config='blue'), min_start_time=1.0, z_pos=0.1),
         MDAEvent(index={'t': 1, 'c': 2, 'z': 1}, channel=Channel(config='blue'), min_start_time=1.0, z_pos=0.3)
     ]
+    # fmt: on
 
-    # seq.model_dump_json()
+    from rich import print
+
+    print(seq.model_dump())

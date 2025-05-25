@@ -9,7 +9,7 @@ from pydantic import Field
 
 from useq._base_model import FrozenModel
 from useq._utils import Axis
-from useq.v2._mda_seq import MDAAxisIterable
+from useq.v2._axis_iterator import AxisIterable
 from useq.v2._position import Position
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from useq._mda_event import MDAEvent
 
 
-class ZPlan(MDAAxisIterable[Position], FrozenModel):
+class ZPlan(AxisIterable[Position], FrozenModel):
     """Base class for Z-axis plans in v2 MDA sequences.
 
     All Z plans inherit from MDAAxisIterable and can be used in

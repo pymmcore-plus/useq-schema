@@ -11,7 +11,7 @@ from useq.v2 import AxesIterator, AxisIterable, SimpleAxis
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-    from useq.v2._multidim_seq import AxesIndex
+    from useq.v2._axis_iterator import AxesIndex
 
 
 def _index_and_values(

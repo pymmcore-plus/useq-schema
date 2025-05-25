@@ -156,14 +156,16 @@ hierarchical manner.
 from __future__ import annotations
 
 from abc import abstractmethod
-from collections.abc import Iterable, Iterator, Sized
+from collections.abc import Iterable, Iterator, Mapping, Sized
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import TypeAlias
+
+    from useq._mda_event import MDAEvent
 
     AxisKey: TypeAlias = str
     Value: TypeAlias = Any
@@ -193,6 +195,29 @@ class AxisIterable(BaseModel, Generic[V]):
         """
         return False
 
+    def contribute_to_mda_event(
+        self, value: V, index: Mapping[str, int]
+    ) -> MDAEvent.Kwargs:
+        """Contribute data to the event being built.
+
+        This method allows each axis to contribute its data to the final MDAEvent.
+        The default implementation does nothing - subclasses should override
+        to add their specific contributions.
+
+        Parameters
+        ----------
+        value : V
+            The value provided by this axis, for this iteration.
+
+        Returns
+        -------
+        event_data : dict[str, Any]
+            Data to be added to the MDAEvent, it is ultimately up to the
+            EventBuilder to decide how to merge possibly conflicting contributions from
+            different axes.
+        """
+        return {}
+
 
 class SimpleAxis(AxisIterable[V]):
     """A basic axis implementation that yields values directly.
@@ -201,7 +226,7 @@ class SimpleAxis(AxisIterable[V]):
     The default should_skip always returns False.
     """
 
-    values: list[V]
+    values: list[V] = Field(default_factory=list)
 
     def iter(self) -> Iterator[V | AxesIterator]:
         yield from self.values

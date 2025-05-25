@@ -6,7 +6,7 @@ from pydantic import BeforeValidator, Field, PlainSerializer, field_validator
 
 from useq._base_model import FrozenModel
 from useq._utils import Axis
-from useq.v2._mda_seq import MDAAxisIterable
+from useq.v2._axis_iterator import AxisIterable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -22,7 +22,7 @@ TimeDelta = Annotated[
 ]
 
 
-class TimePlan(MDAAxisIterable[float], FrozenModel):
+class TimePlan(AxisIterable[float], FrozenModel):
     axis_key: str = Field(default=Axis.TIME, frozen=True, init=False)
     prioritize_duration: bool = False  # or prioritize num frames
 

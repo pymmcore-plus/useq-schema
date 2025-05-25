@@ -25,7 +25,7 @@ from useq import (
 )
 from useq._actions import CustomAction, HardwareAutofocus
 from useq._mda_event import SLMImage
-from useq._position import RelativePosition
+from useq.v1._position import RelativePosition
 
 _T = list[tuple[Any, Sequence[float]]]
 

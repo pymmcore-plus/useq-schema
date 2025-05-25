@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Protocol
 
 try:
     import matplotlib.pyplot as plt
@@ -15,12 +15,17 @@ if TYPE_CHECKING:
 
     from matplotlib.axes import Axes
 
-    from useq._plate import WellPlatePlan
-    from useq._position import PositionBase
+    from useq.v1._plate import WellPlatePlan
+    from useq.v1._position import PositionBase
+
+    class PPos(Protocol):
+        x: float | None
+        y: float | None
+        z: float | None
 
 
 def plot_points(
-    points: Iterable[PositionBase],
+    points: Iterable[PPos | PositionBase],
     *,
     rect_size: tuple[float, float] | None = None,
     bounding_box: tuple[float, float, float, float] | None = None,
