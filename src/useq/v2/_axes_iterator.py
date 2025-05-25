@@ -170,8 +170,7 @@ if TYPE_CHECKING:
     AxisKey: TypeAlias = str
     Value: TypeAlias = Any
     Index: TypeAlias = int
-    Axiter = TypeVar("Axiter", bound="AxisIterable")
-    AxesIndex: TypeAlias = dict[AxisKey, tuple[Index, Value, Axiter]]
+    AxesIndex: TypeAlias = dict[AxisKey, tuple[Index, Value, "AxisIterable"]]
 
 
 V = TypeVar("V", covariant=True, bound=Any)

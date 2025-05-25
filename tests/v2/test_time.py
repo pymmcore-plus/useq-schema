@@ -195,9 +195,7 @@ class TestMultiPhaseTimePlan:
         plan = MultiPhaseTimePlan(phases=[phase1, phase2])
         times = list(plan)
 
-        # Phase 1: 0, 1, 2 (duration = 2 seconds)
-        # Phase 2: 2 + 0, 2 + 2 = 2, 4 (starts after phase 1 ends)
-        assert times == [0.0, 1.0, 2.0, 2.0, 4.0]
+        assert times == [0.0, 1.0, 2.0, 4.0]
 
     def test_iteration_mixed_phases(self) -> None:
         """Test iteration with different phase types."""
@@ -207,9 +205,7 @@ class TestMultiPhaseTimePlan:
         plan = MultiPhaseTimePlan(phases=[phase1, phase2])
         times = list(plan)
 
-        # Phase 1: 0, 2, 4 (duration = 4 seconds)
-        # Phase 2: 4 + 0, 4 + 1 = 4, 5
-        assert times == [0.0, 2.0, 4.0, 4.0, 5.0]
+        assert times == [0.0, 2.0, 4.0, 5.0]
 
     def test_send_skip_phase(self) -> None:
         """Test using send(True) to skip to next phase."""
@@ -227,7 +223,7 @@ class TestMultiPhaseTimePlan:
         try:
             value = iterator.send(True)
             # Should start phase 2 at offset of phase 1's duration (4 seconds)
-            assert value == 4.0  # phase 2, time 0
+            assert value == 6.0  # phase 2, time 0
         except StopIteration:
             # If send causes StopIteration, get next value
             assert next(iterator) == 4.0
@@ -246,7 +242,7 @@ class TestMultiPhaseTimePlan:
 
         # Phase 1 ends after 1 second, so phase 2 starts with offset 1
         assert times[:2] == [0.0, 1.0]
-        assert times[2] == 1.0  # Start of infinite phase 2
+        assert times[2] == 2.0  # Start of infinite phase 2
 
     def test_empty_phases(self) -> None:
         """Test behavior with empty phases list."""

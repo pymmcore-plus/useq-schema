@@ -1,8 +1,15 @@
 from collections.abc import Generator, Iterator, Sequence
 from datetime import timedelta
-from typing import TYPE_CHECKING, Annotated, Union, cast
+from typing import TYPE_CHECKING, Annotated, Any, Union, cast
 
-from pydantic import BeforeValidator, Field, PlainSerializer, field_validator
+from pydantic import (
+    BeforeValidator,
+    Field,
+    PlainSerializer,
+    field_validator,
+    model_validator,
+)
+from typing_extensions import deprecated
 
 from useq._base_model import FrozenModel
 from useq._enums import Axis
@@ -51,6 +58,19 @@ class TimePlan(AxisIterable[float], FrozenModel):
             Event data to be merged into the MDAEvent.
         """
         return {"min_start_time": value}
+
+    @deprecated(
+        "num_timepoints() is deprecated, use len(time_plan) instead.",
+        category=UserWarning,
+        stacklevel=2,
+    )
+    def num_timepoints(self) -> int:
+        """Return the number of time points in this plan.
+
+        This is deprecated and will be removed in a future version.
+        Use `len()` instead.
+        """
+        return len(self)  # type: ignore
 
 
 class _SizedTimePlan(TimePlan):
@@ -153,6 +173,12 @@ class TIntervalDuration(TimePlan):
             yield t
             t += interval_s
 
+    def __len__(self) -> int:
+        """Return the number of time points in this plan."""
+        if self.duration is None:
+            raise ValueError("Cannot determine length of infinite time plan")
+        return int(self.duration.total_seconds() / self.interval.total_seconds()) + 1
+
 
 # Type aliases for single-phase time plans
 
@@ -177,9 +203,12 @@ class MultiPhaseTimePlan(TimePlan):
         and allow `.send(True)` to skip to the next phase.
         """
         offset = 0.0
-        for phase in self.phases:
+        for ip, phase in enumerate(self.phases):
             last_t = 0.0
             phase_iter = iter(phase)
+            if ip != 0:
+                # skip the first time point of all the phases except the first
+                next(phase_iter)
             while True:
                 try:
                     t = next(phase_iter)
@@ -201,6 +230,21 @@ class MultiPhaseTimePlan(TimePlan):
                 # infinite phase that we broke out of
                 # leave offset where it was + last_t
                 offset += last_t
+
+    def __len__(self) -> int:
+        """Return the number of time points in this plan."""
+        phase_sum = sum(len(phase) for phase in self.phases)
+        # subtract 1 for the first time point of each phase
+        # except the first one
+        return phase_sum - len(self.phases) + 1
+
+    @model_validator(mode="before")
+    @classmethod
+    def _cast_list(cls, values: Any) -> Any:
+        """Cast the phases to a list of time plans."""
+        if isinstance(values, (list, tuple)):
+            values = {"phases": values}
+        return values
 
 
 AnyTimePlan = Union[MultiPhaseTimePlan, SinglePhaseTimePlan]

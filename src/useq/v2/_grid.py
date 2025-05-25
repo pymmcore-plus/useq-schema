@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
 import numpy as np
 from annotated_types import Ge, Gt
 from pydantic import Field, field_validator, model_validator
-from typing_extensions import Self
+from typing_extensions import Self, deprecated
 
 from useq._enums import Axis, RelativeTo, Shape
 from useq._point_visiting import OrderMode, TraversalOrder
@@ -68,6 +68,15 @@ class _GridPlan(MultiPositionPlan):
         dx = fov_width - (fov_width * self.overlap[0]) / 100
         dy = fov_height - (fov_height * self.overlap[1]) / 100
         return dx, dy
+
+    @deprecated(
+        "num_positions() is deprecated, use len(grid_plan) instead.",
+        category=UserWarning,
+        stacklevel=2,
+    )
+    def num_positions(self) -> int:
+        """Return the number of positions in the grid."""
+        return len(self)  # type: ignore[arg-type]
 
 
 class GridFromEdges(_GridPlan):

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Annotated, Literal, Union
 import numpy as np
 from annotated_types import Ge
 from pydantic import Field
+from typing_extensions import deprecated
 
 from useq._base_model import FrozenModel
 from useq._enums import Axis
@@ -43,7 +44,8 @@ class ZPlan(AxisIterable[Position], FrozenModel):
             yield start
             return
 
-        z_positions = list(np.arange(start, stop + step, step))
+        n_steps = round((stop - start) / step)
+        z_positions = list(start + step * np.arange(n_steps + 1))
         if not getattr(self, "go_up", True):
             z_positions = z_positions[::-1]
 
@@ -70,6 +72,15 @@ class ZPlan(AxisIterable[Position], FrozenModel):
     ) -> MDAEvent.Kwargs:
         """Contribute Z position to the MDA event."""
         return {"z_pos": value.z}
+
+    @deprecated(
+        "num_positions() is deprecated, use len(z_plan) instead.",
+        category=UserWarning,
+        stacklevel=2,
+    )
+    def num_positions(self) -> int:
+        """Get the number of Z positions."""
+        return len(self)
 
 
 class ZTopBottom(ZPlan):

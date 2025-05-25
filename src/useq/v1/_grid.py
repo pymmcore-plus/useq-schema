@@ -273,7 +273,7 @@ class GridRowsColumns(_GridPlan[RelativePosition]):
     # everything but fov_width and fov_height is immutable
     rows: int = Field(..., frozen=True, ge=1)
     columns: int = Field(..., frozen=True, ge=1)
-    relative_to: RelativeTo = Field(RelativeTo.center, frozen=True)
+    relative_to: RelativeTo = Field(default=RelativeTo.center, frozen=True)
 
     def _nrows(self, dy: float) -> int:
         return self.rows
@@ -331,7 +331,7 @@ class GridWidthHeight(_GridPlan[RelativePosition]):
 
     width: float = Field(..., frozen=True, gt=0)
     height: float = Field(..., frozen=True, gt=0)
-    relative_to: RelativeTo = Field(RelativeTo.center, frozen=True)
+    relative_to: RelativeTo = Field(default=RelativeTo.center, frozen=True)
 
     def _nrows(self, dy: float) -> int:
         return math.ceil(self.height / dy)

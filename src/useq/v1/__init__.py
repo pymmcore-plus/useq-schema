@@ -1,8 +1,6 @@
-"""New MDASequence API."""
+"""V1 API for useq."""
 
-from useq.v2._axes_iterator import AxesIterator, AxisIterable, SimpleValueAxis
-from useq.v2._channels import ChannelsPlan
-from useq.v2._grid import (
+from useq.v1._grid import (
     GridFromEdges,
     GridRowsColumns,
     GridWidthHeight,
@@ -10,54 +8,47 @@ from useq.v2._grid import (
     RandomPoints,
     RelativeMultiPointPlan,
 )
-from useq.v2._iterate import iterate_multi_dim_sequence
-from useq.v2._mda_sequence import MDASequence
-from useq.v2._position import Position
-from useq.v2._stage_positions import StagePositions
-from useq.v2._time import (
+from useq.v1._mda_sequence import MDASequence
+from useq.v1._plate import WellPlate, WellPlatePlan
+from useq.v1._position import AbsolutePosition, Position, RelativePosition
+from useq.v1._time import (
     AnyTimePlan,
     MultiPhaseTimePlan,
-    SinglePhaseTimePlan,
     TDurationLoops,
     TIntervalDuration,
     TIntervalLoops,
 )
-from useq.v2._z import (
+from useq.v1._z import (
     AnyZPlan,
     ZAboveBelow,
     ZAbsolutePositions,
-    ZPlan,
     ZRangeAround,
     ZRelativePositions,
     ZTopBottom,
 )
 
 __all__ = [
+    "AbsolutePosition",
     "AnyTimePlan",
     "AnyZPlan",
-    "AxesIterator",
-    "AxisIterable",
-    "ChannelsPlan",
     "GridFromEdges",
     "GridRowsColumns",
     "GridWidthHeight",
     "MDASequence",
     "MultiPhaseTimePlan",
     "MultiPointPlan",
-    "Position",
+    "Position",  # alias for AbsolutePosition
     "RandomPoints",
     "RelativeMultiPointPlan",
-    "SimpleValueAxis",
-    "SinglePhaseTimePlan",
-    "StagePositions",
+    "RelativePosition",
     "TDurationLoops",
     "TIntervalDuration",
     "TIntervalLoops",
+    "WellPlate",
+    "WellPlatePlan",
     "ZAboveBelow",
     "ZAbsolutePositions",
-    "ZPlan",
     "ZRangeAround",
     "ZRelativePositions",
     "ZTopBottom",
-    "iterate_multi_dim_sequence",
 ]

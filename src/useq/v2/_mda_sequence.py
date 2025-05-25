@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Iterator
+from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -12,17 +13,17 @@ from typing import (
     runtime_checkable,
 )
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_core import core_schema
+from typing_extensions import deprecated
 
 from useq._enums import Axis
 from useq._hardware_autofocus import AnyAutofocusPlan  # noqa: TC001
 from useq._mda_event import MDAEvent
 from useq.v2._axes_iterator import AxesIterator, AxisIterable
-from useq.v2._channels import ChannelsPlan
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterator, Mapping, Sequence
 
     from pydantic import GetCoreSchemaHandler
 
@@ -132,7 +133,9 @@ class MDASequence(AxesIterator):
     autofocus_plan: Optional[AnyAutofocusPlan] = None
     keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
     metadata: dict[str, Any] = Field(default_factory=dict)
-    event_builder: EventBuilder[MDAEvent] = Field(default_factory=MDAEventBuilder)
+    event_builder: EventBuilder[MDAEvent] = Field(
+        default_factory=MDAEventBuilder, repr=False
+    )
 
     # legacy __init__ signature
     @overload
@@ -166,24 +169,13 @@ class MDASequence(AxesIterator):
     ) -> None: ...
     def __init__(self, **kwargs: Any) -> None:
         """Initialize MDASequence with provided axes and parameters."""
-        axes = list(kwargs.setdefault("axes", ()))
-        legacy_fields = ("time_plan", "z_plan", "stage_positions", "grid_plan")
-        axes.extend([kwargs.pop(field) for field in legacy_fields if field in kwargs])
-
-        # cast old-style axes to new AxisIterable
-        if "channels" in kwargs:
-            channels = kwargs.pop("channels")
-            if not isinstance(channels, AxisIterable):
-                channels = ChannelsPlan.model_validate(channels)
-            axes.append(channels)
-
-        kwargs["axes"] = tuple(axes)
+        if axes := _extract_legacy_axes(kwargs):
+            if "axes" in kwargs:
+                raise ValueError(
+                    "Cannot provide both 'axes' and legacy axis parameters."
+                )
+            kwargs["axes"] = axes
         super().__init__(**kwargs)
-
-    def iter_axes(
-        self, axis_order: tuple[str, ...] | None = None
-    ) -> Iterator[AxesIndex]:
-        return super().iter_axes(axis_order=axis_order)
 
     def iter_events(
         self, axis_order: tuple[str, ...] | None = None
@@ -193,7 +185,70 @@ class MDASequence(AxesIterator):
             raise ValueError("No event builder provided for this sequence.")
         yield from map(self.event_builder, self.iter_axes(axis_order=axis_order))
 
+    def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore[override]
+        yield from self.iter_events()
+
+    @field_validator("keep_shutter_open_across", mode="before")
+    def _validate_keep_shutter_open_across(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        try:
+            v = tuple(v)
+        except (TypeError, ValueError):  # pragma: no cover
+            raise ValueError(
+                f"keep_shutter_open_across must be string or a sequence of strings, "
+                f"got {type(v)}"
+            ) from None
+        return v
+
     # ------------------------- Old API -------------------------
+
+    @property
+    @deprecated(
+        "The shape of an MDASequence is ill-defined. "
+        "This API will be removed in a future version.",
+        category=FutureWarning,
+        stacklevel=2,
+    )
+    def shape(self) -> tuple[int, ...]:
+        """Return the shape of this sequence.
+
+        !!! note
+            This doesn't account for jagged arrays, like channels that exclude z
+            stacks or skip timepoints.
+        """
+        return tuple(s for s in self.sizes.values() if s)
+
+    @property
+    @deprecated(
+        "The sizes of an MDASequence is ill-defined. "
+        "This API will be removed in a future version.",
+        category=FutureWarning,
+        stacklevel=2,
+    )
+    def sizes(self) -> Mapping[str, int]:
+        """Mapping of axis name to size of that axis."""
+        if not self.is_finite():
+            raise ValueError("Cannot get sizes of infinite sequence.")
+
+        return {axis.axis_key: len(axis) for axis in self._ordered_axes()}  # type: ignore[arg-type]
+
+    def _ordered_axes(self) -> tuple[AxisIterable, ...]:
+        """Return the axes in the order specified by axis_order."""
+        if (order := self.axis_order) is None:
+            return self.axes
+
+        axes_map = {axis.axis_key: axis for axis in self.axes}
+        return tuple(axes_map[key] for key in order if key in axes_map)
+
+    @property
+    def used_axes(self) -> tuple[str, ...]:
+        """Return keys of the axes whose length is not 0."""
+        out = []
+        for ax in self._ordered_axes():
+            with suppress(TypeError, ValueError):
+                if not len(ax):  # type: ignore[arg-type]
+                    continue
+            out.append(ax.axis_key)
+        return tuple(out)
 
     @property
     def time_plan(self) -> Optional[AxisIterable[float]]:
@@ -206,21 +261,61 @@ class MDASequence(AxesIterator):
         return next((axis for axis in self.axes if axis.axis_key == Axis.Z), None)
 
     @property
-    def channels(self) -> Iterable[Channel]:
+    def channels(self) -> Sequence[Channel]:
         """Return the channels."""
-        channel_plan = next(
-            (axis for axis in self.axes if axis.axis_key == Axis.CHANNEL), None
-        )
-        return channel_plan or ()  # type: ignore
+        for axis in self.axes:
+            if axis.axis_key == Axis.CHANNEL:
+                return tuple(axis)  # type: ignore[arg-type]
+        # If no channel axis is found, return an empty tuple
+        return ()
 
     @property
-    def stage_positions(self) -> Optional[AxisIterable[Position]]:
+    def stage_positions(self) -> Sequence[Position]:
         """Return the stage positions."""
-        return next(
-            (axis for axis in self.axes if axis.axis_key == Axis.POSITION), None
-        )
+        for axis in self.axes:
+            if axis.axis_key == Axis.POSITION:
+                return tuple(axis)  # type: ignore[arg-type]
+        return ()
 
     @property
     def grid_plan(self) -> Optional[AxisIterable[Position]]:
         """Return the grid plan."""
         return next((axis for axis in self.axes if axis.axis_key == Axis.GRID), None)
+
+
+def _extract_legacy_axes(kwargs: dict[str, Any]) -> tuple[AxisIterable, ...]:
+    """Extract legacy axes from kwargs."""
+    from pydantic import TypeAdapter
+
+    from useq import v2
+
+    axes: list[AxisIterable] = []
+
+    # process kwargs in order of insertion
+    for key in list(kwargs):
+        match key:
+            case "channels":
+                val = kwargs.pop(key)
+                if not isinstance(val, AxisIterable):
+                    val = v2.ChannelsPlan.model_validate(val)
+            case "z_plan":
+                val = kwargs.pop(key)
+                if not isinstance(val, AxisIterable):
+                    val = TypeAdapter(v2.AnyZPlan).validate_python(val)
+            case "time_plan":
+                val = kwargs.pop(key)
+                if not isinstance(val, AxisIterable):
+                    val = TypeAdapter(v2.AnyTimePlan).validate_python(val)
+            case "grid_plan":
+                val = kwargs.pop(key)
+                if not isinstance(val, AxisIterable):
+                    val = TypeAdapter(v2.MultiPointPlan).validate_python(val)
+            case "stage_positions":
+                val = kwargs.pop(key)
+                if not isinstance(val, AxisIterable):
+                    val = v2.StagePositions.model_validate(val)
+            case _:
+                continue  # Ignore any other keys
+        axes.append(val)
+
+    return tuple(axes)
