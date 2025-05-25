@@ -24,7 +24,7 @@ def genindex(axes: dict[str, int]) -> list[dict[str, int]]:
     ]
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class MDATestCase:
     """A test case combining an MDASequence and expected attribute values.
 
