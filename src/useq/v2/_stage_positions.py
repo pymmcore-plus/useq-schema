@@ -6,14 +6,14 @@ from pydantic import Field, model_validator
 
 from useq import Axis
 from useq._base_model import FrozenModel
-from useq.v2._axes_iterator import SimpleValueAxis
+from useq.v2._axes_iterator import AxesIterator, SimpleValueAxis
 from useq.v2._position import Position
 
 if TYPE_CHECKING:
     from useq._mda_event import MDAEvent
 
 
-class StagePositions(SimpleValueAxis[Position], FrozenModel):
+class StagePositions(SimpleValueAxis[Position | AxesIterator], FrozenModel):
     axis_key: Literal[Axis.POSITION] = Field(
         default=Axis.POSITION, frozen=True, init=False
     )
@@ -40,4 +40,9 @@ class StagePositions(SimpleValueAxis[Position], FrozenModel):
         self, value: Position, index: Mapping[str, int]
     ) -> "MDAEvent.Kwargs":
         """Contribute channel information to the MDA event."""
-        return {"x_pos": value.x, "y_pos": value.y, "z_pos": value.z}
+        return {
+            "x_pos": value.x,
+            "y_pos": value.y,
+            "z_pos": value.z,
+            "pos_name": value.name,
+        }

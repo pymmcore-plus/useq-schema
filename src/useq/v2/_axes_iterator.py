@@ -180,6 +180,7 @@ class AxisIterable(BaseModel, Generic[V]):
     axis_key: str
     """A string id representing the axis."""
 
+    # TODO: remove the AxisIterator from this union
     @abstractmethod
     def __iter__(self) -> Iterator[V | AxesIterator]:  # type: ignore[override]
         """Iterate over the axis.
