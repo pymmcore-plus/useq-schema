@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class TimePlan(SimpleAxis[float]):
     axis_key: str = Axis.TIME
 
-    def iter(self) -> Iterator[int]:
+    def __iter__(self) -> Iterator[int]:
         yield from range(2)
 
     def contribute_to_mda_event(

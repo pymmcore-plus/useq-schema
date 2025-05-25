@@ -54,7 +54,7 @@ def iterate_axes_recursive(
 
     current_axis, *remaining_axes = axes
 
-    for idx, item in enumerate(current_axis.iter()):
+    for idx, item in enumerate(current_axis):
         if isinstance(item, AxesIterator) and item.value is not None:
             value = item.value
             override_keys = {ax.axis_key for ax in item.axes}

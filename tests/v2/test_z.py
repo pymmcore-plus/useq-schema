@@ -32,14 +32,14 @@ class TestZTopBottom:
     def test_positions_go_up(self) -> None:
         """Test positions when go_up is True."""
         plan = ZTopBottom(top=4.0, bottom=0.0, step=1.0, go_up=True)
-        positions = [p.z for p in plan.iter()]
+        positions = [p.z for p in plan]
         expected = [0.0, 1.0, 2.0, 3.0, 4.0]
         assert positions == expected
 
     def test_positions_go_down(self) -> None:
         """Test positions when go_up is False."""
         plan = ZTopBottom(top=4.0, bottom=0.0, step=1.0, go_up=False)
-        positions = [p.z for p in plan.iter()]
+        positions = [p.z for p in plan]
         expected = [4.0, 3.0, 2.0, 1.0, 0.0]
         assert positions == expected
 
@@ -82,7 +82,7 @@ class TestZRangeAround:
     def test_positions_symmetric(self) -> None:
         """Test symmetric positions around center."""
         plan = ZRangeAround(range=4.0, step=1.0, go_up=True)
-        positions = [p.z for p in plan.iter()]
+        positions = [p.z for p in plan]
         expected = [-2.0, -1.0, 0.0, 1.0, 2.0]
         assert positions == expected
 
@@ -114,7 +114,7 @@ class TestZAboveBelow:
     def test_positions_asymmetric(self) -> None:
         """Test asymmetric positions."""
         plan = ZAboveBelow(above=3.0, below=2.0, step=1.0, go_up=True)
-        positions = [p.z for p in plan.iter()]
+        positions = [p.z for p in plan]
         expected = [-2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
         assert positions == expected
 
@@ -183,11 +183,10 @@ class TestZPlanBase:
 
         # Should have MDAAxisIterable methods
         assert hasattr(plan, "axis_key")
-        assert hasattr(plan, "iter")
         assert hasattr(plan, "contribute_to_mda_event")
 
         # Test iteration returns float values
-        values = [p.z for p in plan.iter()]
+        values = [p.z for p in plan]
         assert all(isinstance(v, float) for v in values)
 
 
@@ -197,14 +196,14 @@ class TestEdgeCases:
     def test_zero_step_single_position(self) -> None:
         """Test behavior with zero step size."""
         plan = ZTopBottom(top=5.0, bottom=5.0, step=0.0)
-        positions = [p.z for p in plan.iter()]
+        positions = [p.z for p in plan]
         assert positions == [5.0]
         assert len(plan) == 1
 
     def test_very_small_steps(self) -> None:
         """Test with very small step sizes."""
         plan = ZTopBottom(top=1.0, bottom=0.0, step=0.1)
-        positions = [p.z for p in plan.iter()]
+        positions = [p.z for p in plan]
         assert len(positions) == 11
         assert positions[0] == pytest.approx(0.0)
         assert positions[-1] == pytest.approx(1.0)
@@ -212,21 +211,21 @@ class TestEdgeCases:
     def test_empty_position_lists(self) -> None:
         """Test with empty position lists."""
         plan = ZRelativePositions(relative=[])
-        positions = [p.z for p in plan.iter()]
+        positions = [p.z for p in plan]
         assert positions == []
         assert len(plan) == 0
 
     def test_single_position_lists(self) -> None:
         """Test with single position in lists."""
         plan = ZAbsolutePositions(absolute=[42.0])
-        positions = [p.z for p in plan.iter()]
+        positions = [p.z for p in plan]
         assert positions == [42.0]
         assert len(plan) == 1
 
     def test_large_ranges(self) -> None:
         """Test with large Z ranges."""
         plan = ZTopBottom(top=1000.0, bottom=0.0, step=100.0)
-        positions = [p.z for p in plan.iter()]
+        positions = [p.z for p in plan]
         assert len(positions) == 11
         assert positions[0] == 0.0
         assert positions[-1] == 1000.0
@@ -299,12 +298,11 @@ def test_integration_with_mda_axis_iterable() -> None:
 
     # Should have MDAAxisIterable methods
     assert hasattr(plan, "axis_key")
-    assert hasattr(plan, "iter")
 
     # Test the axis_key
     assert plan.axis_key == "z"
 
     # Test iteration returns float values
-    values = [p.z for p in plan.iter()]
+    values = [p.z for p in plan]
     assert all(isinstance(v, float) for v in values)
     assert values == [0.0, 2.0, 4.0]

@@ -62,7 +62,7 @@ class InfiniteAxis(AxisIterable[int]):
     def model_post_init(self, _ctx: Any) -> None:
         self._counter = count()
 
-    def iter(self) -> Iterator[int]:
+    def __iter__(self) -> Iterator[int]:
         yield from self._counter
 
 
@@ -287,7 +287,7 @@ class DynamicROIAxis(SimpleAxis[str]):
     values: list[str] = Field(default_factory=lambda: ["cell0", "cell1"])
 
     # we add a new roi at each time step
-    def iter(self) -> Iterator[str]:
+    def __iter__(self) -> Iterator[str]:
         yield from self.values
         self.values.append(f"cell{len(self.values)}")
 

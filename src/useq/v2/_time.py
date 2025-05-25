@@ -59,7 +59,7 @@ class _SizedTimePlan(TimePlan):
     def __len__(self) -> int:
         return self.loops
 
-    def iter(self) -> Iterator[float]:
+    def __iter__(self) -> Iterator[float]:  # type: ignore[override]
         interval_s: float = self._interval_s()
         for i in range(self.loops):
             yield i * interval_s
@@ -143,7 +143,7 @@ class TIntervalDuration(TimePlan):
     duration: TimeDelta | None = None
     prioritize_duration: bool = True
 
-    def iter(self) -> Iterator[float]:
+    def __iter__(self) -> Iterator[float]:  # type: ignore[override]
         duration_s = self.duration.total_seconds() if self.duration else None
         interval_s = self.interval.total_seconds()
         t = 0.0
@@ -171,7 +171,7 @@ class MultiPhaseTimePlan(TimePlan):
 
     phases: Sequence[SinglePhaseTimePlan]
 
-    def iter(self) -> Generator[float, bool | None, None]:
+    def __iter__(self) -> Generator[float, bool | None, None]:  # type: ignore[override]
         """Yield the global elapsed time over multiple plans.
 
         and allow `.send(True)` to skip to the next phase.
@@ -179,7 +179,7 @@ class MultiPhaseTimePlan(TimePlan):
         offset = 0.0
         for phase in self.phases:
             last_t = 0.0
-            phase_iter = phase.iter()
+            phase_iter = iter(phase)
             while True:
                 try:
                     t = next(phase_iter)
@@ -187,7 +187,7 @@ class MultiPhaseTimePlan(TimePlan):
                     break
                 last_t = t
                 # here `force = yield offset + t` allows the caller to do
-                #    gen = plan.iter()
+                #    gen = iter(plan)
                 #    next(gen)  # start
                 #    gen.send(True)  # force the next phase
                 force = yield offset + t

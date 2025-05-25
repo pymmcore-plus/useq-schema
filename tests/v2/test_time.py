@@ -43,7 +43,7 @@ class TestTIntervalLoops:
     def test_iteration(self) -> None:
         """Test iterating over time values."""
         plan = TIntervalLoops(interval=timedelta(seconds=2), loops=3)
-        times = list(plan.iter())
+        times = list(plan)
 
         assert times == [0.0, 2.0, 4.0]
 
@@ -83,7 +83,7 @@ class TestTDurationLoops:
     def test_iteration(self) -> None:
         """Test iterating over time values."""
         plan = TDurationLoops(duration=timedelta(seconds=6), loops=4)
-        times = list(plan.iter())
+        times = list(plan)
 
         # Should be evenly spaced over 6 seconds: 0, 2, 4, 6
         assert times == [0.0, 2.0, 4.0, 6.0]
@@ -91,7 +91,7 @@ class TestTDurationLoops:
     def test_single_loop(self) -> None:
         """Test behavior with single loop."""
         plan = TDurationLoops(duration=timedelta(seconds=5), loops=1)
-        times = list(plan.iter())
+        times = list(plan)
 
         # With 1 loop, interval would be 5/0 which would cause issues
         # But the implementation should handle this gracefully
@@ -130,7 +130,7 @@ class TestTIntervalDuration:
         plan = TIntervalDuration(
             interval=timedelta(seconds=2), duration=timedelta(seconds=5)
         )
-        times = list(plan.iter())
+        times = list(plan)
 
         # Should yield: 0, 2, 4 (stops before 6 which exceeds duration)
         assert times == [0.0, 2.0, 4.0]
@@ -138,7 +138,7 @@ class TestTIntervalDuration:
     def test_infinite_iteration_limited(self) -> None:
         """Test that infinite iteration can be limited."""
         plan = TIntervalDuration(interval=timedelta(seconds=1), duration=None)
-        iterator = plan.iter()
+        iterator = iter(plan)
 
         # Take first few values to test infinite sequence
         times = [next(iterator) for _ in range(5)]
@@ -170,7 +170,7 @@ class TestTIntervalDuration:
         plan = TIntervalDuration(
             interval=timedelta(seconds=2), duration=timedelta(seconds=4)
         )
-        times = list(plan.iter())
+        times = list(plan)
 
         # Should include exactly 4.0 since condition is t <= duration
         assert times == [0.0, 2.0, 4.0]
@@ -193,7 +193,7 @@ class TestMultiPhaseTimePlan:
         phase2 = TIntervalLoops(interval=timedelta(seconds=2), loops=2)
 
         plan = MultiPhaseTimePlan(phases=[phase1, phase2])
-        times = list(plan.iter())
+        times = list(plan)
 
         # Phase 1: 0, 1, 2 (duration = 2 seconds)
         # Phase 2: 2 + 0, 2 + 2 = 2, 4 (starts after phase 1 ends)
@@ -205,7 +205,7 @@ class TestMultiPhaseTimePlan:
         phase2 = TIntervalLoops(interval=timedelta(seconds=1), loops=2)
 
         plan = MultiPhaseTimePlan(phases=[phase1, phase2])
-        times = list(plan.iter())
+        times = list(plan)
 
         # Phase 1: 0, 2, 4 (duration = 4 seconds)
         # Phase 2: 4 + 0, 4 + 1 = 4, 5
@@ -217,7 +217,7 @@ class TestMultiPhaseTimePlan:
         phase2 = TIntervalLoops(interval=timedelta(seconds=2), loops=2)
 
         plan = MultiPhaseTimePlan(phases=[phase1, phase2])
-        iterator = plan.iter()
+        iterator = iter(plan)
 
         # Start iteration
         assert next(iterator) == 0.0
@@ -238,12 +238,11 @@ class TestMultiPhaseTimePlan:
         phase2 = TIntervalDuration(interval=timedelta(seconds=1), duration=None)
 
         plan = MultiPhaseTimePlan(phases=[phase1, phase2])
-        iterator = plan.iter()
+        iterator = iter(plan)
 
         # Get first phase values
-        times = [
-            next(iterator) for _ in range(3)
-        ]  # Should get 0, 1, 1 (start of phase 2)
+        # Should get 0, 1, 1 (start of phase 2)
+        times = [next(iterator) for _ in range(3)]
 
         # Phase 1 ends after 1 second, so phase 2 starts with offset 1
         assert times[:2] == [0.0, 1.0]
@@ -252,7 +251,7 @@ class TestMultiPhaseTimePlan:
     def test_empty_phases(self) -> None:
         """Test behavior with empty phases list."""
         plan = MultiPhaseTimePlan(phases=[])
-        times = list(plan.iter())
+        times = list(plan)
         assert times == []
 
     def test_single_phase(self) -> None:
@@ -260,7 +259,7 @@ class TestMultiPhaseTimePlan:
         phase = TIntervalLoops(interval=timedelta(seconds=2), loops=3)
         plan = MultiPhaseTimePlan(phases=[phase])
 
-        times = list(plan.iter())
+        times = list(plan)
         assert times == [0.0, 2.0, 4.0]
 
 
@@ -322,7 +321,7 @@ class TestEdgeCases:
     def test_very_small_intervals(self) -> None:
         """Test behavior with very small time intervals."""
         plan = TIntervalLoops(interval=timedelta(microseconds=1), loops=3)
-        times = list(plan.iter())
+        times = list(plan)
 
         expected = [0.0, 0.000001, 0.000002]
         assert len(times) == 3
@@ -335,7 +334,7 @@ class TestEdgeCases:
         assert len(plan) == 1000
 
         # Test first and last few values
-        iterator = plan.iter()
+        iterator = iter(plan)
         assert next(iterator) == 0.0
         assert next(iterator) == 1.0
 
@@ -350,7 +349,7 @@ class TestEdgeCases:
         )
         # This should theoretically create an infinite loop at t=0
         # Implementation should handle this gracefully
-        iterator = plan.iter()
+        iterator = iter(plan)
         first_few = [next(iterator) for _ in range(3)]
         assert all(t == 0.0 for t in first_few)
 
@@ -362,7 +361,7 @@ class TestEdgeCases:
     def test_duration_loops_with_one_loop_edge_case(self) -> None:
         """Test duration loops with exactly one loop."""
         plan = TDurationLoops(duration=timedelta(seconds=10), loops=1)
-        times = list(plan.iter())
+        times = list(plan)
 
         # With 1 loop, we expect just [0.0]
         assert times == [0.0]
@@ -392,7 +391,7 @@ def test_time_plan_serialization(plan_class: type[TimePlan], kwargs: dict) -> No
     restored = plan_class.model_validate_json(data)
 
     assert restored == plan
-    assert list(restored.iter()) == list(plan.iter())
+    assert list(restored) == list(plan)
 
 
 def test_integration_with_mda_axis_iterable() -> None:
@@ -401,13 +400,12 @@ def test_integration_with_mda_axis_iterable() -> None:
 
     # Should have MDAAxisIterable methods
     assert hasattr(plan, "axis_key")
-    assert hasattr(plan, "iter")
 
     # Test the axis_key
     assert plan.axis_key == "t"
 
     # Test iteration returns float values
-    values = list(plan.iter())
+    values = list(plan)
     assert all(isinstance(v, float) for v in values)
 
 

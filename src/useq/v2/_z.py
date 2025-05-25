@@ -27,7 +27,7 @@ class ZPlan(AxisIterable[Position], FrozenModel):
 
     axis_key: Literal[Axis.Z] = Field(default=Axis.Z, frozen=True, init=False)
 
-    def iter(self) -> Iterator[Position]:
+    def __iter__(self) -> Iterator[Position]:  # type: ignore[override]
         """Iterate over Z positions."""
         for z in self._z_positions():
             yield Position(z=z, is_relative=self.is_relative)
