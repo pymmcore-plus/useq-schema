@@ -128,6 +128,7 @@ def test_grid_relative_only_in_position_sub_sequence() -> None:
         y_pos=[0.0, 10.5, 10.5, 9.5, 9.5],
     )
 
+
 @pytest.mark.xfail
 def test_grid_absolute_only_in_position_sub_sequence() -> None:
     mda = MDASequence(
@@ -160,6 +161,7 @@ def test_grid_relative_in_main_and_position_sub_sequence() -> None:
         x_pos=[-0.5, 0.5, 0.5, -0.5, 9.5, 10.5, 10.5, 9.5],
         y_pos=[0.5, 0.5, -0.5, -0.5, 10.5, 10.5, 9.5, 9.5],
     )
+
 
 @pytest.mark.xfail
 def test_grid_absolute_in_main_and_position_sub_sequence() -> None:
