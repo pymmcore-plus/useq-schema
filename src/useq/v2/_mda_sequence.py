@@ -19,6 +19,7 @@ from useq._enums import Axis
 from useq._hardware_autofocus import AnyAutofocusPlan  # noqa: TC001
 from useq._mda_event import MDAEvent
 from useq.v2._axes_iterator import AxesIterator, AxisIterable
+from useq.v2._channels import ChannelsPlan
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -142,7 +143,7 @@ class MDASequence(AxesIterator):
         value: Any = ...,
         time_plan: AxisIterable[float] | None = ...,
         z_plan: AxisIterable[Position] | None = ...,
-        channels: AxisIterable[Channel] | None = ...,
+        channels: AxisIterable[Channel] | list[str] | None = ...,
         stage_positions: AxisIterable[Position] | None = ...,
         grid_plan: AxisIterable[Position] | None = ...,
         autofocus_plan: AnyAutofocusPlan | None = ...,
@@ -166,14 +167,15 @@ class MDASequence(AxesIterator):
     def __init__(self, **kwargs: Any) -> None:
         """Initialize MDASequence with provided axes and parameters."""
         axes = list(kwargs.setdefault("axes", ()))
-        legacy_fields = (
-            "time_plan",
-            "z_plan",
-            "channels",
-            "stage_positions",
-            "grid_plan",
-        )
+        legacy_fields = ("time_plan", "z_plan", "stage_positions", "grid_plan")
         axes.extend([kwargs.pop(field) for field in legacy_fields if field in kwargs])
+
+        # cast old-style axes to new AxisIterable
+        if "channels" in kwargs:
+            channels = kwargs.pop("channels")
+            if not isinstance(channels, AxisIterable):
+                channels = ChannelsPlan.model_validate(channels)
+            axes.append(channels)
 
         kwargs["axes"] = tuple(axes)
         super().__init__(**kwargs)
@@ -190,6 +192,8 @@ class MDASequence(AxesIterator):
         if self.event_builder is None:
             raise ValueError("No event builder provided for this sequence.")
         yield from map(self.event_builder, self.iter_axes(axis_order=axis_order))
+
+    # ------------------------- Old API -------------------------
 
     @property
     def time_plan(self) -> Optional[AxisIterable[float]]:

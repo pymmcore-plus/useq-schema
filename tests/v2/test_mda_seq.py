@@ -72,3 +72,28 @@ def test_new_mdasequence_simple() -> None:
         MDAEvent(index={'a': 1, 'b': 1, 'c': 2}, channel=EventChannel(config='blue'),  min_start_time=1.0, z_pos=0.3),
     ]
     # fmt: on
+
+
+def test_new_mdasequence_parity() -> None:
+    seq = v2.MDASequence(
+        time_plan=v2.TIntervalLoops(interval=0.2, loops=2),
+        z_plan=v2.ZRangeAround(range=1, step=0.5),
+        channels=["DAPI", "FITC"],
+    )
+    events = list(seq.iter_events(axis_order=("t", "z", "c")))
+    # fmt: off
+    assert events == [
+        MDAEvent(index={"t": 0, "z": 0, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.0, z_pos=-0.5),
+        MDAEvent(index={"t": 0, "z": 0, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.0, z_pos=-0.5),
+        MDAEvent(index={"t": 0, "z": 1, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.0, z_pos=0.0),
+        MDAEvent(index={"t": 0, "z": 1, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.0, z_pos=0.0),
+        MDAEvent(index={"t": 0, "z": 2, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.0, z_pos=0.5),
+        MDAEvent(index={"t": 0, "z": 2, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.0, z_pos=0.5),
+        MDAEvent(index={"t": 1, "z": 0, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.2, z_pos=-0.5),
+        MDAEvent(index={"t": 1, "z": 0, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.2, z_pos=-0.5),
+        MDAEvent(index={"t": 1, "z": 1, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.2, z_pos=0.0),
+        MDAEvent(index={"t": 1, "z": 1, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.2, z_pos=0.0),
+        MDAEvent(index={"t": 1, "z": 2, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.2, z_pos=0.5),
+        MDAEvent(index={"t": 1, "z": 2, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.2, z_pos=0.5),
+    ]
+    # fmt: on

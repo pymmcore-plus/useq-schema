@@ -12,9 +12,19 @@ from useq.v2._time import (
     TIntervalDuration,
     TIntervalLoops,
 )
+from useq.v2._z import (
+    AnyZPlan,
+    ZAboveBelow,
+    ZAbsolutePositions,
+    ZPlan,
+    ZRangeAround,
+    ZRelativePositions,
+    ZTopBottom,
+)
 
 __all__ = [
     "AnyTimePlan",
+    "AnyZPlan",
     "AxesIterator",
     "AxisIterable",
     "MDASequence",
@@ -25,5 +35,11 @@ __all__ = [
     "TDurationLoops",
     "TIntervalDuration",
     "TIntervalLoops",
+    "ZAboveBelow",
+    "ZAbsolutePositions",
+    "ZPlan",
+    "ZRangeAround",
+    "ZRelativePositions",
+    "ZTopBottom",
     "iterate_multi_dim_sequence",
 ]
