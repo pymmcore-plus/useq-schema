@@ -144,6 +144,7 @@ pretty = true
 plugins = ["pydantic.mypy"]
 
 [tool.pyright]
+include = ["src/useq/v2", "tests/v2"]
 reportArgumentType = false
 
 # https://coverage.readthedocs.io/en/6.4/config.html

@@ -257,7 +257,7 @@ class TestSerialization:
         assert original_plan.axis_key == restored_plan.axis_key
         if hasattr(original_plan, "go_up"):
             # Check go_up attribute if it exists
-            assert original_plan.go_up == restored_plan.go_up
+            assert original_plan.go_up == restored_plan.go_up  # type: ignore
 
 
 class TestTypeAliases:

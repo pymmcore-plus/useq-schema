@@ -1,3 +1,5 @@
+from abc import abstractmethod
+from collections.abc import Iterator
 from typing import Annotated
 
 from annotated_types import Ge
@@ -15,3 +17,6 @@ class MultiPositionPlan(AxisIterable[Position]):
     @property
     def is_relative(self) -> bool:
         return True
+
+    @abstractmethod
+    def __iter__(self) -> Iterator[Position]: ...  # type: ignore[override]
