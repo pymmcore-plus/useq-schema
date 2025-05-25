@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar
 
-from useq.v2._axis_iterator import AxesIterator, AxisIterable
+from useq.v2._axes_iterator import AxesIterator, AxisIterable
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from useq.v2._axis_iterator import AxesIndex
+    from useq.v2._axes_iterator import AxesIndex
 
 
 V = TypeVar("V", covariant=True)

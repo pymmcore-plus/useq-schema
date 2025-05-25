@@ -9,7 +9,7 @@ from pydantic import Field
 
 from useq._base_model import FrozenModel
 from useq._enums import Axis
-from useq.v2._axis_iterator import AxisIterable
+from useq.v2._axes_iterator import AxisIterable
 from useq.v2._position import Position
 
 if TYPE_CHECKING:
@@ -26,6 +26,11 @@ class ZPlan(AxisIterable[Position], FrozenModel):
     """
 
     axis_key: Literal[Axis.Z] = Field(default=Axis.Z, frozen=True, init=False)
+
+    @property
+    def is_relative(self) -> bool:
+        """Return True if Z positions are relative to current position."""
+        return True
 
     def __iter__(self) -> Iterator[Position]:  # type: ignore[override]
         """Iterate over Z positions."""
@@ -60,11 +65,6 @@ class ZPlan(AxisIterable[Position], FrozenModel):
         nsteps = (stop + step - start) / step
         return math.ceil(round(nsteps, 6))
 
-    @property
-    def is_relative(self) -> bool:
-        """Return True if Z positions are relative to current position."""
-        return True
-
     def contribute_to_mda_event(
         self, value: Position, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
@@ -97,12 +97,12 @@ class ZTopBottom(ZPlan):
     step: Annotated[float, Ge(0)]
     go_up: bool = True
 
-    def _start_stop_step(self) -> tuple[float, float, float]:
-        return self.bottom, self.top, self.step
-
     @property
     def is_relative(self) -> bool:
         return False
+
+    def _start_stop_step(self) -> tuple[float, float, float]:
+        return self.bottom, self.top, self.step
 
 
 class ZRangeAround(ZPlan):
@@ -193,15 +193,15 @@ class ZAbsolutePositions(ZPlan):
 
     absolute: list[float]
 
+    @property
+    def is_relative(self) -> bool:
+        return False
+
     def _z_positions(self) -> Iterator[float]:
         yield from self.absolute
 
     def __len__(self) -> int:
         return len(self.absolute)
-
-    @property
-    def is_relative(self) -> bool:
-        return False
 
 
 # Union type for all Z plan types - order matters for pydantic coercion

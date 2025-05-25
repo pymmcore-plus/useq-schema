@@ -18,7 +18,7 @@ from pydantic_core import core_schema
 from useq._enums import Axis
 from useq._hardware_autofocus import AnyAutofocusPlan  # noqa: TC001
 from useq._mda_event import MDAEvent
-from useq.v2._axis_iterator import AxesIterator, AxisIterable
+from useq.v2._axes_iterator import AxesIterator, AxisIterable
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from pydantic import GetCoreSchemaHandler
 
     from useq._channel import Channel
-    from useq.v2._axis_iterator import AxesIndex
+    from useq.v2._axes_iterator import AxesIndex
     from useq.v2._position import Position
 
 

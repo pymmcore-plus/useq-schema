@@ -6,7 +6,7 @@ from pydantic import BeforeValidator, Field, PlainSerializer, field_validator
 
 from useq._base_model import FrozenModel
 from useq._enums import Axis
-from useq.v2._axis_iterator import AxisIterable
+from useq.v2._axes_iterator import AxisIterable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
