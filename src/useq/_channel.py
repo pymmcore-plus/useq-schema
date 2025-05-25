@@ -33,7 +33,7 @@ class Channel(FrozenModel):
 
     config: str
     group: str = "Channel"
-    exposure: Optional[float] = Field(default=None, gt=0.0)
+    exposure: Optional[float] = Field(None, gt=0.0)
     do_stack: bool = True
     z_offset: float = 0.0
     acquire_every: int = Field(default=1, gt=0)  # acquire every n frames

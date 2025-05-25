@@ -6,13 +6,13 @@ import pytest
 from pydantic import TypeAdapter
 
 import useq
-import useq.v1._position
+import useq._position
 from useq._point_visiting import OrderMode, _rect_indices, _spiral_indices
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
-    from useq.v1._position import PositionBase
+    from useq._position import PositionBase
 
 
 g_inputs = [
@@ -88,7 +88,7 @@ g_inputs = [
 def test_g_plan(gridplan: Any, gridexpectation: Sequence[Any]) -> None:
     g_plan = TypeAdapter(useq.MultiPointPlan).validate_python(gridplan)
     assert isinstance(g_plan, get_args(useq.MultiPointPlan))
-    assert isinstance(g_plan, useq.v1._position._MultiPointPlan)
+    assert isinstance(g_plan, useq._position._MultiPointPlan)
     if isinstance(gridplan, useq.RandomPoints):
         assert g_plan and [round(gp, 1) for gp in g_plan] == gridexpectation
     else:

@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
     from typing import Required, TypeAlias, TypedDict
 
-    from useq.v1._plate import WellPlate
+    from useq._plate import WellPlate
 
     class KnownPlateKwargs(TypedDict, total=False):
         rows: Required[int]

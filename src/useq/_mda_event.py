@@ -2,7 +2,12 @@
 # pydantic2 isn't rebuilding the model correctly
 
 from collections import UserDict
-from typing import TYPE_CHECKING, Any, NamedTuple, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    NamedTuple,
+    Optional,
+)
 
 import numpy as np
 import numpy.typing as npt
@@ -19,9 +24,8 @@ except ImportError:
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from typing import TypedDict
 
-    from useq.v1._mda_sequence import MDASequence
+    from useq._mda_sequence import MDASequence
 
     ReprArgs = Sequence[tuple[Optional[str], Any]]
 
@@ -46,12 +50,6 @@ class Channel(UseqModel):
         if isinstance(_value, str):
             return self.config == _value
         return super().__eq__(_value)
-
-    if TYPE_CHECKING:
-
-        class Kwargs(TypedDict, total=False):
-            config: str
-            group: str
 
 
 class SLMImage(UseqModel):
@@ -98,13 +96,6 @@ class SLMImage(UseqModel):
             and self.exposure == other.exposure
             and np.array_equal(self.data, other.data)
         )
-
-    if TYPE_CHECKING:
-
-        class Kwargs(TypedDict, total=False):
-            data: npt.ArrayLike
-            device: str
-            exposure: float
 
 
 class PropertyTuple(NamedTuple):
@@ -253,23 +244,3 @@ class MDAEvent(UseqModel):
         _sx = field_serializer("x_pos", mode="plain")(_float_or_none)
         _sy = field_serializer("y_pos", mode="plain")(_float_or_none)
         _sz = field_serializer("z_pos", mode="plain")(_float_or_none)
-
-    if TYPE_CHECKING:
-
-        class Kwargs(TypedDict, total=False):
-            index: dict[str, int]
-            channel: Channel | Channel.Kwargs
-            exposure: float
-            min_start_time: float
-            pos_name: str
-            x_pos: float | None
-            y_pos: float | None
-            z_pos: float | None
-            slm_image: SLMImage | SLMImage.Kwargs
-            properties: list[tuple[str, str, Any]]
-            metadata: dict[str, Any]
-            action: AnyAction
-            keep_shutter_open: bool
-            reset_event_timer: bool
-
-            sequence: Any
