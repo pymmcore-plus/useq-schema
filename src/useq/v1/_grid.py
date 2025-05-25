@@ -20,7 +20,7 @@ from pydantic import Field, field_validator, model_validator
 from typing_extensions import Self, TypeAlias
 
 from useq._point_visiting import OrderMode, TraversalOrder
-from useq._position import (
+from useq.v1._position import (
     AbsolutePosition,
     PositionT,
     RelativePosition,

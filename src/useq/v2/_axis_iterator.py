@@ -1,0 +1,295 @@
+"""MultiDimensional Iteration Module.
+
+This module provides a declarative approach to multi-dimensional iteration,
+supporting hierarchical (nested) sub-iterations as well as conditional
+skipping (filtering) of final combinations.
+
+Key Concepts:
+-------------
+- **AxisIterable**: An interface (protocol) representing an axis. Each axis
+  has a unique `axis_key` and yields values via its iterator. A concrete axis,
+  such as `SimpleAxis`, yields plain values. To express sub-iterations,
+  an axis may yield a nested `MultiDimSequence` (instead of a plain value).
+
+- **MultiDimSequence**: Represents a multi-dimensional experiment or sequence.
+  It contains a tuple of axes (AxisIterable objects) and an optional `axis_order`
+  that controls the order in which axes are processed. When used as a nested override,
+  its `value` field is used as the representative value for that branch, and its
+  axes override or extend the parent's axes.
+
+- **Nested Overrides**: When an axis yields a nested MultiDimSequence with a non-None
+  `value`, that nested sequence acts as an override for the parent's iteration.
+  Specifically, the parent's remaining axes that have keys matching those in the
+  nested sequence are removed, and the nested sequence's axes (ordered by its own
+  `axis_order`, or inheriting the parent's if not provided) are appended.
+
+- **Prefix and Skip Logic**: As the recursion proceeds, a `prefix` is built up, mapping
+  axis keys to a triple: (index, value, axis). Before yielding a final combination,
+  each axis is given an opportunity (via the `should_skip` method) to veto that
+  combination. By default, `SimpleAxis.should_skip` returns False, but you can override
+  it in a subclass to implement conditional skipping.
+
+Usage Examples:
+---------------
+1. Basic Iteration (no nested sequences):
+
+    >>> multi_dim = MultiDimSequence(
+    ...     axes=(
+    ...         SimpleAxis("t", [0, 1, 2]),
+    ...         SimpleAxis("c", ["red", "green", "blue"]),
+    ...         SimpleAxis("z", [0.1, 0.2]),
+    ...     ),
+    ...     axis_order=("t", "c", "z"),
+    ... )
+    >>> for combo in iterate_multi_dim_sequence(multi_dim):
+    ...     # Clean the prefix for display (dropping the axis objects)
+    ...     print({k: (idx, val) for k, (idx, val, _) in combo.items()})
+    {'t': (0, 0), 'c': (0, 'red'), 'z': (0, 0.1)}
+    {'t': (0, 0), 'c': (0, 'red'), 'z': (1, 0.2)}
+    ... (and so on for all Cartesian products)
+
+2. Sub-Iteration Adding New Axes:
+   Here the "t" axis yields a nested MultiDimSequence that adds an extra "q" axis.
+
+    >>> multi_dim = MultiDimSequence(
+    ...     axes=(
+    ...         SimpleAxis("t", [
+    ...             0,
+    ...             MultiDimSequence(
+    ...                 value=1,
+    ...                 axes=(SimpleAxis("q", ["a", "b"]),),
+    ...             ),
+    ...             2,
+    ...         ]),
+    ...         SimpleAxis("c", ["red", "green", "blue"]),
+    ...     ),
+    ...     axis_order=("t", "c"),
+    ... )
+    >>> for combo in iterate_multi_dim_sequence(multi_dim):
+    ...     print({k: (idx, val) for k, (idx, val, _) in combo.items()})
+    {'t': (0, 0), 'c': (0, 'red')}
+    {'t': (0, 0), 'c': (1, 'green')}
+    {'t': (0, 0), 'c': (2, 'blue')}
+    {'t': (1, 1), 'c': (0, 'red'), 'q': (0, 'a')}
+    {'t': (1, 1), 'c': (0, 'red'), 'q': (1, 'b')}
+    {'t': (1, 1), 'c': (1, 'green'), 'q': (0, 'a')}
+    ... (and so on)
+
+3. Overriding Parent Axes:
+   Here the "t" axis yields a nested MultiDimSequence whose axes override the parent's
+   "z" axis.
+
+    >>> multi_dim = MultiDimSequence(
+    ...     axes=(
+    ...         SimpleAxis("t", [
+    ...             0,
+    ...             MultiDimSequence(
+    ...                 value=1,
+    ...                 axes=(
+    ...                     SimpleAxis("c", ["red", "blue"]),
+    ...                     SimpleAxis("z", [7, 8, 9]),
+    ...                 ),
+    ...                 axis_order=("c", "z"),
+    ...             ),
+    ...             2,
+    ...         ]),
+    ...         SimpleAxis("c", ["red", "green", "blue"]),
+    ...         SimpleAxis("z", [0.1, 0.2]),
+    ...     ),
+    ...     axis_order=("t", "c", "z"),
+    ... )
+    >>> for combo in iterate_multi_dim_sequence(multi_dim):
+    ...     print({k: (idx, val) for k, (idx, val, _) in combo.items()})
+    {'t': (0, 0), 'c': (0, 'red'), 'z': (0, 0.1)}
+    ... (normal combinations for t==0 and t==2)
+    {'t': (1, 1), 'c': (0, 'red'), 'z': (0, 7)}
+    {'t': (1, 1), 'c': (0, 'red'), 'z': (1, 8)}
+    {'t': (1, 1), 'c': (0, 'red'), 'z': (2, 9)}
+    {'t': (1, 1), 'c': (1, 'blue'), 'z': (0, 7)}
+    ... (and so on)
+
+4. Conditional Skipping:
+   By subclassing SimpleAxis to override should_skip, you can filter out combinations.
+   For example, suppose we want to skip any combination where "c" equals "green" and "z"
+   is not 0.2:
+
+    >>> class FilteredZ(SimpleAxis):
+    ...     def should_skip(
+    ...             self, prefix: dict[str, tuple[int, Any, AxisIterable]]
+    ...         ) -> bool:
+    ...         c_val = prefix.get("c", (None, None, None))[1]
+    ...         z_val = prefix.get("z", (None, None, None))[1]
+    ...         if c_val == "green" and z_val != 0.2:
+    ...             return True
+    ...         return False
+    ...
+    >>> multi_dim = MultiDimSequence(
+    ...     axes=(
+    ...         SimpleAxis("t", [0, 1, 2]),
+    ...         SimpleAxis("c", ["red", "green", "blue"]),
+    ...         FilteredZ("z", [0.1, 0.2]),
+    ...     ),
+    ...     axis_order=("t", "c", "z"),
+    ... )
+    >>> for combo in iterate_multi_dim_sequence(multi_dim):
+    ...     print({k: (idx, val) for k, (idx, val, _) in combo.items()})
+    (Only those combinations where if c is green then z equals 0.2 are printed.)
+
+Usage Notes:
+------------
+- The module assumes that each axis is finite and that the final prefix (the
+  combination) is built by processing one axis at a time. Nested MultiDimSequence
+  objects allow you to either extend the iteration with new axes or override existing
+  ones.
+- The ordering of axes is controlled via the `axis_order` property, which is inherited
+  by nested sequences if not explicitly provided.
+- The should_skip mechanism gives each axis an opportunity to veto a final combination.
+  By default, SimpleAxis does not skip any combination, but you can subclass it to
+  implement custom filtering logic.
+
+This module is intended for cases where complex, declarative multidimensional iteration
+is required—such as in microscope acquisitions, high-content imaging, or other
+experimental designs where the sequence of events must be generated in a flexible,
+hierarchical manner.
+"""
+
+from __future__ import annotations
+
+from abc import abstractmethod
+from collections.abc import Iterable, Iterator, Mapping, Sized
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+
+from pydantic import BaseModel, Field, field_validator
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from typing import TypeAlias
+
+    from useq._mda_event import MDAEvent
+
+    AxisKey: TypeAlias = str
+    Value: TypeAlias = Any
+    Index: TypeAlias = int
+    Axiter = TypeVar("Axiter", bound="AxisIterable")
+    AxesIndex: TypeAlias = dict[AxisKey, tuple[Index, Value, Axiter]]
+
+
+V = TypeVar("V")
+
+
+class AxisIterable(BaseModel, Generic[V]):
+    axis_key: str
+    """A string id representing the axis."""
+
+    @abstractmethod
+    def iter(self) -> Iterator[V | AxesIterator]:
+        """Iterate over the axis.
+
+        If a value needs to declare sub-axes, yield a nested MultiDimSequence.
+        """
+
+    def should_skip(self, prefix: AxesIndex) -> bool:
+        """Return True if this axis wants to skip the combination.
+
+        Default implementation returns False.
+        """
+        return False
+
+    def contribute_to_mda_event(
+        self, value: V, index: Mapping[str, int]
+    ) -> MDAEvent.Kwargs:
+        """Contribute data to the event being built.
+
+        This method allows each axis to contribute its data to the final MDAEvent.
+        The default implementation does nothing - subclasses should override
+        to add their specific contributions.
+
+        Parameters
+        ----------
+        value : V
+            The value provided by this axis, for this iteration.
+
+        Returns
+        -------
+        event_data : dict[str, Any]
+            Data to be added to the MDAEvent, it is ultimately up to the
+            EventBuilder to decide how to merge possibly conflicting contributions from
+            different axes.
+        """
+        return {}
+
+
+class SimpleAxis(AxisIterable[V]):
+    """A basic axis implementation that yields values directly.
+
+    If a value needs to declare sub-axes, yield a nested MultiDimSequence.
+    The default should_skip always returns False.
+    """
+
+    values: list[V] = Field(default_factory=list)
+
+    def iter(self) -> Iterator[V | AxesIterator]:
+        yield from self.values
+
+    def __len__(self) -> int:
+        """Return the number of axis values."""
+        return len(self.values)
+
+
+class AxesIterator(BaseModel):
+    """Represents a multidimensional sequence.
+
+    At the top level the `value` field is ignored.
+    When used as a nested override, `value` is the value for that branch and
+    its axes are iterated using its own axis_order if provided;
+    otherwise, it inherits the parent's axis_order.
+    """
+
+    axes: tuple[AxisIterable, ...] = ()
+    axis_order: tuple[str, ...] | None = None
+    value: Any = None
+
+    def is_finite(self) -> bool:
+        """Return `True` if the sequence is finite (all axes are Sized)."""
+        return all(isinstance(ax, Sized) for ax in self.axes)
+
+    def iter_axes(
+        self, axis_order: tuple[str, ...] | None = None
+    ) -> Iterator[AxesIndex]:
+        """Iterate over the axes and yield combinations.
+
+        Yields
+        ------
+        AxesIndex
+            A dictionary mapping axis keys to tuples of (index, value, AxisIterable),
+            where the third element is the Iterable that yielded the value.
+            For example, when iterating over an `AxisIterable` with a single axis "t",
+            with values of [0.1, .2], the yielded AxesIndexes would be:
+            - {'t': (0, 0.1, <AxisIterable>)}
+            - {'t': (1, 0.2, <AxisIterable>)}
+        """
+        from useq.v2._iterate import iterate_multi_dim_sequence
+
+        yield from iterate_multi_dim_sequence(self, axis_order=axis_order)
+
+    # ----------------------- Validation -----------------------
+
+    @field_validator("axes", mode="after")
+    def _validate_axes(cls, v: tuple[AxisIterable, ...]) -> tuple[AxisIterable, ...]:
+        keys = [x.axis_key for x in v]
+        if dupes := {k for k in keys if keys.count(k) > 1}:
+            raise ValueError(
+                f"The following axis keys appeared more than once: {dupes}"
+            )
+        return v
+
+    @field_validator("axis_order", mode="before")
+    @classmethod
+    def _validate_axis_order(cls, v: Any) -> tuple[str, ...]:
+        if not isinstance(v, Iterable):
+            raise ValueError(f"axis_order must be iterable, got {type(v)}")
+        order = tuple(str(x).lower() for x in v)
+        if len(set(order)) < len(order):
+            raise ValueError(f"Duplicate entries found in acquisition order: {order}")
+
+        return order

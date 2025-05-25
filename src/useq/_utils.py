@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from typing_extensions import TypeGuard
 
     import useq
-    from useq._time import SinglePhaseTimePlan
+    from useq.v1._time import SinglePhaseTimePlan
 
     KT = TypeVar("KT")
     VT = TypeVar("VT")

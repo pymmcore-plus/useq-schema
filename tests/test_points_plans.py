@@ -18,7 +18,7 @@ from useq._point_visiting import OrderMode, _rect_indices, _spiral_indices
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from useq._position import PositionBase
+    from useq.v1._position import PositionBase
 
 EXPECT = {
     (True, False): [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)],

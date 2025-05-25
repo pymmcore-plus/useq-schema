@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from useq._mda_event import MDAEvent
-from useq._mda_sequence import MDASequence
+from useq.v1._mda_sequence import MDASequence
 
 if TYPE_CHECKING:
     from useq.experimental.protocols import PSignal
