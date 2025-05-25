@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
+from useq._enums import RelativeTo, Shape
 from useq._grid import (
     GridFromEdges,
     GridRowsColumns,
@@ -12,7 +13,6 @@ from useq._grid import (
     MultiPointPlan,
     RandomPoints,
     RelativeMultiPointPlan,
-    Shape,
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import Channel as EventChannel
@@ -71,6 +71,7 @@ __all__ = [
     "RandomPoints",
     "RelativeMultiPointPlan",
     "RelativePosition",
+    "RelativeTo",
     "SLMImage",
     "Shape",
     "TDurationLoops",

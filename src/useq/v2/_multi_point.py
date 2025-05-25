@@ -8,6 +8,8 @@ from useq.v2._axes_iterator import AxisIterable
 from useq.v2._position import Position
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
     from useq._mda_event import MDAEvent
 
 
@@ -40,3 +42,13 @@ class MultiPositionPlan(AxisIterable[Position]):
 
         # TODO: deal with the _rel suffix hack
         return out  # type: ignore[return-value]
+
+    def plot(self, *, show: bool = True) -> "Axes":
+        """Plot the positions in the plan."""
+        from useq._plot import plot_points
+
+        rect = None
+        if self.fov_width is not None and self.fov_height is not None:
+            rect = (self.fov_width, self.fov_height)
+
+        return plot_points(self, rect_size=rect, show=show)  # type: ignore[arg-type]

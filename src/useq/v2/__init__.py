@@ -12,6 +12,7 @@ from useq.v2._grid import (
 )
 from useq.v2._iterate import iterate_multi_dim_sequence
 from useq.v2._mda_sequence import MDASequence
+from useq.v2._multi_point import MultiPositionPlan
 from useq.v2._position import Position
 from useq.v2._stage_positions import StagePositions
 from useq.v2._time import (
@@ -44,6 +45,7 @@ __all__ = [
     "MDASequence",
     "MultiPhaseTimePlan",
     "MultiPointPlan",
+    "MultiPositionPlan",
     "Position",
     "RandomPoints",
     "RelativeMultiPointPlan",
