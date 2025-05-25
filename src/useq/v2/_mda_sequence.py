@@ -3,12 +3,15 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import Iterator
 from contextlib import suppress
+from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     Optional,
     Protocol,
     TypeVar,
+    get_origin,
     overload,
     runtime_checkable,
 )
@@ -35,6 +38,60 @@ if TYPE_CHECKING:
 EventT = TypeVar("EventT", covariant=True, bound=Any)
 
 
+@dataclass(frozen=True)
+class ImportableObject:
+    def __get_pydantic_core_schema__(
+        self, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        """Return the schema for the importable object."""
+
+        def import_python_path(value: Any) -> Any:
+            """Import a Python object from a string path."""
+            if isinstance(value, str):
+                # If a string is provided, it should be a path to the class
+                # that implements the EventBuilder protocol.
+                from importlib import import_module
+
+                parts = value.rsplit(".", 1)
+                if len(parts) != 2:
+                    raise ValueError(
+                        f"Invalid import path: {value!r}. "
+                        "Expected format: 'module.submodule.ClassName'"
+                    )
+                module_name, class_name = parts
+                module = import_module(module_name)
+                return getattr(module, class_name)
+            return value
+
+        def get_python_path(value: Any) -> str:
+            """Get a unique identifier for the event builder."""
+            val_type = type(value)
+            return f"{val_type.__module__}.{val_type.__qualname__}"
+
+        # TODO: check me
+        origin = source_type
+        try:
+            isinstance(None, origin)
+        except TypeError:
+            origin = get_origin(origin)
+            try:
+                isinstance(None, origin)
+            except TypeError:
+                origin = object
+
+        to_pp_ser = core_schema.plain_serializer_function_ser_schema(
+            function=get_python_path
+        )
+        return core_schema.no_info_before_validator_function(
+            function=import_python_path,
+            schema=core_schema.is_instance_schema(origin),
+            serialization=to_pp_ser,
+            json_schema_input_schema=core_schema.str_schema(
+                pattern=r"^([^\W\d]\w*)(\.[^\W\d]\w*)*$"
+            ),
+        )
+
+
 @runtime_checkable
 class EventBuilder(Protocol[EventT]):
     """Callable that builds an event from an AxesIndex."""
@@ -42,39 +99,6 @@ class EventBuilder(Protocol[EventT]):
     @abstractmethod
     def __call__(self, axes_index: AxesIndex) -> EventT:
         """Transform an AxesIndex into an event object."""
-
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, source: type[Any], handler: GetCoreSchemaHandler
-    ) -> core_schema.CoreSchema:
-        """Return the schema for the event builder."""
-
-        def get_python_path(value: AxesIndex) -> str:
-            """Get a unique identifier for the event builder."""
-            val_type = type(value)
-            return f"{val_type.__module__}.{val_type.__qualname__}"
-
-        def validate_event_builder(value: Any) -> EventBuilder[EventT]:
-            """Validate the event builder."""
-            if isinstance(value, str):
-                # If a string is provided, it should be a path to the class
-                # that implements the EventBuilder protocol.
-                from importlib import import_module
-
-                module_name, class_name = value.rsplit(".", 1)
-                module = import_module(module_name)
-                value = getattr(module, class_name)
-
-            if not isinstance(value, EventBuilder):
-                raise TypeError(f"Expected an EventBuilder, got {type(value).__name__}")
-            return value
-
-        return core_schema.no_info_plain_validator_function(
-            function=validate_event_builder,
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                function=get_python_path
-            ),
-        )
 
 
 # Example concrete event builder for MDAEvent
@@ -133,7 +157,7 @@ class MDASequence(AxesIterator):
     autofocus_plan: Optional[AnyAutofocusPlan] = None
     keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
     metadata: dict[str, Any] = Field(default_factory=dict)
-    event_builder: EventBuilder[MDAEvent] = Field(
+    event_builder: Annotated[EventBuilder[MDAEvent], ImportableObject()] = Field(
         default_factory=MDAEventBuilder, repr=False
     )
 
