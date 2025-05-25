@@ -3,14 +3,49 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import product
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import pytest
 
 import useq
+from useq import AxesBasedAF, HardwareAutofocus
 
 if TYPE_CHECKING:
-    from useq._mda_event import MDAEvent
+    from collections.abc import Sequence
+
+    pass
+
+
+@dataclass(frozen=True)
+class MDATestCase:
+    """A test case combining an MDASequence and expected attribute values.
+
+    Parameters
+    ----------
+    name : str
+        A short identifier used for the parametrised test id.
+    seq : useq.MDASequence
+        The :class:`useq.MDASequence` under test.
+    expected : dict[str, list[Any]] | list[useq.MDAEvent] | None
+        one of:
+        - a dictionary mapping attribute names to a list of expected values, where
+          the list length is equal to the number of events in the sequence.
+        - a list of expected `useq.MDAEvent` objects, compared directly to the expanded
+          sequence.
+    predicate : Callable[[useq.MDASequence], str] | None
+        A callable that takes a `useq.MDASequence`.  If a non-empty string is returned,
+        it is raised as an assertion error with the string as the message.
+    """
+
+    name: str
+    seq: useq.MDASequence
+    expected: dict[str, list[Any]] | list[useq.MDAEvent] | None = None
+    predicate: Callable[[useq.MDASequence], str | None] | None = None
+
+    def __post_init__(self) -> None:
+        if self.expected is None and self.predicate is None:
+            raise ValueError("Either expected or predicate must be provided. ")
+
 
 ##############################################################################
 # helpers
@@ -24,33 +59,49 @@ def genindex(axes: dict[str, int]) -> list[dict[str, int]]:
     ]
 
 
-@dataclass(frozen=True)
-class MDATestCase:
-    """A test case combining an MDASequence and expected attribute values.
+def ensure_af(
+    expected_indices: Sequence[int] | None = None, expected_z: float | None = None
+) -> Callable[[useq.MDASequence], str | None]:
+    """Test things about autofocus events.
 
     Parameters
     ----------
-    name:
-        A short identifier used for the parametrised test id.
-    seq:
-        The :class:`useq.MDASequence` under test.
-    expected:
-        A mapping whose keys are `useq.MDAEvent` attribute names,
-        and whose values are the *ordered* list of expected attribute
-        values when ``seq`` is iterated.  Only the attributes present in this
-        mapping are checked.
+    expected_indices : Sequence[int] | None
+        Ensure that the autofocus events are at these indices.
+    expected_z : float | None
+        Ensure that all autofocus events have this z position.
     """
+    exp = list(expected_indices) if expected_indices else []
 
-    name: str
-    seq: useq.MDASequence
-    expected: dict[str, list[Any]] | list[MDAEvent]
+    def _pred(seq: useq.MDASequence) -> str | None:
+        errors: list[str] = []
+        if exp:
+            actual_indices = [
+                i
+                for i, ev in enumerate(seq)
+                if isinstance(ev.action, HardwareAutofocus)
+            ]
+            if actual_indices != exp:
+                errors.append(f"expected AF indices {exp}, got {actual_indices}")
+
+        if expected_z is not None:
+            z_vals = [
+                ev.z_pos for ev in seq if isinstance(ev.action, HardwareAutofocus)
+            ]
+            if not all(z == expected_z for z in z_vals):
+                errors.append(f"expected all AF events at z={expected_z}, got {z_vals}")
+        if errors:
+            return ", ".join(errors)
+        return None
+
+    return _pred
 
 
 ##############################################################################
 # test cases
 ##############################################################################
 
-CASES: list[MDATestCase] = [
+GRID_SUBSEQ_CASES: list[MDATestCase] = [
     MDATestCase(
         name="channel_only_in_position_sub_sequence",
         seq=useq.MDASequence(
@@ -792,6 +843,179 @@ CASES: list[MDATestCase] = [
     ),
 ]
 
+
+AF_CASES: list[MDATestCase] = [
+    # 1. NO AXES - Should never trigger
+    MDATestCase(
+        name="af_no_axes_no_autofocus",
+        seq=useq.MDASequence(
+            stage_positions=[useq.Position(z=30)],
+            z_plan=useq.ZRangeAround(range=2, step=1),
+            channels=["DAPI", "FITC"],
+            autofocus_plan=AxesBasedAF(
+                autofocus_device_name="Z", autofocus_motor_offset=40, axes=()
+            ),
+        ),
+        predicate=ensure_af(expected_indices=[]),
+    ),
+    # 2. CHANNEL AXIS (c) - Triggers on channel changes
+    MDATestCase(
+        name="af_axes_c_basic",
+        seq=useq.MDASequence(
+            stage_positions=[useq.Position(z=30)],
+            z_plan=useq.ZRangeAround(range=2, step=1),
+            channels=["DAPI", "FITC"],
+            autofocus_plan=AxesBasedAF(autofocus_device_name="Z", axes=("c",)),
+        ),
+        predicate=ensure_af(expected_indices=[0, 4]),
+    ),
+    # 3. Z AXIS (z) - Triggers on z changes
+    MDATestCase(
+        name="af_axes_z_basic",
+        seq=useq.MDASequence(
+            stage_positions=[useq.Position(z=30)],
+            z_plan=useq.ZRangeAround(range=2, step=1),
+            channels=["DAPI", "FITC"],
+            autofocus_plan=AxesBasedAF(autofocus_device_name="Z", axes=("z",)),
+        ),
+        predicate=ensure_af(expected_indices=range(0, 11, 2)),
+    ),
+    # 4. GRID AXIS (g) - Triggers on grid position changes
+    MDATestCase(
+        name="af_axes_g_basic",
+        seq=useq.MDASequence(
+            stage_positions=[useq.Position(z=30)],
+            channels=["DAPI", "FITC"],
+            grid_plan=useq.GridRowsColumns(rows=2, columns=1),
+            autofocus_plan=AxesBasedAF(autofocus_device_name="Z", axes=("g",)),
+        ),
+        predicate=ensure_af(expected_indices=[0, 3]),
+    ),
+    # 5. POSITION AXIS (p) - Triggers on position changes
+    MDATestCase(
+        name="af_axes_p_basic",
+        seq=useq.MDASequence(
+            stage_positions=[useq.Position(z=30), useq.Position(z=200)],
+            channels=["DAPI", "FITC"],
+            autofocus_plan=AxesBasedAF(autofocus_device_name="Z", axes=("p",)),
+        ),
+        predicate=ensure_af(expected_indices=[0, 3]),
+    ),
+    # 6. TIME AXIS (t) - Triggers on time changes
+    MDATestCase(
+        name="af_axes_t_basic",
+        seq=useq.MDASequence(
+            stage_positions=[useq.Position(z=30), useq.Position(z=200)],
+            channels=["DAPI", "FITC"],
+            time_plan=[useq.TIntervalLoops(interval=1, loops=2)],
+            autofocus_plan=AxesBasedAF(autofocus_device_name="Z", axes=("t",)),
+        ),
+        predicate=ensure_af(expected_indices=[0, 5]),
+    ),
+    # 7. AXIS ORDER EFFECTS - Different axis order changes when axes trigger
+    MDATestCase(
+        name="af_axis_order_effect",
+        seq=useq.MDASequence(
+            stage_positions=[useq.Position(z=30)],
+            z_plan=useq.ZRangeAround(range=2, step=1),
+            channels=["DAPI", "FITC"],
+            axis_order="tpgzc",  # Different from default "tpczg"
+            autofocus_plan=AxesBasedAF(autofocus_device_name="Z", axes=("z",)),
+        ),
+        predicate=ensure_af(expected_indices=[0, 3, 6]),
+    ),
+    # 8. SUBSEQUENCE AUTOFOCUS - AF plan within position subsequence
+    MDATestCase(
+        name="af_subsequence_af",
+        seq=useq.MDASequence(
+            stage_positions=[
+                useq.Position(z=30),
+                useq.Position(
+                    z=10,
+                    sequence=useq.MDASequence(
+                        autofocus_plan=AxesBasedAF(
+                            autofocus_device_name="Z",
+                            axes=("c",),
+                        )
+                    ),
+                ),
+            ],
+            channels=["DAPI", "FITC"],
+        ),
+        predicate=ensure_af(expected_indices=[2, 4]),
+    ),
+    # 9. MIXED MAIN + SUBSEQUENCE AF
+    MDATestCase(
+        name="af_mixed_main_and_sub",
+        seq=useq.MDASequence(
+            stage_positions=[
+                useq.Position(z=30),
+                useq.Position(
+                    z=10,
+                    sequence=useq.MDASequence(
+                        autofocus_plan=AxesBasedAF(
+                            autofocus_device_name="Z",
+                            autofocus_motor_offset=40,
+                            axes=("z",),
+                        ),
+                    ),
+                ),
+            ],
+            channels=["DAPI", "FITC"],
+            z_plan=useq.ZRangeAround(range=2, step=1),
+            autofocus_plan=AxesBasedAF(
+                autofocus_device_name="Z", autofocus_motor_offset=40, axes=("p",)
+            ),
+        ),
+        predicate=ensure_af(expected_indices=[0, *range(7, 18, 2)]),
+    ),
+    # 10. Z POSITION CORRECTION - AF events get correct z position with relative z plans
+    MDATestCase(
+        name="af_z_position_correction",
+        seq=useq.MDASequence(
+            stage_positions=[useq.Position(z=200)],
+            channels=["DAPI", "FITC"],
+            z_plan=useq.ZRangeAround(range=2, step=1),
+            autofocus_plan=AxesBasedAF(
+                autofocus_device_name="Z", autofocus_motor_offset=40, axes=("c",)
+            ),
+        ),
+        predicate=ensure_af(expected_z=200),
+    ),
+    # 11. SUBSEQUENCE Z POSITION CORRECTION
+    MDATestCase(
+        name="af_subsequence_z_position",
+        seq=useq.MDASequence(
+            stage_positions=[
+                useq.Position(
+                    z=10,
+                    sequence=useq.MDASequence(
+                        autofocus_plan=AxesBasedAF(
+                            autofocus_device_name="Z",
+                            autofocus_motor_offset=40,
+                            axes=("c",),
+                        )
+                    ),
+                )
+            ],
+            channels=["DAPI", "FITC"],
+            z_plan=useq.ZRangeAround(range=2, step=1),
+        ),
+        predicate=ensure_af(expected_z=10),
+    ),
+    # 12. NO DEVICE NAME - Edge case for testing without device name
+    MDATestCase(
+        name="af_no_device_name",
+        seq=useq.MDASequence(
+            time_plan=[useq.TIntervalLoops(interval=1, loops=2)],
+            autofocus_plan=AxesBasedAF(axes=("t",)),
+        ),
+        predicate=lambda _: "",  # Just check it doesn't crash
+    ),
+]
+
+CASES: list[MDATestCase] = GRID_SUBSEQ_CASES + AF_CASES
+
 # assert that all test cases are unique
 case_names = [case.name for case in CASES]
 if duplicates := {name for name in case_names if case_names.count(name) > 1}:
@@ -803,8 +1027,14 @@ if duplicates := {name for name in case_names if case_names.count(name) > 1}:
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
 def test_mda_sequence(case: MDATestCase) -> None:
-    if isinstance(case.expected, list):
-        # test case expressed the expectation as a list of MDAEvent
+    # test case expressed the expectation as a predicate
+    if case.predicate is not None:
+        # (a function that returns a non-empty error message if the test fails)
+        if msg := case.predicate(case.seq):
+            raise AssertionError(f"\nExpectation not met in '{case.name}':\n  {msg}\n")
+
+    # test case expressed the expectation as a list of MDAEvent
+    elif isinstance(case.expected, list):
         actual_events = list(case.seq)
         if len(actual_events) != len(case.expected):
             raise AssertionError(
@@ -820,8 +1050,9 @@ def test_mda_sequence(case: MDATestCase) -> None:
                     f"    actual: {event}\n"
                 )
 
-    if isinstance(case.expected, dict):
-        # test case expressed the expectation as a dict of {Event attr -> values list}
+    # test case expressed the expectation as a dict of {Event attr -> values list}
+    else:
+        assert isinstance(case.expected, dict), f"Invalid test case: {case.name!r}"
         actual: dict[str, list[Any]] = {k: [] for k in case.expected}
         for event in case.seq:
             for attr in case.expected:
