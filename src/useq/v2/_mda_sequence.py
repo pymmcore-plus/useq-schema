@@ -144,7 +144,7 @@ class MDASequence(AxesIterator):
         z_plan: AxisIterable[Position] | None = ...,
         channels: AxisIterable[Channel] | None = ...,
         stage_positions: AxisIterable[Position] | None = ...,
-        grid_plan: AxisIterable[Position] | None,
+        grid_plan: AxisIterable[Position] | None = ...,
         autofocus_plan: AnyAutofocusPlan | None = ...,
         keep_shutter_open_across: tuple[str, ...] = ...,
         metadata: dict[str, Any] = ...,

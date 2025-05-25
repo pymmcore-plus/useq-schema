@@ -27,3 +27,13 @@ repos:
           - types-PyYAML
           - pydantic >=2
           - numpy >=2
+
+  - repo: local
+    hooks:
+      - id: pyright
+        name: pyright
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+        files: "v2"
+        entry: uv run pyright

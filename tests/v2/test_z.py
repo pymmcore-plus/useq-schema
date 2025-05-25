@@ -300,7 +300,7 @@ def test_integration_with_mda_axis_iterable() -> None:
     assert hasattr(plan, "axis_key")
 
     # Test the axis_key
-    assert plan.axis_key == "z"
+    assert plan.axis_key == Axis.Z
 
     # Test iteration returns float values
     values = [p.z for p in plan]

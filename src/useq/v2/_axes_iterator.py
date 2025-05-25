@@ -174,7 +174,7 @@ if TYPE_CHECKING:
     AxesIndex: TypeAlias = dict[AxisKey, tuple[Index, Value, Axiter]]
 
 
-V = TypeVar("V")
+V = TypeVar("V", covariant=True, bound=Any)
 
 
 class AxisIterable(BaseModel, Generic[V]):
@@ -196,7 +196,9 @@ class AxisIterable(BaseModel, Generic[V]):
         return False
 
     def contribute_to_mda_event(
-        self, value: V, index: Mapping[str, int]
+        self,
+        value: V,  # type: ignore[misc] # covariant cannot be used as parameter
+        index: Mapping[str, int],
     ) -> MDAEvent.Kwargs:
         """Contribute data to the event being built.
 
@@ -219,7 +221,7 @@ class AxisIterable(BaseModel, Generic[V]):
         return {}
 
 
-class SimpleAxis(AxisIterable[V]):
+class SimpleValueAxis(AxisIterable[V]):
     """A basic axis implementation that yields values directly.
 
     If a value needs to declare sub-axes, yield a nested MultiDimSequence.

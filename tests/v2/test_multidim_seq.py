@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import Field
 
 from useq._enums import Axis
-from useq.v2 import AxesIterator, AxisIterable, SimpleAxis
+from useq.v2 import AxesIterator, AxisIterable, SimpleValueAxis
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -32,9 +32,9 @@ def _index_and_values(
 def test_new_multidim_simple_seq() -> None:
     multi_dim = AxesIterator(
         axes=(
-            SimpleAxis(axis_key=Axis.TIME, values=[0, 1]),
-            SimpleAxis(axis_key=Axis.CHANNEL, values=["red", "green", "blue"]),
-            SimpleAxis(axis_key=Axis.Z, values=[0.1, 0.3]),
+            SimpleValueAxis(axis_key=Axis.TIME, values=[0, 1]),
+            SimpleValueAxis(axis_key=Axis.CHANNEL, values=["red", "green", "blue"]),
+            SimpleValueAxis(axis_key=Axis.Z, values=[0.1, 0.3]),
         )
     )
     assert multi_dim.is_finite()
@@ -68,12 +68,12 @@ class InfiniteAxis(AxisIterable[int]):
 
 def test_multidim_nested_seq() -> None:
     inner_seq = AxesIterator(
-        value=1, axes=(SimpleAxis(axis_key="q", values=["a", "b"]),)
+        value=1, axes=(SimpleValueAxis(axis_key="q", values=["a", "b"]),)
     )
     outer_seq = AxesIterator(
         axes=(
-            SimpleAxis(axis_key="t", values=[0, inner_seq, 2]),
-            SimpleAxis(axis_key="c", values=["red", "green", "blue"]),
+            SimpleValueAxis(axis_key="t", values=[0, inner_seq, 2]),
+            SimpleValueAxis(axis_key="c", values=["red", "green", "blue"]),
         )
     )
 
@@ -113,15 +113,15 @@ def test_override_parent_axes() -> None:
     inner_seq = AxesIterator(
         value=1,
         axes=(
-            SimpleAxis(axis_key="c", values=["red", "blue"]),
-            SimpleAxis(axis_key="z", values=[7, 8, 9]),
+            SimpleValueAxis(axis_key="c", values=["red", "blue"]),
+            SimpleValueAxis(axis_key="z", values=[7, 8, 9]),
         ),
     )
     multi_dim = AxesIterator(
         axes=(
-            SimpleAxis(axis_key="t", values=[0, inner_seq, 2]),
-            SimpleAxis(axis_key="c", values=["red", "green", "blue"]),
-            SimpleAxis(axis_key="z", values=[0.1, 0.2]),
+            SimpleValueAxis(axis_key="t", values=[0, inner_seq, 2]),
+            SimpleValueAxis(axis_key="c", values=["red", "green", "blue"]),
+            SimpleValueAxis(axis_key="z", values=[0.1, 0.2]),
         ),
         axis_order=("t", "c", "z"),
     )
@@ -150,7 +150,7 @@ def test_override_parent_axes() -> None:
     ]
 
 
-class FilteredZ(SimpleAxis):
+class FilteredZ(SimpleValueAxis):
     def __init__(self, values: Iterable) -> None:
         super().__init__(axis_key=Axis.Z, values=values)
 
@@ -164,8 +164,8 @@ class FilteredZ(SimpleAxis):
 def test_multidim_with_should_skip() -> None:
     multi_dim = AxesIterator(
         axes=(
-            SimpleAxis(axis_key=Axis.TIME, values=[0, 1, 2]),
-            SimpleAxis(axis_key=Axis.CHANNEL, values=["red", "green", "blue"]),
+            SimpleValueAxis(axis_key=Axis.TIME, values=[0, 1, 2]),
+            SimpleValueAxis(axis_key=Axis.CHANNEL, values=["red", "green", "blue"]),
             FilteredZ([0.1, 0.2, 0.3]),
         ),
         axis_order=(Axis.TIME, Axis.CHANNEL, Axis.Z),
@@ -208,18 +208,18 @@ def test_all_together() -> None:
     t1_overrides = AxesIterator(
         value=1,
         axes=(
-            SimpleAxis(axis_key="c", values=["red", "blue"]),
-            SimpleAxis(axis_key="z", values=[7, 8, 9]),
+            SimpleValueAxis(axis_key="c", values=["red", "blue"]),
+            SimpleValueAxis(axis_key="z", values=[7, 8, 9]),
         ),
     )
     c_blue_subseq = AxesIterator(
         value="blue",
-        axes=(SimpleAxis(axis_key="q", values=["a", "b"]),),
+        axes=(SimpleValueAxis(axis_key="q", values=["a", "b"]),),
     )
     multi_dim = AxesIterator(
         axes=(
-            SimpleAxis(axis_key="t", values=[0, t1_overrides, 2]),
-            SimpleAxis(axis_key="c", values=["red", "green", c_blue_subseq]),
+            SimpleValueAxis(axis_key="t", values=[0, t1_overrides, 2]),
+            SimpleValueAxis(axis_key="c", values=["red", "green", c_blue_subseq]),
             FilteredZ([0.1, 0.2, 0.3]),
         ),
     )
@@ -260,9 +260,9 @@ def test_new_multidim_with_infinite_axis() -> None:
     # note... we never progress to t=1
     multi_dim = AxesIterator(
         axes=(
-            SimpleAxis(axis_key=Axis.TIME, values=[0, 1]),
+            SimpleValueAxis(axis_key=Axis.TIME, values=[0, 1]),
             InfiniteAxis(),
-            SimpleAxis(axis_key=Axis.Z, values=[0.1, 0.3]),
+            SimpleValueAxis(axis_key=Axis.Z, values=[0.1, 0.3]),
         )
     )
 
@@ -282,7 +282,7 @@ def test_new_multidim_with_infinite_axis() -> None:
     ]
 
 
-class DynamicROIAxis(SimpleAxis[str]):
+class DynamicROIAxis(SimpleValueAxis[str]):
     axis_key: str = "r"
     values: list[str] = Field(default_factory=lambda: ["cell0", "cell1"])
 

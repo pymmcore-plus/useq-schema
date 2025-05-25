@@ -1,8 +1,9 @@
 """New MDASequence API."""
 
-from useq.v2._axes_iterator import AxesIterator, AxisIterable, SimpleAxis
+from useq.v2._axes_iterator import AxesIterator, AxisIterable, SimpleValueAxis
 from useq.v2._iterate import iterate_multi_dim_sequence
 from useq.v2._mda_sequence import MDASequence
+from useq.v2._position import Position
 from useq.v2._time import (
     AnyTimePlan,
     MultiPhaseTimePlan,
@@ -18,7 +19,8 @@ __all__ = [
     "AxisIterable",
     "MDASequence",
     "MultiPhaseTimePlan",
-    "SimpleAxis",
+    "Position",
+    "SimpleValueAxis",
     "SinglePhaseTimePlan",
     "TDurationLoops",
     "TIntervalDuration",
