@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Annotated, Union, cast
 from pydantic import BeforeValidator, Field, PlainSerializer, field_validator
 
 from useq._base_model import FrozenModel
-from useq._utils import Axis
+from useq._enums import Axis
 from useq.v2._axis_iterator import AxisIterable
 
 if TYPE_CHECKING:

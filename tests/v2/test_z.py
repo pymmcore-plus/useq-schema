@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from useq import Axis
+from useq._enums import Axis
 from useq._mda_event import MDAEvent
 from useq.v2._position import Position
 from useq.v2._z import (

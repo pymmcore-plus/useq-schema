@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import Field
 
-from useq import Axis
+from useq._enums import Axis
 from useq.v2 import AxesIterator, AxisIterable, SimpleAxis
 
 if TYPE_CHECKING:

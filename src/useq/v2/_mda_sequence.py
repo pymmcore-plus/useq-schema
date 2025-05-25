@@ -15,9 +15,9 @@ from typing import (
 from pydantic import Field
 from pydantic_core import core_schema
 
+from useq._enums import Axis
 from useq._hardware_autofocus import AnyAutofocusPlan  # noqa: TC001
 from useq._mda_event import MDAEvent
-from useq._utils import Axis
 from useq.v2._axis_iterator import AxesIterator, AxisIterable
 
 if TYPE_CHECKING:

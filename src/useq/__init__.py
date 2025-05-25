@@ -5,12 +5,12 @@ from typing import Any
 
 from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
+from useq._enums import Axis, Shape
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent, PropertyTuple, SLMImage
 from useq._plate_registry import register_well_plates, registered_well_plate_keys
 from useq._point_visiting import OrderMode, TraversalOrder
-from useq._utils import Axis
 from useq.v1._grid import (
     GridFromEdges,
     GridRowsColumns,
@@ -18,7 +18,6 @@ from useq.v1._grid import (
     MultiPointPlan,
     RandomPoints,
     RelativeMultiPointPlan,
-    Shape,
 )
 from useq.v1._mda_sequence import MDASequence
 from useq.v1._plate import WellPlate, WellPlatePlan

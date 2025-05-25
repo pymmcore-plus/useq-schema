@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING
 
 from pydantic import field_validator
 
-from useq import Axis, _channel
+from useq import _channel
+from useq._enums import Axis
 from useq._mda_event import Channel, MDAEvent
 from useq.v2 import MDASequence, SimpleAxis
 from useq.v2._position import Position

@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING, Any, cast
 from typing_extensions import TypedDict
 
 from useq._channel import Channel  # noqa: TC001  # noqa: TCH001
+from useq._enums import AXES, Axis
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent, ReadOnlyDict
-from useq._utils import AXES, Axis, _has_axes
+from useq._utils import has_axes
 from useq.v1._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
 
 if TYPE_CHECKING:
@@ -193,7 +194,7 @@ def _iter_sequence(
 
         # if a position has been declared with a sub-sequence, we recurse into it
         if position:
-            if _has_axes(position.sequence):
+            if has_axes(position.sequence):
                 # determine any relative position shifts or global overrides
                 _pos, _offsets = _position_offsets(position, event_kwargs)
                 # build overrides for this position

@@ -8,7 +8,7 @@ from annotated_types import Ge
 from pydantic import Field
 
 from useq._base_model import FrozenModel
-from useq._utils import Axis
+from useq._enums import Axis
 from useq.v2._axis_iterator import AxisIterable
 from useq.v2._position import Position
 

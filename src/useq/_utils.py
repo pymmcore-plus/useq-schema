@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import re
 from datetime import timedelta
-from enum import Enum
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from typing import Final, Literal, TypeVar
+    from typing import TypeVar
 
     from typing_extensions import TypeGuard
 
@@ -15,44 +14,6 @@ if TYPE_CHECKING:
 
     KT = TypeVar("KT")
     VT = TypeVar("VT")
-
-
-# could be an enum, but this more easily allows Axis.Z to be a string
-class Axis(str, Enum):
-    """Recognized useq-schema axis keys.
-
-    Attributes
-    ----------
-    TIME : Literal["t"]
-        Time axis.
-    POSITION : Literal["p"]
-        XY Stage Position axis.
-    GRID : Literal["g"]
-        Grid axis (usually an additional row/column iteration around a position).
-    CHANNEL : Literal["c"]
-        Channel axis.
-    Z : Literal["z"]
-        Z axis.
-    """
-
-    TIME = "t"
-    POSITION = "p"
-    GRID = "g"
-    CHANNEL = "c"
-    Z = "z"
-
-    def __str__(self) -> Literal["t", "p", "g", "c", "z"]:
-        return self.value
-
-
-# note: order affects the default axis_order in MDASequence
-AXES: Final[tuple[Axis, ...]] = (
-    Axis.TIME,
-    Axis.POSITION,
-    Axis.GRID,
-    Axis.CHANNEL,
-    Axis.Z,
-)
 
 
 class TimeEstimate(NamedTuple):
@@ -106,14 +67,14 @@ def estimate_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
             takes to acquire the data
     """
     stage_positions = tuple(seq.stage_positions)
-    if not any(_has_axes(p.sequence) for p in stage_positions):
+    if not any(has_axes(p.sequence) for p in stage_positions):
         # the simple case: no axes to iterate over in any of the positions
         return _estimate_simple_sequence_duration(seq)
 
     estimate = TimeEstimate(0.0, 0.0, False)
     parent_seq = seq.replace(stage_positions=[])
     for p in stage_positions:
-        if not _has_axes(p.sequence):
+        if not has_axes(p.sequence):
             sub_seq = parent_seq
         else:
             updates = {
@@ -180,7 +141,7 @@ def _time_phase_duration(
     return tot_duration, time_interval_exceeded
 
 
-def _has_axes(seq: useq.MDASequence | None) -> TypeGuard[useq.MDASequence]:
+def has_axes(seq: useq.MDASequence | None) -> TypeGuard[useq.MDASequence]:
     """Return True if the sequence has anything to iterate over."""
     if seq is None:
         return False
