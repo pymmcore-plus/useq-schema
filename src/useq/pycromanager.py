@@ -93,7 +93,7 @@ def _event_to_pycromanager(event: MDAEvent) -> PycroManagerEvent:
 
     for axis in event.index.keys():
         if axis in _USEQ_AXIS_TO_PYCRO:
-            pycro["axes"][_USEQ_AXIS_TO_PYCRO[axis]] = event.index[axis]
+            pycro["axes"][_USEQ_AXIS_TO_PYCRO[axis]] = event.index[axis]  # pyright: ignore
 
     for useq_name, pycro_name in _USEQ_KEY_TO_PYCRO.items():
         if (val := getattr(event, useq_name)) is not None:

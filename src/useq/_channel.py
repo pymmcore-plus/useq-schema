@@ -41,8 +41,7 @@ class Channel(FrozenModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _cast_any(cls, values: Any) -> Any:
-        """Try to cast any value to a Channel."""
-        if isinstance(values, str):
-            values = {"config": values}
-        return values
+    def _cast(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            value = {"config": value}
+        return value

@@ -4,6 +4,8 @@ import re
 from datetime import timedelta
 from typing import TYPE_CHECKING, NamedTuple
 
+from useq._time import MultiPhaseTimePlan
+
 if TYPE_CHECKING:
     from typing import TypeVar
 
@@ -113,7 +115,7 @@ def _estimate_simple_sequence_duration(seq: useq.MDASequence) -> TimeEstimate:
 
     t_interval_exceeded = False
     if tplan := seq.time_plan:
-        phases = tplan.phases if hasattr(tplan, "phases") else [tplan]
+        phases = tplan.phases if isinstance(tplan, MultiPhaseTimePlan) else [tplan]
         tot_duration = 0.0
         for phase in phases:
             phase_duration, exceeded = _time_phase_duration(phase, s_per_timepoint)

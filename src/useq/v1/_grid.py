@@ -69,7 +69,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         with contextlib.suppress(TypeError, ValueError):
             v = float(v)
         if isinstance(v, float):
-            return (v,) * 2
+            return (v, v)
         if isinstance(v, Sequence) and len(v) == 2:
             return float(v[0]), float(v[1])
         raise ValueError(  # pragma: no cover

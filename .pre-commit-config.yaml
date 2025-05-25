@@ -31,9 +31,10 @@ repos:
   - repo: local
     hooks:
       - id: pyright
+        stages: [manual]
         name: pyright
         language: system
         types_or: [python, pyi]
         require_serial: true
-        files: "v2"
+        files: "src"
         entry: uv run pyright

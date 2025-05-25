@@ -116,6 +116,7 @@ class PSignalDescriptor(Protocol):
 
     def __get__(self, instance: Any | None, owner: Any) -> PSignalInstance:
         """Returns the signal instance for this descriptor."""
+        ...
 
 
 PSignal: TypeAlias = Union[PSignalDescriptor, PSignalInstance]

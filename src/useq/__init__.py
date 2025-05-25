@@ -1,7 +1,7 @@
 """Implementation agnostic schema for multi-dimensional microscopy experiments."""
 
 import warnings
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
@@ -37,6 +37,10 @@ from useq.v1._z import (
     ZRelativePositions,
     ZTopBottom,
 )
+
+if TYPE_CHECKING:
+    from useq._grid import GridRelative
+
 
 __all__ = [
     "AbsolutePosition",
