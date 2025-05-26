@@ -106,6 +106,15 @@ class SLMImage(UseqModel):
             and np.array_equal(self.data, other.data)
         )
 
+    if TYPE_CHECKING:
+
+        class Kwargs(TypedDict, total=False):
+            """Type for the kwargs passed to the SLM image."""
+
+            data: npt.ArrayLike
+            device: Optional[str]
+            exposure: Optional[float]
+
 
 class PropertyTuple(NamedTuple):
     """Three-tuple capturing a device, property, and value.
@@ -259,7 +268,7 @@ class MDAEvent(UseqModel):
         class Kwargs(TypedDict, total=False):
             """Type for the kwargs passed to the MDA event."""
 
-            index: dict
+            index: dict[str, int]
             channel: Channel | Channel.Kwargs
             exposure: float
             min_start_time: float
@@ -267,9 +276,9 @@ class MDAEvent(UseqModel):
             x_pos: float
             y_pos: float
             z_pos: float
-            slm_image: SLMImage
-            # sequence: "MDASequence"
-            properties: list[PropertyTuple]
+            slm_image: SLMImage | SLMImage.Kwargs | npt.ArrayLike
+            sequence: MDASequence | dict
+            properties: list[tuple[str, str, Any]]
             metadata: dict
             action: AnyAction
             keep_shutter_open: bool
