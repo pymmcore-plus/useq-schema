@@ -157,9 +157,19 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Iterable, Iterator, Mapping, Sized
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Generic,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
 
 from pydantic import BaseModel, Field, field_validator
+
+from useq.v2._importable_object import ImportableObject
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -174,6 +184,7 @@ if TYPE_CHECKING:
 
 
 V = TypeVar("V", covariant=True, bound=Any)
+EventT = TypeVar("EventT", covariant=True, bound=Any)
 
 
 class AxisIterable(BaseModel, Generic[V]):
@@ -238,7 +249,16 @@ class SimpleValueAxis(AxisIterable[V]):
         return len(self.values)
 
 
-class AxesIterator(BaseModel):
+@runtime_checkable
+class EventBuilder(Protocol[EventT]):
+    """Callable that builds an event from an AxesIndex."""
+
+    @abstractmethod
+    def __call__(self, axes_index: AxesIndex) -> EventT:
+        """Transform an AxesIndex into an event object."""
+
+
+class AxesIterator(BaseModel, Generic[EventT]):
     """Represents a multidimensional sequence.
 
     At the top level the `value` field is ignored.
@@ -250,6 +270,9 @@ class AxesIterator(BaseModel):
     axes: tuple[AxisIterable, ...] = ()
     axis_order: tuple[str, ...] | None = None
     value: Any = None
+    event_builder: Annotated[EventBuilder[EventT], ImportableObject()] | None = Field(
+        default=None, repr=False
+    )
 
     def is_finite(self) -> bool:
         """Return `True` if the sequence is finite (all axes are Sized)."""
@@ -273,6 +296,14 @@ class AxesIterator(BaseModel):
         from useq.v2._iterate import iterate_multi_dim_sequence
 
         yield from iterate_multi_dim_sequence(self, axis_order=axis_order)
+
+    def iter_events(
+        self, axis_order: tuple[str, ...] | None = None
+    ) -> Iterator[EventT]:
+        """Iterate over the axes and yield events."""
+        if self.event_builder is None:
+            raise ValueError("No event builder provided for this sequence.")
+        yield from map(self.event_builder, self.iter_axes(axis_order=axis_order))
 
     # ----------------------- Validation -----------------------
 

@@ -1,105 +1,31 @@
 from __future__ import annotations
 
 import warnings
-from abc import abstractmethod
 from collections.abc import Iterator, Sequence
 from contextlib import suppress
-from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
     Optional,
-    Protocol,
-    TypeVar,
-    get_origin,
     overload,
-    runtime_checkable,
 )
 
 from pydantic import Field, field_validator
-from pydantic_core import core_schema
 from typing_extensions import deprecated
 
 from useq._enums import AXES, Axis
 from useq._hardware_autofocus import AnyAutofocusPlan  # noqa: TC001
 from useq._mda_event import MDAEvent
-from useq.v2._axes_iterator import AxesIterator, AxisIterable
+from useq.v2._axes_iterator import AxesIterator, AxisIterable, EventBuilder
+from useq.v2._importable_object import ImportableObject
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
-    from pydantic import GetCoreSchemaHandler
-
     from useq._channel import Channel
     from useq.v2._axes_iterator import AxesIndex
     from useq.v2._position import Position
-
-
-EventT = TypeVar("EventT", covariant=True, bound=Any)
-
-
-@dataclass(frozen=True)
-class ImportableObject:
-    def __get_pydantic_core_schema__(
-        self, source_type: Any, handler: GetCoreSchemaHandler
-    ) -> core_schema.CoreSchema:
-        """Return the schema for the importable object."""
-
-        def import_python_path(value: Any) -> Any:
-            """Import a Python object from a string path."""
-            if isinstance(value, str):
-                # If a string is provided, it should be a path to the class
-                # that implements the EventBuilder protocol.
-                from importlib import import_module
-
-                parts = value.rsplit(".", 1)
-                if len(parts) != 2:
-                    raise ValueError(
-                        f"Invalid import path: {value!r}. "
-                        "Expected format: 'module.submodule.ClassName'"
-                    )
-                module_name, class_name = parts
-                module = import_module(module_name)
-                return getattr(module, class_name)
-            return value
-
-        def get_python_path(value: Any) -> str:
-            """Get a unique identifier for the event builder."""
-            val_type = type(value)
-            return f"{val_type.__module__}.{val_type.__qualname__}"
-
-        # TODO: check me
-        origin = source_type
-        try:
-            isinstance(None, origin)
-        except TypeError:
-            origin = get_origin(origin)
-            try:
-                isinstance(None, origin)
-            except TypeError:
-                origin = object
-
-        to_pp_ser = core_schema.plain_serializer_function_ser_schema(
-            function=get_python_path
-        )
-        return core_schema.no_info_before_validator_function(
-            function=import_python_path,
-            schema=core_schema.is_instance_schema(origin),
-            serialization=to_pp_ser,
-            json_schema_input_schema=core_schema.str_schema(
-                pattern=r"^([^\W\d]\w*)(\.[^\W\d]\w*)*$"
-            ),
-        )
-
-
-@runtime_checkable
-class EventBuilder(Protocol[EventT]):
-    """Callable that builds an event from an AxesIndex."""
-
-    @abstractmethod
-    def __call__(self, axes_index: AxesIndex) -> EventT:
-        """Transform an AxesIndex into an event object."""
 
 
 # Example concrete event builder for MDAEvent
@@ -156,11 +82,11 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
         return MDAEvent(**event_data)
 
 
-class MDASequence(AxesIterator):
+class MDASequence(AxesIterator[MDAEvent]):
     autofocus_plan: Optional[AnyAutofocusPlan] = None
     keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
     metadata: dict[str, Any] = Field(default_factory=dict)
-    event_builder: Annotated[EventBuilder[MDAEvent], ImportableObject()] = Field(
+    event_builder: Annotated[EventBuilder[MDAEvent], ImportableObject()] | None = Field(
         default_factory=MDAEventBuilder, repr=False
     )
 
@@ -204,14 +130,6 @@ class MDASequence(AxesIterator):
             kwargs["axes"] = axes
             kwargs.setdefault("axis_order", AXES)
         super().__init__(**kwargs)
-
-    def iter_events(
-        self, axis_order: tuple[str, ...] | None = None
-    ) -> Iterator[MDAEvent]:
-        """Iterate over the axes and yield events."""
-        if self.event_builder is None:
-            raise ValueError("No event builder provided for this sequence.")
-        yield from map(self.event_builder, self.iter_axes(axis_order=axis_order))
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore[override]
         yield from self.iter_events()
