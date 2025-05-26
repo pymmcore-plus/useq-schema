@@ -191,12 +191,12 @@ class AxisIterable(BaseModel, Generic[V]):
     axis_key: str
     """A string id representing the axis."""
 
-    # TODO: remove the AxisIterator from this union
     @abstractmethod
-    def __iter__(self) -> Iterator[V | AxesIterator]:  # type: ignore[override]
+    def __iter__(self) -> Iterator[V]:  # type: ignore[override]
         """Iterate over the axis.
 
-        If a value needs to declare sub-axes, yield a nested MultiDimSequence.
+        If a value needs to declare sub-axes, yield a nested AxesIterator.
+        The default iterator pattern will recurse into a nested AxesIterator.
         """
 
     def should_skip(self, prefix: AxesIndex) -> bool:
@@ -241,7 +241,7 @@ class SimpleValueAxis(AxisIterable[V]):
 
     values: list[V] = Field(default_factory=list)
 
-    def __iter__(self) -> Iterator[V | AxesIterator]:  # type: ignore[override]
+    def __iter__(self) -> Iterator[V | MultiAxisSequence]:  # type: ignore[override]
         yield from self.values
 
     def __len__(self) -> int:
@@ -258,7 +258,25 @@ class EventBuilder(Protocol[EventT]):
         """Transform an AxesIndex into an event object."""
 
 
-class AxesIterator(BaseModel, Generic[EventT]):
+@runtime_checkable
+class AxesIterator(Protocol):
+    """Object that iterates over a MultiAxisSequence."""
+
+    @abstractmethod
+    def __call__(
+        self, seq: MultiAxisSequence, axis_order: tuple[str, ...] | None = None
+    ) -> Iterator[AxesIndex]:
+        """Iterate over the axes of a MultiAxisSequence."""
+        ...
+
+
+def _default_iterator() -> AxesIterator:
+    from useq.v2._iterate import iterate_multi_dim_sequence
+
+    return iterate_multi_dim_sequence
+
+
+class MultiAxisSequence(BaseModel, Generic[EventT]):
     """Represents a multidimensional sequence.
 
     At the top level the `value` field is ignored.
@@ -270,8 +288,13 @@ class AxesIterator(BaseModel, Generic[EventT]):
     axes: tuple[AxisIterable, ...] = ()
     axis_order: tuple[str, ...] | None = None
     value: Any = None
+
+    # these will rarely be needed, but offer maximum flexibility
     event_builder: Annotated[EventBuilder[EventT], ImportableObject()] | None = Field(
         default=None, repr=False
+    )
+    iterator: Annotated[AxesIterator, ImportableObject()] = Field(
+        default_factory=_default_iterator, repr=False
     )
 
     def is_finite(self) -> bool:
@@ -293,9 +316,7 @@ class AxesIterator(BaseModel, Generic[EventT]):
             - {'t': (0, 0.1, <AxisIterable>)}
             - {'t': (1, 0.2, <AxisIterable>)}
         """
-        from useq.v2._iterate import iterate_multi_dim_sequence
-
-        yield from iterate_multi_dim_sequence(self, axis_order=axis_order)
+        yield from self.iterator(self, axis_order=axis_order)
 
     def iter_events(
         self, axis_order: tuple[str, ...] | None = None

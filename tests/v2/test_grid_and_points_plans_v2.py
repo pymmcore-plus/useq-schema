@@ -20,8 +20,6 @@ from useq.v2 import (
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
-    from useq._position import PositionBase
-
 
 def RelativePosition(**kwargs: Any) -> Position:
     return Position(**kwargs, is_relative=True)
@@ -146,7 +144,7 @@ def test_position_equality() -> None:
     """Order of grid positions should only change the order in which they are yielded"""
 
     def positions_without_name(
-        positions: Iterable[PositionBase],
+        positions: Iterable[Position],
     ) -> set[tuple[float, float, bool]]:
         """Create a set of tuples of GridPosition attributes excluding 'name'"""
         return {(pos.x, pos.y, pos.is_relative) for pos in positions}

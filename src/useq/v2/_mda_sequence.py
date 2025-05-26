@@ -17,7 +17,7 @@ from typing_extensions import deprecated
 from useq._enums import AXES, Axis
 from useq._hardware_autofocus import AnyAutofocusPlan  # noqa: TC001
 from useq._mda_event import MDAEvent
-from useq.v2._axes_iterator import AxesIterator, AxisIterable, EventBuilder
+from useq.v2._axes_iterator import AxisIterable, EventBuilder, MultiAxisSequence
 from useq.v2._importable_object import ImportableObject
 
 if TYPE_CHECKING:
@@ -82,7 +82,7 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
         return MDAEvent(**event_data)
 
 
-class MDASequence(AxesIterator[MDAEvent]):
+class MDASequence(MultiAxisSequence[MDAEvent]):
     autofocus_plan: Optional[AnyAutofocusPlan] = None
     keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -211,7 +211,7 @@ class MDASequence(AxesIterator[MDAEvent]):
         """Return the channels."""
         for axis in self.axes:
             if axis.axis_key == Axis.CHANNEL:
-                return tuple(axis)  # type: ignore[arg-type]
+                return tuple(axis)
         # If no channel axis is found, return an empty tuple
         return ()
 
@@ -220,7 +220,7 @@ class MDASequence(AxesIterator[MDAEvent]):
         """Return the stage positions."""
         for axis in self.axes:
             if axis.axis_key == Axis.POSITION:
-                return tuple(axis)  # type: ignore[arg-type]
+                return tuple(axis)
         return ()
 
     @property
@@ -265,7 +265,7 @@ def _extract_legacy_axes(kwargs: dict[str, Any]) -> tuple[AxisIterable, ...]:
                         for item in val:
                             if isinstance(item, dict):
                                 item = v2.Position(**item)
-                            elif isinstance(item, AxesIterator):
+                            elif isinstance(item, MultiAxisSequence):
                                 if item.value is None:
                                     item = item.model_copy(
                                         update={"value": _position.Position()}

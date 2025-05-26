@@ -1,6 +1,6 @@
 """New MDASequence API."""
 
-from useq.v2._axes_iterator import AxesIterator, AxisIterable, SimpleValueAxis
+from useq.v2._axes_iterator import AxisIterable, MultiAxisSequence, SimpleValueAxis
 from useq.v2._channels import ChannelsPlan
 from useq.v2._grid import (
     GridFromEdges,
@@ -36,13 +36,13 @@ from useq.v2._z import (
 __all__ = [
     "AnyTimePlan",
     "AnyZPlan",
-    "AxesIterator",
     "AxisIterable",
     "ChannelsPlan",
     "GridFromEdges",
     "GridRowsColumns",
     "GridWidthHeight",
     "MDASequence",
+    "MultiAxisSequence",
     "MultiPhaseTimePlan",
     "MultiPointPlan",
     "MultiPositionPlan",
