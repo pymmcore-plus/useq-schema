@@ -95,15 +95,15 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
     def __init__(
         self: MDASequence,
         *,
-        axis_order: tuple[str, ...] | None = ...,
+        axis_order: tuple[str, ...] | str | None = ...,
         value: Any = ...,
-        time_plan: AxisIterable[float] | None = ...,
+        time_plan: AxisIterable[float] | list | None = ...,
         z_plan: AxisIterable[Position] | None = ...,
         channels: AxisIterable[Channel] | list | None = ...,
         stage_positions: AxisIterable[Position] | list | None = ...,
         grid_plan: AxisIterable[Position] | None = ...,
         autofocus_plan: AnyAutofocusPlan | None = ...,
-        keep_shutter_open_across: tuple[str, ...] = ...,
+        keep_shutter_open_across: str | tuple[str, ...] = ...,
         metadata: dict[str, Any] = ...,
         event_builder: EventBuilder[MDAEvent] = ...,
     ) -> None: ...

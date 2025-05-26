@@ -59,97 +59,6 @@ def genindex(axes: dict[str, int]) -> list[dict[str, int]]:
     ]
 
 
-def ensure_af(
-    expected_indices: Sequence[int] | None = None, expected_z: float | None = None
-) -> Callable[[useq.MDASequence], str | None]:
-    """Test things about autofocus events.
-
-    Parameters
-    ----------
-    expected_indices : Sequence[int] | None
-        Ensure that the autofocus events are at these indices.
-    expected_z : float | None
-        Ensure that all autofocus events have this z position.
-    """
-    exp = list(expected_indices) if expected_indices else []
-
-    def _pred(seq: useq.MDASequence) -> str | None:
-        errors: list[str] = []
-        if exp:
-            actual_indices = [
-                i
-                for i, ev in enumerate(seq)
-                if isinstance(ev.action, HardwareAutofocus)
-            ]
-            if actual_indices != exp:
-                errors.append(f"expected AF indices {exp}, got {actual_indices}")
-
-        if expected_z is not None:
-            z_vals = [
-                ev.z_pos for ev in seq if isinstance(ev.action, HardwareAutofocus)
-            ]
-            if not all(z == expected_z for z in z_vals):
-                errors.append(f"expected all AF events at z={expected_z}, got {z_vals}")
-        if errors:
-            return ", ".join(errors)
-        return None
-
-    return _pred
-
-
-def ensure_shutter_behavior(
-    expected_indices: Sequence[int] | bool | None = None,
-) -> Callable[[useq.MDASequence], str | None]:
-    """Test keep_shutter_open behavior.
-
-    Parameters
-    ----------
-    expected_open_condition : Callable[[MDAEvent], bool] | None
-        A function that takes an MDAEvent and returns True if the shutter should be open.
-    expected_all_closed : bool
-        If True, ensure no events have keep_shutter_open=True.
-    expected_all_open : bool
-        If True, ensure all events have keep_shutter_open=True.
-    """
-
-    def _pred(seq: useq.MDASequence) -> str | None:
-        events = list(seq)
-        errors: list[str] = []
-
-        if expected_indices is not None:
-            if expected_indices is True:
-                if closed_events := [
-                    i for i, e in enumerate(events) if not e.keep_shutter_open
-                ]:
-                    errors.append(
-                        f"expected all shutters open, but events "
-                        f"{closed_events} have keep_shutter_open=False"
-                    )
-            elif expected_indices is False:
-                if open_events := [
-                    i for i, e in enumerate(events) if e.keep_shutter_open
-                ]:
-                    errors.append(
-                        f"expected all shutters closed, but events "
-                        f"{open_events} have keep_shutter_open=True"
-                    )
-            else:
-                actual_indices = [
-                    i for i, e in enumerate(events) if e.keep_shutter_open
-                ]
-                if actual_indices != list(expected_indices):
-                    errors.append(
-                        f"expected shutter open at indices {expected_indices}, "
-                        f"got {actual_indices}"
-                    )
-
-        if errors:
-            return "; ".join(errors)
-        return None
-
-    return _pred
-
-
 ##############################################################################
 # test cases
 ##############################################################################
@@ -896,6 +805,48 @@ GRID_SUBSEQ_CASES: list[MDATestCase] = [
     ),
 ]
 
+##############################################################################
+# Autofocus Tests
+##############################################################################
+
+
+def ensure_af(
+    expected_indices: Sequence[int] | None = None, expected_z: float | None = None
+) -> Callable[[useq.MDASequence], str | None]:
+    """Test things about autofocus events.
+
+    Parameters
+    ----------
+    expected_indices : Sequence[int] | None
+        Ensure that the autofocus events are at these indices.
+    expected_z : float | None
+        Ensure that all autofocus events have this z position.
+    """
+    exp = list(expected_indices) if expected_indices else []
+
+    def _pred(seq: useq.MDASequence) -> str | None:
+        errors: list[str] = []
+        if exp:
+            actual_indices = [
+                i
+                for i, ev in enumerate(seq)
+                if isinstance(ev.action, HardwareAutofocus)
+            ]
+            if actual_indices != exp:
+                errors.append(f"expected AF indices {exp}, got {actual_indices}")
+
+        if expected_z is not None:
+            z_vals = [
+                ev.z_pos for ev in seq if isinstance(ev.action, HardwareAutofocus)
+            ]
+            if not all(z == expected_z for z in z_vals):
+                errors.append(f"expected all AF events at z={expected_z}, got {z_vals}")
+        if errors:
+            return ", ".join(errors)
+        return None
+
+    return _pred
+
 
 AF_CASES: list[MDATestCase] = [
     # 1. NO AXES - Should never trigger
@@ -1067,6 +1018,53 @@ AF_CASES: list[MDATestCase] = [
     ),
 ]
 
+##############################################################################
+# Keep Shutter Open Tests
+###############################################################################
+
+
+def ensure_shutter_behavior(
+    expected_indices: Sequence[int] | bool | None = None,
+) -> Callable[[useq.MDASequence], str | None]:
+    """Test keep_shutter_open behavior."""
+
+    def _pred(seq: useq.MDASequence) -> str | None:
+        events = list(seq)
+        errors: list[str] = []
+
+        if expected_indices is not None:
+            if expected_indices is True:
+                if closed_events := [
+                    i for i, e in enumerate(events) if not e.keep_shutter_open
+                ]:
+                    errors.append(
+                        f"expected all shutters open, but events "
+                        f"{closed_events} have keep_shutter_open=False"
+                    )
+            elif expected_indices is False:
+                if open_events := [
+                    i for i, e in enumerate(events) if e.keep_shutter_open
+                ]:
+                    errors.append(
+                        f"expected all shutters closed, but events "
+                        f"{open_events} have keep_shutter_open=True"
+                    )
+            else:
+                actual_indices = [
+                    i for i, e in enumerate(events) if e.keep_shutter_open
+                ]
+                if actual_indices != list(expected_indices):
+                    errors.append(
+                        f"expected shutter open at indices {expected_indices}, "
+                        f"got {actual_indices}"
+                    )
+
+        if errors:
+            return "; ".join(errors)
+        return None
+
+    return _pred
+
 
 KEEP_SHUTTER_CASES: list[MDATestCase] = [
     # with z as the last axis, the shutter will be left open
@@ -1144,6 +1142,9 @@ KEEP_SHUTTER_CASES: list[MDATestCase] = [
     ),
 ]
 
+# ##############################################################################
+# Combined Test Cases
+# ##############################################################################
 
 CASES: list[MDATestCase] = GRID_SUBSEQ_CASES + AF_CASES + KEEP_SHUTTER_CASES
 

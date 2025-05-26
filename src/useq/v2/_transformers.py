@@ -20,7 +20,6 @@ class KeepShutterOpenTransform(EventTransform[MDAEvent]):
     def __init__(self, axes: tuple[str, ...]):
         self.axes = axes
 
-    # ---- EventTransform API -------------------------------------------------
     def __call__(
         self,
         event: MDAEvent,
@@ -28,8 +27,7 @@ class KeepShutterOpenTransform(EventTransform[MDAEvent]):
         prev_event: MDAEvent | None,
         make_next_event: Callable[[], MDAEvent | None],
     ) -> Iterable[MDAEvent]:
-        nxt = make_next_event()  # cached, so cheap even if many transformers call
-        if nxt is None:  # last event → nothing to tweak
+        if (nxt := make_next_event()) is None:  # last event → nothing to tweak
             return [event]
 
         # keep shutter open iff every axis that *changes* is in `self.axes`
@@ -39,6 +37,7 @@ class KeepShutterOpenTransform(EventTransform[MDAEvent]):
             if idx != nxt.index.get(ax)
         ):
             event = event.model_copy(update={"keep_shutter_open": True})
+
         return [event]
 
 
