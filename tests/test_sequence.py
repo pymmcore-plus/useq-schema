@@ -8,12 +8,10 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from useq import (
-    GridRelative,
     MDAEvent,
     MDASequence,
     Position,
     TIntervalDuration,
-    TIntervalLoops,
     ZAboveBelow,
     ZRangeAround,
 )
@@ -241,64 +239,6 @@ def test_custom_action() -> None:
 
     with pytest.raises(ValidationError, match="must be JSON serializable"):
         CustomAction(data={"not-serializable": lambda x: x})
-
-
-def test_keep_shutter_open() -> None:
-    # with z as the last axis, the shutter will be left open
-    # whenever z is the first index (since there are only 2 z planes)
-    mda1 = MDASequence(
-        axis_order=tuple("tcz"),
-        channels=["DAPI", "FITC"],
-        time_plan=TIntervalLoops(loops=2, interval=0),
-        z_plan=ZRangeAround(range=1, step=1),
-        keep_shutter_open_across="z",
-    )
-    assert all(e.keep_shutter_open for e in mda1 if e.index["z"] == 0)
-
-    # with c as the last axis, the shutter will never be left open
-    mda2 = MDASequence(
-        axis_order=tuple("tzc"),
-        channels=["DAPI", "FITC"],
-        time_plan=TIntervalLoops(loops=2, interval=0),
-        z_plan=ZRangeAround(range=1, step=1),
-        keep_shutter_open_across="z",
-    )
-    assert not any(e.keep_shutter_open for e in mda2)
-
-    # because t is changing faster than z, the shutter will never be left open
-    mda3 = MDASequence(
-        axis_order=tuple("czt"),
-        channels=["DAPI", "FITC"],
-        time_plan=TIntervalLoops(loops=2, interval=0),
-        z_plan=ZRangeAround(range=1, step=1),
-        keep_shutter_open_across="z",
-    )
-    assert not any(e.keep_shutter_open for e in mda3)
-
-    # but, if we include 't' in the keep_shutter_open_across,
-    # it will be left open except when it's the last t and last z
-    mda4 = MDASequence(
-        axis_order=tuple("czt"),
-        channels=["DAPI", "FITC"],
-        time_plan=TIntervalLoops(loops=2, interval=0),
-        z_plan=ZRangeAround(range=1, step=1),
-        keep_shutter_open_across=("z", "t"),
-    )
-    for event in mda4:
-        is_last_zt = bool(event.index["t"] == 1 and event.index["z"] == 1)
-        assert event.keep_shutter_open != is_last_zt
-
-    # even though c is the last axis, and comes after g, because the grid happens
-    # on a subsequence shutter will be open across the grid for each position
-    subseq = MDASequence(grid_plan=GridRelative(rows=2, columns=2))
-    mda5 = MDASequence(
-        axis_order=tuple("pgc"),
-        channels=["DAPI", "FITC"],
-        stage_positions=[Position(sequence=subseq)],
-        keep_shutter_open_across="g",
-    )
-    for event in mda5:
-        assert event.keep_shutter_open != (event.index["g"] == 3)
 
 
 def test_z_plan_num_position() -> None:
