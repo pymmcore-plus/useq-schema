@@ -1,4 +1,5 @@
 import os
+import warnings
 from typing import TYPE_CHECKING, Any, Optional, SupportsIndex
 
 import numpy as np
@@ -32,6 +33,24 @@ class Position(MutableModel):
         position. Relative positions support addition and subtraction, while absolute
         positions do not.
     """
+
+    def __new__(cls, *args: Any, **kwargs: Any) -> "Self":
+        if "sequence" in kwargs:
+            from useq.v2._mda_sequence import MDASequence
+
+            seq = kwargs.pop("sequence")
+            seq = MDASequence.model_validate(seq)
+            pos = Position.model_validate(kwargs)
+            warnings.warn(
+                "In useq.v2 Positions no longer have a sequence attribute. "
+                "If you want to assign a subsequence to a position, "
+                "use positions=[..., MDASequence(value=Position(), ...)]. "
+                "We will now return an MDASequence, but this is not type safe.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return seq.model_copy(update={"value": pos})  # type: ignore[no-any-return]
+        return super().__new__(cls)
 
     x: Optional[float] = None
     y: Optional[float] = None

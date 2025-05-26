@@ -15,15 +15,17 @@ V = TypeVar("V", covariant=True)
 
 def order_axes(
     seq: AxesIterator,
-    parent_order: tuple[str, ...] | None = None,
+    axis_order: tuple[str, ...] | None = None,
 ) -> list[AxisIterable]:
     """Returns the axes of a MultiDimSequence in the order specified by seq.axis_order.
 
-    If not provided, order by the parent's order (if given), or in the declared order.
+    If axis_order is provided, it overrides the sequence's axis_order.
     """
-    if order := seq.axis_order if seq.axis_order is not None else parent_order:
+    if axis_order is None:
+        axis_order = seq.axis_order
+    if axis_order:
         axes_map = {axis.axis_key: axis for axis in seq.axes}
-        return [axes_map[key] for key in order if key in axes_map]
+        return [axes_map[key] for key in axis_order if key in axes_map]
     return list(seq.axes)
 
 
@@ -58,9 +60,10 @@ def iterate_axes_recursive(
         if isinstance(item, AxesIterator) and item.value is not None:
             value = item.value
             override_keys = {ax.axis_key for ax in item.axes}
+            order = item.axis_order if item.axis_order is not None else parent_order
             updated_axes = [
                 ax for ax in remaining_axes if ax.axis_key not in override_keys
-            ] + order_axes(item, parent_order=parent_order)
+            ] + order_axes(item, order)
         else:
             value = item
             updated_axes = remaining_axes
@@ -88,7 +91,5 @@ def iterate_multi_dim_sequence(
         The index is the position in the axis, the value is the corresponding
         value at that index, and the axis is the AxisIterable object itself.
     """
-    if axis_order is None:
-        axis_order = seq.axis_order
     ordered_axes = order_axes(seq, axis_order)
     yield from iterate_axes_recursive(ordered_axes, parent_order=axis_order)

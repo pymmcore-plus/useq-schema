@@ -202,7 +202,7 @@ class MDASequence(AxesIterator):
                     "Cannot provide both 'axes' and legacy axis parameters."
                 )
             kwargs["axes"] = axes
-            kwargs["axis_order"] = AXES
+            kwargs.setdefault("axis_order", AXES)
         super().__init__(**kwargs)
 
     def iter_events(

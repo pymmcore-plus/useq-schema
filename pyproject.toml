@@ -131,7 +131,10 @@ ban-relative-imports = "all"
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = ["tests"]
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    "ignore:.*Positions no longer have a sequence attribute",
+]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
