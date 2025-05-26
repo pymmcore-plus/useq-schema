@@ -7,6 +7,7 @@ from typing import (
     Any,
     NamedTuple,
     Optional,
+    TypedDict,
 )
 
 import numpy as np
@@ -50,6 +51,14 @@ class Channel(UseqModel):
         if isinstance(_value, str):
             return self.config == _value
         return super().__eq__(_value)
+
+    if TYPE_CHECKING:
+
+        class Kwargs(TypedDict, total=False):
+            """Type for the kwargs passed to the channel."""
+
+            config: str
+            group: str
 
 
 class SLMImage(UseqModel):
@@ -96,6 +105,15 @@ class SLMImage(UseqModel):
             and self.exposure == other.exposure
             and np.array_equal(self.data, other.data)
         )
+
+    if TYPE_CHECKING:
+
+        class Kwargs(TypedDict, total=False):
+            """Type for the kwargs passed to the SLM image."""
+
+            data: npt.ArrayLike
+            device: Optional[str]
+            exposure: Optional[float]
 
 
 class PropertyTuple(NamedTuple):
@@ -244,3 +262,24 @@ class MDAEvent(UseqModel):
         _sx = field_serializer("x_pos", mode="plain")(_float_or_none)
         _sy = field_serializer("y_pos", mode="plain")(_float_or_none)
         _sz = field_serializer("z_pos", mode="plain")(_float_or_none)
+
+    if TYPE_CHECKING:
+
+        class Kwargs(TypedDict, total=False):
+            """Type for the kwargs passed to the MDA event."""
+
+            index: dict[str, int]
+            channel: Channel | Channel.Kwargs
+            exposure: float
+            min_start_time: float
+            pos_name: str
+            x_pos: float
+            y_pos: float
+            z_pos: float
+            slm_image: SLMImage | SLMImage.Kwargs | npt.ArrayLike
+            sequence: MDASequence | dict
+            properties: list[tuple[str, str, Any]]
+            metadata: dict
+            action: AnyAction
+            keep_shutter_open: bool
+            reset_event_timer: bool
