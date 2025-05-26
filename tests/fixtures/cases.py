@@ -5,13 +5,13 @@ from dataclasses import dataclass
 from itertools import product
 from typing import TYPE_CHECKING, Any, Callable
 
-import pytest
-from rich import print  # noqa: F401
-
-from useq import AxesBasedAF, Channel, HardwareAutofocus, MDAEvent
-from useq.v2 import (
+from useq import (
+    AxesBasedAF,
+    Channel,
     GridFromEdges,
     GridRowsColumns,
+    HardwareAutofocus,
+    MDAEvent,
     MDASequence,
     Position,
     TIntervalLoops,
@@ -970,40 +970,40 @@ AF_CASES: list[MDATestCase] = [
         ),
         predicate=ensure_af(expected_indices=[0, *range(7, 18, 2)]),
     ),
-    # # 10. Z POSITION CORRECTION - AF events get correct z position with relative z plans
-    # MDATestCase(
-    #     name="af_z_position_correction",
-    #     seq=MDASequence(
-    #         stage_positions=[Position(z=200)],
-    #         channels=["DAPI", "FITC"],
-    #         z_plan=ZRangeAround(range=2, step=1),
-    #         autofocus_plan=AxesBasedAF(
-    #             autofocus_device_name="Z", autofocus_motor_offset=40, axes=("c",)
-    #         ),
-    #     ),
-    #     predicate=ensure_af(expected_z=200),
-    # ),
-    # # 11. SUBSEQUENCE Z POSITION CORRECTION
-    # MDATestCase(
-    #     name="af_subsequence_z_position",
-    #     seq=MDASequence(
-    #         stage_positions=[
-    #             Position(
-    #                 z=10,
-    #                 sequence=MDASequence(
-    #                     autofocus_plan=AxesBasedAF(
-    #                         autofocus_device_name="Z",
-    #                         autofocus_motor_offset=40,
-    #                         axes=("c",),
-    #                     )
-    #                 ),
-    #             )
-    #         ],
-    #         channels=["DAPI", "FITC"],
-    #         z_plan=ZRangeAround(range=2, step=1),
-    #     ),
-    #     predicate=ensure_af(expected_z=10),
-    # ),
+    # 10. Z POSITION CORRECTION - AF events get correct z position with relative z plans
+    MDATestCase(
+        name="af_z_position_correction",
+        seq=MDASequence(
+            stage_positions=[Position(z=200)],
+            channels=["DAPI", "FITC"],
+            z_plan=ZRangeAround(range=2, step=1),
+            autofocus_plan=AxesBasedAF(
+                autofocus_device_name="Z", autofocus_motor_offset=40, axes=("c",)
+            ),
+        ),
+        predicate=ensure_af(expected_z=200),
+    ),
+    # 11. SUBSEQUENCE Z POSITION CORRECTION
+    MDATestCase(
+        name="af_z_position_subsequence",
+        seq=MDASequence(
+            stage_positions=[
+                Position(
+                    z=10,
+                    sequence=MDASequence(
+                        autofocus_plan=AxesBasedAF(
+                            autofocus_device_name="Z",
+                            autofocus_motor_offset=40,
+                            axes=("c",),
+                        )
+                    ),
+                )
+            ],
+            channels=["DAPI", "FITC"],
+            z_plan=ZRangeAround(range=2, step=1),
+        ),
+        predicate=ensure_af(expected_z=10),
+    ),
     # 12. NO DEVICE NAME - Edge case for testing without device name
     MDATestCase(
         name="af_no_device_name",
@@ -1179,9 +1179,6 @@ RESET_EVENT_TIMER_CASES: list[MDATestCase] = [
     ),
 ]
 
-# ##############################################################################
-# Combined Test Cases
-# ##############################################################################
 
 CASES: list[MDATestCase] = (
     GRID_SUBSEQ_CASES + AF_CASES + KEEP_SHUTTER_CASES + RESET_EVENT_TIMER_CASES
@@ -1194,48 +1191,3 @@ if duplicates := {name for name in case_names if case_names.count(name) > 1}:
         f"Duplicate test case names found: {duplicates}. "
         "Please ensure all test cases have unique names."
     )
-
-
-@pytest.mark.filterwarnings("ignore:Conflicting absolute pos")
-@pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
-def test_mda_sequence(case: MDATestCase) -> None:
-    # test case expressed the expectation as a predicate
-    if case.predicate is not None:
-        # (a function that returns a non-empty error message if the test fails)
-        if msg := case.predicate(case.seq):
-            raise AssertionError(f"\nExpectation not met in '{case.name}':\n  {msg}\n")
-
-    # test case expressed the expectation as a list of MDAEvent
-    elif isinstance(case.expected, list):
-        actual_events = list(case.seq)
-        if len(actual_events) != len(case.expected):
-            raise AssertionError(
-                f"\nMismatch in case '{case.name}':\n"
-                f"  expected: {len(case.expected)} events\n"
-                f"    actual: {len(actual_events)} events\n"
-            )
-        for i, event in enumerate(actual_events):
-            if event != case.expected[i]:
-                raise AssertionError(
-                    f"\nMismatch in case '{case.name}':\n"
-                    f"  expected: {case.expected[i]}\n"
-                    f"    actual: {event}\n"
-                )
-
-    # test case expressed the expectation as a dict of {Event attr -> values list}
-    else:
-        assert isinstance(case.expected, dict), f"Invalid test case: {case.name!r}"
-        actual: dict[str, list[Any]] = {k: [] for k in case.expected}
-        for event in case.seq:
-            for attr in case.expected:
-                actual[attr].append(getattr(event, attr))
-
-        if mismatched_fields := {
-            attr for attr in actual if actual[attr] != case.expected[attr]
-        }:
-            msg = f"\nMismatch in case '{case.name}':\n"
-            for attr in mismatched_fields:
-                msg += f"  {attr}:\n"
-                msg += f"    expected: {case.expected[attr]}\n"
-                msg += f"      actual: {actual[attr]}\n"
-            raise AssertionError(msg)

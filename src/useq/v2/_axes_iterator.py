@@ -171,6 +171,7 @@ from typing import (
 
 from pydantic import BaseModel, Field, field_validator
 
+from useq._base_model import MutableModel
 from useq.v2._importable_object import ImportableObject
 
 if TYPE_CHECKING:
@@ -302,7 +303,7 @@ class AxesIterator(Protocol):
         ...
 
 
-class MultiAxisSequence(BaseModel, Generic[EventTco]):
+class MultiAxisSequence(MutableModel, Generic[EventTco]):
     """Represents a multidimensional sequence.
 
     At the top level the `value` field is ignored.
@@ -450,7 +451,9 @@ class MultiAxisSequence(BaseModel, Generic[EventTco]):
 
     @field_validator("axis_order", mode="before")
     @classmethod
-    def _validate_axis_order(cls, v: Any) -> tuple[str, ...]:
+    def _validate_axis_order(cls, v: Any) -> Any:
+        if v is None:
+            return None
         if not isinstance(v, Iterable):
             raise ValueError(f"axis_order must be iterable, got {type(v)}")
         order = tuple(str(x).lower() for x in v)

@@ -35,11 +35,10 @@ class Position(MutableModel):
     """
 
     def __new__(cls, *args: Any, **kwargs: Any) -> "Self":
-        if "sequence" in kwargs:
+        if "sequence" in kwargs and (seq := kwargs.pop("sequence")) is not None:
             from useq.v2._mda_sequence import MDASequence
 
-            seq = kwargs.pop("sequence")
-            seq = MDASequence.model_validate(seq)
+            seq2 = MDASequence.model_validate(seq)
             pos = Position.model_validate(kwargs)
             warnings.warn(
                 "In useq.v2 Positions no longer have a sequence attribute. "
@@ -49,7 +48,7 @@ class Position(MutableModel):
                 DeprecationWarning,
                 stacklevel=2,
             )
-            return seq.model_copy(update={"value": pos})  # type: ignore[no-any-return]
+            return seq2.model_copy(update={"value": pos})  # type: ignore[return-value]
         return super().__new__(cls)
 
     x: Optional[float] = None
@@ -67,12 +66,6 @@ class Position(MutableModel):
             y, *v = v or (None,)
             z = v[0] if v else None
             values = {"x": x, "y": y, "z": z}
-        if isinstance(values, dict) and "sequence" in values:
-            raise ValueError(
-                "In useq.v2 Positions no longer have a sequence attribute. "
-                "If you want to assign a subsequence to a position, "
-                "use positions=[..., MDASequence(value=Position(), ...)]"
-            )
         return values
 
     def __add__(self, other: "Position") -> "Self":

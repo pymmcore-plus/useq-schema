@@ -123,10 +123,6 @@ keep-runtime-typing = true
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["D", "S101", "E501", "SLF"]
 
-[tool.ruff.lint.flake8-tidy-imports]
-# Disallow all relative imports.
-ban-relative-imports = "all"
-
 # https://docs.pytest.org/en/6.2.x/customize.html
 [tool.pytest.ini_options]
 minversion = "6.0"

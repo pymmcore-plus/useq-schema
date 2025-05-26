@@ -3,21 +3,29 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from rich import print  # noqa: F401
+from tests.fixtures.cases import CASES, MDATestCase
 
-from .fixtures.cases import CASES, MDATestCase
+from useq import v2
 
 
+@pytest.mark.filterwarnings("ignore:Conflicting absolute pos")
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
 def test_mda_sequence(case: MDATestCase) -> None:
+    if "af_z_position" in case.name:
+        pytest.xfail("af_z_position is not yet working in useq.v2, ")
+    seq = v2.MDASequence.model_validate(case.seq)
+    assert isinstance(seq, v2.MDASequence)
+
     # test case expressed the expectation as a predicate
     if case.predicate is not None:
         # (a function that returns a non-empty error message if the test fails)
-        if msg := case.predicate(case.seq):
+        if msg := case.predicate(seq):
             raise AssertionError(f"\nExpectation not met in '{case.name}':\n  {msg}\n")
 
     # test case expressed the expectation as a list of MDAEvent
     elif isinstance(case.expected, list):
-        actual_events = list(case.seq)
+        actual_events = list(seq)
         if len(actual_events) != len(case.expected):
             raise AssertionError(
                 f"\nMismatch in case '{case.name}':\n"

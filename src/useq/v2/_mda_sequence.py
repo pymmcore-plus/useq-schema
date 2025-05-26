@@ -1,22 +1,26 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator
 from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
+    Callable,
     Optional,
     overload,
 )
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, TypeAdapter, field_validator, model_validator
 from typing_extensions import deprecated
 
+from useq import v2
 from useq._enums import AXES, Axis
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent
+from useq._mda_sequence import MDASequence as MDASequenceV1
+from useq.v2 import _position
 from useq.v2._axes_iterator import (
     AxisIterable,
     EventBuilder,
@@ -24,9 +28,14 @@ from useq.v2._axes_iterator import (
     MultiAxisSequence,
 )
 from useq.v2._importable_object import ImportableObject
+from useq.v2._transformers import (
+    AutoFocusTransform,
+    KeepShutterOpenTransform,
+    ResetEventTimerTransform,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterator, Mapping, Sequence
 
     from useq._channel import Channel
     from useq.v2._axes_iterator import AxesIndex
@@ -88,8 +97,6 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
 
 
 def _default_transforms(data: dict) -> tuple[EventTransform[MDAEvent], ...]:
-    from useq.v2._transformers import ResetEventTimerTransform
-
     if any(ax.axis_key == Axis.TIME for ax in data.get("axes", ())):
         return (ResetEventTimerTransform(),)
     return ()
@@ -110,68 +117,74 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
         )
     )
 
-    # legacy __init__ signature
-    @overload
-    def __init__(
-        self: MDASequence,
-        *,
-        axis_order: tuple[str, ...] | str | None = ...,
-        value: Any = ...,
-        time_plan: AxisIterable[float] | list | None = ...,
-        z_plan: AxisIterable[Position] | None = ...,
-        channels: AxisIterable[Channel] | list | None = ...,
-        stage_positions: AxisIterable[Position] | list | None = ...,
-        grid_plan: AxisIterable[Position] | None = ...,
-        autofocus_plan: AnyAutofocusPlan | None = ...,
-        keep_shutter_open_across: str | tuple[str, ...] = ...,
-        metadata: dict[str, Any] = ...,
-        event_builder: EventBuilder[MDAEvent] = ...,
-    ) -> None: ...
-    # new pattern
-    @overload
-    def __init__(
-        self,
-        *,
-        axes: tuple[AxisIterable, ...] = ...,
-        axis_order: tuple[str, ...] | None = ...,
-        value: Any = ...,
-        autofocus_plan: AnyAutofocusPlan | None = ...,
-        keep_shutter_open_across: tuple[str, ...] = ...,
-        metadata: dict[str, Any] = ...,
-        event_builder: EventBuilder[MDAEvent] = ...,
-    ) -> None: ...
-    def __init__(self, **kwargs: Any) -> None:
-        """Initialize MDASequence with provided axes and parameters."""
-        if axes := _extract_legacy_axes(kwargs):
-            if "axes" in kwargs:
-                raise ValueError(
-                    "Cannot provide both 'axes' and legacy axis parameters."
-                )
-            kwargs["axes"] = axes
-            kwargs.setdefault("axis_order", AXES)
-        super().__init__(**kwargs)
+    if TYPE_CHECKING:
+        # legacy __init__ signature
+        @overload
+        def __init__(
+            self: MDASequence,
+            *,
+            axis_order: tuple[str, ...] | str | None = ...,
+            value: Any = ...,
+            time_plan: AxisIterable[float] | list | dict | None = ...,
+            z_plan: AxisIterable[Position] | None = ...,
+            channels: AxisIterable[Channel] | list | None = ...,
+            stage_positions: AxisIterable[Position] | list | None = ...,
+            grid_plan: AxisIterable[Position] | None = ...,
+            autofocus_plan: AnyAutofocusPlan | None = ...,
+            keep_shutter_open_across: str | tuple[str, ...] = ...,
+            metadata: dict[str, Any] = ...,
+            event_builder: EventBuilder[MDAEvent] = ...,
+            transforms: tuple[EventTransform[MDAEvent], ...] = ...,
+        ) -> None: ...
+        # new pattern
+        @overload
+        def __init__(
+            self,
+            *,
+            axes: tuple[AxisIterable, ...] = ...,
+            axis_order: tuple[str, ...] | None = ...,
+            value: Any = ...,
+            autofocus_plan: AnyAutofocusPlan | None = ...,
+            keep_shutter_open_across: tuple[str, ...] = ...,
+            metadata: dict[str, Any] = ...,
+            event_builder: EventBuilder[MDAEvent] = ...,
+            transforms: tuple[EventTransform[MDAEvent], ...] = ...,
+        ) -> None: ...
+        def __init__(self, **kwargs: Any) -> None: ...
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore[override]
         yield from self.iter_events()
+
+    @model_validator(mode="before")
+    @classmethod
+    def _cast_legacy_kwargs(cls, data: Any) -> Any:
+        """Cast legacy kwargs to the new pattern."""
+        if isinstance(data, MDASequenceV1):
+            data = data.model_dump()
+        if isinstance(data, dict):
+            if axes := _extract_legacy_axes(data):
+                if "axes" in data:
+                    raise ValueError(
+                        "Cannot provide both 'axes' and legacy MDASequence parameters."
+                    )
+                data["axes"] = axes
+                data.setdefault("axis_order", AXES)
+        return data
 
     @model_validator(mode="after")
     def _compose_transforms(self) -> MDASequence:
         """Compose transforms after initialization."""
         # add autofocus transform if applicable
-        if isinstance(self.autofocus_plan, AxesBasedAF):
-            from useq.v2._transformers import AutoFocusTransform
-
-            if not any(isinstance(ax, AutoFocusTransform) for ax in self.transforms):
-                self.transforms += (AutoFocusTransform(self.autofocus_plan),)
-        if self.keep_shutter_open_across:
-            from useq.v2._transformers import KeepShutterOpenTransform
-
-            if not any(
-                isinstance(ax, KeepShutterOpenTransform) for ax in self.transforms
-            ):
-                self.transforms += (
-                    KeepShutterOpenTransform(self.keep_shutter_open_across),
-                )
+        if isinstance(self.autofocus_plan, AxesBasedAF) and not any(
+            isinstance(ax, AutoFocusTransform) for ax in self.transforms
+        ):
+            self.transforms += (AutoFocusTransform(self.autofocus_plan),)
+        if self.keep_shutter_open_across and not any(
+            isinstance(ax, KeepShutterOpenTransform) for ax in self.transforms
+        ):
+            self.transforms += (
+                KeepShutterOpenTransform(self.keep_shutter_open_across),
+            )
         return self
 
     @field_validator("keep_shutter_open_across", mode="before")
@@ -271,52 +284,47 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
 
 def _extract_legacy_axes(kwargs: dict[str, Any]) -> tuple[AxisIterable, ...]:
     """Extract legacy axes from kwargs."""
-    from pydantic import TypeAdapter
 
-    from useq import v2
-    from useq.v2 import _position
+    def _cast_stage_position(val: Any) -> v2.StagePositions:
+        if not isinstance(val, Iterable):  # pragma: no cover
+            raise ValueError(
+                f"Cannot convert 'stage_position' to AxisIterable: "
+                f"Expected a sequence, got {type(val)}"
+            )
+        new_val: list[v2.Position] = []
+        for item in val:
+            if isinstance(item, dict):
+                item = v2.Position(**item)
+            elif isinstance(item, MultiAxisSequence):
+                if item.value is None:
+                    item = item.model_copy(update={"value": _position.Position()})
+            else:
+                item = _position.Position.model_validate(item)
+            new_val.append(item)
+        return v2.StagePositions.model_validate(new_val)
 
-    axes: list[AxisIterable] = []
+    def _cast_legacy_to_axis_iterable(key: str) -> AxisIterable | None:
+        validator: dict[str, Callable[[Any], AxisIterable]] = {
+            "channels": v2.ChannelsPlan.model_validate,
+            "z_plan": TypeAdapter(v2.AnyZPlan).validate_python,
+            "time_plan": TypeAdapter(v2.AnyTimePlan).validate_python,
+            "grid_plan": TypeAdapter(v2.MultiPointPlan).validate_python,
+            "stage_positions": _cast_stage_position,
+        }
+        if (val := kwargs.pop(key)) not in (None, [], (), {}):
+            if not isinstance(val, AxisIterable):
+                try:
+                    val = validator[key](val)
+                except Exception as e:  # pragma: no cover
+                    raise ValueError(
+                        f"Failed to process legacy axis '{key}': {e}"
+                    ) from e
+            return val  # type: ignore[no-any-return]
+        return None
 
-    # process kwargs in order of insertion
-    for key in list(kwargs):
-        match key:
-            case "channels":
-                val = kwargs.pop(key)
-                if not isinstance(val, AxisIterable):
-                    val = v2.ChannelsPlan.model_validate(val)
-            case "z_plan":
-                val = kwargs.pop(key)
-                if not isinstance(val, AxisIterable):
-                    val = TypeAdapter(v2.AnyZPlan).validate_python(val)
-            case "time_plan":
-                val = kwargs.pop(key)
-                if not isinstance(val, AxisIterable):
-                    val = TypeAdapter(v2.AnyTimePlan).validate_python(val)
-            case "grid_plan":
-                val = kwargs.pop(key)
-                if not isinstance(val, AxisIterable):
-                    val = TypeAdapter(v2.MultiPointPlan).validate_python(val)
-            case "stage_positions":
-                val = kwargs.pop(key)
-                if not isinstance(val, AxisIterable):
-                    if isinstance(val, Sequence):
-                        new_val = []
-                        for item in val:
-                            if isinstance(item, dict):
-                                item = v2.Position(**item)
-                            elif isinstance(item, MultiAxisSequence):
-                                if item.value is None:
-                                    item = item.model_copy(
-                                        update={"value": _position.Position()}
-                                    )
-                            else:
-                                item = _position.Position.model_validate(item)
-                            new_val.append(item)
-                        val = new_val
-                    val = v2.StagePositions.model_validate(val)
-            case _:
-                continue  # Ignore any other keys
-        axes.append(val)
-
-    return tuple(axes)
+    return tuple(
+        val
+        for key in list(kwargs)
+        if key in {"channels", "z_plan", "time_plan", "grid_plan", "stage_positions"}
+        and (val := _cast_legacy_to_axis_iterable(key)) is not None
+    )
