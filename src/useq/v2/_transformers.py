@@ -44,6 +44,9 @@ class KeepShutterOpenTransform(EventTransform[MDAEvent]):
 class ResetEventTimerTransform(EventTransform[MDAEvent]):
     """Marks the first frame of each timepoint with ``reset_event_timer=True``."""
 
+    def __init__(self) -> None:
+        self._seen_positions: set[int] = set()
+
     def __call__(
         self,
         event: MDAEvent,
@@ -51,12 +54,14 @@ class ResetEventTimerTransform(EventTransform[MDAEvent]):
         prev_event: MDAEvent | None,
         make_next_event: Callable[[], MDAEvent | None],
     ) -> Iterable[MDAEvent]:
-        cur_t = event.index.get(Axis.TIME)
-        if cur_t is None:  # no time axis → nothing to do
+        # No time axis → nothing to do
+        if Axis.TIME not in event.index:
             return [event]
 
-        prev_t = prev_event.index.get(Axis.TIME) if prev_event else None
-        if cur_t == 0 and prev_t != 0:
+        # Reset timer for the first event of each position
+        cur_p = event.index.get(Axis.POSITION, 0)  # Default to 0 if no position axis
+        if cur_p not in self._seen_positions:
+            self._seen_positions.add(cur_p)
             event = event.model_copy(update={"reset_event_timer": True})
         return [event]
 

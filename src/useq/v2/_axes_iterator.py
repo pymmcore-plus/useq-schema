@@ -158,7 +158,6 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
 from functools import cache
-from itertools import chain
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -393,11 +392,24 @@ class MultiAxisSequence(BaseModel, Generic[EventTco]):
 
                 # run through transformer pipeline
                 emitted: Iterable[EventTco] = (cur_evt,)
+                pipeline_prev_evt = prev_evt
                 for tf in transforms:
-                    emitted = chain.from_iterable(
-                        tf(e, prev_event=prev_evt, make_next_event=_make_next_event)
-                        for e in emitted
-                    )
+                    # Convert to list to materialize the iterable for proper chaining
+                    emitted_list = list(emitted)
+                    new_emitted = []
+                    for e in emitted_list:
+                        transformed = list(
+                            tf(
+                                e,
+                                prev_event=pipeline_prev_evt,
+                                make_next_event=_make_next_event,
+                            )
+                        )
+                        if transformed:
+                            new_emitted.extend(transformed)
+                            # Update prev_evt to last event from this transform
+                            pipeline_prev_evt = transformed[-1]
+                    emitted = new_emitted
 
                 for out_evt in emitted:
                     yield out_evt
@@ -417,7 +429,13 @@ class MultiAxisSequence(BaseModel, Generic[EventTco]):
         and innermost MultiAxisSequence's transform will take precedence.
         """
         merged_transforms = {type(t): t for seq in context for t in seq.transforms}
-        return tuple(merged_transforms.values())
+
+        # sort by "priority" attribute (if defined) or by order of appearance
+        sorted_transforms = sorted(
+            merged_transforms.values(),
+            key=lambda t: getattr(t, "priority", 0),  # default priority is 0
+        )
+        return tuple(sorted_transforms)
 
     # ----------------------- Validation -----------------------
 

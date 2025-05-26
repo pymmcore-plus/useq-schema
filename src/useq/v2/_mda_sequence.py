@@ -17,7 +17,12 @@ from typing_extensions import deprecated
 from useq._enums import AXES, Axis
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent
-from useq.v2._axes_iterator import AxisIterable, EventBuilder, MultiAxisSequence
+from useq.v2._axes_iterator import (
+    AxisIterable,
+    EventBuilder,
+    EventTransform,
+    MultiAxisSequence,
+)
 from useq.v2._importable_object import ImportableObject
 
 if TYPE_CHECKING:
@@ -82,12 +87,27 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
         return MDAEvent(**event_data)
 
 
+def _default_transforms(data: dict) -> tuple[EventTransform[MDAEvent], ...]:
+    from useq.v2._transformers import ResetEventTimerTransform
+
+    if any(ax.axis_key == Axis.TIME for ax in data.get("axes", ())):
+        return (ResetEventTimerTransform(),)
+    return ()
+
+
 class MDASequence(MultiAxisSequence[MDAEvent]):
     autofocus_plan: Optional[AnyAutofocusPlan] = None
     keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
     metadata: dict[str, Any] = Field(default_factory=dict)
     event_builder: Annotated[EventBuilder[MDAEvent], ImportableObject()] | None = Field(
         default_factory=MDAEventBuilder, repr=False
+    )
+
+    transforms: tuple[Annotated[EventTransform[MDAEvent], ImportableObject()], ...] = (
+        Field(
+            default_factory=_default_transforms,
+            repr=False,
+        )
     )
 
     # legacy __init__ signature

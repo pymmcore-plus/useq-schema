@@ -6,6 +6,7 @@ from itertools import product
 from typing import TYPE_CHECKING, Any, Callable
 
 import pytest
+from rich import print  # noqa: F401
 
 from useq import AxesBasedAF, Channel, HardwareAutofocus, MDAEvent
 from useq.v2 import (
