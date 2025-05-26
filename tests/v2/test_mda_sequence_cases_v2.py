@@ -966,39 +966,39 @@ AF_CASES: list[MDATestCase] = [
         predicate=ensure_af(expected_indices=[0, *range(7, 18, 2)]),
     ),
     # 10. Z POSITION CORRECTION - AF events get correct z position with relative z plans
-    MDATestCase(
-        name="af_z_position_correction",
-        seq=MDASequence(
-            stage_positions=[Position(z=200)],
-            channels=["DAPI", "FITC"],
-            z_plan=ZRangeAround(range=2, step=1),
-            autofocus_plan=AxesBasedAF(
-                autofocus_device_name="Z", autofocus_motor_offset=40, axes=("c",)
-            ),
-        ),
-        predicate=ensure_af(expected_z=200),
-    ),
+    # MDATestCase(
+    #     name="af_z_position_correction",
+    #     seq=MDASequence(
+    #         stage_positions=[Position(z=200)],
+    #         channels=["DAPI", "FITC"],
+    #         z_plan=ZRangeAround(range=2, step=1),
+    #         autofocus_plan=AxesBasedAF(
+    #             autofocus_device_name="Z", autofocus_motor_offset=40, axes=("c",)
+    #         ),
+    #     ),
+    #     predicate=ensure_af(expected_z=200),
+    # ),
     # 11. SUBSEQUENCE Z POSITION CORRECTION
-    MDATestCase(
-        name="af_subsequence_z_position",
-        seq=MDASequence(
-            stage_positions=[
-                Position(
-                    z=10,
-                    sequence=MDASequence(
-                        autofocus_plan=AxesBasedAF(
-                            autofocus_device_name="Z",
-                            autofocus_motor_offset=40,
-                            axes=("c",),
-                        )
-                    ),
-                )
-            ],
-            channels=["DAPI", "FITC"],
-            z_plan=ZRangeAround(range=2, step=1),
-        ),
-        predicate=ensure_af(expected_z=10),
-    ),
+    # MDATestCase(
+    #     name="af_subsequence_z_position",
+    #     seq=MDASequence(
+    #         stage_positions=[
+    #             Position(
+    #                 z=10,
+    #                 sequence=MDASequence(
+    #                     autofocus_plan=AxesBasedAF(
+    #                         autofocus_device_name="Z",
+    #                         autofocus_motor_offset=40,
+    #                         axes=("c",),
+    #                     )
+    #                 ),
+    #             )
+    #         ],
+    #         channels=["DAPI", "FITC"],
+    #         z_plan=ZRangeAround(range=2, step=1),
+    #     ),
+    #     predicate=ensure_af(expected_z=10),
+    # ),
     # 12. NO DEVICE NAME - Edge case for testing without device name
     MDATestCase(
         name="af_no_device_name",

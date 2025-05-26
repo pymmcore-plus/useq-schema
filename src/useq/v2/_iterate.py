@@ -7,7 +7,7 @@ from useq.v2._axes_iterator import AxisIterable, MultiAxisSequence
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from useq.v2._axes_iterator import AxesIndex
+    from useq.v2._axes_iterator import AxesIndex, AxesIndexWithContext
 
 
 V = TypeVar("V", covariant=True)
@@ -33,7 +33,8 @@ def iterate_axes_recursive(
     axes: list[AxisIterable],
     prefix: AxesIndex | None = None,
     parent_order: tuple[str, ...] | None = None,
-) -> Iterator[AxesIndex]:
+    context: MultiAxisSequence | None = None,
+) -> Iterator[AxesIndexWithContext]:
     """Recursively iterate over a list of axes one at a time.
 
     If an axis yields a nested MultiDimSequence with a non-None value,
@@ -51,7 +52,12 @@ def iterate_axes_recursive(
     if not axes:
         # Ask each axis in the prefix if the combination should be skipped
         if not any(axis.should_skip(prefix) for *_, axis in prefix.values()):
-            yield prefix
+            # context should never be None when we reach this point
+            if context is None:
+                raise ValueError(
+                    "Context cannot be None when yielding final combination"
+                )
+            yield prefix, context
         return
 
     current_axis, *remaining_axes = axes
@@ -64,20 +70,28 @@ def iterate_axes_recursive(
             updated_axes = [
                 ax for ax in remaining_axes if ax.axis_key not in override_keys
             ] + order_axes(item, order)
+            # Use the nested sequence as the new context
+            yield from iterate_axes_recursive(
+                updated_axes,
+                {**prefix, current_axis.axis_key: (idx, value, current_axis)},
+                parent_order=parent_order,
+                context=item,
+            )
         else:
             value = item
             updated_axes = remaining_axes
-
-        yield from iterate_axes_recursive(
-            updated_axes,
-            {**prefix, current_axis.axis_key: (idx, value, current_axis)},
-            parent_order=parent_order,
-        )
+            # Keep the current context
+            yield from iterate_axes_recursive(
+                updated_axes,
+                {**prefix, current_axis.axis_key: (idx, value, current_axis)},
+                parent_order=parent_order,
+                context=context,
+            )
 
 
 def iterate_multi_dim_sequence(
     seq: MultiAxisSequence, axis_order: tuple[str, ...] | None = None
-) -> Iterator[AxesIndex]:
+) -> Iterator[AxesIndexWithContext]:
     """Iterate over a MultiDimSequence.
 
     Orders the base axes (if an axis_order is provided) and then iterates
@@ -86,10 +100,12 @@ def iterate_multi_dim_sequence(
 
     Yields
     ------
-    AxesIndex
-        A dictionary mapping axis keys to tuples of (index, value, axis).
-        The index is the position in the axis, the value is the corresponding
-        value at that index, and the axis is the AxisIterable object itself.
+    AxesIndexWithContext
+        A tuple of (AxesIndex, MultiAxisSequence) where AxesIndex is a dictionary
+        mapping axis keys to tuples of (index, value, axis), and MultiAxisSequence
+        is the context that generated this axes combination.
     """
     ordered_axes = order_axes(seq, axis_order)
-    yield from iterate_axes_recursive(ordered_axes, parent_order=axis_order)
+    yield from iterate_axes_recursive(
+        ordered_axes, parent_order=axis_order, context=seq
+    )

@@ -184,6 +184,7 @@ if TYPE_CHECKING:
     Value: TypeAlias = Any
     Index: TypeAlias = int
     AxesIndex: TypeAlias = dict[AxisKey, tuple[Index, Value, "AxisIterable"]]
+    AxesIndexWithContext: TypeAlias = tuple[AxesIndex, "MultiAxisSequence"]
 
 
 V = TypeVar("V", covariant=True, bound=Any)
@@ -297,7 +298,7 @@ class AxesIterator(Protocol):
     @abstractmethod
     def __call__(
         self, seq: MultiAxisSequence, axis_order: tuple[str, ...] | None = None
-    ) -> Iterator[AxesIndex]:
+    ) -> Iterator[AxesIndexWithContext]:
         """Iterate over the axes of a MultiAxisSequence."""
         ...
 
@@ -340,18 +341,19 @@ class MultiAxisSequence(BaseModel, Generic[EventTco]):
 
     def iter_axes(
         self, axis_order: tuple[str, ...] | None = None
-    ) -> Iterator[AxesIndex]:
-        """Iterate over the axes and yield combinations.
+    ) -> Iterator[AxesIndexWithContext]:
+        """Iterate over the axes and yield combinations with context.
 
         Yields
         ------
-        AxesIndex
-            A dictionary mapping axis keys to tuples of (index, value, AxisIterable),
-            where the third element is the Iterable that yielded the value.
+        AxesIndexWithContext
+            A tuple of (AxesIndex, MultiAxisSequence) where AxesIndex is a dictionary
+            mapping axis keys to tuples of (index, value, AxisIterable), and
+            MultiAxisSequence is the context that generated this axes combination.
             For example, when iterating over an `AxisIterable` with a single axis "t",
-            with values of [0.1, .2], the yielded AxesIndexes would be:
-            - {'t': (0, 0.1, <AxisIterable>)}
-            - {'t': (1, 0.2, <AxisIterable>)}
+            with values of [0.1, .2], the yielded tuples would be:
+            - ({'t': (0, 0.1, <AxisIterable>)}, <context>)
+            - ({'t': (1, 0.2, <AxisIterable>)}, <context>)
         """
         yield from self.iterator(self, axis_order=axis_order)
 
@@ -363,42 +365,55 @@ class MultiAxisSequence(BaseModel, Generic[EventTco]):
             raise ValueError("No event builder provided for this sequence.")
 
         axes_iter = self.iter_axes(axis_order=axis_order)
-        if not (transforms := self.transforms):
-            # simple case - no transforms, just yield events
-            yield from map(event_builder, axes_iter)
-            return
 
+        # Get the first item to see if we have any events
         try:
-            next_axes: AxesIndex | None = next(axes_iter)
+            next_item: AxesIndexWithContext | None = next(axes_iter)
         except StopIteration:
             return  # empty sequence - nothing to yield
 
         prev_evt: EventTco | None = None
         while True:
-            cur_axes = cast("AxesIndex", next_axes)
+            cur_axes, context = cast("AxesIndexWithContext", next_item)
+
             try:
-                next_axes = next(axes_iter)
+                next_item = next(axes_iter)
             except StopIteration:
-                next_axes = None
+                next_item = None
 
             cur_evt = event_builder(cur_axes)
 
-            @cache
-            def _make_next(_nxt: AxesIndex | None = next_axes) -> EventTco | None:
-                return event_builder(_nxt) if _nxt is not None else None
+            # Use the context's transforms instead of self.transforms
+            transforms = context.transforms if context.transforms else ()
 
-            # run through transformer pipeline
-            emitted: Iterable[EventTco] = (cur_evt,)
-            for tf in transforms:
-                emitted = chain.from_iterable(
-                    tf(e, prev_event=prev_evt, make_next=_make_next) for e in emitted
-                )
+            if not transforms:
+                # simple case - no transforms, just yield the event
+                yield cur_evt
+                prev_evt = cur_evt
+            else:
 
-            for out_evt in emitted:
-                yield out_evt
-                prev_evt = out_evt
+                @cache
+                def _make_next(
+                    _nxt_item: AxesIndexWithContext | None = next_item,
+                ) -> EventTco | None:
+                    if _nxt_item is not None:
+                        _nxt_axes, _ = _nxt_item
+                        return event_builder(_nxt_axes)
+                    return None
 
-            if next_axes is None:
+                # run through transformer pipeline
+                emitted: Iterable[EventTco] = (cur_evt,)
+                for tf in transforms:
+                    emitted = chain.from_iterable(
+                        tf(e, prev_event=prev_evt, make_next=_make_next)
+                        for e in emitted
+                    )
+
+                for out_evt in emitted:
+                    yield out_evt
+                    prev_evt = out_evt
+
+            if next_item is None:
                 break
 
     # ----------------------- Validation -----------------------

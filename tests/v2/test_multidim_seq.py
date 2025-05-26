@@ -21,9 +21,11 @@ def _index_and_values(
 ) -> list[dict[str, tuple[int, Any]]]:
     """Return a list of indices and values for each axis in the MultiDimSequence."""
     result = []
-    for i, indices in enumerate(multi_dim.iter_axes(axis_order=axis_order)):
+    for i, axes_with_context in enumerate(multi_dim.iter_axes(axis_order=axis_order)):
         if max_iters is not None and i >= max_iters:
             break
+        # Extract the AxesIndex from the tuple (AxesIndex, context)
+        indices, _context = axes_with_context
         # cleaned version that drops the axis objects.
         result.append({k: (idx, val) for k, (idx, val, _) in indices.items()})
     return result
