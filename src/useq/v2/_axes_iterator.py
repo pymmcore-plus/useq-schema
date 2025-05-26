@@ -8,7 +8,7 @@ Key Concepts:
 -------------
 - **AxisIterable**: An interface (protocol) representing an axis. Each axis
   has a unique `axis_key` and yields values via its iterator. A concrete axis,
-  such as `SimpleAxis`, yields plain values. To express sub-iterations,
+  such as `SimpleValueAxis`, yields plain values. To express sub-iterations,
   an axis may yield a nested `MultiAxisSequence` (instead of a plain value).
 
 - **MultiAxisSequence**: Represents a multi-dimensional experiment or sequence.
@@ -26,8 +26,8 @@ Key Concepts:
 - **Prefix and Skip Logic**: As the recursion proceeds, a `prefix` is built up, mapping
   axis keys to a triple: (index, value, axis). Before yielding a final combination,
   each axis is given an opportunity (via the `should_skip` method) to veto that
-  combination. By default, `SimpleAxis.should_skip` returns False, but you can override
-  it in a subclass to implement conditional skipping.
+  combination. By default, `SimpleValueAxis.should_skip` returns False, but you can
+  override it in a subclass to implement conditional skipping.
 
 Usage Examples:
 ---------------
@@ -35,9 +35,9 @@ Usage Examples:
 
     >>> multi_dim = MultiAxisSequence(
     ...     axes=(
-    ...         SimpleAxis("t", [0, 1, 2]),
-    ...         SimpleAxis("c", ["red", "green", "blue"]),
-    ...         SimpleAxis("z", [0.1, 0.2]),
+    ...         SimpleValueAxis("t", [0, 1, 2]),
+    ...         SimpleValueAxis("c", ["red", "green", "blue"]),
+    ...         SimpleValueAxis("z", [0.1, 0.2]),
     ...     ),
     ...     axis_order=("t", "c", "z"),
     ... )
@@ -53,15 +53,15 @@ Usage Examples:
 
     >>> multi_dim = MultiAxisSequence(
     ...     axes=(
-    ...         SimpleAxis("t", [
+    ...         SimpleValueAxis("t", [
     ...             0,
     ...             MultiAxisSequence(
     ...                 value=1,
-    ...                 axes=(SimpleAxis("q", ["a", "b"]),),
+    ...                 axes=(SimpleValueAxis("q", ["a", "b"]),),
     ...             ),
     ...             2,
     ...         ]),
-    ...         SimpleAxis("c", ["red", "green", "blue"]),
+    ...         SimpleValueAxis("c", ["red", "green", "blue"]),
     ...     ),
     ...     axis_order=("t", "c"),
     ... )
@@ -81,20 +81,20 @@ Usage Examples:
 
     >>> multi_dim = MultiAxisSequence(
     ...     axes=(
-    ...         SimpleAxis("t", [
+    ...         SimpleValueAxis("t", [
     ...             0,
     ...             MultiAxisSequence(
     ...                 value=1,
     ...                 axes=(
-    ...                     SimpleAxis("c", ["red", "blue"]),
-    ...                     SimpleAxis("z", [7, 8, 9]),
+    ...                     SimpleValueAxis("c", ["red", "blue"]),
+    ...                     SimpleValueAxis("z", [7, 8, 9]),
     ...                 ),
     ...                 axis_order=("c", "z"),
     ...             ),
     ...             2,
     ...         ]),
-    ...         SimpleAxis("c", ["red", "green", "blue"]),
-    ...         SimpleAxis("z", [0.1, 0.2]),
+    ...         SimpleValueAxis("c", ["red", "green", "blue"]),
+    ...         SimpleValueAxis("z", [0.1, 0.2]),
     ...     ),
     ...     axis_order=("t", "c", "z"),
     ... )
@@ -109,11 +109,11 @@ Usage Examples:
     ... (and so on)
 
 4. Conditional Skipping:
-   By subclassing SimpleAxis to override should_skip, you can filter out combinations.
-   For example, suppose we want to skip any combination where "c" equals "green" and "z"
-   is not 0.2:
+   By subclassing SimpleValueAxis to override should_skip, you can filter out
+   combinations. For example, suppose we want to skip any combination where "c" equals
+   "green" and "z" is not 0.2:
 
-    >>> class FilteredZ(SimpleAxis):
+    >>> class FilteredZ(SimpleValueAxis):
     ...     def should_skip(
     ...             self, prefix: dict[str, tuple[int, Any, AxisIterable]]
     ...         ) -> bool:
@@ -125,8 +125,8 @@ Usage Examples:
     ...
     >>> multi_dim = MultiAxisSequence(
     ...     axes=(
-    ...         SimpleAxis("t", [0, 1, 2]),
-    ...         SimpleAxis("c", ["red", "green", "blue"]),
+    ...         SimpleValueAxis("t", [0, 1, 2]),
+    ...         SimpleValueAxis("c", ["red", "green", "blue"]),
     ...         FilteredZ("z", [0.1, 0.2]),
     ...     ),
     ...     axis_order=("t", "c", "z"),
@@ -144,7 +144,7 @@ Usage Notes:
 - The ordering of axes is controlled via the `axis_order` property, which is inherited
   by nested sequences if not explicitly provided.
 - The should_skip mechanism gives each axis an opportunity to veto a final combination.
-  By default, SimpleAxis does not skip any combination, but you can subclass it to
+  By default, SimpleValueAxis does not skip any combination, but you can subclass it to
   implement custom filtering logic.
 
 This module is intended for cases where complex, declarative multidimensional iteration
@@ -156,7 +156,9 @@ hierarchical manner.
 from __future__ import annotations
 
 from abc import abstractmethod
-from collections.abc import Iterable, Iterator, Mapping, Sized
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
+from functools import cache
+from itertools import chain
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -164,6 +166,7 @@ from typing import (
     Generic,
     Protocol,
     TypeVar,
+    cast,
     runtime_checkable,
 )
 
@@ -184,7 +187,8 @@ if TYPE_CHECKING:
 
 
 V = TypeVar("V", covariant=True, bound=Any)
-EventT = TypeVar("EventT", covariant=True, bound=Any)
+EventT = TypeVar("EventT", bound=Any)
+EventTco = TypeVar("EventTco", covariant=True, bound=Any)
 
 
 class AxisIterable(BaseModel, Generic[V]):
@@ -250,12 +254,40 @@ class SimpleValueAxis(AxisIterable[V]):
 
 
 @runtime_checkable
-class EventBuilder(Protocol[EventT]):
+class EventBuilder(Protocol[EventTco]):
     """Callable that builds an event from an AxesIndex."""
 
     @abstractmethod
-    def __call__(self, axes_index: AxesIndex) -> EventT:
+    def __call__(self, axes_index: AxesIndex) -> EventTco:
         """Transform an AxesIndex into an event object."""
+
+
+@runtime_checkable
+class EventTransform(Protocol[EventT]):
+    """Callable that can modify, drop, or insert events.
+
+    The transformer receives:
+
+    * **event** - the current (already built) event.
+    * **prev_event** - the *previously transformed* event that was just yielded,
+      or ``None`` if this is the first call.
+    * **make_next** - a zero-argument callable that lazily builds the *next*
+      raw event (i.e. before any transformers).  Only call it if you really
+      need look-ahead so the pipeline stays lazy.
+
+    The transformer must return a list.
+
+    Return **one** event in the list for a 1-to-1 mapping, an empty list to
+    drop the original event, or a list with multiple items to insert extras.
+    """
+
+    def __call__(
+        self,
+        event: EventT,
+        *,
+        prev_event: EventT | None,
+        make_next: Callable[[], EventT | None],
+    ) -> Iterable[EventT]: ...
 
 
 @runtime_checkable
@@ -271,12 +303,13 @@ class AxesIterator(Protocol):
 
 
 def _default_iterator() -> AxesIterator:
+    # import lazy to avoid circular imports
     from useq.v2._iterate import iterate_multi_dim_sequence
 
     return iterate_multi_dim_sequence
 
 
-class MultiAxisSequence(BaseModel, Generic[EventT]):
+class MultiAxisSequence(BaseModel, Generic[EventTco]):
     """Represents a multidimensional sequence.
 
     At the top level the `value` field is ignored.
@@ -290,11 +323,15 @@ class MultiAxisSequence(BaseModel, Generic[EventT]):
     value: Any = None
 
     # these will rarely be needed, but offer maximum flexibility
-    event_builder: Annotated[EventBuilder[EventT], ImportableObject()] | None = Field(
+    event_builder: Annotated[EventBuilder[EventTco], ImportableObject()] | None = Field(
         default=None, repr=False
     )
     iterator: Annotated[AxesIterator, ImportableObject()] = Field(
         default_factory=_default_iterator, repr=False
+    )
+    # optional post-processing transformer chain
+    transforms: tuple[Annotated[EventTransform, ImportableObject()], ...] = Field(
+        default_factory=tuple, repr=False
     )
 
     def is_finite(self) -> bool:
@@ -320,11 +357,49 @@ class MultiAxisSequence(BaseModel, Generic[EventT]):
 
     def iter_events(
         self, axis_order: tuple[str, ...] | None = None
-    ) -> Iterator[EventT]:
-        """Iterate over the axes and yield events."""
-        if self.event_builder is None:
+    ) -> Iterator[EventTco]:
+        """Iterate over axes, build raw events, then apply transformers."""
+        if (event_builder := self.event_builder) is None:
             raise ValueError("No event builder provided for this sequence.")
-        yield from map(self.event_builder, self.iter_axes(axis_order=axis_order))
+
+        axes_iter = self.iter_axes(axis_order=axis_order)
+        if not (transforms := self.transforms):
+            # simple case - no transforms, just yield events
+            yield from map(event_builder, axes_iter)
+            return
+
+        try:
+            next_axes: AxesIndex | None = next(axes_iter)
+        except StopIteration:
+            return  # empty sequence - nothing to yield
+
+        prev_evt: EventTco | None = None
+        while True:
+            cur_axes = cast("AxesIndex", next_axes)
+            try:
+                next_axes = next(axes_iter)
+            except StopIteration:
+                next_axes = None
+
+            cur_evt = event_builder(cur_axes)
+
+            @cache
+            def _make_next(_nxt: AxesIndex | None = next_axes) -> EventTco | None:
+                return event_builder(_nxt) if _nxt is not None else None
+
+            # run through transformer pipeline
+            emitted: Iterable[EventTco] = (cur_evt,)
+            for tf in transforms:
+                emitted = chain.from_iterable(
+                    tf(e, prev_event=prev_evt, make_next=_make_next) for e in emitted
+                )
+
+            for out_evt in emitted:
+                yield out_evt
+                prev_evt = out_evt
+
+            if next_axes is None:
+                break
 
     # ----------------------- Validation -----------------------
 

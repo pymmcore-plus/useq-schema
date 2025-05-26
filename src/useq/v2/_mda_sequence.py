@@ -15,7 +15,7 @@ from pydantic import Field, field_validator
 from typing_extensions import deprecated
 
 from useq._enums import AXES, Axis
-from useq._hardware_autofocus import AnyAutofocusPlan  # noqa: TC001
+from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent
 from useq.v2._axes_iterator import AxisIterable, EventBuilder, MultiAxisSequence
 from useq.v2._importable_object import ImportableObject
@@ -130,6 +130,10 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
             kwargs["axes"] = axes
             kwargs.setdefault("axis_order", AXES)
         super().__init__(**kwargs)
+        if isinstance(self.autofocus_plan, AxesBasedAF):
+            from useq.v2._transformers import AutoFocusTransform
+
+            self.transforms += (AutoFocusTransform(self.autofocus_plan),)
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore[override]
         yield from self.iter_events()
