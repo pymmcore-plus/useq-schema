@@ -59,44 +59,6 @@ def genindex(axes: dict[str, int]) -> list[dict[str, int]]:
     ]
 
 
-def ensure_af(
-    expected_indices: Sequence[int] | None = None, expected_z: float | None = None
-) -> Callable[[useq.MDASequence], str | None]:
-    """Test things about autofocus events.
-
-    Parameters
-    ----------
-    expected_indices : Sequence[int] | None
-        Ensure that the autofocus events are at these indices.
-    expected_z : float | None
-        Ensure that all autofocus events have this z position.
-    """
-    exp = list(expected_indices) if expected_indices else []
-
-    def _pred(seq: useq.MDASequence) -> str | None:
-        errors: list[str] = []
-        if exp:
-            actual_indices = [
-                i
-                for i, ev in enumerate(seq)
-                if isinstance(ev.action, HardwareAutofocus)
-            ]
-            if actual_indices != exp:
-                errors.append(f"expected AF indices {exp}, got {actual_indices}")
-
-        if expected_z is not None:
-            z_vals = [
-                ev.z_pos for ev in seq if isinstance(ev.action, HardwareAutofocus)
-            ]
-            if not all(z == expected_z for z in z_vals):
-                errors.append(f"expected all AF events at z={expected_z}, got {z_vals}")
-        if errors:
-            return ", ".join(errors)
-        return None
-
-    return _pred
-
-
 ##############################################################################
 # test cases
 ##############################################################################
@@ -843,6 +805,48 @@ GRID_SUBSEQ_CASES: list[MDATestCase] = [
     ),
 ]
 
+##############################################################################
+# Autofocus Tests
+##############################################################################
+
+
+def ensure_af(
+    expected_indices: Sequence[int] | None = None, expected_z: float | None = None
+) -> Callable[[useq.MDASequence], str | None]:
+    """Test things about autofocus events.
+
+    Parameters
+    ----------
+    expected_indices : Sequence[int] | None
+        Ensure that the autofocus events are at these indices.
+    expected_z : float | None
+        Ensure that all autofocus events have this z position.
+    """
+    exp = list(expected_indices) if expected_indices else []
+
+    def _pred(seq: useq.MDASequence) -> str | None:
+        errors: list[str] = []
+        if exp:
+            actual_indices = [
+                i
+                for i, ev in enumerate(seq)
+                if isinstance(ev.action, HardwareAutofocus)
+            ]
+            if actual_indices != exp:
+                errors.append(f"expected AF indices {exp}, got {actual_indices}")
+
+        if expected_z is not None:
+            z_vals = [
+                ev.z_pos for ev in seq if isinstance(ev.action, HardwareAutofocus)
+            ]
+            if not all(z == expected_z for z in z_vals):
+                errors.append(f"expected all AF events at z={expected_z}, got {z_vals}")
+        if errors:
+            return ", ".join(errors)
+        return None
+
+    return _pred
+
 
 AF_CASES: list[MDATestCase] = [
     # 1. NO AXES - Should never trigger
@@ -1014,7 +1018,135 @@ AF_CASES: list[MDATestCase] = [
     ),
 ]
 
-CASES: list[MDATestCase] = GRID_SUBSEQ_CASES + AF_CASES
+##############################################################################
+# Keep Shutter Open Tests
+###############################################################################
+
+
+def ensure_shutter_behavior(
+    expected_indices: Sequence[int] | bool | None = None,
+) -> Callable[[useq.MDASequence], str | None]:
+    """Test keep_shutter_open behavior."""
+
+    def _pred(seq: useq.MDASequence) -> str | None:
+        events = list(seq)
+        errors: list[str] = []
+
+        if expected_indices is not None:
+            if expected_indices is True:
+                if closed_events := [
+                    i for i, e in enumerate(events) if not e.keep_shutter_open
+                ]:
+                    errors.append(
+                        f"expected all shutters open, but events "
+                        f"{closed_events} have keep_shutter_open=False"
+                    )
+            elif expected_indices is False:
+                if open_events := [
+                    i for i, e in enumerate(events) if e.keep_shutter_open
+                ]:
+                    errors.append(
+                        f"expected all shutters closed, but events "
+                        f"{open_events} have keep_shutter_open=True"
+                    )
+            else:
+                actual_indices = [
+                    i for i, e in enumerate(events) if e.keep_shutter_open
+                ]
+                if actual_indices != list(expected_indices):
+                    errors.append(
+                        f"expected shutter open at indices {expected_indices}, "
+                        f"got {actual_indices}"
+                    )
+
+        if errors:
+            return "; ".join(errors)
+        return None
+
+    return _pred
+
+
+KEEP_SHUTTER_CASES: list[MDATestCase] = [
+    # with z as the last axis, the shutter will be left open
+    # whenever z is the first index (since there are only 2 z planes)
+    MDATestCase(
+        name="keep_shutter_open_across_z_order_tcz",
+        seq=useq.MDASequence(
+            axis_order=tuple("tcz"),
+            channels=["DAPI", "FITC"],
+            time_plan=useq.TIntervalLoops(loops=2, interval=0),
+            z_plan=useq.ZRangeAround(range=1, step=1),
+            keep_shutter_open_across="z",
+        ),
+        predicate=ensure_shutter_behavior(expected_indices=[0, 2, 4, 6]),
+    ),
+    # with c as the last axis, the shutter will never be left open
+    MDATestCase(
+        name="keep_shutter_open_across_z_order_tzc",
+        seq=useq.MDASequence(
+            axis_order=tuple("tzc"),
+            channels=["DAPI", "FITC"],
+            time_plan=useq.TIntervalLoops(loops=2, interval=0),
+            z_plan=useq.ZRangeAround(range=1, step=1),
+            keep_shutter_open_across="z",
+        ),
+        predicate=ensure_shutter_behavior(expected_indices=[]),
+    ),
+    # because t is changing faster than z, the shutter will never be left open
+    MDATestCase(
+        name="keep_shutter_open_across_z_order_czt",
+        seq=useq.MDASequence(
+            axis_order=tuple("czt"),
+            channels=["DAPI", "FITC"],
+            time_plan=useq.TIntervalLoops(loops=2, interval=0),
+            z_plan=useq.ZRangeAround(range=1, step=1),
+            keep_shutter_open_across="z",
+        ),
+        predicate=ensure_shutter_behavior(expected_indices=[]),
+    ),
+    # but, if we include 't' in the keep_shutter_open_across,
+    # it will be left open except when it's the last t and last z
+    MDATestCase(
+        name="keep_shutter_open_across_zt_order_czt",
+        seq=useq.MDASequence(
+            axis_order=tuple("czt"),
+            channels=["DAPI", "FITC"],
+            time_plan=useq.TIntervalLoops(loops=2, interval=0),
+            z_plan=useq.ZRangeAround(range=1, step=1),
+            keep_shutter_open_across=("z", "t"),
+        ),
+        # for event in seq:
+        #     is_last_zt = bool(event.index["t"] == 1 and event.index["z"] == 1)
+        #     assert event.keep_shutter_open != is_last_zt
+        predicate=ensure_shutter_behavior(expected_indices=[0, 1, 2, 4, 5, 6]),
+    ),
+    # even though c is the last axis, and comes after g, because the grid happens
+    # on a subsequence shutter will be open across the grid for each position
+    MDATestCase(
+        name="keep_shutter_open_across_g_order_pgc_with_subseq",
+        seq=useq.MDASequence(
+            axis_order=tuple("pgc"),
+            channels=["DAPI", "FITC"],
+            stage_positions=[
+                useq.Position(
+                    sequence=useq.MDASequence(
+                        grid_plan=useq.GridRelative(rows=2, columns=2)
+                    )
+                )
+            ],
+            keep_shutter_open_across="g",
+        ),
+        # for event in seq:
+        #     assert event.keep_shutter_open != (event.index["g"] == 3)
+        predicate=ensure_shutter_behavior(expected_indices=[0, 1, 2, 4, 5, 6]),
+    ),
+]
+
+# ##############################################################################
+# Combined Test Cases
+# ##############################################################################
+
+CASES: list[MDATestCase] = GRID_SUBSEQ_CASES + AF_CASES + KEEP_SHUTTER_CASES
 
 # assert that all test cases are unique
 case_names = [case.name for case in CASES]
