@@ -21,8 +21,6 @@ from useq.v2 import (
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    pass
-
 
 @dataclass(frozen=True)
 class MDATestCase:
@@ -33,15 +31,15 @@ class MDATestCase:
     name : str
         A short identifier used for the parametrised test id.
     seq : MDASequence
-        The :class:`MDASequence` under test.
+        The :class:`useq.MDASequence` under test.
     expected : dict[str, list[Any]] | list[MDAEvent] | None
         one of:
         - a dictionary mapping attribute names to a list of expected values, where
           the list length is equal to the number of events in the sequence.
-        - a list of expected `MDAEvent` objects, compared directly to the expanded
+        - a list of expected `useq.MDAEvent` objects, compared directly to the expanded
           sequence.
     predicate : Callable[[MDASequence], str] | None
-        A callable that takes a `MDASequence`.  If a non-empty string is returned,
+        A callable that takes a `useq.MDASequence`.  If a non-empty string is returned,
         it is raised as an assertion error with the string as the message.
     """
 
@@ -67,91 +65,9 @@ def genindex(axes: dict[str, int]) -> list[dict[str, int]]:
     ]
 
 
-def ensure_af(
-    expected_indices: Sequence[int] | None = None, expected_z: float | None = None
-) -> Callable[[MDASequence], str | None]:
-    """Test things about autofocus events.
-
-    Parameters
-    ----------
-    expected_indices : Sequence[int] | None
-        Ensure that the autofocus events are at these indices.
-    expected_z : float | None
-        Ensure that all autofocus events have this z position.
-    """
-    exp = list(expected_indices) if expected_indices else []
-
-    def _pred(seq: MDASequence) -> str | None:
-        errors: list[str] = []
-        if exp:
-            actual_indices = [
-                i
-                for i, ev in enumerate(seq)
-                if isinstance(ev.action, HardwareAutofocus)
-            ]
-            if actual_indices != exp:
-                errors.append(f"expected AF indices {exp}, got {actual_indices}")
-
-        if expected_z is not None:
-            z_vals = [
-                ev.z_pos for ev in seq if isinstance(ev.action, HardwareAutofocus)
-            ]
-            if not all(z == expected_z for z in z_vals):
-                errors.append(f"expected all AF events at z={expected_z}, got {z_vals}")
-        if errors:
-            return ", ".join(errors)
-        return None
-
-    return _pred
-
-
-def ensure_shutter_behavior(
-    expected_indices: Sequence[int] | bool | None = None,
-) -> Callable[[MDASequence], str | None]:
-    """Test keep_shutter_open behavior."""
-
-    def _pred(seq: MDASequence) -> str | None:
-        events = list(seq)
-        errors: list[str] = []
-
-        if expected_indices is not None:
-            if expected_indices is True:
-                if closed_events := [
-                    i for i, e in enumerate(events) if not e.keep_shutter_open
-                ]:
-                    errors.append(
-                        f"expected all shutters open, but events "
-                        f"{closed_events} have keep_shutter_open=False"
-                    )
-            elif expected_indices is False:
-                if open_events := [
-                    i for i, e in enumerate(events) if e.keep_shutter_open
-                ]:
-                    errors.append(
-                        f"expected all shutters closed, but events "
-                        f"{open_events} have keep_shutter_open=True"
-                    )
-            else:
-                actual_indices = [
-                    i for i, e in enumerate(events) if e.keep_shutter_open
-                ]
-                if actual_indices != list(expected_indices):
-                    errors.append(
-                        f"expected shutter open at indices {expected_indices}, "
-                        f"got {actual_indices}"
-                    )
-
-        if errors:
-            return "; ".join(errors)
-        return None
-
-    return _pred
-
-
 ##############################################################################
 # test cases
 ##############################################################################
-
 
 GRID_SUBSEQ_CASES: list[MDATestCase] = [
     MDATestCase(
@@ -159,8 +75,10 @@ GRID_SUBSEQ_CASES: list[MDATestCase] = [
         seq=MDASequence(
             stage_positions=[
                 {},
-                MDASequence(
-                    value=Position(), channels=[Channel(config="FITC", exposure=100)]
+                Position(
+                    sequence=MDASequence(
+                        channels=[Channel(config="FITC", exposure=100)]
+                    )
                 ),
             ]
         ),
@@ -883,6 +801,49 @@ GRID_SUBSEQ_CASES: list[MDATestCase] = [
     ),
 ]
 
+##############################################################################
+# Autofocus Tests
+##############################################################################
+
+
+def ensure_af(
+    expected_indices: Sequence[int] | None = None, expected_z: float | None = None
+) -> Callable[[MDASequence], str | None]:
+    """Test things about autofocus events.
+
+    Parameters
+    ----------
+    expected_indices : Sequence[int] | None
+        Ensure that the autofocus events are at these indices.
+    expected_z : float | None
+        Ensure that all autofocus events have this z position.
+    """
+    exp = list(expected_indices) if expected_indices else []
+
+    def _pred(seq: MDASequence) -> str | None:
+        errors: list[str] = []
+        if exp:
+            actual_indices = [
+                i
+                for i, ev in enumerate(seq)
+                if isinstance(ev.action, HardwareAutofocus)
+            ]
+            if actual_indices != exp:
+                errors.append(f"expected AF indices {exp}, got {actual_indices}")
+
+        if expected_z is not None:
+            z_vals = [
+                ev.z_pos for ev in seq if isinstance(ev.action, HardwareAutofocus)
+            ]
+            if not all(z == expected_z for z in z_vals):
+                errors.append(f"expected all AF events at z={expected_z}, got {z_vals}")
+        if errors:
+            return ", ".join(errors)
+        return None
+
+    return _pred
+
+
 AF_CASES: list[MDATestCase] = [
     # 1. NO AXES - Should never trigger
     MDATestCase(
@@ -1008,7 +969,7 @@ AF_CASES: list[MDATestCase] = [
         ),
         predicate=ensure_af(expected_indices=[0, *range(7, 18, 2)]),
     ),
-    # 10. Z POSITION CORRECTION - AF events get correct z position with relative z plans
+    # # 10. Z POSITION CORRECTION - AF events get correct z position with relative z plans
     # MDATestCase(
     #     name="af_z_position_correction",
     #     seq=MDASequence(
@@ -1021,7 +982,7 @@ AF_CASES: list[MDATestCase] = [
     #     ),
     #     predicate=ensure_af(expected_z=200),
     # ),
-    # 11. SUBSEQUENCE Z POSITION CORRECTION
+    # # 11. SUBSEQUENCE Z POSITION CORRECTION
     # MDATestCase(
     #     name="af_subsequence_z_position",
     #     seq=MDASequence(
@@ -1052,6 +1013,54 @@ AF_CASES: list[MDATestCase] = [
         predicate=lambda _: "",  # Just check it doesn't crash
     ),
 ]
+
+##############################################################################
+# Keep Shutter Open Tests
+###############################################################################
+
+
+def ensure_shutter_behavior(
+    expected_indices: Sequence[int] | bool | None = None,
+) -> Callable[[MDASequence], str | None]:
+    """Test keep_shutter_open behavior."""
+
+    def _pred(seq: MDASequence) -> str | None:
+        events = list(seq)
+        errors: list[str] = []
+
+        if expected_indices is not None:
+            if expected_indices is True:
+                if closed_events := [
+                    i for i, e in enumerate(events) if not e.keep_shutter_open
+                ]:
+                    errors.append(
+                        f"expected all shutters open, but events "
+                        f"{closed_events} have keep_shutter_open=False"
+                    )
+            elif expected_indices is False:
+                if open_events := [
+                    i for i, e in enumerate(events) if e.keep_shutter_open
+                ]:
+                    errors.append(
+                        f"expected all shutters closed, but events "
+                        f"{open_events} have keep_shutter_open=True"
+                    )
+            else:
+                actual_indices = [
+                    i for i, e in enumerate(events) if e.keep_shutter_open
+                ]
+                if actual_indices != list(expected_indices):
+                    errors.append(
+                        f"expected shutter open at indices {expected_indices}, "
+                        f"got {actual_indices}"
+                    )
+
+        if errors:
+            return "; ".join(errors)
+        return None
+
+    return _pred
+
 
 KEEP_SHUTTER_CASES: list[MDATestCase] = [
     # with z as the last axis, the shutter will be left open
@@ -1127,8 +1136,55 @@ KEEP_SHUTTER_CASES: list[MDATestCase] = [
     ),
 ]
 
+# ##############################################################################
+# Reset Event Timer Test Cases
+# ##############################################################################
 
-CASES: list[MDATestCase] = GRID_SUBSEQ_CASES + AF_CASES + KEEP_SHUTTER_CASES
+RESET_EVENT_TIMER_CASES: list[MDATestCase] = [
+    MDATestCase(
+        name="reset_event_timer_with_time_intervals",
+        seq=MDASequence(
+            stage_positions=[(100, 100), (0, 0)],
+            time_plan={"interval": 1, "loops": 2},
+            axis_order=tuple("ptgcz"),
+        ),
+        expected={
+            "reset_event_timer": [True, False, True, False],
+        },
+    ),
+    MDATestCase(
+        name="reset_event_timer_with_nested_position_sequences",
+        seq=MDASequence(
+            stage_positions=[
+                Position(
+                    x=0,
+                    y=0,
+                    sequence=MDASequence(
+                        channels=["Cy5"], time_plan={"interval": 1, "loops": 2}
+                    ),
+                ),
+                Position(
+                    x=1,
+                    y=1,
+                    sequence=MDASequence(
+                        channels=["DAPI"], time_plan={"interval": 1, "loops": 2}
+                    ),
+                ),
+            ]
+        ),
+        expected={
+            "reset_event_timer": [True, False, True, False],
+        },
+    ),
+]
+
+# ##############################################################################
+# Combined Test Cases
+# ##############################################################################
+
+CASES: list[MDATestCase] = (
+    GRID_SUBSEQ_CASES + AF_CASES + KEEP_SHUTTER_CASES + RESET_EVENT_TIMER_CASES
+)
 
 # assert that all test cases are unique
 case_names = [case.name for case in CASES]
