@@ -260,7 +260,9 @@ class EventBuilder(Protocol[EventTco]):
     """Callable that builds an event from an AxesIndex."""
 
     @abstractmethod
-    def __call__(self, axes_index: AxesIndex) -> EventTco:
+    def __call__(
+        self, axes_index: AxesIndex, context: tuple[MultiAxisSequence, ...]
+    ) -> EventTco:
         """Transform an AxesIndex into an event object."""
 
 
@@ -375,7 +377,7 @@ class MultiAxisSequence(MutableModel, Generic[EventTco]):
             except StopIteration:
                 next_item = None
 
-            cur_evt = event_builder(cur_axes)
+            cur_evt = event_builder(cur_axes, context)
             transforms = self.compose_transforms(context)
 
             if not transforms:
@@ -387,9 +389,10 @@ class MultiAxisSequence(MutableModel, Generic[EventTco]):
                 @cache
                 def _make_next_event(
                     _nxt_item: AxesIndexWithContext | None = next_item,
+                    _ctx: Any = context,
                 ) -> EventTco | None:
                     if _nxt_item is not None:
-                        return event_builder(_nxt_item[0])
+                        return event_builder(_nxt_item[0], _ctx)
                     return None
 
                 # run through transformer pipeline

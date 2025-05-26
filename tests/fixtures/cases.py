@@ -1233,3 +1233,22 @@ def assert_test_case_passes(
                 msg += f"    expected: {case.expected[attr]}\n"
                 msg += f"      actual: {actual[attr]}\n"
             raise AssertionError(msg)
+
+
+def get_case(name: str) -> MDATestCase:
+    """Get a test case by name."""
+    for case in CASES:
+        if case.name == name:
+            return case
+
+    import difflib
+
+    # If the name is not found, suggest similar names
+    similar_names = difflib.get_close_matches(
+        name, [case.name for case in CASES], cutoff=0.3
+    )
+    if similar_names:
+        raise ValueError(
+            f"Test case '{name}' not found. Did you mean: {', '.join(similar_names)}?"
+        )
+    raise ValueError(f"Test case '{name}' not found in the cases list.")

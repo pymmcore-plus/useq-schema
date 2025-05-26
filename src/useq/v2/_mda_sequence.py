@@ -32,6 +32,7 @@ from useq.v2._transformers import (
     AutoFocusTransform,
     KeepShutterOpenTransform,
     ResetEventTimerTransform,
+    reset_global_timer_state,
 )
 
 if TYPE_CHECKING:
@@ -46,7 +47,9 @@ if TYPE_CHECKING:
 class MDAEventBuilder(EventBuilder[MDAEvent]):
     """Builds MDAEvent objects from AxesIndex."""
 
-    def __call__(self, axes_index: AxesIndex) -> MDAEvent:
+    def __call__(
+        self, axes_index: AxesIndex, context: tuple[MultiAxisSequence, ...]
+    ) -> MDAEvent:
         """Transform AxesIndex into MDAEvent using axis contributions."""
         index: dict[str, int] = {}
         contributions: list[tuple[str, Mapping]] = []
@@ -57,7 +60,9 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
             contribution = axis.contribute_to_mda_event(value, index)
             contributions.append((axis_key, contribution))
 
-        return self._merge_contributions(index, contributions)
+        event = self._merge_contributions(index, contributions)
+        event.sequence = context[-1] if context else None
+        return event
 
     def _merge_contributions(
         self, index: dict[str, int], contributions: list[tuple[str, Mapping]]
@@ -153,6 +158,8 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
         def __init__(self, **kwargs: Any) -> None: ...
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore[override]
+        # Reset global timer state at the beginning of each sequence (like v1)
+        reset_global_timer_state()
         yield from self.iter_events()
 
     @model_validator(mode="before")
@@ -160,15 +167,13 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
     def _cast_legacy_kwargs(cls, data: Any) -> Any:
         """Cast legacy kwargs to the new pattern."""
         if isinstance(data, MDASequenceV1):
-            data = data.model_dump()
-        if isinstance(data, dict):
-            if axes := _extract_legacy_axes(data):
-                if "axes" in data:
-                    raise ValueError(
-                        "Cannot provide both 'axes' and legacy MDASequence parameters."
-                    )
-                data["axes"] = axes
-                data.setdefault("axis_order", AXES)
+            data = data.model_dump(exclude_unset=True)
+        if isinstance(data, dict) and (axes := _extract_legacy_axes(data)):
+            if "axes" in data:
+                raise ValueError(
+                    "Cannot provide both 'axes' and legacy MDASequence parameters."
+                )
+            data["axes"] = axes
         return data
 
     @model_validator(mode="after")
@@ -322,9 +327,17 @@ def _extract_legacy_axes(kwargs: dict[str, Any]) -> tuple[AxisIterable, ...]:
             return val  # type: ignore[no-any-return]
         return None
 
-    return tuple(
+    axes = [
         val
         for key in list(kwargs)
         if key in {"channels", "z_plan", "time_plan", "grid_plan", "stage_positions"}
         and (val := _cast_legacy_to_axis_iterable(key)) is not None
-    )
+    ]
+
+    if "axis_order" not in kwargs:
+        # sort axes by AXES
+        axes.sort(
+            key=lambda ax: AXES.index(ax.axis_key) if ax.axis_key in AXES else len(AXES)
+        )
+
+    return tuple(axes)

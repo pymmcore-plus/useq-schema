@@ -87,9 +87,9 @@ class MutableModel(_ReplaceableModel):
     )
 
 
-class UseqModel(FrozenModel):
+class IOMixin(BaseModel):
     @classmethod
-    def from_file(cls: type[_Y], path: Union[str, Path]) -> _Y:
+    def from_file(cls, path: Union[str, Path]) -> "Self":
         """Return an instance of this class from a file.  Supports JSON and YAML."""
         path = Path(path)
         if path.suffix in {".yaml", ".yml"}:
@@ -148,3 +148,9 @@ class UseqModel(FrozenModel):
             exclude_none=exclude_none,
         )
         return yaml.safe_dump(data, stream=stream)
+
+
+class MutableUseqModel(IOMixin, MutableModel): ...
+
+
+class UseqModel(FrozenModel, IOMixin): ...
