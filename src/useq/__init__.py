@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
-from useq._enums import RelativeTo, Shape
+from useq._enums import Axis, RelativeTo, Shape
 from useq._grid import (
     GridFromEdges,
     GridRowsColumns,
@@ -29,7 +29,6 @@ from useq._time import (
     TIntervalDuration,
     TIntervalLoops,
 )
-from useq._utils import Axis
 from useq._z import (
     AnyZPlan,
     ZAboveBelow,

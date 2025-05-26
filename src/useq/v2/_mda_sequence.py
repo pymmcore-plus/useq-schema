@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import warnings
 from abc import abstractmethod
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import (
@@ -20,13 +21,13 @@ from pydantic import Field, field_validator
 from pydantic_core import core_schema
 from typing_extensions import deprecated
 
-from useq._enums import Axis
+from useq._enums import AXES, Axis
 from useq._hardware_autofocus import AnyAutofocusPlan  # noqa: TC001
 from useq._mda_event import MDAEvent
 from useq.v2._axes_iterator import AxesIterator, AxisIterable
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping, Sequence
+    from collections.abc import Iterator, Mapping
 
     from pydantic import GetCoreSchemaHandler
 
@@ -129,9 +130,11 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
             for key, val in contrib.items():
                 if key.endswith("_pos") and val is not None:
                     if key in abs_pos and abs_pos[key] != val:
-                        raise ValueError(
+                        warnings.warn(
                             f"Conflicting absolute position from {axis_key}: "
-                            f"existing {key}={abs_pos[key]}, new {key}={val}"
+                            f"existing {key}={abs_pos[key]}, new {key}={val}",
+                            UserWarning,
+                            stacklevel=3,
                         )
                     abs_pos[key] = val
                 elif key in event_data and event_data[key] != val:
@@ -199,6 +202,7 @@ class MDASequence(AxesIterator):
                     "Cannot provide both 'axes' and legacy axis parameters."
                 )
             kwargs["axes"] = axes
+            kwargs["axis_order"] = AXES
         super().__init__(**kwargs)
 
     def iter_events(
@@ -312,6 +316,7 @@ def _extract_legacy_axes(kwargs: dict[str, Any]) -> tuple[AxisIterable, ...]:
     from pydantic import TypeAdapter
 
     from useq import v2
+    from useq.v2 import _position
 
     axes: list[AxisIterable] = []
 
@@ -337,6 +342,20 @@ def _extract_legacy_axes(kwargs: dict[str, Any]) -> tuple[AxisIterable, ...]:
             case "stage_positions":
                 val = kwargs.pop(key)
                 if not isinstance(val, AxisIterable):
+                    if isinstance(val, Sequence):
+                        new_val = []
+                        for item in val:
+                            if isinstance(item, dict):
+                                item = v2.Position(**item)
+                            elif isinstance(item, AxesIterator):
+                                if item.value is None:
+                                    item = item.model_copy(
+                                        update={"value": _position.Position()}
+                                    )
+                            else:
+                                item = _position.Position.model_validate(item)
+                            new_val.append(item)
+                        val = new_val
                     val = v2.StagePositions.model_validate(val)
             case _:
                 continue  # Ignore any other keys

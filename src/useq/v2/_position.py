@@ -48,6 +48,12 @@ class Position(MutableModel):
             y, *v = v or (None,)
             z = v[0] if v else None
             values = {"x": x, "y": y, "z": z}
+        if isinstance(values, dict) and "sequence" in values:
+            raise ValueError(
+                "In useq.v2 Positions no longer have a sequence attribute. "
+                "If you want to assign a subsequence to a position, "
+                "use positions=[..., MDASequence(value=Position(), ...)]"
+            )
         return values
 
     def __add__(self, other: "Position") -> "Self":

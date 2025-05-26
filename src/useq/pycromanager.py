@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, overload
 
 from useq import MDAEvent, MDASequence
-from useq._utils import Axis
+from useq._enums import Axis
 
 if TYPE_CHECKING:
     from typing_extensions import Literal, Required, TypedDict

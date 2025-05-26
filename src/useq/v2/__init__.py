@@ -1,5 +1,7 @@
 """New MDASequence API."""
 
+from typing import TYPE_CHECKING
+
 from useq.v2._axes_iterator import AxesIterator, AxisIterable, SimpleValueAxis
 from useq.v2._channels import ChannelsPlan
 from useq.v2._grid import (
@@ -32,6 +34,22 @@ from useq.v2._z import (
     ZRelativePositions,
     ZTopBottom,
 )
+
+if TYPE_CHECKING:
+    from useq.v2._position import Position
+else:
+    from useq.v2 import _position
+
+    def Position(**kwargs) -> "_position.Position":
+        """Converter for legacy Position class."""
+        if "sequence" in kwargs:
+            seq = kwargs.pop("sequence")
+            seq = MDASequence.model_validate(seq)
+            return seq.model_copy(
+                update={"value": _position.Position.model_validate(kwargs)}
+            )
+        return _position.Position(**kwargs)
+
 
 __all__ = [
     "AnyTimePlan",
