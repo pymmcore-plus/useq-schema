@@ -11,7 +11,7 @@ from typing import (
     overload,
 )
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from typing_extensions import deprecated
 
 from useq._enums import AXES, Axis
@@ -130,13 +130,29 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
             kwargs["axes"] = axes
             kwargs.setdefault("axis_order", AXES)
         super().__init__(**kwargs)
-        if isinstance(self.autofocus_plan, AxesBasedAF):
-            from useq.v2._transformers import AutoFocusTransform
-
-            self.transforms += (AutoFocusTransform(self.autofocus_plan),)
 
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore[override]
         yield from self.iter_events()
+
+    @model_validator(mode="after")
+    def _compose_transforms(self) -> MDASequence:
+        """Compose transforms after initialization."""
+        # add autofocus transform if applicable
+        if isinstance(self.autofocus_plan, AxesBasedAF):
+            from useq.v2._transformers import AutoFocusTransform
+
+            if not any(isinstance(ax, AutoFocusTransform) for ax in self.transforms):
+                self.transforms += (AutoFocusTransform(self.autofocus_plan),)
+        if self.keep_shutter_open_across:
+            from useq.v2._transformers import KeepShutterOpenTransform
+
+            if not any(
+                isinstance(ax, KeepShutterOpenTransform) for ax in self.transforms
+            ):
+                self.transforms += (
+                    KeepShutterOpenTransform(self.keep_shutter_open_across),
+                )
+        return self
 
     @field_validator("keep_shutter_open_across", mode="before")
     def _validate_keep_shutter_open_across(cls, v: tuple[str, ...]) -> tuple[str, ...]:
