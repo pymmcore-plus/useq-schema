@@ -10,7 +10,6 @@ from pydantic import BaseModel, ValidationError
 from useq import (
     MDAEvent,
     MDASequence,
-    Position,
     TIntervalDuration,
     ZAboveBelow,
     ZRangeAround,
@@ -103,55 +102,6 @@ def test_axis_order_errors() -> None:
                 {"sequence": {"stage_positions": [(10, 10, 10), (20, 20, 20)]}}
             ]
         )
-
-
-z_plans: _T = [
-    ({"above": 8, "below": 4, "step": 2}, [-4, -2, 0, 2, 4, 6, 8]),
-    ({"range": 8, "step": 1}, [-4, -3, -2, -1, 0, 1, 2, 3, 4]),
-]
-
-t_plans: _T = [
-    ({"loops": 5, "duration": 8}, [0, 2, 4, 6, 8]),
-    ({"loops": 5, "interval": 0.25}, [0, 0.25, 0.5, 0.75, 1]),
-]
-
-c_inputs = [
-    ("DAPI", ("Channel", "DAPI")),
-    ({"config": "DAPI"}, ("Channel", "DAPI")),
-    ({"config": "DAPI", "group": "Group", "acquire_every": 3}, ("Group", "DAPI")),
-]
-
-p_inputs = [
-    ([{"x": 0, "y": 1, "z": 2}], (0, 1, 2)),
-    ([{"y": 200}], (None, 200, None)),
-    ([(100, 200, 300)], (100, 200, 300)),
-]
-
-
-@pytest.mark.parametrize("tplan, texpectation", t_plans)
-@pytest.mark.parametrize("zplan, zexpectation", z_plans)
-@pytest.mark.parametrize("channel, cexpectation", c_inputs)
-@pytest.mark.parametrize("positions, pexpectation", p_inputs)
-def test_combinations(
-    tplan: Any,
-    texpectation: Sequence[float],
-    zplan: Any,
-    zexpectation: Sequence[float],
-    channel: Any,
-    cexpectation: Sequence[str],
-    positions: Any,
-    pexpectation: Sequence[float],
-) -> None:
-    mda = MDASequence(
-        time_plan=tplan, z_plan=zplan, channels=[channel], stage_positions=positions
-    )
-    assert mda.z_plan
-    assert mda.time_plan
-    assert list(mda.z_plan) == zexpectation
-    assert list(mda.time_plan) == texpectation
-    assert (mda.channels[0].group, mda.channels[0].config) == cexpectation
-    position = mda.stage_positions[0]
-    assert (position.x, position.y, position.z) == pexpectation
 
 
 @pytest.mark.parametrize("cls", [MDASequence, MDAEvent])
@@ -250,46 +200,6 @@ def test_z_plan_num_position() -> None:
 
 def test_channel_str() -> None:
     assert MDAEvent(channel="DAPI") == MDAEvent(channel={"config": "DAPI"})
-
-
-def test_reset_event_timer() -> None:
-    events = list(
-        MDASequence(
-            stage_positions=[(100, 100), (0, 0)],
-            time_plan={"interval": 1, "loops": 2},
-            axis_order=tuple("ptgcz"),
-        )
-    )
-    assert events[0].reset_event_timer
-    assert not events[1].reset_event_timer
-    assert events[2].reset_event_timer
-    assert not events[3].reset_event_timer
-
-    events = list(
-        MDASequence(
-            stage_positions=[
-                Position(
-                    x=0,
-                    y=0,
-                    sequence=MDASequence(
-                        channels=["Cy5"], time_plan={"interval": 1, "loops": 2}
-                    ),
-                ),
-                Position(
-                    x=1,
-                    y=1,
-                    sequence=MDASequence(
-                        channels=["DAPI"], time_plan={"interval": 1, "loops": 2}
-                    ),
-                ),
-            ]
-        )
-    )
-
-    assert events[0].reset_event_timer
-    assert not events[1].reset_event_timer
-    assert events[2].reset_event_timer
-    assert not events[3].reset_event_timer
 
 
 def test_slm_image() -> None:

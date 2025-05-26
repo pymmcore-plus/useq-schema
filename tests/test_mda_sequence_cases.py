@@ -1140,10 +1140,54 @@ KEEP_SHUTTER_CASES: list[MDATestCase] = [
 ]
 
 # ##############################################################################
+# Reset Event Timer Test Cases
+# ##############################################################################
+
+RESET_EVENT_TIMER_CASES: list[MDATestCase] = [
+    MDATestCase(
+        name="reset_event_timer_with_time_intervals",
+        seq=MDASequence(
+            stage_positions=[(100, 100), (0, 0)],
+            time_plan={"interval": 1, "loops": 2},
+            axis_order=tuple("ptgcz"),
+        ),
+        expected={
+            "reset_event_timer": [True, False, True, False],
+        },
+    ),
+    MDATestCase(
+        name="reset_event_timer_with_nested_position_sequences",
+        seq=MDASequence(
+            stage_positions=[
+                Position(
+                    x=0,
+                    y=0,
+                    sequence=MDASequence(
+                        channels=["Cy5"], time_plan={"interval": 1, "loops": 2}
+                    ),
+                ),
+                Position(
+                    x=1,
+                    y=1,
+                    sequence=MDASequence(
+                        channels=["DAPI"], time_plan={"interval": 1, "loops": 2}
+                    ),
+                ),
+            ]
+        ),
+        expected={
+            "reset_event_timer": [True, False, True, False],
+        },
+    ),
+]
+
+# ##############################################################################
 # Combined Test Cases
 # ##############################################################################
 
-CASES: list[MDATestCase] = GRID_SUBSEQ_CASES + AF_CASES + KEEP_SHUTTER_CASES
+CASES: list[MDATestCase] = (
+    GRID_SUBSEQ_CASES + AF_CASES + KEEP_SHUTTER_CASES + RESET_EVENT_TIMER_CASES
+)
 
 # assert that all test cases are unique
 case_names = [case.name for case in CASES]
