@@ -47,7 +47,7 @@ class MDATestCase:
     name: str
     seq: MDASequence
     expected: dict[str, list[Any]] | list[MDAEvent] | None = None
-    predicate: Callable[[MDASequence], str | None] | None = None
+    predicate: Callable[[Sequence[MDAEvent]], str | None] | None = None
 
     def __post_init__(self) -> None:
         if self.expected is None and self.predicate is None:
@@ -809,7 +809,7 @@ GRID_SUBSEQ_CASES: list[MDATestCase] = [
 
 def ensure_af(
     expected_indices: Sequence[int] | None = None, expected_z: float | None = None
-) -> Callable[[MDASequence], str | None]:
+) -> Callable[[Sequence[MDAEvent]], str | None]:
     """Test things about autofocus events.
 
     Parameters
@@ -821,12 +821,12 @@ def ensure_af(
     """
     exp = list(expected_indices) if expected_indices else []
 
-    def _pred(seq: MDASequence) -> str | None:
+    def _pred(events: Sequence[MDAEvent]) -> str | None:
         errors: list[str] = []
         if exp:
             actual_indices = [
                 i
-                for i, ev in enumerate(seq)
+                for i, ev in enumerate(events)
                 if isinstance(ev.action, HardwareAutofocus)
             ]
             if actual_indices != exp:
@@ -834,7 +834,7 @@ def ensure_af(
 
         if expected_z is not None:
             z_vals = [
-                ev.z_pos for ev in seq if isinstance(ev.action, HardwareAutofocus)
+                ev.z_pos for ev in events if isinstance(ev.action, HardwareAutofocus)
             ]
             if not all(z == expected_z for z in z_vals):
                 errors.append(f"expected all AF events at z={expected_z}, got {z_vals}")
@@ -1022,11 +1022,10 @@ AF_CASES: list[MDATestCase] = [
 
 def ensure_shutter_behavior(
     expected_indices: Sequence[int] | bool | None = None,
-) -> Callable[[MDASequence], str | None]:
+) -> Callable[[Sequence[MDAEvent]], str | None]:
     """Test keep_shutter_open behavior."""
 
-    def _pred(seq: MDASequence) -> str | None:
-        events = list(seq)
+    def _pred(events: Sequence[MDAEvent]) -> str | None:
         errors: list[str] = []
 
         if expected_indices is not None:
@@ -1191,3 +1190,46 @@ if duplicates := {name for name in case_names if case_names.count(name) > 1}:
         f"Duplicate test case names found: {duplicates}. "
         "Please ensure all test cases have unique names."
     )
+
+
+def assert_test_case_passes(
+    case: MDATestCase, actual_events: Sequence[MDAEvent]
+) -> None:
+    # test case expressed the expectation as a predicate
+    if case.predicate is not None:
+        # (a function that returns a non-empty error message if the test fails)
+        if msg := case.predicate(actual_events):
+            raise AssertionError(f"\nExpectation not met in '{case.name}':\n  {msg}\n")
+
+    # test case expressed the expectation as a list of MDAEvent
+    if isinstance(case.expected, list):
+        if len(actual_events) != len(case.expected):
+            raise AssertionError(
+                f"\nMismatch in case '{case.name}':\n"
+                f"  expected: {len(case.expected)} events\n"
+                f"    actual: {len(actual_events)} events\n"
+            )
+        for i, event in enumerate(actual_events):
+            if event != case.expected[i]:
+                raise AssertionError(
+                    f"\nMismatch in case '{case.name}':\n"
+                    f"  expected: {case.expected[i]}\n"
+                    f"    actual: {event}\n"
+                )
+
+    # test case expressed the expectation as a dict of {Event attr -> values list}
+    elif isinstance(case.expected, dict):
+        actual: dict[str, list[Any]] = {k: [] for k in case.expected}
+        for event in actual_events:
+            for attr in case.expected:
+                actual[attr].append(getattr(event, attr))
+
+        if mismatched_fields := {
+            attr for attr in actual if actual[attr] != case.expected[attr]
+        }:
+            msg = f"\nMismatch in case '{case.name}':\n"
+            for attr in mismatched_fields:
+                msg += f"  {attr}:\n"
+                msg += f"    expected: {case.expected[attr]}\n"
+                msg += f"      actual: {actual[attr]}\n"
+            raise AssertionError(msg)
