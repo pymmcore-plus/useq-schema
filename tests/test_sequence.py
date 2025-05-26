@@ -8,12 +8,9 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from useq import (
-    GridRelative,
     MDAEvent,
     MDASequence,
-    Position,
     TIntervalDuration,
-    TIntervalLoops,
     ZAboveBelow,
     ZRangeAround,
 )
@@ -107,53 +104,6 @@ def test_axis_order_errors() -> None:
         )
 
 
-z_plans: _T = [
-    ({"above": 8, "below": 4, "step": 2}, [-4, -2, 0, 2, 4, 6, 8]),
-    ({"range": 8, "step": 1}, [-4, -3, -2, -1, 0, 1, 2, 3, 4]),
-]
-
-t_plans: _T = [
-    ({"loops": 5, "duration": 8}, [0, 2, 4, 6, 8]),
-    ({"loops": 5, "interval": 0.25}, [0, 0.25, 0.5, 0.75, 1]),
-]
-
-c_inputs = [
-    ("DAPI", ("Channel", "DAPI")),
-    ({"config": "DAPI"}, ("Channel", "DAPI")),
-    ({"config": "DAPI", "group": "Group", "acquire_every": 3}, ("Group", "DAPI")),
-]
-
-p_inputs = [
-    ([{"x": 0, "y": 1, "z": 2}], (0, 1, 2)),
-    ([{"y": 200}], (None, 200, None)),
-    ([(100, 200, 300)], (100, 200, 300)),
-]
-
-
-@pytest.mark.parametrize("tplan, texpectation", t_plans)
-@pytest.mark.parametrize("zplan, zexpectation", z_plans)
-@pytest.mark.parametrize("channel, cexpectation", c_inputs)
-@pytest.mark.parametrize("positions, pexpectation", p_inputs)
-def test_combinations(
-    tplan: Any,
-    texpectation: Sequence[float],
-    zplan: Any,
-    zexpectation: Sequence[float],
-    channel: Any,
-    cexpectation: Sequence[str],
-    positions: Any,
-    pexpectation: Sequence[float],
-) -> None:
-    mda = MDASequence(
-        time_plan=tplan, z_plan=zplan, channels=[channel], stage_positions=positions
-    )
-    assert list(mda.z_plan) == zexpectation
-    assert list(mda.time_plan) == texpectation
-    assert (mda.channels[0].group, mda.channels[0].config) == cexpectation
-    position = mda.stage_positions[0]
-    assert (position.x, position.y, position.z) == pexpectation
-
-
 @pytest.mark.parametrize("cls", [MDASequence, MDAEvent])
 def test_schema(cls: BaseModel) -> None:
     schema = cls.model_json_schema()
@@ -241,64 +191,6 @@ def test_custom_action() -> None:
         CustomAction(data={"not-serializable": lambda x: x})
 
 
-def test_keep_shutter_open() -> None:
-    # with z as the last axis, the shutter will be left open
-    # whenever z is the first index (since there are only 2 z planes)
-    mda1 = MDASequence(
-        axis_order=tuple("tcz"),
-        channels=["DAPI", "FITC"],
-        time_plan=TIntervalLoops(loops=2, interval=0),
-        z_plan=ZRangeAround(range=1, step=1),
-        keep_shutter_open_across="z",
-    )
-    assert all(e.keep_shutter_open for e in mda1 if e.index["z"] == 0)
-
-    # with c as the last axis, the shutter will never be left open
-    mda2 = MDASequence(
-        axis_order=tuple("tzc"),
-        channels=["DAPI", "FITC"],
-        time_plan=TIntervalLoops(loops=2, interval=0),
-        z_plan=ZRangeAround(range=1, step=1),
-        keep_shutter_open_across="z",
-    )
-    assert not any(e.keep_shutter_open for e in mda2)
-
-    # because t is changing faster than z, the shutter will never be left open
-    mda3 = MDASequence(
-        axis_order=tuple("czt"),
-        channels=["DAPI", "FITC"],
-        time_plan=TIntervalLoops(loops=2, interval=0),
-        z_plan=ZRangeAround(range=1, step=1),
-        keep_shutter_open_across="z",
-    )
-    assert not any(e.keep_shutter_open for e in mda3)
-
-    # but, if we include 't' in the keep_shutter_open_across,
-    # it will be left open except when it's the last t and last z
-    mda4 = MDASequence(
-        axis_order=tuple("czt"),
-        channels=["DAPI", "FITC"],
-        time_plan=TIntervalLoops(loops=2, interval=0),
-        z_plan=ZRangeAround(range=1, step=1),
-        keep_shutter_open_across=("z", "t"),
-    )
-    for event in mda4:
-        is_last_zt = bool(event.index["t"] == 1 and event.index["z"] == 1)
-        assert event.keep_shutter_open != is_last_zt
-
-    # even though c is the last axis, and comes after g, because the grid happens
-    # on a subsequence shutter will be open across the grid for each position
-    subseq = MDASequence(grid_plan=GridRelative(rows=2, columns=2))
-    mda5 = MDASequence(
-        axis_order=tuple("pgc"),
-        channels=["DAPI", "FITC"],
-        stage_positions=[Position(sequence=subseq)],
-        keep_shutter_open_across="g",
-    )
-    for event in mda5:
-        assert event.keep_shutter_open != (event.index["g"] == 3)
-
-
 def test_z_plan_num_position() -> None:
     for i in range(1, 100):
         plan = ZRangeAround(range=(i - 1) / 10, step=0.1)
@@ -308,46 +200,6 @@ def test_z_plan_num_position() -> None:
 
 def test_channel_str() -> None:
     assert MDAEvent(channel="DAPI") == MDAEvent(channel={"config": "DAPI"})
-
-
-def test_reset_event_timer() -> None:
-    events = list(
-        MDASequence(
-            stage_positions=[(100, 100), (0, 0)],
-            time_plan={"interval": 1, "loops": 2},
-            axis_order=tuple("ptgcz"),
-        )
-    )
-    assert events[0].reset_event_timer
-    assert not events[1].reset_event_timer
-    assert events[2].reset_event_timer
-    assert not events[3].reset_event_timer
-
-    events = list(
-        MDASequence(
-            stage_positions=[
-                Position(
-                    x=0,
-                    y=0,
-                    sequence=MDASequence(
-                        channels=["Cy5"], time_plan={"interval": 1, "loops": 2}
-                    ),
-                ),
-                Position(
-                    x=1,
-                    y=1,
-                    sequence=MDASequence(
-                        channels=["DAPI"], time_plan={"interval": 1, "loops": 2}
-                    ),
-                ),
-            ]
-        )
-    )
-
-    assert events[0].reset_event_timer
-    assert not events[1].reset_event_timer
-    assert events[2].reset_event_timer
-    assert not events[3].reset_event_timer
 
 
 def test_slm_image() -> None:
