@@ -1,10 +1,16 @@
-from collections.abc import Callable, Iterable
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 # transformers.py
 from useq._enums import Axis
-from useq._hardware_autofocus import AxesBasedAF
 from useq._mda_event import MDAEvent
 from useq.v2._axes_iterator import EventTransform  # helper you already have
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
+    from useq._hardware_autofocus import AxesBasedAF
 
 
 class KeepShutterOpenTransform(EventTransform[MDAEvent]):

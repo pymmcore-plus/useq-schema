@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from collections.abc import Iterator, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import numpy as np
 from pydantic import Field, model_validator
@@ -7,18 +9,18 @@ from pydantic import Field, model_validator
 from useq import Axis
 from useq._base_model import FrozenModel
 from useq.v2._axes_iterator import AxisIterable
-from useq.v2._mda_sequence import MDASequence
 from useq.v2._position import Position
 
 if TYPE_CHECKING:
     from useq._mda_event import MDAEvent
+    from useq.v2._mda_sequence import MDASequence
 
 
 class StagePositions(AxisIterable[Position], FrozenModel):
     axis_key: Literal[Axis.POSITION] = Field(
         default=Axis.POSITION, frozen=True, init=False
     )
-    values: list[Position | MDASequence] = Field(default_factory=list)
+    values: list[Union[Position, MDASequence]] = Field(default_factory=list)
 
     def __iter__(self) -> Iterator[Position | MDASequence]:  # type: ignore[override]
         yield from self.values
@@ -50,7 +52,7 @@ class StagePositions(AxisIterable[Position], FrozenModel):
         self,
         value: Position,
         index: Mapping[str, int],
-    ) -> "MDAEvent.Kwargs":
+    ) -> MDAEvent.Kwargs:
         """Contribute channel information to the MDA event."""
         kwargs = {}
         if isinstance(value, Position):

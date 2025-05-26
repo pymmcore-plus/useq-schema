@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import warnings
 from typing import TYPE_CHECKING, Any, Optional, SupportsIndex
@@ -34,7 +36,7 @@ class Position(MutableModel):
         positions do not.
     """
 
-    def __new__(cls, *args: Any, **kwargs: Any) -> "Self":
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         if "sequence" in kwargs and (seq := kwargs.pop("sequence")) is not None:
             from useq.v2._mda_sequence import MDASequence
 
@@ -68,7 +70,7 @@ class Position(MutableModel):
             values = {"x": x, "y": y, "z": z}
         return values
 
-    def __add__(self, other: "Position") -> "Self":
+    def __add__(self, other: Position) -> Self:
         """Add two positions together to create a new position."""
         if not isinstance(other, Position) or not other.is_relative:
             return NotImplemented  # pragma: no cover
@@ -89,7 +91,7 @@ class Position(MutableModel):
     # allow `sum([pos1, delta, delta2], start=Position())`
     __radd__ = __add__
 
-    def __round__(self, ndigits: "SupportsIndex | None" = None) -> "Self":
+    def __round__(self, ndigits: SupportsIndex | None = None) -> Self:
         """Round the position to the given number of decimal places."""
         return self.model_copy(
             update={
@@ -113,5 +115,5 @@ def _none_sum(a: float | None, b: float | None) -> float | None:
     return a + b if a is not None and b is not None else a
 
 
-def _none_round(v: float | None, ndigits: "SupportsIndex | None") -> float | None:
+def _none_round(v: float | None, ndigits: SupportsIndex | None) -> float | None:
     return round(v, ndigits) if v is not None else None

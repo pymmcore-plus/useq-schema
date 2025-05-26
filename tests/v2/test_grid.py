@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import sys
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
@@ -27,7 +28,13 @@ def _in_ellipse(x: float, y: float, w: float, h: float, tol: float = 1.01) -> bo
     return (x / (w / 2)) ** 2 + (y / (h / 2)) ** 2 <= tol
 
 
-@dataclass(slots=True)
+if sys.version_info >= (3, 10):
+    SLOTS = {"slots": True}
+else:
+    SLOTS = {}
+
+
+@dataclass(**SLOTS)
 class GridTestCase:
     grid: MultiPointPlan
     expected_coords: list[tuple[float, float]]

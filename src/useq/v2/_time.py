@@ -1,6 +1,7 @@
-from collections.abc import Generator, Iterator, Sequence
+from __future__ import annotations
+
 from datetime import timedelta
-from typing import TYPE_CHECKING, Annotated, Any, Union, cast
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Union, cast
 
 from pydantic import (
     BeforeValidator,
@@ -16,7 +17,7 @@ from useq._enums import Axis
 from useq.v2._axes_iterator import AxisIterable
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Generator, Iterator, Mapping
 
     from useq._mda_event import MDAEvent
 
@@ -41,8 +42,8 @@ class TimePlan(AxisIterable[float], FrozenModel):
         return self.interval.total_seconds()  # type: ignore
 
     def contribute_to_mda_event(
-        self, value: float, index: "Mapping[str, int]"
-    ) -> "MDAEvent.Kwargs":
+        self, value: float, index: Mapping[str, int]
+    ) -> MDAEvent.Kwargs:
         """Contribute time data to the event being built.
 
         Parameters
@@ -160,7 +161,7 @@ class TIntervalDuration(TimePlan):
     """
 
     interval: TimeDelta
-    duration: TimeDelta | None = None
+    duration: Optional[TimeDelta] = None
     prioritize_duration: bool = True
 
     def __iter__(self) -> Iterator[float]:  # type: ignore[override]
@@ -195,7 +196,7 @@ class MultiPhaseTimePlan(TimePlan):
         Sequence of time plans.
     """
 
-    phases: Sequence[SinglePhaseTimePlan]
+    phases: list[SinglePhaseTimePlan]
 
     def __iter__(self) -> Generator[float, bool | None, None]:  # type: ignore[override]
         """Yield the global elapsed time over multiple plans.

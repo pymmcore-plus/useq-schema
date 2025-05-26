@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from abc import abstractmethod
-from collections.abc import Iterator, Mapping
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Optional
 
 from annotated_types import Ge
 
@@ -8,6 +9,8 @@ from useq.v2._axes_iterator import AxisIterable
 from useq.v2._position import Position
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
+
     from matplotlib.axes import Axes
 
     from useq._mda_event import MDAEvent
@@ -16,8 +19,8 @@ if TYPE_CHECKING:
 class MultiPositionPlan(AxisIterable[Position]):
     """Base class for all multi-position plans."""
 
-    fov_width: Annotated[float, Ge(0)] | None = None
-    fov_height: Annotated[float, Ge(0)] | None = None
+    fov_width: Optional[Annotated[float, Ge(0)]] = None
+    fov_height: Optional[Annotated[float, Ge(0)]] = None
 
     @property
     def is_relative(self) -> bool:
@@ -28,7 +31,7 @@ class MultiPositionPlan(AxisIterable[Position]):
 
     def contribute_to_mda_event(
         self, value: Position, index: Mapping[str, int]
-    ) -> "MDAEvent.Kwargs":
+    ) -> MDAEvent.Kwargs:
         out: dict = {}
         rel = "_rel" if self.is_relative else ""
         if value.x is not None:
@@ -43,7 +46,7 @@ class MultiPositionPlan(AxisIterable[Position]):
         # TODO: deal with the _rel suffix hack
         return out  # type: ignore[return-value]
 
-    def plot(self, *, show: bool = True) -> "Axes":
+    def plot(self, *, show: bool = True) -> Axes:
         """Plot the positions in the plan."""
         from useq._plot import plot_points
 

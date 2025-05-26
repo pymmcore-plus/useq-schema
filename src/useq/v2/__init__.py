@@ -63,3 +63,15 @@ __all__ = [
     "ZTopBottom",
     "iterate_multi_dim_sequence",
 ]
+
+import pydantic
+
+for item in list(globals().values()):
+    if (
+        isinstance(item, type)
+        and issubclass(item, pydantic.BaseModel)
+        and item is not pydantic.BaseModel
+    ):
+        item.model_rebuild()
+
+del pydantic

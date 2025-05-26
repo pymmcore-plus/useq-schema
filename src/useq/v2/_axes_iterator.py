@@ -163,6 +163,7 @@ from typing import (
     Annotated,
     Any,
     Generic,
+    Optional,
     Protocol,
     TypeVar,
     cast,
@@ -313,12 +314,12 @@ class MultiAxisSequence(MutableModel, Generic[EventTco]):
     """
 
     axes: tuple[AxisIterable, ...] = ()
-    axis_order: tuple[str, ...] | None = None
+    axis_order: Optional[tuple[str, ...]] = None
     value: Any = None
 
     # these will rarely be needed, but offer maximum flexibility
-    event_builder: Annotated[EventBuilder[EventTco], ImportableObject()] | None = Field(
-        default=None, repr=False
+    event_builder: Optional[Annotated[EventBuilder[EventTco], ImportableObject()]] = (
+        Field(default=None, repr=False)
     )
 
     # optional post-processing transformer chain
