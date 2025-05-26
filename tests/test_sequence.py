@@ -147,6 +147,8 @@ def test_combinations(
     mda = MDASequence(
         time_plan=tplan, z_plan=zplan, channels=[channel], stage_positions=positions
     )
+    assert mda.z_plan
+    assert mda.time_plan
     assert list(mda.z_plan) == zexpectation
     assert list(mda.time_plan) == texpectation
     assert (mda.channels[0].group, mda.channels[0].config) == cexpectation
