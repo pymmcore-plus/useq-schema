@@ -303,13 +303,6 @@ class AxesIterator(Protocol):
         ...
 
 
-def _default_iterator() -> AxesIterator:
-    # import lazy to avoid circular imports
-    from useq.v2._iterate import iterate_multi_dim_sequence
-
-    return iterate_multi_dim_sequence
-
-
 class MultiAxisSequence(BaseModel, Generic[EventTco]):
     """Represents a multidimensional sequence.
 
@@ -327,9 +320,7 @@ class MultiAxisSequence(BaseModel, Generic[EventTco]):
     event_builder: Annotated[EventBuilder[EventTco], ImportableObject()] | None = Field(
         default=None, repr=False
     )
-    iterator: Annotated[AxesIterator, ImportableObject()] = Field(
-        default_factory=_default_iterator, repr=False
-    )
+
     # optional post-processing transformer chain
     transforms: tuple[Annotated[EventTransform, ImportableObject()], ...] = Field(
         default_factory=tuple, repr=False
@@ -355,7 +346,9 @@ class MultiAxisSequence(BaseModel, Generic[EventTco]):
             - ({'t': (0, 0.1, <AxisIterable>)}, <context>)
             - ({'t': (1, 0.2, <AxisIterable>)}, <context>)
         """
-        yield from self.iterator(self, axis_order=axis_order)
+        from useq.v2._iterate import iterate_multi_dim_sequence
+
+        yield from iterate_multi_dim_sequence(self, axis_order=axis_order)
 
     def iter_events(
         self, axis_order: tuple[str, ...] | None = None
