@@ -26,9 +26,9 @@ class KeepShutterOpenTransform(EventTransform[MDAEvent]):
         event: MDAEvent,
         *,
         prev_event: MDAEvent | None,
-        make_next: Callable[[], MDAEvent | None],
+        make_next_event: Callable[[], MDAEvent | None],
     ) -> Iterable[MDAEvent]:
-        nxt = make_next()  # cached, so cheap even if many transformers call
+        nxt = make_next_event()  # cached, so cheap even if many transformers call
         if nxt is None:  # last event → nothing to tweak
             return [event]
 
@@ -50,14 +50,14 @@ class ResetEventTimerTransform(EventTransform[MDAEvent]):
         event: MDAEvent,
         *,
         prev_event: MDAEvent | None,
-        make_next: Callable[[], MDAEvent | None],  # not used, but required by protocol
+        make_next_event: Callable[[], MDAEvent | None],
     ) -> Iterable[MDAEvent]:
         cur_t = event.index.get(Axis.TIME)
         if cur_t is None:  # no time axis → nothing to do
             return [event]
 
         prev_t = prev_event.index.get(Axis.TIME) if prev_event else None
-        if cur_t == 0 and prev_t != 0:  # start of a new timepoint block
+        if cur_t == 0 and prev_t != 0:
             event = event.model_copy(update={"reset_event_timer": True})
         return [event]
 
@@ -82,7 +82,7 @@ class AutoFocusTransform(EventTransform[MDAEvent]):
         event: MDAEvent,
         *,
         prev_event: MDAEvent | None,
-        make_next: Callable[[], MDAEvent | None],  # unused, but required
+        make_next_event: Callable[[], MDAEvent | None],  # unused, but required
     ) -> Iterable[MDAEvent]:
         # should autofocus if any of the axes in the autofocus plan
         # changed from the previous event, or if this is the first event

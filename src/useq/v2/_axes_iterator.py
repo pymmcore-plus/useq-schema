@@ -184,7 +184,7 @@ if TYPE_CHECKING:
     Value: TypeAlias = Any
     Index: TypeAlias = int
     AxesIndex: TypeAlias = dict[AxisKey, tuple[Index, Value, "AxisIterable"]]
-    AxesIndexWithContext: TypeAlias = tuple[AxesIndex, "MultiAxisSequence"]
+    AxesIndexWithContext: TypeAlias = tuple[AxesIndex, tuple["MultiAxisSequence", ...]]
 
 
 V = TypeVar("V", covariant=True, bound=Any)
@@ -272,7 +272,7 @@ class EventTransform(Protocol[EventT]):
     * **event** - the current (already built) event.
     * **prev_event** - the *previously transformed* event that was just yielded,
       or ``None`` if this is the first call.
-    * **make_next** - a zero-argument callable that lazily builds the *next*
+    * **make_next_event** - a zero-argument callable that lazily builds the *next*
       raw event (i.e. before any transformers).  Only call it if you really
       need look-ahead so the pipeline stays lazy.
 
@@ -287,7 +287,7 @@ class EventTransform(Protocol[EventT]):
         event: EventT,
         *,
         prev_event: EventT | None,
-        make_next: Callable[[], EventT | None],
+        make_next_event: Callable[[], EventT | None],
     ) -> Iterable[EventT]: ...
 
 
@@ -382,9 +382,7 @@ class MultiAxisSequence(BaseModel, Generic[EventTco]):
                 next_item = None
 
             cur_evt = event_builder(cur_axes)
-
-            # Use the context's transforms instead of self.transforms
-            transforms = context.transforms if context.transforms else ()
+            transforms = self.compose_transforms(context)
 
             if not transforms:
                 # simple case - no transforms, just yield the event
@@ -393,19 +391,18 @@ class MultiAxisSequence(BaseModel, Generic[EventTco]):
             else:
 
                 @cache
-                def _make_next(
+                def _make_next_event(
                     _nxt_item: AxesIndexWithContext | None = next_item,
                 ) -> EventTco | None:
                     if _nxt_item is not None:
-                        _nxt_axes, _ = _nxt_item
-                        return event_builder(_nxt_axes)
+                        return event_builder(_nxt_item[0])
                     return None
 
                 # run through transformer pipeline
                 emitted: Iterable[EventTco] = (cur_evt,)
                 for tf in transforms:
                     emitted = chain.from_iterable(
-                        tf(e, prev_event=prev_evt, make_next=_make_next)
+                        tf(e, prev_event=prev_evt, make_next_event=_make_next_event)
                         for e in emitted
                     )
 
@@ -415,6 +412,19 @@ class MultiAxisSequence(BaseModel, Generic[EventTco]):
 
             if next_item is None:
                 break
+
+    def compose_transforms(
+        self, context: tuple[MultiAxisSequence, ...] = ()
+    ) -> tuple[EventTransform, ...]:
+        """Compose transforms from the context of nested sequences.
+
+        The base implementation aggregates transforms from outer to inner sequences.
+        Only a single instance of each transform type is kept, so if multiple
+        sequences in the context have the same transform type, only one will be used,
+        and innermost MultiAxisSequence's transform will take precedence.
+        """
+        merged_transforms = {type(t): t for seq in context for t in seq.transforms}
+        return tuple(merged_transforms.values())
 
     # ----------------------- Validation -----------------------
 
