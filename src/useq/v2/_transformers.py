@@ -78,6 +78,8 @@ class AutoFocusTransform(EventTransform[MDAEvent]):
         per-position overrides.
     """
 
+    priority = -1
+
     def __init__(self, af_plan: AxesBasedAF) -> None:
         self._af_plan = af_plan
 
