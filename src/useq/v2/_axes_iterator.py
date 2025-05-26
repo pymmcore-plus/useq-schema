@@ -9,15 +9,15 @@ Key Concepts:
 - **AxisIterable**: An interface (protocol) representing an axis. Each axis
   has a unique `axis_key` and yields values via its iterator. A concrete axis,
   such as `SimpleAxis`, yields plain values. To express sub-iterations,
-  an axis may yield a nested `MultiDimSequence` (instead of a plain value).
+  an axis may yield a nested `MultiAxisSequence` (instead of a plain value).
 
-- **MultiDimSequence**: Represents a multi-dimensional experiment or sequence.
+- **MultiAxisSequence**: Represents a multi-dimensional experiment or sequence.
   It contains a tuple of axes (AxisIterable objects) and an optional `axis_order`
   that controls the order in which axes are processed. When used as a nested override,
   its `value` field is used as the representative value for that branch, and its
   axes override or extend the parent's axes.
 
-- **Nested Overrides**: When an axis yields a nested MultiDimSequence with a non-None
+- **Nested Overrides**: When an axis yields a nested MultiAxisSequence with a non-None
   `value`, that nested sequence acts as an override for the parent's iteration.
   Specifically, the parent's remaining axes that have keys matching those in the
   nested sequence are removed, and the nested sequence's axes (ordered by its own
@@ -33,7 +33,7 @@ Usage Examples:
 ---------------
 1. Basic Iteration (no nested sequences):
 
-    >>> multi_dim = MultiDimSequence(
+    >>> multi_dim = MultiAxisSequence(
     ...     axes=(
     ...         SimpleAxis("t", [0, 1, 2]),
     ...         SimpleAxis("c", ["red", "green", "blue"]),
@@ -49,13 +49,13 @@ Usage Examples:
     ... (and so on for all Cartesian products)
 
 2. Sub-Iteration Adding New Axes:
-   Here the "t" axis yields a nested MultiDimSequence that adds an extra "q" axis.
+   Here the "t" axis yields a nested MultiAxisSequence that adds an extra "q" axis.
 
-    >>> multi_dim = MultiDimSequence(
+    >>> multi_dim = MultiAxisSequence(
     ...     axes=(
     ...         SimpleAxis("t", [
     ...             0,
-    ...             MultiDimSequence(
+    ...             MultiAxisSequence(
     ...                 value=1,
     ...                 axes=(SimpleAxis("q", ["a", "b"]),),
     ...             ),
@@ -76,14 +76,14 @@ Usage Examples:
     ... (and so on)
 
 3. Overriding Parent Axes:
-   Here the "t" axis yields a nested MultiDimSequence whose axes override the parent's
+   Here the "t" axis yields a nested MultiAxisSequence whose axes override the parent's
    "z" axis.
 
-    >>> multi_dim = MultiDimSequence(
+    >>> multi_dim = MultiAxisSequence(
     ...     axes=(
     ...         SimpleAxis("t", [
     ...             0,
-    ...             MultiDimSequence(
+    ...             MultiAxisSequence(
     ...                 value=1,
     ...                 axes=(
     ...                     SimpleAxis("c", ["red", "blue"]),
@@ -123,7 +123,7 @@ Usage Examples:
     ...             return True
     ...         return False
     ...
-    >>> multi_dim = MultiDimSequence(
+    >>> multi_dim = MultiAxisSequence(
     ...     axes=(
     ...         SimpleAxis("t", [0, 1, 2]),
     ...         SimpleAxis("c", ["red", "green", "blue"]),
@@ -138,7 +138,7 @@ Usage Examples:
 Usage Notes:
 ------------
 - The module assumes that each axis is finite and that the final prefix (the
-  combination) is built by processing one axis at a time. Nested MultiDimSequence
+  combination) is built by processing one axis at a time. Nested MultiAxisSequence
   objects allow you to either extend the iteration with new axes or override existing
   ones.
 - The ordering of axes is controlled via the `axis_order` property, which is inherited
@@ -235,7 +235,7 @@ class AxisIterable(BaseModel, Generic[V]):
 class SimpleValueAxis(AxisIterable[V]):
     """A basic axis implementation that yields values directly.
 
-    If a value needs to declare sub-axes, yield a nested MultiDimSequence.
+    If a value needs to declare sub-axes, yield a nested MultiAxisSequence.
     The default should_skip always returns False.
     """
 
