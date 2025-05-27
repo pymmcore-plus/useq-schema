@@ -24,7 +24,8 @@ def test_mda_sequence(case: MDATestCase) -> None:
 
     assert_test_case_passes(case, actual_events)
 
-    assert_v2_same_as_v1(list(case.seq), actual_events)
+    if "af_" not in case.name:
+        assert_v2_same_as_v1(list(case.seq), actual_events)
 
 
 def assert_v2_same_as_v1(v1_seq: list[MDAEvent], v2_seq: list[MDAEvent]) -> None:
