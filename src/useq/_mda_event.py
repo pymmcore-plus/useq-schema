@@ -16,7 +16,7 @@ from pydantic import Field, GetCoreSchemaHandler, field_validator, model_validat
 from pydantic_core import core_schema
 
 from useq._actions import AcquireImage, AnyAction
-from useq._base_model import MutableUseqModel, UseqModel
+from useq._base_model import UseqModel
 
 try:
     from pydantic import field_serializer
@@ -165,7 +165,7 @@ class ReadOnlyDict(UserDict[str, int]):
         )
 
 
-class MDAEvent(MutableUseqModel):
+class MDAEvent(UseqModel):
     """Define a single event in a [`MDASequence`][useq.MDASequence].
 
     Usually, this object will be generator by iterating over a

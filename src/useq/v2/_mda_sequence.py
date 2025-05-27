@@ -60,9 +60,9 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
             contribution = axis.contribute_to_mda_event(value, index)
             contributions.append((axis_key, contribution))
 
-        event = self._merge_contributions(index, contributions)
-        event.sequence = context[-1] if context else None
-        return event
+        if context:
+            contributions.append(("", {"sequence": context[-1]}))
+        return self._merge_contributions(index, contributions)
 
     def _merge_contributions(
         self, index: dict[str, int], contributions: list[tuple[str, Mapping]]

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import field_validator
 
-from useq import Channel, EventChannel, MDAEvent, v2
+from useq import Channel, MDAEvent, v2
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -54,24 +54,25 @@ def test_new_mdasequence_simple() -> None:
             CPlan(values=["red", "green", "blue"]),
         )
     )
-    events = list(seq.iter_events())
-    for event in events:
-        event.sequence = None
-
+    events = [
+        x.model_dump(exclude={"sequence"}, exclude_unset=True)
+        for x in seq.iter_events()
+    ]
+    print(events)
     # fmt: off
     assert events == [
-        MDAEvent(index={'a': 0, 'b': 0, 'c': 0}, channel=EventChannel(config='red'),   min_start_time=0.0, z_pos=0.1),
-        MDAEvent(index={'a': 0, 'b': 0, 'c': 1}, channel=EventChannel(config='green'), min_start_time=0.0, z_pos=0.1),
-        MDAEvent(index={'a': 0, 'b': 0, 'c': 2}, channel=EventChannel(config='blue'),  min_start_time=0.0, z_pos=0.1),
-        MDAEvent(index={'a': 0, 'b': 1, 'c': 0}, channel=EventChannel(config='red'),   min_start_time=0.0, z_pos=0.3),
-        MDAEvent(index={'a': 0, 'b': 1, 'c': 1}, channel=EventChannel(config='green'), min_start_time=0.0, z_pos=0.3),
-        MDAEvent(index={'a': 0, 'b': 1, 'c': 2}, channel=EventChannel(config='blue'),  min_start_time=0.0, z_pos=0.3),
-        MDAEvent(index={'a': 1, 'b': 0, 'c': 0}, channel=EventChannel(config='red'),   min_start_time=1.0, z_pos=0.1),
-        MDAEvent(index={'a': 1, 'b': 0, 'c': 1}, channel=EventChannel(config='green'), min_start_time=1.0, z_pos=0.1),
-        MDAEvent(index={'a': 1, 'b': 0, 'c': 2}, channel=EventChannel(config='blue'),  min_start_time=1.0, z_pos=0.1),
-        MDAEvent(index={'a': 1, 'b': 1, 'c': 0}, channel=EventChannel(config='red'),   min_start_time=1.0, z_pos=0.3),
-        MDAEvent(index={'a': 1, 'b': 1, 'c': 1}, channel=EventChannel(config='green'), min_start_time=1.0, z_pos=0.3),
-        MDAEvent(index={'a': 1, 'b': 1, 'c': 2}, channel=EventChannel(config='blue'),  min_start_time=1.0, z_pos=0.3),
+        {'index': {'a': 0, 'b': 0, 'c': 0}, 'channel': {'config': 'red'}, 'min_start_time': 0.0, 'z_pos': 0.1},
+        {'index': {'a': 0, 'b': 0, 'c': 1}, 'channel': {'config': 'green'}, 'min_start_time': 0.0, 'z_pos': 0.1},
+        {'index': {'a': 0, 'b': 0, 'c': 2}, 'channel': {'config': 'blue'}, 'min_start_time': 0.0, 'z_pos': 0.1},
+        {'index': {'a': 0, 'b': 1, 'c': 0}, 'channel': {'config': 'red'}, 'min_start_time': 0.0, 'z_pos': 0.3},
+        {'index': {'a': 0, 'b': 1, 'c': 1}, 'channel': {'config': 'green'}, 'min_start_time': 0.0, 'z_pos': 0.3},
+        {'index': {'a': 0, 'b': 1, 'c': 2}, 'channel': {'config': 'blue'}, 'min_start_time': 0.0, 'z_pos': 0.3},
+        {'index': {'a': 1, 'b': 0, 'c': 0}, 'channel': {'config': 'red'}, 'min_start_time': 1.0, 'z_pos': 0.1},
+        {'index': {'a': 1, 'b': 0, 'c': 1}, 'channel': {'config': 'green'}, 'min_start_time': 1.0, 'z_pos': 0.1},
+        {'index': {'a': 1, 'b': 0, 'c': 2}, 'channel': {'config': 'blue'}, 'min_start_time': 1.0, 'z_pos': 0.1},
+        {'index': {'a': 1, 'b': 1, 'c': 0}, 'channel': {'config': 'red'}, 'min_start_time': 1.0, 'z_pos': 0.3},
+        {'index': {'a': 1, 'b': 1, 'c': 1}, 'channel': {'config': 'green'}, 'min_start_time': 1.0, 'z_pos': 0.3},
+        {'index': {'a': 1, 'b': 1, 'c': 2}, 'channel': {'config': 'blue'}, 'min_start_time': 1.0, 'z_pos': 0.3},
     ]
     # fmt: on
 
@@ -82,22 +83,23 @@ def test_new_mdasequence_parity() -> None:
         z_plan=v2.ZRangeAround(range=1, step=0.5),
         channels=["DAPI", "FITC"],
     )
-    events = list(seq.iter_events(axis_order=("t", "z", "c")))
-    for event in events:
-        event.sequence = None
+    events = [
+        x.model_dump(exclude={"sequence"}, exclude_unset=True)
+        for x in seq.iter_events()
+    ]
     # fmt: off
     assert events == [
-        MDAEvent(index={"t": 0, "z": 0, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.0, z_pos=-0.5, reset_event_timer=True),
-        MDAEvent(index={"t": 0, "z": 0, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.0, z_pos=-0.5),
-        MDAEvent(index={"t": 0, "z": 1, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.0, z_pos=0.0),
-        MDAEvent(index={"t": 0, "z": 1, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.0, z_pos=0.0),
-        MDAEvent(index={"t": 0, "z": 2, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.0, z_pos=0.5),
-        MDAEvent(index={"t": 0, "z": 2, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.0, z_pos=0.5),
-        MDAEvent(index={"t": 1, "z": 0, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.2, z_pos=-0.5),
-        MDAEvent(index={"t": 1, "z": 0, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.2, z_pos=-0.5),
-        MDAEvent(index={"t": 1, "z": 1, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.2, z_pos=0.0),
-        MDAEvent(index={"t": 1, "z": 1, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.2, z_pos=0.0),
-        MDAEvent(index={"t": 1, "z": 2, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.2, z_pos=0.5),
-        MDAEvent(index={"t": 1, "z": 2, "c": 1}, channel=EventChannel(config="FITC"), min_start_time=0.2, z_pos=0.5),
+        {'index': {'t': 0, 'c': 0, 'z': 0}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': -0.5, 'reset_event_timer': True},
+        {'index': {'t': 0, 'c': 0, 'z': 1}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': 0.0},
+        {'index': {'t': 0, 'c': 0, 'z': 2}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': 0.5},
+        {'index': {'t': 0, 'c': 1, 'z': 0}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': -0.5},
+        {'index': {'t': 0, 'c': 1, 'z': 1}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': 0.0},
+        {'index': {'t': 0, 'c': 1, 'z': 2}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': 0.5},
+        {'index': {'t': 1, 'c': 0, 'z': 0}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': -0.5},
+        {'index': {'t': 1, 'c': 0, 'z': 1}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': 0.0},
+        {'index': {'t': 1, 'c': 0, 'z': 2}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': 0.5},
+        {'index': {'t': 1, 'c': 1, 'z': 0}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': -0.5},
+        {'index': {'t': 1, 'c': 1, 'z': 1}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': 0.0},
+        {'index': {'t': 1, 'c': 1, 'z': 2}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': 0.5},
     ]
     # fmt: on
