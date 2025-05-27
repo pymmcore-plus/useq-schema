@@ -5,6 +5,7 @@ from collections import UserDict
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     NamedTuple,
     Optional,
     TypedDict,
@@ -12,11 +13,17 @@ from typing import (
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import Field, GetCoreSchemaHandler, field_validator, model_validator
+from pydantic import (
+    ConfigDict,
+    Field,
+    GetCoreSchemaHandler,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import core_schema
 
 from useq._actions import AcquireImage, AnyAction
-from useq._base_model import UseqModel
+from useq._base_model import MutableUseqModel, UseqModel
 
 try:
     from pydantic import field_serializer
@@ -165,7 +172,7 @@ class ReadOnlyDict(UserDict[str, int]):
         )
 
 
-class MDAEvent(UseqModel):
+class MutableMDAEvent(MutableUseqModel):
     """Define a single event in a [`MDASequence`][useq.MDASequence].
 
     Usually, this object will be generator by iterating over a
@@ -283,3 +290,7 @@ class MDAEvent(UseqModel):
             action: AnyAction
             keep_shutter_open: bool
             reset_event_timer: bool
+
+
+class MDAEvent(MutableMDAEvent):
+    model_config: ClassVar["ConfigDict"] = ConfigDict(frozen=True)
