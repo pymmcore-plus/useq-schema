@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Optional, get_args
 import pytest
 from pydantic import TypeAdapter
 
-from useq import OrderMode, TraversalOrder
 from useq._point_visiting import _rect_indices, _spiral_indices
 from useq.v2 import (
     GridFromEdges,
@@ -13,8 +12,10 @@ from useq.v2 import (
     GridWidthHeight,
     MultiPointPlan,
     MultiPositionPlan,
+    OrderMode,
     Position,
     RandomPoints,
+    TraversalOrder,
 )
 
 if TYPE_CHECKING:

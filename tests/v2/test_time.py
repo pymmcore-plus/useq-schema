@@ -6,7 +6,7 @@ from datetime import timedelta
 
 import pytest
 
-from useq.v2._time import (
+from useq.v2 import (
     AnyTimePlan,
     MultiPhaseTimePlan,
     SinglePhaseTimePlan,

@@ -10,20 +10,22 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 import pytest
 
-from useq._enums import RelativeTo, Shape
-from useq._point_visiting import OrderMode, TraversalOrder
-from useq.v2._grid import (
+from useq.v2 import (
     GridFromEdges,
     GridRowsColumns,
     GridWidthHeight,
     MultiPointPlan,
+    OrderMode,
     RandomPoints,
+    RelativeTo,
+    Shape,
+    TraversalOrder,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from useq.v2._position import Position
+    from useq.v2 import Position
 
 
 def _in_ellipse(x: float, y: float, w: float, h: float, tol: float = 1.01) -> bool:

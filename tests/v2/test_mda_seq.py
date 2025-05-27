@@ -5,14 +5,22 @@ from typing import TYPE_CHECKING
 import pytest
 from pydantic import field_validator
 
-from useq import Channel, MDAEvent, v2
+from useq.v2 import (
+    Channel,
+    MDAEvent,
+    MDASequence,
+    Position,
+    SimpleValueAxis,
+    TIntervalLoops,
+    ZRangeAround,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
 
 # Some example subclasses of SimpleAxis, to demonstrate flexibility
-class APlan(v2.SimpleValueAxis[float]):
+class APlan(SimpleValueAxis[float]):
     axis_key: str = "a"
 
     def contribute_to_mda_event(
@@ -21,20 +29,20 @@ class APlan(v2.SimpleValueAxis[float]):
         return {"min_start_time": value}
 
 
-class BPlan(v2.SimpleValueAxis[v2.Position]):
+class BPlan(SimpleValueAxis[Position]):
     axis_key: str = "b"
 
     @field_validator("values", mode="before")
-    def _value_to_position(cls, values: list[float]) -> list[v2.Position]:
-        return [v2.Position(z=v) for v in values]
+    def _value_to_position(cls, values: list[float]) -> list[Position]:
+        return [Position(z=v) for v in values]
 
     def contribute_to_mda_event(
-        self, value: v2.Position, index: Mapping[str, int]
+        self, value: Position, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
         return {"z_pos": value.z}
 
 
-class CPlan(v2.SimpleValueAxis[Channel]):
+class CPlan(SimpleValueAxis[Channel]):
     axis_key: str = "c"
 
     @field_validator("values", mode="before")
@@ -48,7 +56,7 @@ class CPlan(v2.SimpleValueAxis[Channel]):
 
 
 def test_new_mdasequence_simple() -> None:
-    seq = v2.MDASequence(
+    seq = MDASequence(
         axes=(
             APlan(values=[0, 1]),
             BPlan(values=[0.1, 0.3]),
@@ -78,9 +86,9 @@ def test_new_mdasequence_simple() -> None:
 
 
 def test_new_mdasequence_parity() -> None:
-    seq = v2.MDASequence(
-        time_plan=v2.TIntervalLoops(interval=0.2, loops=2),
-        z_plan=v2.ZRangeAround(range=1, step=0.5),
+    seq = MDASequence(
+        time_plan=TIntervalLoops(interval=0.2, loops=2),
+        z_plan=ZRangeAround(range=1, step=0.5),
         channels=["DAPI", "FITC"],
     )
     events = [
@@ -106,10 +114,10 @@ def test_new_mdasequence_parity() -> None:
 
 
 def serialize_mda_sequence() -> None:
-    assert isinstance(v2.MDASequence.model_json_schema(), str)
-    seq = v2.MDASequence(
-        time_plan=v2.TIntervalLoops(interval=0.2, loops=2),
-        z_plan=v2.ZRangeAround(range=1, step=0.5),
+    assert isinstance(MDASequence.model_json_schema(), str)
+    seq = MDASequence(
+        time_plan=TIntervalLoops(interval=0.2, loops=2),
+        z_plan=ZRangeAround(range=1, step=0.5),
         channels=["DAPI", "FITC"],
     )
     assert isinstance(seq.model_dump_json(), str)
@@ -118,9 +126,9 @@ def serialize_mda_sequence() -> None:
 
 @pytest.mark.filterwarnings("ignore:.*ill-defined:FutureWarning")
 def test_basic_properties() -> None:
-    seq = v2.MDASequence(
-        time_plan=v2.TIntervalLoops(interval=0.2, loops=2),
-        z_plan=v2.ZRangeAround(range=1, step=0.5),
+    seq = MDASequence(
+        time_plan=TIntervalLoops(interval=0.2, loops=2),
+        z_plan=ZRangeAround(range=1, step=0.5),
         stage_positions=[(0, 0)],
         channels=["DAPI", "FITC"],
         axis_order=("t", "c", "z"),
