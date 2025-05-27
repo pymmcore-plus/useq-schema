@@ -321,6 +321,7 @@ def _extract_legacy_axes(kwargs: dict[str, Any]) -> tuple[AxisIterable, ...]:
                 try:
                     val = validator[key](val)
                 except Exception as e:  # pragma: no cover
+                    breakpoint()
                     raise ValueError(
                         f"Failed to process legacy axis '{key}': {e}"
                     ) from e

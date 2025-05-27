@@ -294,8 +294,9 @@ seq = v2.MDASequence(
 **v1**: Monolithic `_iter_sequence` function with hardcoded event building logic.
 
 **v2**: Separation of concerns:
+
 - Axis iteration handled by `iterate_multi_dim_sequence`
-- Event building handled by `EventBuilder` 
+- Event building handled by `EventBuilder`
 - Event modification handled by `EventTransform` pipeline
 
 #### 2. **Shape and Sizes Properties**
@@ -346,17 +347,25 @@ class CustomZAxis(v2.ZRangeAround):
         return super().should_skip(prefix)
 ```
 
+#### Z. **Z-Plans yield Positions, not floats**
+
+**v1**: Z plans yielded floats representing Z positions.
+
+**v2**: Z plans yield `Position` objects that (usually) include only z coordinates:
+
 ## Built-in Axes in v2
 
 All the original v1 plans are now `AxisIterable` implementations:
 
 ### Time Axes
-- `TIntervalLoops` 
+
+- `TIntervalLoops`
 - `TIntervalDuration`
 - `TDurationLoops`
 - `MultiPhaseTimePlan`
 
 ### Z Axes  
+
 - `ZRangeAround`
 - `ZTopBottom`
 - `ZAboveBelow`
@@ -364,14 +373,17 @@ All the original v1 plans are now `AxisIterable` implementations:
 - `ZRelativePositions`
 
 ### Channel Axes
+
 - `ChannelsPlan` (wraps list of `Channel` objects)
 
 ### Position Axes
+
 - `StagePositions` (wraps list of `Position` objects)
 
 ### Grid Axes
+
 - `GridRowsColumns`
-- `GridFromEdges` 
+- `GridFromEdges`
 - `GridWidthHeight`
 - `RandomPoints`
 
@@ -440,22 +452,26 @@ main_seq = v2.MDASequence(
 ## Performance and Design Benefits
 
 ### Separation of Concerns
+
 - **Axis logic**: Isolated in individual `AxisIterable` implementations
 - **Event building**: Centralized in `EventBuilder`
 - **Event modification**: Composable `EventTransform` pipeline
 
 ### Extensibility
+
 - Add new dimensions without modifying core code
 - Custom skip logic per axis
 - Pluggable event builders for different event types
 - Composable transform pipeline
 
 ### Type Safety
+
 - Generic types ensure type safety across the pipeline
 - Protocol-based design enables duck typing
 - Clear interfaces for each component
 
 ### Maintainability
+
 - Individual axis implementations are easier to test and debug
 - Transform pipeline is easier to reason about than monolithic logic
 - Clear separation between axis iteration and event building

@@ -225,6 +225,9 @@ class AxisIterable(BaseModel, Generic[V]):
         ----------
         value : V
             The value provided by this axis, for this iteration.
+        index : Mapping[str, int]
+            A mapping of axis keys to their current index in the iteration.
+            This can be used to determine the context of the value.
 
         Returns
         -------
@@ -245,7 +248,7 @@ class SimpleValueAxis(AxisIterable[V]):
 
     values: list[V] = Field(default_factory=list)
 
-    def __iter__(self) -> Iterator[V | MultiAxisSequence]:  # type: ignore[override]
+    def __iter__(self) -> Iterator[V]:  # type: ignore[override]
         yield from self.values
 
     def __len__(self) -> int:
