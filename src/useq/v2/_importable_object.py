@@ -1,8 +1,15 @@
 from dataclasses import dataclass
 from typing import Any, get_origin
 
+import pydantic
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
+
+pydantic_version = tuple(int(x) for x in pydantic.VERSION.split(".")[:2])
+if pydantic_version >= (2, 11):
+    json_input: dict = {"json_schema_input_schema": core_schema.str_schema()}
+else:
+    json_input = {}
 
 
 @dataclass(frozen=True)
@@ -69,5 +76,5 @@ class ImportableObject:
             function=import_python_path,
             schema=core_schema.is_instance_schema(origin),
             serialization=to_pp_ser,
-            json_schema_input_schema=core_schema.str_schema(),
+            **json_input,
         )

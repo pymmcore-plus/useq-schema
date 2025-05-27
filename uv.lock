@@ -463,14 +463,14 @@ wheels = [
 
 [[package]]
 name = "fancycompleter"
-version = "0.11.0"
+version = "0.11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyrepl", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f3/03/eb007f5e90c13016debb6ecd717f0595ce758bf30906f2cb273673e8427d/fancycompleter-0.11.0.tar.gz", hash = "sha256:632b265b29dd0315b96d33d13d83132a541d6312262214f50211b3981bb4fa00", size = 341517, upload-time = "2025-04-13T12:48:09.487Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/4c/d11187dee93eff89d082afda79b63c79320ae1347e49485a38f05ad359d0/fancycompleter-0.11.1.tar.gz", hash = "sha256:5b4ad65d76b32b1259251516d0f1cb2d82832b1ff8506697a707284780757f69", size = 341776, upload-time = "2025-05-26T12:59:11.045Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/52/d3e234bf32ee97e71b45886a52871dc681345d64b449a930bab38c73cbcb/fancycompleter-0.11.0-py3-none-any.whl", hash = "sha256:a4712fdda8d7f3df08511ab2755ea0f1e669e2c65701a28c0c0aa2ff528521ed", size = 11166, upload-time = "2025-04-13T12:48:08.12Z" },
+    { url = "https://files.pythonhosted.org/packages/30/c3/6f0e3896f193528bbd2b4d2122d4be8108a37efab0b8475855556a8c4afa/fancycompleter-0.11.1-py3-none-any.whl", hash = "sha256:44243d7fab37087208ca5acacf8f74c0aa4d733d04d593857873af7513cdf8a6", size = 11207, upload-time = "2025-05-26T12:59:09.857Z" },
 ]
 
 [[package]]
@@ -2213,7 +2213,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.25.2" },
     { name = "numpy", marker = "python_full_version >= '3.12'", specifier = ">=1.26.0" },
     { name = "numpy", marker = "python_full_version >= '3.13'", specifier = ">=2.1.0" },
-    { name = "pydantic", specifier = ">=2.6" },
+    { name = "pydantic", specifier = ">=2.9" },
     { name = "pyyaml", marker = "extra == 'yaml'", specifier = ">=5.0" },
     { name = "typing-extensions", specifier = ">=4" },
 ]
@@ -2309,9 +2309,9 @@ wheels = [
 
 [[package]]
 name = "zipp"
-version = "3.21.0"
+version = "3.22.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/3f/50/bad581df71744867e9468ebd0bcd6505de3b275e06f202c2cb016e3ff56f/zipp-3.21.0.tar.gz", hash = "sha256:2c9958f6430a2040341a52eb608ed6dd93ef4392e02ffe219417c1b28b5dd1f4", size = 24545, upload-time = "2024-11-10T15:05:20.202Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/12/b6/7b3d16792fdf94f146bed92be90b4eb4563569eca91513c8609aebf0c167/zipp-3.22.0.tar.gz", hash = "sha256:dd2f28c3ce4bc67507bfd3781d21b7bb2be31103b51a4553ad7d90b84e57ace5", size = 25257, upload-time = "2025-05-26T14:46:32.217Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/1a/7e4798e9339adc931158c9d69ecc34f5e6791489d469f5e50ec15e35f458/zipp-3.21.0-py3-none-any.whl", hash = "sha256:ac1bbe05fd2991f160ebce24ffbac5f6d11d83dc90891255885223d42b3cd931", size = 9630, upload-time = "2024-11-10T15:05:19.275Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/da/f64669af4cae46f17b90798a827519ce3737d31dbafad65d391e49643dc4/zipp-3.22.0-py3-none-any.whl", hash = "sha256:fe208f65f2aca48b81f9e6fd8cf7b8b32c26375266b009b413d45306b6148343", size = 9796, upload-time = "2025-05-26T14:46:30.775Z" },
 ]

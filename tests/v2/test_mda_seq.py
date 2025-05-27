@@ -58,7 +58,6 @@ def test_new_mdasequence_simple() -> None:
         x.model_dump(exclude={"sequence"}, exclude_unset=True)
         for x in seq.iter_events()
     ]
-    print(events)
     # fmt: off
     assert events == [
         {'index': {'a': 0, 'b': 0, 'c': 0}, 'channel': {'config': 'red'}, 'min_start_time': 0.0, 'z_pos': 0.1},
@@ -103,3 +102,14 @@ def test_new_mdasequence_parity() -> None:
         {'index': {'t': 1, 'c': 1, 'z': 2}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': 0.5},
     ]
     # fmt: on
+
+
+def serialize_mda_sequence() -> None:
+    assert isinstance(v2.MDASequence.model_json_schema(), str)
+    seq = v2.MDASequence(
+        time_plan=v2.TIntervalLoops(interval=0.2, loops=2),
+        z_plan=v2.ZRangeAround(range=1, step=0.5),
+        channels=["DAPI", "FITC"],
+    )
+    assert isinstance(seq.model_dump_json(), str)
+    assert isinstance(seq.model_dump(mode="json"), dict)
