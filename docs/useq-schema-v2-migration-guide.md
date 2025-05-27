@@ -2,21 +2,28 @@
 
 ## Overview
 
-The v2 version of `useq-schema` represents a fundamental architectural redesign that generalizes the multi-dimensional axis iteration pattern to support arbitrary dimensions while preserving the complex event building, nesting, and skipping capabilities of the original implementation. This document explains the new features, how to use and extend them, and the breaking changes from v1.
+The v2 version of `useq-schema` represents a fundamental architectural redesign
+that generalizes the multi-dimensional axis iteration pattern to support
+arbitrary dimensions while preserving the complex event building, nesting, and
+skipping capabilities of the original implementation. This document explains the
+new features, how to use and extend them, and the breaking changes from v1.
 
 ## Key Architectural Changes
 
 ### From Fixed Axes to Extensible Axis System
 
-**v1 Approach**: Hard-coded support for specific axes (`time`, `position`, `grid`, `channel`, `z`) with bespoke iteration logic in `_iter_sequence.py`.
+**v1 Approach**: Hard-coded support for specific axes (`time`, `position`,
+`grid`, `channel`, `z`) with bespoke iteration logic in `_iter_sequence.py`.
 
-**v2 Approach**: Generic, protocol-based system where any object implementing `AxisIterable` can participate in multi-dimensional iteration.
+**v2 Approach**: Generic, protocol-based system where any object implementing
+`AxisIterable` can participate in multi-dimensional iteration.
 
 ### Core Concepts
 
 #### 1. `AxisIterable[V]` Protocol
 
-The foundation of v2 is the `AxisIterable` protocol, which defines how any axis should behave:
+The foundation of v2 is the `AxisIterable` protocol, which defines how any axis
+should behave:
 
 ```python
 class AxisIterable(BaseModel, Generic[V]):
@@ -51,7 +58,8 @@ class SimpleValueAxis(AxisIterable[V]):
 
 #### 3. `MultiAxisSequence[EventT]` - The New Sequence Container
 
-Replaces the old `MDASequence` as the core container, but with generic event support:
+Replaces the old `MDASequence` as the core container, but with generic event
+support:
 
 ```python
 class MultiAxisSequence(MutableModel, Generic[EventTco]):
@@ -111,7 +119,8 @@ class FilteredChannelAxis(SimpleValueAxis[Channel]):
 
 ### 3. **Hierarchical Nested Sequences**
 
-The new system supports arbitrarily nested sequences that can override or extend parent axes:
+The new system supports arbitrarily nested sequences that can override or extend
+parent axes:
 
 ```python
 # Position with custom sub-sequence
@@ -135,7 +144,8 @@ main_sequence = v2.MDASequence(
 
 ### 4. **Event Transform Pipeline**
 
-Replace the old hardcoded event modifications with a composable transform pipeline:
+Replace the old hardcoded event modifications with a composable transform
+pipeline:
 
 ```python
 class CustomTransform(EventTransform[MDAEvent]):
@@ -176,7 +186,10 @@ v2.ResetEventTimerTransform()
 
 #### 4.2 **Non-Imaging Events with Transforms**
 
-A key innovation in v2 is the ability to use transforms to insert **non-imaging events** that don't contribute to the sequence shape. This addresses GitHub issue [#41](https://github.com/pymmcore-plus/useq-schema/issues/41) for use cases like laser measurements and Raman spectroscopy:
+A key innovation in v2 is the ability to use transforms to insert **non-imaging
+events** that don't contribute to the sequence shape. This addresses GitHub
+issue [#41](https://github.com/pymmcore-plus/useq-schema/issues/41) for use
+cases like laser measurements and Raman spectroscopy:
 
 ```python
 class LaserMeasurementTransform(EventTransform[MDAEvent]):
@@ -264,7 +277,8 @@ class InfiniteTimeAxis(AxisIterable[float]):
 
 ### Backward Compatibility
 
-v2 `MDASequence` accepts the same constructor parameters as v1 through automatic conversion:
+v2 `MDASequence` accepts the same constructor parameters as v1 through automatic
+conversion:
 
 ```python
 # This v1 style still works
@@ -291,7 +305,8 @@ seq = v2.MDASequence(
 
 #### 1. **Event Building Architecture**
 
-**v1**: Monolithic `_iter_sequence` function with hardcoded event building logic.
+**v1**: Monolithic `_iter_sequence` function with hardcoded event building
+logic.
 
 **v2**: Separation of concerns:
 
@@ -351,7 +366,8 @@ class CustomZAxis(v2.ZRangeAround):
 
 **v1**: Z plans yielded floats representing Z positions.
 
-**v2**: Z plans yield `Position` objects that (usually) include only z coordinates:
+**v2**: Z plans yield `Position` objects that (usually) include only z
+coordinates:
 
 ## Built-in Axes in v2
 
@@ -478,7 +494,8 @@ main_seq = v2.MDASequence(
 
 ## Summary
 
-useq-schema v2 transforms the library from a fixed-axis system to a fully extensible, protocol-based architecture that supports:
+useq-schema v2 transforms the library from a fixed-axis system to a fully
+extensible, protocol-based architecture that supports:
 
 - **Arbitrary custom axes** with their own iteration and contribution logic
 - **Conditional skipping** per axis with full context awareness  
@@ -487,4 +504,6 @@ useq-schema v2 transforms the library from a fixed-axis system to a fully extens
 - **Pluggable event builders** for different event types
 - **Type-safe extensibility** through generic protocols
 
-While maintaining full backward compatibility with v1 API patterns, v2 opens up useq-schema for complex, multi-dimensional experimental workflows that were impossible to express in the original architecture.
+While maintaining full backward compatibility with v1 API patterns, v2 opens up
+useq-schema for complex, multi-dimensional experimental workflows that were
+impossible to express in the original architecture.

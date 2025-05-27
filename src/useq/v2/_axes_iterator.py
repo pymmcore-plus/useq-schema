@@ -148,7 +148,7 @@ Usage Notes:
   implement custom filtering logic.
 
 This module is intended for cases where complex, declarative multidimensional iteration
-is required—such as in microscope acquisitions, high-content imaging, or other
+is required-such as in microscope acquisitions, high-content imaging, or other
 experimental designs where the sequence of events must be generated in a flexible,
 hierarchical manner.
 """
