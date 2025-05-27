@@ -64,7 +64,7 @@ class TestZTopBottom:
     def test_contribute_to_mda_event(self) -> None:
         """Test contribute_to_mda_event method."""
         plan = ZTopBottom(top=10.0, bottom=0.0, step=2.0)
-        contribution = plan.contribute_to_mda_event(Position(z=5.0), {"z": 2})
+        contribution = plan.contribute_event_kwargs(Position(z=5.0), {"z": 2})
         assert contribution == {"z_pos": 5.0}
 
 
@@ -182,8 +182,8 @@ class TestZPlanBase:
         plan = ZTopBottom(top=2.0, bottom=0.0, step=1.0)
 
         # Should have MDAAxisIterable methods
-        assert hasattr(plan, "axis_key")
-        assert hasattr(plan, "contribute_to_mda_event")
+        assert isinstance(plan.axis_key, str)
+        assert plan.contribute_event_kwargs(Position(), {}) is not None
 
         # Test iteration returns float values
         values = [p.z for p in plan]
@@ -283,7 +283,7 @@ def test_contribute_to_mda_event_integration() -> None:
     plan = ZTopBottom(top=10.0, bottom=0.0, step=5.0)
 
     # Test contribution
-    contribution = plan.contribute_to_mda_event(Position(z=7.5), {"z": 1})
+    contribution = plan.contribute_event_kwargs(Position(z=7.5), {"z": 1})
     assert contribution == {"z_pos": 7.5}
 
     # Test that the contribution can be used to create an MDAEvent

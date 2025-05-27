@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 class APlan(SimpleValueAxis[float]):
     axis_key: str = "a"
 
-    def contribute_to_mda_event(
+    def contribute_event_kwargs(
         self, value: float, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
         return {"min_start_time": value}
@@ -36,7 +36,7 @@ class BPlan(SimpleValueAxis[Position]):
     def _value_to_position(cls, values: list[float]) -> list[Position]:
         return [Position(z=v) for v in values]
 
-    def contribute_to_mda_event(
+    def contribute_event_kwargs(
         self, value: Position, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
         return {"z_pos": value.z}
@@ -49,7 +49,7 @@ class CPlan(SimpleValueAxis[Channel]):
     def _value_to_channel(cls, values: list[str]) -> list[Channel]:
         return [Channel(config=v, exposure=None) for v in values]
 
-    def contribute_to_mda_event(
+    def contribute_event_kwargs(
         self, value: Channel, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
         return {"channel": {"config": value.config}}

@@ -179,8 +179,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import TypeAlias
 
-    from useq._mda_event import MDAEvent
-
     AxisKey: TypeAlias = str
     Value: TypeAlias = Any
     Index: TypeAlias = int
@@ -212,11 +210,11 @@ class AxisIterable(BaseModel, Generic[V]):
         """
         return False
 
-    def contribute_to_mda_event(
+    def contribute_event_kwargs(
         self,
         value: V,  # type: ignore[misc] # covariant cannot be used as parameter
         index: Mapping[str, int],
-    ) -> MDAEvent.Kwargs:
+    ) -> Mapping:
         """Contribute data to the event being built.
 
         This method allows each axis to contribute its data to the final MDAEvent.

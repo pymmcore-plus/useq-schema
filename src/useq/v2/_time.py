@@ -41,7 +41,7 @@ class TimePlan(AxisIterable[float], FrozenModel):
         """
         return self.interval.total_seconds()  # type: ignore
 
-    def contribute_to_mda_event(
+    def contribute_event_kwargs(
         self, value: float, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
         """Contribute time data to the event being built.

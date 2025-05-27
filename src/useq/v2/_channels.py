@@ -24,7 +24,7 @@ class ChannelsPlan(SimpleValueAxis[Channel], FrozenModel):
             values = {"values": values}
         return values
 
-    def contribute_to_mda_event(
+    def contribute_event_kwargs(
         self, value: Channel, index: Mapping[str, int]
     ) -> "MDAEvent.Kwargs":
         """Contribute channel information to the MDA event."""

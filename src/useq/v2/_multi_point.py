@@ -25,7 +25,7 @@ class MultiPositionPlan(AxisIterable[Position]):
     def is_relative(self) -> bool:
         return True
 
-    def contribute_to_mda_event(
+    def contribute_event_kwargs(
         self, value: Position, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
         out: dict = {}

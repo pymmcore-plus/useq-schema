@@ -410,9 +410,9 @@ def test_contribute_to_mda_event() -> None:
     plan = TIntervalLoops(interval=timedelta(seconds=2), loops=3)
 
     # Test contribution
-    contribution = plan.contribute_to_mda_event(4.0, {"t": 2})
+    contribution = plan.contribute_event_kwargs(4.0, {"t": 2})
     assert contribution == {"min_start_time": 4.0}
 
     # Test with different value
-    contribution = plan.contribute_to_mda_event(0.0, {"t": 0})
+    contribution = plan.contribute_event_kwargs(0.0, {"t": 0})
     assert contribution == {"min_start_time": 0.0}

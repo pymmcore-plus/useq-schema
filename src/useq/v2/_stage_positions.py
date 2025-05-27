@@ -48,7 +48,7 @@ class StagePositions(AxisIterable[Position], FrozenModel):
         return values
 
     # FIXME: fix type ignores
-    def contribute_to_mda_event(  # type: ignore
+    def contribute_event_kwargs(  # type: ignore
         self,
         value: Position,
         index: Mapping[str, int],

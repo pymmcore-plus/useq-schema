@@ -67,7 +67,7 @@ class ZPlan(AxisIterable[Position], FrozenModel):
         nsteps = (stop + step - start) / step
         return math.ceil(round(nsteps, 6))
 
-    def contribute_to_mda_event(
+    def contribute_event_kwargs(
         self, value: Position, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
         """Contribute Z position to the MDA event."""

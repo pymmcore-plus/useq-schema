@@ -57,7 +57,7 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
         # Let each axis contribute to the event
         for axis_key, (idx, value, axis) in axes_index.items():
             index[axis_key] = idx
-            contribution = axis.contribute_to_mda_event(value, index)
+            contribution = axis.contribute_event_kwargs(value, index)
             contributions.append((axis_key, contribution))
 
         if context:
