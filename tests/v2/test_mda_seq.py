@@ -55,6 +55,8 @@ def test_new_mdasequence_simple() -> None:
         )
     )
     events = list(seq.iter_events())
+    for event in events:
+        event.sequence = None
 
     # fmt: off
     assert events == [
@@ -81,6 +83,8 @@ def test_new_mdasequence_parity() -> None:
         channels=["DAPI", "FITC"],
     )
     events = list(seq.iter_events(axis_order=("t", "z", "c")))
+    for event in events:
+        event.sequence = None
     # fmt: off
     assert events == [
         MDAEvent(index={"t": 0, "z": 0, "c": 0}, channel=EventChannel(config="DAPI"), min_start_time=0.0, z_pos=-0.5, reset_event_timer=True),
