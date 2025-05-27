@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import TYPE_CHECKING, Annotated, Optional
 
 from annotated_types import Ge
@@ -9,7 +8,7 @@ from useq.v2._axes_iterator import AxisIterable
 from useq.v2._position import Position
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Mapping
 
     from matplotlib.axes import Axes
 
@@ -25,9 +24,6 @@ class MultiPositionPlan(AxisIterable[Position]):
     @property
     def is_relative(self) -> bool:
         return True
-
-    @abstractmethod
-    def __iter__(self) -> Iterator[Position]: ...  # type: ignore[override]
 
     def contribute_to_mda_event(
         self, value: Position, index: Mapping[str, int]

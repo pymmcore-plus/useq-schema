@@ -9,13 +9,14 @@ from typing import (
     Annotated,
     Any,
     Callable,
+    Generic,
     Optional,
     Union,
 )
 
 import numpy as np
 from annotated_types import Ge, Gt
-from pydantic import Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing_extensions import Self, TypeAlias
 
 from useq._enums import RelativeTo, Shape
@@ -37,32 +38,15 @@ if TYPE_CHECKING:
 MIN_RANDOM_POINTS = 10000
 
 
-# used in iter_indices below, to determine the order in which indices are yielded
-class _GridPlan(_MultiPointPlan[PositionT]):
-    """Base class for all grid plans.
-
-    Attributes
-    ----------
-    overlap : float | Tuple[float, float]
-        Overlap between grid positions in percent. If a single value is provided, it is
-        used for both x and y. If a tuple is provided, the first value is used
-        for x and the second for y.
-    mode : OrderMode
-        Define the ways of ordering the grid positions. Options are
-        row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
-        By default, row_wise_snake.
-    fov_width : Optional[float]
-        Width of the field of view in microns.  If not provided, acquisition engines
-        should use current width of the FOV based on the current objective and camera.
-        Engines MAY override this even if provided.
-    fov_height : Optional[float]
-        Height of the field of view in microns. If not provided, acquisition engines
-        should use current height of the FOV based on the current objective and camera.
-        Engines MAY override this even if provided.
-    """
-
+class _GridMixin(BaseModel, Generic[PositionT]):
     overlap: tuple[float, float] = Field(default=(0.0, 0.0), frozen=True)
     mode: OrderMode = Field(default=OrderMode.row_wise_snake, frozen=True)
+    fov_width: Optional[float] = None
+    fov_height: Optional[float] = None
+
+    @property
+    def is_relative(self) -> bool:
+        return True
 
     @field_validator("overlap", mode="before")
     def _validate_overlap(cls, v: Any) -> tuple[float, float]:
@@ -90,25 +74,18 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         """Return the number of columns, given a grid step size."""
         raise NotImplementedError
 
-    def num_positions(self) -> int:
-        """Return the number of individual positions in the grid.
+    def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
+        yield from self.iter_grid_positions()
 
-        Note: For GridFromEdges and GridWidthHeight, this will depend on field of view
-        size. If no field of view size is provided, the number of positions will be 1.
-        """
-        if isinstance(self, (GridFromEdges, GridWidthHeight)) and (
-            # type ignore is because mypy thinks self is Never here...
-            self.fov_width is None or self.fov_height is None  # type: ignore [attr-defined]
-        ):
-            raise ValueError(
-                "Retrieving the number of positions in a GridFromEdges or "
-                "GridWidthHeight plan requires the field of view size to be set."
-            )
+    def _step_size(self, fov_width: float, fov_height: float) -> tuple[float, float]:
+        dx = fov_width - (fov_width * self.overlap[0]) / 100
+        dy = fov_height - (fov_height * self.overlap[1]) / 100
+        return dx, dy
 
-        dx, dy = self._step_size(self.fov_width or 1, self.fov_height or 1)
-        rows = self._nrows(dy)
-        cols = self._ncolumns(dx)
-        return rows * cols
+    def _build_position(self, **kwargs: Any) -> PositionT:
+        """Build a position object for this grid plan."""
+        pos_cls = RelativePosition if self.is_relative else AbsolutePosition
+        return pos_cls(**kwargs)  # type: ignore
 
     def iter_grid_positions(
         self,
@@ -128,9 +105,8 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
 
-        pos_cls = RelativePosition if self.is_relative else AbsolutePosition
         for idx, (r, c) in enumerate(order.generate_indices(rows, cols)):
-            yield pos_cls(  # type: ignore [misc]
+            yield self._build_position(
                 x=x0 + c * dx,
                 y=y0 - r * dy,
                 row=r,
@@ -138,16 +114,27 @@ class _GridPlan(_MultiPointPlan[PositionT]):
                 name=f"{str(idx).zfill(4)}",
             )
 
-    def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
-        yield from self.iter_grid_positions()
+    def num_positions(self) -> int:
+        """Return the number of individual positions in the grid.
 
-    def _step_size(self, fov_width: float, fov_height: float) -> tuple[float, float]:
-        dx = fov_width - (fov_width * self.overlap[0]) / 100
-        dy = fov_height - (fov_height * self.overlap[1]) / 100
-        return dx, dy
+        Note: For GridFromEdges and GridWidthHeight, this will depend on field of view
+        size. If no field of view size is provided, the number of positions will be 1.
+        """
+        if isinstance(self, (GridFromEdges, GridWidthHeight)) and (
+            self.fov_width is None or self.fov_height is None
+        ):
+            raise ValueError(
+                "Retrieving the number of positions in a GridFromEdges or "
+                "GridWidthHeight plan requires the field of view size to be set."
+            )
+
+        dx, dy = self._step_size(self.fov_width or 1, self.fov_height or 1)
+        rows = self._nrows(dy)
+        cols = self._ncolumns(dx)
+        return rows * cols
 
 
-class GridFromEdges(_GridPlan[AbsolutePosition]):
+class GridFromEdges(_GridMixin, _MultiPointPlan[AbsolutePosition]):
     """Yield absolute stage positions to cover a bounded area.
 
     The bounded area is defined by top, left, bottom and right edges in
@@ -239,7 +226,7 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         )
 
 
-class GridRowsColumns(_GridPlan[RelativePosition]):
+class GridRowsColumns(_GridMixin, _MultiPointPlan[RelativePosition]):
     """Grid plan based on number of rows and columns.
 
     Attributes
@@ -297,7 +284,7 @@ class GridRowsColumns(_GridPlan[RelativePosition]):
 GridRelative = GridRowsColumns
 
 
-class GridWidthHeight(_GridPlan[RelativePosition]):
+class GridWidthHeight(_GridMixin, _MultiPointPlan[RelativePosition]):
     """Grid plan based on total width and height.
 
     Attributes
