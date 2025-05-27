@@ -10,7 +10,7 @@ from useq._channel import Channel
 from useq._enums import Axis, RelativeTo, Shape
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import Channel as EventChannel
-from useq._mda_event import MDAEvent, PropertyTuple, SLMImage
+from useq._mda_event import MDAEvent, MutableMDAEvent, PropertyTuple, SLMImage
 from useq._plate import WellPlate, WellPlatePlan
 from useq._plate_registry import register_well_plates, registered_well_plate_keys
 from useq._point_visiting import OrderMode, TraversalOrder
@@ -87,6 +87,7 @@ __all__ = [
     "MultiPhaseTimePlan",
     "MultiPointPlan",
     "MultiPositionPlan",
+    "MutableMDAEvent",
     "OrderMode",
     "Position",  # alias for AbsolutePosition
     "PropertyTuple",

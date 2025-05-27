@@ -291,6 +291,10 @@ class MutableMDAEvent(MutableUseqModel):
             keep_shutter_open: bool
             reset_event_timer: bool
 
+    def freeze(self) -> "MDAEvent":
+        """Return a frozen version of this event."""
+        return MDAEvent.model_construct(**self.model_dump(exclude_unset=True))
+
 
 class MDAEvent(MutableMDAEvent):
     model_config: ClassVar["ConfigDict"] = ConfigDict(frozen=True)
