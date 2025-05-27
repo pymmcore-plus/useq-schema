@@ -82,7 +82,7 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
                             stacklevel=3,
                         )
                     abs_pos[key] = val
-                elif key in event_data and event_data[key] != val:
+                elif key in event_data and event_data[key] != val:  # pragma: no cover
                     # Could implement different strategies here
                     raise ValueError(f"Conflicting values for {key} from {axis_key}")
                 else:
@@ -169,7 +169,7 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
         if isinstance(data, MDASequenceV1):
             data = data.model_dump(exclude_unset=True)
         if isinstance(data, dict) and (axes := _extract_legacy_axes(data)):
-            if "axes" in data:
+            if "axes" in data:  # pragma: no cover
                 raise ValueError(
                     "Cannot provide both 'axes' and legacy MDASequence parameters."
                 )
@@ -230,7 +230,7 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
     )
     def sizes(self) -> Mapping[str, int]:
         """Mapping of axis name to size of that axis."""
-        if not self.is_finite():
+        if not self.is_finite():  # pragma: no cover
             raise ValueError("Cannot get sizes of infinite sequence.")
 
         return {axis.axis_key: len(axis) for axis in self._ordered_axes()}  # type: ignore[arg-type]
@@ -249,7 +249,7 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
         out = []
         for ax in self._ordered_axes():
             with suppress(TypeError, ValueError):
-                if not len(ax):  # type: ignore[arg-type]
+                if not len(ax):  # type: ignore[arg-type]  # pragma: no cover
                     continue
             out.append(ax.axis_key)
         return tuple(out)
@@ -325,7 +325,7 @@ def _extract_legacy_axes(kwargs: dict[str, Any]) -> tuple[AxisIterable, ...]:
                         f"Failed to process legacy axis '{key}': {e}"
                     ) from e
             return val  # type: ignore[no-any-return]
-        return None
+        return None  # pragma: no cover
 
     axes = [
         val

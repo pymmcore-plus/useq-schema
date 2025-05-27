@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib
+import importlib.util
 import math
 import sys
 from dataclasses import dataclass
@@ -219,6 +221,9 @@ def test_random_points_no_overlap() -> None:
         for j, (x2, y2) in enumerate(coords):
             if i != j:
                 assert abs(x1 - x2) >= 2 or abs(y1 - y2) >= 2
+
+    if importlib.util.find_spec("matplotlib") is not None:
+        g.plot(show=False)
 
 
 def test_random_points_traversal_ordering() -> None:

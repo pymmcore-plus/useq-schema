@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
 from pydantic import field_validator
 
 from useq import Channel, MDAEvent, v2
@@ -113,3 +114,22 @@ def serialize_mda_sequence() -> None:
     )
     assert isinstance(seq.model_dump_json(), str)
     assert isinstance(seq.model_dump(mode="json"), dict)
+
+
+@pytest.mark.filterwarnings("ignore:.*ill-defined:FutureWarning")
+def test_basic_properties() -> None:
+    seq = v2.MDASequence(
+        time_plan=v2.TIntervalLoops(interval=0.2, loops=2),
+        z_plan=v2.ZRangeAround(range=1, step=0.5),
+        stage_positions=[(0, 0)],
+        channels=["DAPI", "FITC"],
+        axis_order=("t", "c", "z"),
+    )
+    assert seq.time_plan is not None
+    assert seq.channels is not None
+    assert seq.z_plan is not None
+    assert seq.stage_positions is not None
+    assert seq.grid_plan is None
+    assert seq.shape
+    assert seq.sizes
+    assert seq.used_axes == ("t", "c", "z")
