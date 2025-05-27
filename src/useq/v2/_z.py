@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 from useq import _z
 
 
-class ZPlan(AxisIterable[Position], _z.ZPlan):
+class ZPlan(_z.ZPlan, AxisIterable[Position]):
     axis_key: Literal[Axis.Z] = Field(default=Axis.Z, frozen=True, init=False)
 
     def __iter__(self) -> Iterator[Position]:  # type: ignore[override]

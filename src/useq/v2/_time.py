@@ -1,45 +1,22 @@
 from __future__ import annotations
 
-from datetime import timedelta
-from typing import TYPE_CHECKING, Annotated, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Union
 
-from pydantic import (
-    BeforeValidator,
-    Field,
-    PlainSerializer,
-    field_validator,
-    model_validator,
-)
+from pydantic import Field
 from typing_extensions import deprecated
 
-from useq._base_model import FrozenModel
+from useq import _time
 from useq._enums import Axis
 from useq.v2._axes_iterator import AxisIterable
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator, Mapping
+    from collections.abc import Generator, Mapping
 
     from useq._mda_event import MDAEvent
 
-# slightly modified so that we can accept dict objects as input
-# and serialize to total_seconds
-TimeDelta = Annotated[
-    timedelta,
-    BeforeValidator(lambda v: timedelta(**v) if isinstance(v, dict) else v),
-    PlainSerializer(lambda td: cast("timedelta", td).total_seconds()),
-]
 
-
-class TimePlan(AxisIterable[float], FrozenModel):
+class TimePlan(_time.TimePlan, AxisIterable[float]):
     axis_key: str = Field(default=Axis.TIME, frozen=True, init=False)
-    prioritize_duration: bool = False  # or prioritize num frames
-
-    def _interval_s(self) -> float:
-        """Return the interval in seconds.
-
-        This is used to calculate the time between frames.
-        """
-        return self.interval.total_seconds()  # type: ignore
 
     def contribute_event_kwargs(
         self, value: float, index: Mapping[str, int]
@@ -71,132 +48,23 @@ class TimePlan(AxisIterable[float], FrozenModel):
         This is deprecated and will be removed in a future version.
         Use `len()` instead.
         """
-        return len(self)  # type: ignore
+        return len(self)
 
 
-class _SizedTimePlan(TimePlan):
-    loops: int = Field(..., gt=0)
-
-    def __len__(self) -> int:
-        return self.loops
-
-    def __iter__(self) -> Iterator[float]:  # type: ignore[override]
-        interval_s: float = self._interval_s()
-        for i in range(self.loops):
-            yield i * interval_s
+class TIntervalLoops(_time.TIntervalLoops, TimePlan): ...
 
 
-class TIntervalLoops(_SizedTimePlan):
-    """Define temporal sequence using interval and number of loops.
-
-    Attributes
-    ----------
-    interval : str | timedelta | float
-        Time between frames. Scalars are interpreted as seconds.
-        Strings are parsed according to ISO 8601.
-    loops : int
-        Number of frames.
-    prioritize_duration : bool
-        If `True`, instructs engine to prioritize duration over number of frames in case
-        of conflict. By default, `False`.
-    """
-
-    interval: TimeDelta
-    loops: int = Field(..., gt=0)
-
-    @property
-    def duration(self) -> timedelta:
-        return self.interval * (self.loops - 1)
+class TDurationLoops(_time.TDurationLoops, TimePlan): ...
 
 
-class TDurationLoops(_SizedTimePlan):
-    """Define temporal sequence using duration and number of loops.
-
-    Attributes
-    ----------
-    duration : str | timedelta
-        Total duration of sequence. Scalars are interpreted as seconds.
-        Strings are parsed according to ISO 8601.
-    loops : int
-        Number of frames.
-    prioritize_duration : bool
-        If `True`, instructs engine to prioritize duration over number of frames in case
-        of conflict. By default, `False`.
-    """
-
-    duration: TimeDelta
-    loops: int = Field(..., gt=0)
-
-    # FIXME: add to pydantic type hint
-    @field_validator("duration")
-    @classmethod
-    def _validate_duration(cls, v: timedelta) -> timedelta:
-        if v.total_seconds() < 0:
-            raise ValueError("Duration must be non-negative")
-        return v
-
-    @property
-    def interval(self) -> timedelta:
-        if self.loops == 1:
-            # Special case: with only 1 loop, interval is meaningless
-            # Return zero to indicate instant
-            return timedelta(0)
-        # -1 makes it so that the last loop will *occur* at duration, not *finish*
-        return self.duration / (self.loops - 1)
-
-
-class TIntervalDuration(TimePlan):
-    """Define temporal sequence using interval and duration.
-
-    Attributes
-    ----------
-    interval : str | timedelta
-        Time between frames. Scalars are interpreted as seconds.
-        Strings are parsed according to ISO 8601.
-    duration : str | timedelta | None
-        Total duration of sequence.  If `None`, the sequence will be infinite.
-    prioritize_duration : bool
-        If `True`, instructs engine to prioritize duration over number of frames in case
-        of conflict. By default, `True`.
-    """
-
-    interval: TimeDelta
-    duration: Optional[TimeDelta] = None
-    prioritize_duration: bool = True
-
-    def __iter__(self) -> Iterator[float]:  # type: ignore[override]
-        duration_s = self.duration.total_seconds() if self.duration else None
-        interval_s = self.interval.total_seconds()
-        t = 0.0
-        # when `duration_s` is None, the `or` makes it always True → infinite;
-        # otherwise it stops once t > duration_s
-        while duration_s is None or t <= duration_s:
-            yield t
-            t += interval_s
-
-    def __len__(self) -> int:
-        """Return the number of time points in this plan."""
-        if self.duration is None:
-            raise ValueError("Cannot determine length of infinite time plan")
-        return int(self.duration.total_seconds() / self.interval.total_seconds()) + 1
-
-
-# Type aliases for single-phase time plans
+class TIntervalDuration(_time.TIntervalDuration, TimePlan): ...
 
 
 SinglePhaseTimePlan = Union[TIntervalDuration, TIntervalLoops, TDurationLoops]
 
 
-class MultiPhaseTimePlan(TimePlan):
-    """Time sequence composed of multiple phases.
-
-    Attributes
-    ----------
-    phases : Sequence[TIntervalDuration | TIntervalLoops | TDurationLoops]
-        Sequence of time plans.
-    """
-
-    phases: list[SinglePhaseTimePlan]
+class MultiPhaseTimePlan(TimePlan, _time.MultiPhaseTimePlan):
+    phases: list[SinglePhaseTimePlan]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     def __iter__(self) -> Generator[float, bool | None, None]:  # type: ignore[override]
         """Yield the global elapsed time over multiple plans.
@@ -231,21 +99,6 @@ class MultiPhaseTimePlan(TimePlan):
                 # infinite phase that we broke out of
                 # leave offset where it was + last_t
                 offset += last_t
-
-    def __len__(self) -> int:
-        """Return the number of time points in this plan."""
-        phase_sum = sum(len(phase) for phase in self.phases)
-        # subtract 1 for the first time point of each phase
-        # except the first one
-        return phase_sum - len(self.phases) + 1
-
-    @model_validator(mode="before")
-    @classmethod
-    def _cast_list(cls, values: Any) -> Any:
-        """Cast the phases to a list of time plans."""
-        if isinstance(values, (list, tuple)):
-            values = {"phases": values}
-        return values
 
 
 AnyTimePlan = Union[MultiPhaseTimePlan, SinglePhaseTimePlan]

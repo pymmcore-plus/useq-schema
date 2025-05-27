@@ -60,7 +60,7 @@ class TestTIntervalLoops:
     def test_interval_s_method(self) -> None:
         """Test _interval_s private method."""
         plan = TIntervalLoops(interval=timedelta(seconds=2.5), loops=3)
-        assert plan._interval_s() == 2.5
+        assert plan.interval.total_seconds() == 2.5
 
 
 class TestTDurationLoops:
@@ -101,7 +101,7 @@ class TestTDurationLoops:
     def test_interval_s_method(self) -> None:
         """Test _interval_s private method."""
         plan = TDurationLoops(duration=timedelta(seconds=8), loops=5)
-        assert plan._interval_s() == 2.0  # 8 / (5-1)
+        assert plan.interval.total_seconds() == 2.0  # 8 / (5-1)
 
 
 class TestTIntervalDuration:
@@ -163,7 +163,7 @@ class TestTIntervalDuration:
         plan = TIntervalDuration(
             interval=timedelta(seconds=1.5), duration=timedelta(seconds=5)
         )
-        assert plan._interval_s() == 1.5
+        assert plan.interval.total_seconds() == 1.5
 
     def test_exact_duration_boundary(self) -> None:
         """Test behavior when time exactly equals duration."""
@@ -364,7 +364,7 @@ class TestEdgeCases:
         # With 1 loop, interval is meaningless and returns zero
         assert plan.interval.total_seconds() == 0.0
         # But _interval_s returns infinity to indicate instantaneous
-        assert plan._interval_s() == 0
+        assert plan.interval.total_seconds() == 0
 
 
 @pytest.mark.parametrize(
