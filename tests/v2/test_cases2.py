@@ -28,23 +28,19 @@ def test_mda_sequence(case: MDATestCase) -> None:
         assert_v2_same_as_v1(list(case.seq), actual_events)
 
 
-def assert_v2_same_as_v1(v1_seq: list[MDAEvent], v2_seq: list[MDAEvent]) -> None:
+def assert_v2_same_as_v1(v1_events: list[MDAEvent], v2_events: list[MDAEvent]) -> None:
     """Assert that the v2 sequence is the same as the v1 sequence."""
     # test parity with v1
-    v2_event_dicts = [x.model_dump(exclude={"sequence"}) for x in v2_seq]
-    v1_event_dicts = [x.model_dump(exclude={"sequence"}) for x in v1_seq]
-    if v2_event_dicts != v1_event_dicts:
+    if v2_events != v1_events:
         # print intelligible diff to see exactly what is different, including
         # total number of events, indices that differ, and a full repr
         # of the first event that differs
 
         msg = []
-        if len(v2_event_dicts) != len(v1_event_dicts):
-            msg.append(
-                f"Number of events differ: {len(v2_event_dicts)} != {len(v1_event_dicts)}"
-            )
+        if len(v2_events) != len(v1_events):
+            msg.append(f"Number of events differ: {len(v2_events)} != {len(v1_events)}")
         differing_indices = [
-            i for i, (a, b) in enumerate(zip(v2_event_dicts, v1_event_dicts)) if a != b
+            i for i, (a, b) in enumerate(zip(v2_events, v1_events)) if a != b
         ]
         if differing_indices:
             msg.append(f"Indices that differ: {differing_indices}")
@@ -52,8 +48,8 @@ def assert_v2_same_as_v1(v1_seq: list[MDAEvent], v2_seq: list[MDAEvent]) -> None
             # show the first differing event in full
             idx = differing_indices[0]
 
-            v1_dict = v1_event_dicts[idx]
-            v2_dict = v2_event_dicts[idx]
+            v1_dict = v1_events[idx].model_dump(exclude={"sequence"})
+            v2_dict = v2_events[idx].model_dump(exclude={"sequence"})
 
             diff_fields = {f for f in v1_dict if v1_dict[f] != v2_dict.get(f)}
             v1min = {k: v for k, v in v1_dict.items() if k in diff_fields}

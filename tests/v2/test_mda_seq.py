@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import pytest
 from pydantic import field_validator
 
+import useq
 from useq.v2 import (
     Channel,
     MDAEvent,
@@ -39,6 +40,8 @@ class BPlan(SimpleValueAxis[Position]):
     def contribute_event_kwargs(
         self, value: Position, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
+        if value.z is None:
+            return {}
         return {"z_pos": value.z}
 
 
@@ -55,7 +58,7 @@ class CPlan(SimpleValueAxis[Channel]):
         return {"channel": {"config": value.config}}
 
 
-def test_new_mdasequence_simple() -> None:
+def test_new_mdasequence_manual() -> None:
     seq = MDASequence(
         axes=(
             APlan(values=[0, 1]),
@@ -91,26 +94,12 @@ def test_new_mdasequence_parity() -> None:
         z_plan=ZRangeAround(range=1, step=0.5),
         channels=["DAPI", "FITC"],
     )
-    events = [
-        x.model_dump(exclude={"sequence"}, exclude_unset=True)
-        for x in seq.iter_events()
-    ]
-    # fmt: off
-    assert events == [
-        {'index': {'t': 0, 'c': 0, 'z': 0}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': -0.5, 'reset_event_timer': True},
-        {'index': {'t': 0, 'c': 0, 'z': 1}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': 0.0},
-        {'index': {'t': 0, 'c': 0, 'z': 2}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': 0.5},
-        {'index': {'t': 0, 'c': 1, 'z': 0}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': -0.5},
-        {'index': {'t': 0, 'c': 1, 'z': 1}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': 0.0},
-        {'index': {'t': 0, 'c': 1, 'z': 2}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.0, 'z_pos': 0.5},
-        {'index': {'t': 1, 'c': 0, 'z': 0}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': -0.5},
-        {'index': {'t': 1, 'c': 0, 'z': 1}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': 0.0},
-        {'index': {'t': 1, 'c': 0, 'z': 2}, 'channel': {'config': 'DAPI', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': 0.5},
-        {'index': {'t': 1, 'c': 1, 'z': 0}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': -0.5},
-        {'index': {'t': 1, 'c': 1, 'z': 1}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': 0.0},
-        {'index': {'t': 1, 'c': 1, 'z': 2}, 'channel': {'config': 'FITC', 'group': 'Channel'}, 'min_start_time': 0.2, 'z_pos': 0.5},
-    ]
-    # fmt: on
+    v1_seq = useq.MDASequence(
+        time_plan=useq.TIntervalLoops(interval=0.2, loops=2),
+        z_plan=useq.ZRangeAround(range=1, step=0.5),
+        channels=["DAPI", "FITC"],
+    )
+    assert list(v1_seq) == list(seq)
 
 
 def serialize_mda_sequence() -> None:

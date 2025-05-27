@@ -17,7 +17,7 @@ from pydantic import (
     ConfigDict,
     Field,
     GetCoreSchemaHandler,
-    field_validator,
+    field_serializer,
     model_validator,
 )
 from pydantic_core import core_schema
@@ -25,15 +25,11 @@ from pydantic_core import core_schema
 from useq._actions import AcquireImage, AnyAction
 from useq._base_model import MutableUseqModel, UseqModel
 
-try:
-    from pydantic import field_serializer
-except ImportError:
-    field_serializer = None  # type: ignore
-
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from useq._mda_sequence import MDASequence
+    from useq.v2 import MultiAxisSequence
 
     ReprArgs = Sequence[tuple[Optional[str], Any]]
 
@@ -58,6 +54,12 @@ class Channel(UseqModel):
         if isinstance(_value, str):
             return self.config == _value
         return super().__eq__(_value)
+
+    @model_validator(mode="before")
+    def _cast_config(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return {"config": v}
+        return v
 
     if TYPE_CHECKING:
 
@@ -173,6 +175,75 @@ class ReadOnlyDict(UserDict[str, int]):
 
 
 class MutableMDAEvent(MutableUseqModel):
+    index: ReadOnlyDict = Field(default_factory=ReadOnlyDict)
+    channel: Optional[Channel] = None
+    exposure: Optional[float] = Field(default=None, gt=0.0)
+    min_start_time: Optional[float] = None  # time in sec
+    pos_name: Optional[str] = None
+    x_pos: Optional[float] = None
+    y_pos: Optional[float] = None
+    z_pos: Optional[float] = None
+    slm_image: Optional[SLMImage] = None
+    sequence: Any = Field(default=None, repr=False)
+    properties: Optional[list[PropertyTuple]] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    action: AnyAction = Field(default_factory=AcquireImage, discriminator="type")
+    keep_shutter_open: bool = False
+    reset_event_timer: bool = False
+
+    def freeze(self) -> "MDAEvent":
+        """Return a frozen version of this event."""
+        return MDAEvent.model_construct(**self.model_dump(exclude_unset=True))
+
+    def __eq__(self, other: object) -> bool:
+        # exclude sequence from equality check
+        if not isinstance(other, MDAEvent):
+            return NotImplemented
+        return (
+            self.index == other.index
+            and self.channel == other.channel
+            and self.exposure == other.exposure
+            and self.min_start_time == other.min_start_time
+            and self.pos_name == other.pos_name
+            and self.x_pos == other.x_pos
+            and self.y_pos == other.y_pos
+            and self.z_pos == other.z_pos
+            and self.slm_image == other.slm_image
+            and self.properties == other.properties
+            and self.metadata == other.metadata
+            and self.action == other.action
+            and self.keep_shutter_open == other.keep_shutter_open
+            and self.reset_event_timer == other.reset_event_timer
+        )
+
+    _si = field_serializer("index", mode="plain")(lambda v: dict(v))
+    _sx = field_serializer("x_pos", mode="plain")(_float_or_none)
+    _sy = field_serializer("y_pos", mode="plain")(_float_or_none)
+    _sz = field_serializer("z_pos", mode="plain")(_float_or_none)
+
+    if TYPE_CHECKING:
+
+        class Kwargs(TypedDict, total=False):
+            """Type for the kwargs passed to the MDA event."""
+
+            index: dict[str, int]
+            channel: Channel | Channel.Kwargs
+            exposure: float
+            min_start_time: float
+            pos_name: str
+            x_pos: float
+            y_pos: float
+            z_pos: float
+            slm_image: SLMImage | SLMImage.Kwargs | npt.ArrayLike
+            sequence: MDASequence | MultiAxisSequence | dict
+            properties: list[tuple[str, str, Any]]
+            metadata: dict
+            action: AnyAction
+            keep_shutter_open: bool
+            reset_event_timer: bool
+
+
+class MDAEvent(MutableMDAEvent):
     """Define a single event in a [`MDASequence`][useq.MDASequence].
 
     Usually, this object will be generator by iterating over a
@@ -244,57 +315,7 @@ class MutableMDAEvent(MutableUseqModel):
         `False`.
     """
 
-    index: ReadOnlyDict = Field(default_factory=ReadOnlyDict)
-    channel: Optional[Channel] = None
-    exposure: Optional[float] = Field(default=None, gt=0.0)
-    min_start_time: Optional[float] = None  # time in sec
-    pos_name: Optional[str] = None
-    x_pos: Optional[float] = None
-    y_pos: Optional[float] = None
-    z_pos: Optional[float] = None
-    slm_image: Optional[SLMImage] = None
-    sequence: Any = Field(default=None, repr=False)
-    properties: Optional[list[PropertyTuple]] = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
-    action: AnyAction = Field(default_factory=AcquireImage, discriminator="type")
-    keep_shutter_open: bool = False
-    reset_event_timer: bool = False
-
-    @field_validator("channel", mode="before")
-    def _validate_channel(cls, val: Any) -> Any:
-        return Channel(config=val) if isinstance(val, str) else val
-
-    if field_serializer is not None:
-        _si = field_serializer("index", mode="plain")(lambda v: dict(v))
-        _sx = field_serializer("x_pos", mode="plain")(_float_or_none)
-        _sy = field_serializer("y_pos", mode="plain")(_float_or_none)
-        _sz = field_serializer("z_pos", mode="plain")(_float_or_none)
-
-    if TYPE_CHECKING:
-
-        class Kwargs(TypedDict, total=False):
-            """Type for the kwargs passed to the MDA event."""
-
-            index: dict[str, int]
-            channel: Channel | Channel.Kwargs
-            exposure: float
-            min_start_time: float
-            pos_name: str
-            x_pos: float
-            y_pos: float
-            z_pos: float
-            slm_image: SLMImage | SLMImage.Kwargs | npt.ArrayLike
-            sequence: MDASequence | dict
-            properties: list[tuple[str, str, Any]]
-            metadata: dict
-            action: AnyAction
-            keep_shutter_open: bool
-            reset_event_timer: bool
-
-    def freeze(self) -> "MDAEvent":
-        """Return a frozen version of this event."""
-        return MDAEvent.model_construct(**self.model_dump(exclude_unset=True))
-
-
-class MDAEvent(MutableMDAEvent):
     model_config: ClassVar["ConfigDict"] = ConfigDict(frozen=True)
+
+
+MutableMDAEvent.__doc__ = MDAEvent.__doc__
