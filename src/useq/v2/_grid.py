@@ -1,34 +1,32 @@
 from __future__ import annotations
 
-import contextlib
 import math
 import warnings
-from collections.abc import Iterable, Iterator, Sequence
 from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
     Callable,
-    Generic,
+    Literal,
     Optional,
     Union,
 )
 
 import numpy as np
 from annotated_types import Ge, Gt
-from pydantic import BaseModel, Field, field_validator, model_validator
-from typing_extensions import Self, TypeAlias
+from pydantic import Field, model_validator
+from typing_extensions import Self, TypeAlias, deprecated
 
+from useq import Axis
 from useq._enums import RelativeTo, Shape
-from useq._point_visiting import OrderMode, TraversalOrder
-from useq._position import (
-    AbsolutePosition,
-    PositionT,
-    RelativePosition,
-    _MultiPointPlan,
-)
+from useq._grid import _GridMixin
+from useq._point_visiting import TraversalOrder
+from useq.v2._multi_point import MultiPositionPlan
+from useq.v2._position import Position
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+
     from matplotlib.axes import Axes
 
     PointGenerator: TypeAlias = Callable[
@@ -38,89 +36,49 @@ if TYPE_CHECKING:
 MIN_RANDOM_POINTS = 10000
 
 
-class _GridMixin(BaseModel, Generic[PositionT]):
-    overlap: tuple[float, float] = Field(default=(0.0, 0.0), frozen=True)
-    mode: OrderMode = Field(default=OrderMode.row_wise_snake, frozen=True)
-    fov_width: Optional[float] = None
-    fov_height: Optional[float] = None
+# used in iter_indices below, to determine the order in which indices are yielded
+class _GridPlan(_GridMixin, MultiPositionPlan):
+    """Base class for all grid plans.
 
-    @property
-    def is_relative(self) -> bool:
-        return True
+    Attributes
+    ----------
+    overlap : float | Tuple[float, float]
+        Overlap between grid positions in percent. If a single value is provided, it is
+        used for both x and y. If a tuple is provided, the first value is used
+        for x and the second for y.
+    mode : OrderMode
+        Define the ways of ordering the grid positions. Options are
+        row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
+        By default, row_wise_snake.
+    fov_width : Optional[float]
+        Width of the field of view in microns.  If not provided, acquisition engines
+        should use current width of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    fov_height : Optional[float]
+        Height of the field of view in microns. If not provided, acquisition engines
+        should use current height of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    """
 
-    @field_validator("overlap", mode="before")
-    def _validate_overlap(cls, v: Any) -> tuple[float, float]:
-        with contextlib.suppress(TypeError, ValueError):
-            v = float(v)
-        if isinstance(v, float):
-            return (v, v)
-        if isinstance(v, Sequence) and len(v) == 2:
-            return float(v[0]), float(v[1])
-        raise ValueError(  # pragma: no cover
-            "overlap must be a float or a tuple of two floats"
-        )
+    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)
 
-    def _offset_x(self, dx: float) -> float:
-        raise NotImplementedError
-
-    def _offset_y(self, dy: float) -> float:
-        raise NotImplementedError
-
-    def _nrows(self, dy: float) -> int:
-        """Return the number of rows, given a grid step size."""
-        raise NotImplementedError
-
-    def _ncolumns(self, dx: float) -> int:
-        """Return the number of columns, given a grid step size."""
-        raise NotImplementedError
-
-    def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
-        yield from self.iter_grid_positions()
-
-    def _step_size(self, fov_width: float, fov_height: float) -> tuple[float, float]:
-        dx = fov_width - (fov_width * self.overlap[0]) / 100
-        dy = fov_height - (fov_height * self.overlap[1]) / 100
-        return dx, dy
-
-    def _build_position(self, **kwargs: Any) -> PositionT:
-        """Build a position object for this grid plan."""
-        pos_cls = RelativePosition if self.is_relative else AbsolutePosition
-        return pos_cls(**kwargs)  # type: ignore
-
-    def iter_grid_positions(
-        self,
-        fov_width: float | None = None,
-        fov_height: float | None = None,
-        *,
-        order: OrderMode | None = None,
-    ) -> Iterator[PositionT]:
-        """Iterate over all grid positions, given a field of view size."""
-        _fov_width = fov_width or self.fov_width or 1.0
-        _fov_height = fov_height or self.fov_height or 1.0
-        order = self.mode if order is None else OrderMode(order)
-
-        dx, dy = self._step_size(_fov_width, _fov_height)
-        rows = self._nrows(dy)
-        cols = self._ncolumns(dx)
-        x0 = self._offset_x(dx)
-        y0 = self._offset_y(dy)
-
-        for idx, (r, c) in enumerate(order.generate_indices(rows, cols)):
-            yield self._build_position(
-                x=x0 + c * dx,
-                y=y0 - r * dy,
-                row=r,
-                col=c,
-                name=f"{str(idx).zfill(4)}",
-            )
-
+    @deprecated(
+        "num_positions() is deprecated, use len(grid_plan) instead.",
+        category=UserWarning,
+        stacklevel=2,
+    )
     def num_positions(self) -> int:
+        """Return the number of positions in the grid."""
+        return len(self)
+
+    def __len__(self) -> int:
         """Return the number of individual positions in the grid.
 
         Note: For GridFromEdges and GridWidthHeight, this will depend on field of view
         size. If no field of view size is provided, the number of positions will be 1.
         """
         if isinstance(self, (GridFromEdges, GridWidthHeight)) and (
+            # type ignore is because mypy thinks self is Never here...
             self.fov_width is None or self.fov_height is None
         ):
             raise ValueError(
@@ -133,8 +91,12 @@ class _GridMixin(BaseModel, Generic[PositionT]):
         cols = self._ncolumns(dx)
         return rows * cols
 
+    def _build_position(self, **kwargs: Any) -> Position:
+        """Build a position object for this grid plan."""
+        return Position(**kwargs, is_relative=self.is_relative)
 
-class GridFromEdges(_GridMixin, _MultiPointPlan[AbsolutePosition]):
+
+class GridFromEdges(_GridPlan):
     """Yield absolute stage positions to cover a bounded area.
 
     The bounded area is defined by top, left, bottom and right edges in
@@ -226,7 +188,7 @@ class GridFromEdges(_GridMixin, _MultiPointPlan[AbsolutePosition]):
         )
 
 
-class GridRowsColumns(_GridMixin, _MultiPointPlan[RelativePosition]):
+class GridRowsColumns(_GridPlan):
     """Grid plan based on number of rows and columns.
 
     Attributes
@@ -281,10 +243,7 @@ class GridRowsColumns(_GridMixin, _MultiPointPlan[RelativePosition]):
         )
 
 
-GridRelative = GridRowsColumns
-
-
-class GridWidthHeight(_GridMixin, _MultiPointPlan[RelativePosition]):
+class GridWidthHeight(_GridPlan):
     """Grid plan based on total width and height.
 
     Attributes
@@ -344,7 +303,7 @@ class GridWidthHeight(_GridMixin, _MultiPointPlan[RelativePosition]):
 # ------------------------ RANDOM ------------------------
 
 
-class RandomPoints(_MultiPointPlan[RelativePosition]):
+class RandomPoints(MultiPositionPlan):
     """Yield random points in a specified geometric shape.
 
     Attributes
@@ -375,6 +334,8 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
         points; this likely only makes sense when `random_seed` is provided.
     """
 
+    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)
+
     num_points: Annotated[int, Gt(0)]
     max_width: Annotated[float, Gt(0)] = 1
     max_height: Annotated[float, Gt(0)] = 1
@@ -382,7 +343,7 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     random_seed: Optional[int] = None
     allow_overlap: bool = True
     order: Optional[TraversalOrder] = TraversalOrder.TWO_OPT
-    start_at: Union[RelativePosition, Annotated[int, Ge(0)]] = 0
+    start_at: Union[Position, Annotated[int, Ge(0)]] = 0
 
     @model_validator(mode="after")
     def _validate_startat(self) -> Self:
@@ -395,15 +356,15 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
             self.start_at = self.num_points - 1
         return self
 
-    def __iter__(self) -> Iterator[RelativePosition]:  # type: ignore [override]
+    def __iter__(self) -> Iterator[Position]:  # type: ignore [override]
         seed = np.random.RandomState(self.random_seed)
         func = _POINTS_GENERATORS[self.shape]
 
         points: list[tuple[float, float]] = []
         needed_points = self.num_points
         start_at = self.start_at
-        if isinstance(start_at, RelativePosition):
-            points = [(start_at.x, start_at.y)]
+        if isinstance(start_at, Position):
+            points = [(start_at.x, start_at.y)]  # type: ignore [list-item]
             needed_points -= 1
             start_at = 0
 
@@ -437,7 +398,7 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
             points = self.order(points, start_at=start_at)  # type: ignore [assignment]
 
         for idx, (x, y) in enumerate(points):
-            yield RelativePosition(x=x, y=y, name=f"{str(idx).zfill(4)}")
+            yield Position(x=x, y=y, name=f"{str(idx).zfill(4)}", is_relative=True)
 
     def num_positions(self) -> int:
         return self.num_points
@@ -495,8 +456,6 @@ _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
 
 
 # all of these support __iter__() -> Iterator[PositionBase] and num_positions() -> int
-RelativeMultiPointPlan = Union[
-    GridRowsColumns, GridWidthHeight, RandomPoints, RelativePosition
-]
+RelativeMultiPointPlan = Union[GridRowsColumns, GridWidthHeight, RandomPoints]
 AbsoluteMultiPointPlan = Union[GridFromEdges]
 MultiPointPlan = Union[AbsoluteMultiPointPlan, RelativeMultiPointPlan]

@@ -37,7 +37,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "pydantic >=2.6",
+    "pydantic >=2.10",
     "numpy >=2.1.0; python_version >= '3.13'",
     "numpy >=1.26.0; python_version >= '3.12'",
     "numpy >=1.25.2",
@@ -123,15 +123,14 @@ keep-runtime-typing = true
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["D", "S101", "E501", "SLF"]
 
-[tool.ruff.lint.flake8-tidy-imports]
-# Disallow all relative imports.
-ban-relative-imports = "all"
-
 # https://docs.pytest.org/en/6.2.x/customize.html
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = ["tests"]
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    "ignore:.*Positions no longer have a sequence attribute",
+]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
@@ -142,6 +141,10 @@ disallow_subclassing_any = false
 show_error_codes = true
 pretty = true
 plugins = ["pydantic.mypy"]
+
+[tool.pyright]
+include = ["src", "tests/v2"]
+reportArgumentType = false
 
 # https://coverage.readthedocs.io/en/6.4/config.html
 [tool.coverage.run]
