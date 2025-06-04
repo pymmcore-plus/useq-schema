@@ -13,12 +13,8 @@ watch:
 
 nav:
   - index.md
-  - Schema:
-    - schema/sequence.md
-    - schema/event.md
-    - schema/axes.md
-    - schema/hardware_autofocus.md
-  - api.md
+  - sequence.md
+  - axes.md
 
 theme:
   name: "material"

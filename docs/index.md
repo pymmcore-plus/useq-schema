@@ -1,4 +1,8 @@
-# Overview
+---
+title: useq-schema
+icon: octicons/home-24
+description: Guide and documentation.
+---
 
 !!! info ""
 
