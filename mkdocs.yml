@@ -12,17 +12,13 @@ watch:
   - src
 
 nav:
-  - pymmcore-plus: /pymmcore-plus/
-  - useq-schema:
-      - index.md
-      - Schema:
-        - schema/sequence.md
-        - schema/event.md
-        - schema/axes.md
-        - schema/hardware_autofocus.md
-      - api.md
-  - pymmcore-widgets: /pymmcore-widgets/
-  - napari-micromanager: /napari-micromanager/
+  - index.md
+  - Schema:
+    - schema/sequence.md
+    - schema/event.md
+    - schema/axes.md
+    - schema/hardware_autofocus.md
+  - api.md
 
 theme:
   name: "material"
