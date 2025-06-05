@@ -68,6 +68,7 @@ docs = [
     "mkdocs >=1.4",
     "mkdocs-material>=9.6.13",
     "mkdocstrings-python>=1.16.10",
+    "mkdocs-api-autonav"
 ]
 
 [tool.uv.sources]

@@ -56,6 +56,6 @@ Ways to describe a grid acquisition sequence.
 
 ## Enums
 
-- [`useq._grid.RelativeTo`][] - Where a grid is relative to.
-- [`useq._grid.OrderMode`][] - The order in which acquisitions are made in a grid.
-- [`useq._grid.Shape`][] - The shape of the grid.
+- [`useq.RelativeTo`][] - Where a grid is relative to.
+- [`useq.OrderMode`][] - The order in which acquisitions are made in a grid.
+- [`useq.Shape`][] - The shape of the grid.

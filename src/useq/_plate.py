@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 class WellPlate(FrozenModel):
     """A multi-well plate definition.
 
-    Parameters
+    Attributes
     ----------
     rows : int
         The number of rows in the plate. Must be > 0.
@@ -125,7 +125,7 @@ class WellPlate(FrozenModel):
 class WellPlatePlan(UseqModel, Sequence[Position]):
     """A plan for acquiring images from a multi-well plate.
 
-    Parameters
+    Attributes
     ----------
     plate : WellPlate | str | int
         The well-plate definition. Minimally including rows, columns, and well spacing.

@@ -437,7 +437,7 @@ class MDASequence(UseqModel):
     def iter_events(self) -> Iterator[MDAEvent]:
         """Iterate over all events in the MDA sequence.
 
-        See source of [useq._mda_sequence.iter_sequence][] for details on how
+        See source of `useq._mda_sequence.iter_sequence` for details on how
         events are constructed and yielded.
 
         Yields

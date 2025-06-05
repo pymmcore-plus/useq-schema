@@ -20,7 +20,6 @@ theme:
   name: "material"
   features:
     - content.tabs.link
-    - navigation.tabs
   icon:
     logo: fontawesome/solid/microscope
     repo: fontawesome/brands/github
@@ -60,11 +59,15 @@ plugins:
   - autorefs:
       resolve_closest: true
   - search
+  - api-autonav:
+      modules: [src/useq]
+      exclude: [useq.experimental]
   - mkdocstrings:
       handlers:
         python:
           inventories:
             - https://docs.python.org/3/objects.inv
+            - https://pymmcore-plus.github.io/pymmcore-plus/objects.inv
           options:
             heading_level: 3 # default is 2
             show_root_heading: true # default is false

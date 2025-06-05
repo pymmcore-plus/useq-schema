@@ -12,6 +12,7 @@ from useq._grid import (
     MultiPointPlan,
     RandomPoints,
     RelativeMultiPointPlan,
+    RelativeTo,
     Shape,
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
@@ -71,6 +72,7 @@ __all__ = [
     "RandomPoints",
     "RelativeMultiPointPlan",
     "RelativePosition",
+    "RelativeTo",
     "SLMImage",
     "Shape",
     "TDurationLoops",
