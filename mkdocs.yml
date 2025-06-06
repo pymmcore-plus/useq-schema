@@ -69,7 +69,8 @@ plugins:
             - https://docs.python.org/3/objects.inv
             - https://pymmcore-plus.github.io/pymmcore-plus/objects.inv
           options:
-            heading_level: 3 # default is 2
+            preload_modules: [pydantic]
+            heading_level: 2 # default is 2
             show_root_heading: true # default is false
             show_root_full_path: false # default is true
             docstring_style: 'numpy'
@@ -77,6 +78,7 @@ plugins:
             annotations_path: 'source' # default is 'brief'
             show_bases: false # default is true
             show_source: false # default is true
+            inherited_members: true # default is true
 
 extra_css:
   - stylesheets/extra.css
