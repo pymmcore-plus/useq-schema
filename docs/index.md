@@ -1,6 +1,6 @@
 ---
 title: useq-schema
-icon: octicons/list-unordered-16
+icon: material/code-json
 description: Guide and documentation.
 ---
 
