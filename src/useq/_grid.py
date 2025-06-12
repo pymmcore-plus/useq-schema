@@ -404,8 +404,8 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
         Random numpy seed that should be used to generate the points. If None, a random
         seed will be used.
     allow_overlap : bool
-        By defaut, True. If False and `fov_width` and `fov_height` are specified, points
-        will not overlap and will be at least `fov_width` and `fov_height apart.
+        By default, `True`. If `False` and `fov_width` and `fov_height` are specified,
+        points will not overlap and will be at least `fov_width` and `fov_height apart.
     order : TraversalOrder
         Order in which the points will be visited. If None, order is simply the order
         in which the points are generated (random).  Use 'nearest_neighbor' or

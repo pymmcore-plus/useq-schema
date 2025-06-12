@@ -36,7 +36,7 @@ class AutoFocusPlan(FrozenModel):
         """Return an autofocus [`useq.MDAEvent`][] if autofocus should be performed.
 
         The z position of the new [`useq.MDAEvent`][] is also updated if a relative
-        zplan is provided since autofocus shuld be performed on the home z stack
+        zplan is provided since autofocus should be performed on the home z stack
         position.
         """
         if not self.should_autofocus(event):
