@@ -413,11 +413,11 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         should use current height of the FOV based on the current objective and camera.
         Engines MAY override this even if provided.
     #TODO Add def _two_opt_order from _point_visiting as an order_mode option
-    #TODO improve reliability: 
+    #TODO improve reliability:
         Adjusting the bounds seems to give slightly more satisfying tile coverage of the polygon.
             But I feel like this should be solved in a more elegant way.. or copy pasting the grid logic from
             GridFromEdges, may not be nrowws/columns and offsetsx/y should not be used here.
-        Offset has an edge case where it leaves a single tile empty within the polygon, 
+        Offset has an edge case where it leaves a single tile empty within the polygon,
             maybe another buffer style is better
     #TODO check how to hide plot_poly from pydantic
     """
@@ -452,18 +452,20 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
     left_bound: Annotated[Optional[float], Field(None, init=False)] = None
     bottom_bound: Annotated[Optional[float], Field(None, init=False)] = None
     right_bound: Annotated[Optional[float], Field(None, init=False)] = None
-    plot_poly: Annotated[Optional[object], Field(None, init=False)] = None #for plotting purposes only, pydantic private
+    plot_poly: Annotated[Optional[object], Field(None, init=False)] = (
+        None  # for plotting purposes only, pydantic private
+    )
 
     def model_post_init(self, __context) -> None:
         poly = Polygon(self.polygon)
         if not poly.is_valid:
             raise ValueError("Invalid or self-intersecting polygon.")
-        
+
         if self.offset is not None:
             poly = self._offset_polygon(Polygon(self.polygon), self.offset)
-        self.plot_poly = poly #for plotting purposes only
+        self.plot_poly = poly  # for plotting purposes only
         ##"Convex hull is not implemented yet.")
-        #if self.convex_hull:
+        # if self.convex_hull:
         #     poly = poly.convex_hull()
         self.prepared_poly = prep(poly)
         self.left_bound, self.bottom_bound, self.right_bound, self.top_bound = (
@@ -473,7 +475,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         # self.left_bound -= self.fov_width / 2
         # self.bottom_bound -= self.fov_height / 2
         ## self.right_bound +=  self.fov_width /2
-    
+
     def _offset_polygon(self, vertices, offset) -> list:
         """Buffer the polygon with a given distance, bound should be recomputed after."""
         geom = vertices
@@ -481,8 +483,9 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         return vertices
 
     def _intersect_raster_with_polygon(self) -> Iterator[PositionT]:
-        """Loops through bounding box grid positions and yields the position 
-        if the tile intersects the polygon."""
+        """Loops through bounding box grid positions and yields the position
+        if the tile intersects the polygon.
+        """
         grid_from_bounding_box = self.iter_grid_positions()
         for position in list(grid_from_bounding_box):
             tile = box(
@@ -538,7 +541,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         return plot_points(
             self,
             rect_size=rect,
-            polygon=self.plot_poly.exterior.coords, #Linea
+            polygon=self.plot_poly.exterior.coords,  # Linea
             bounding_box=(
                 self.left_bound,
                 self.top_bound,
