@@ -381,9 +381,9 @@ class GridWidthHeight(_GridPlan[RelativePosition]):
 class GridFromPolygon(_GridPlan[AbsolutePosition]):
     """Yield absolute stage positions to cover a polygon.
 
-    Ordered list of tiles is created by intersecting the 
+    Ordered list of tiles is created by intersecting the
     polygon's-bounding-box-grid with the polygon.
-    Additionally the convex hull, and/or a offsetted polygon can be 
+    Additionally the convex hull, and/or a offsetted polygon can be
     created to improve tile coverage of the polygon.
 
     Attributes
@@ -420,7 +420,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         Field(
             ...,
             min_length=3,
-            description="List of points that define the polygon, " \
+            description="List of points that define the polygon, "
             "must be at least 3 vertices",
             frozen=True,
         ),
@@ -457,14 +457,15 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         )
 
     def _offset_polygon(self, vertices, offset) -> list:
-        """Buffer the polygon with a given distance, """
+        """Buffer the polygon with a given distance,."""
         geom = vertices
         vertices = geom.buffer(distance=offset, cap_style="round", join_style="round")
         return vertices
 
     def _intersect_raster_with_polygon(self) -> Iterator[PositionT]:
-        """Loops through bounding box grid positions and yields the position 
-        if the tile intersects the polygon."""
+        """Loops through bounding box grid positions and yields the position
+        if the tile intersects the polygon.
+        """
         # if self.convex_hull:
         #     print("Convex hull is not implemented yet.")
         #     self.prepared_poly = Polygon(self.polygon).convex_hull
