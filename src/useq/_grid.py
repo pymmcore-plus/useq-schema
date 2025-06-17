@@ -245,21 +245,21 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         # start the _centre_ half a FOV down from the top edge
         return max(self.top, self.bottom) - (self.fov_height or 0) / 2
 
-    # def plot(self, *, show: bool = True) -> Axes:
-    #     """Plot the positions in the plan."""
-    #     from useq._plot import plot_points
+    def plot(self, *, show: bool = True) -> Axes:
+        """Plot the positions in the plan."""
+        from useq._plot import plot_points
 
-    #     if self.fov_width is not None and self.fov_height is not None:
-    #         rect = (self.fov_width, self.fov_height)
-    #     else:
-    #         rect = None
+        if self.fov_width is not None and self.fov_height is not None:
+            rect = (self.fov_width, self.fov_height)
+        else:
+            rect = None
 
-    #     return plot_points(
-    #         self,
-    #         rect_size=rect,
-    #         bounding_box=(self.left, self.top, self.right, self.bottom),
-    #         show=show,
-    #     )
+        return plot_points(
+            self,
+            rect_size=rect,
+            bounding_box=(self.left, self.top, self.right, self.bottom),
+            show=show,
+        )
 
 
 class GridRowsColumns(_GridPlan[RelativePosition]):
@@ -315,7 +315,6 @@ class GridRowsColumns(_GridPlan[RelativePosition]):
         return (
             ((self.rows - 1) * dy) / 2 if self.relative_to == RelativeTo.center else 0.0
         )
-
 
 GridRelative = GridRowsColumns
 
@@ -391,7 +390,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
     convex hull : Optional[boolean]
         True to create a convex hull from the polygon
     offset : Optional[float]
-        Offsets the polygon prior to point-in-polygon check to improve coverage of tiles.
+        Offsets (dilates) the polygon prior to point-in-polygon check to improve coverage of tiles.
     overlap : float | tuple[float, float]
         Overlap between grid positions in percent. If a single value is provided, it is
         used for both x and y. If a tuple is provided, the first value is used
@@ -408,7 +407,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         Height of the field of view in microns. If not provided, acquisition engines
         should use current height of the FOV based on the current objective and camera.
         Engines MAY override this even if provided.
-    #TODO is YX and XY enforcable? Optional conversion method required?
+    #TODO Add def _two_opt_order from _point_visiting as an order_mode option
     """
 
     polygon: Annotated[
@@ -471,10 +470,10 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         grid_from_bounding_box = self.iter_grid_positions()
         for position in list(grid_from_bounding_box):
             tile = box(
-                position.x,
-                position.y,
-                position.x + self.fov_width,
-                position.y + self.fov_height,
+                position.x - self.fov_width / 2,
+                position.y - self.fov_height / 2,
+                position.x + self.fov_width / 2,
+                position.y + self.fov_height / 2,
             )
             if self.prepared_poly.intersects(tile):
                 yield position
@@ -484,31 +483,50 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         return False
 
     def _nrows(self, dy: float) -> int:
-        total_height = (
-            abs(
-                (self.top_bound + self.fov_height / 2)
-                - (self.bottom_bound - self.fov_height / 2)
-            )
-            + dy
-        )
-        return math.ceil(total_height / dy)
+        if self.fov_height is None:
+            total_height = abs(self.top_bound - self.bottom_bound) + dy
+            return math.ceil(total_height / dy)
+
+        span = abs(self.top_bound - self.bottom_bound)
+        # if the span is smaller than one FOV, just one row
+        if span <= self.fov_height:
+            return 1
+        # otherwise: one FOV plus (nrows-1)⋅dy must cover span
+        return math.ceil((span - self.fov_height) / dy) + 1
 
     def _ncolumns(self, dx: float) -> int:
-        total_width = (
-            abs(
-                (self.right_bound + self.fov_width / 2)
-                - (self.left_bound - self.fov_width / 2)
-            )
-            + dx
-        )
-        return math.ceil(total_width / dx)
+        if self.fov_width is None:
+            total_width = abs(self.right_bound - self.left_bound) + dx
+            return math.ceil(total_width / dx)
+
+        span = abs(self.right_bound - self.left_bound)
+        if span <= self.fov_width:
+            return 1
+        return math.ceil((span - self.fov_width) / dx) + 1
 
     def _offset_x(self, dx: float) -> float:
-        return min(self.left_bound, self.right_bound) - (self.fov_width or 0) / 2
+        return min(self.left_bound, self.right_bound) + (self.fov_width or 0) / 2
 
     def _offset_y(self, dy: float) -> float:
-        return max(self.top_bound, self.bottom_bound) + (self.fov_height or 0) / 2
+        return max(self.top_bound, self.bottom_bound) - (self.fov_height or 0) / 2
 
+    def plot(self, *, show: bool = True) -> Axes:
+        """Plot the positions in the plan."""
+        from useq._plot import plot_points
+
+        if self.fov_width is not None and self.fov_height is not None:
+            rect = (self.fov_width, self.fov_height)
+        else:
+            rect = None
+
+        return plot_points(
+            self,
+            polygon=self.polygon,
+            rect_size=rect,
+            bounding_box=(self.left_bound, self.top_bound, self.right_bound, self.bottom_bound),
+            show=show,
+        )
+    
     def num_positions(self) -> int:
         """Return the number of positions within the polygon."""
         if self.fov_width is None or self.fov_height is None:
