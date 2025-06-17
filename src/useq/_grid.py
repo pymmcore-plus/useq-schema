@@ -316,6 +316,7 @@ class GridRowsColumns(_GridPlan[RelativePosition]):
             ((self.rows - 1) * dy) / 2 if self.relative_to == RelativeTo.center else 0.0
         )
 
+
 GridRelative = GridRowsColumns
 
 
@@ -523,10 +524,15 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             self,
             polygon=self.polygon,
             rect_size=rect,
-            bounding_box=(self.left_bound, self.top_bound, self.right_bound, self.bottom_bound),
+            bounding_box=(
+                self.left_bound,
+                self.top_bound,
+                self.right_bound,
+                self.bottom_bound,
+            ),
             show=show,
         )
-    
+
     def num_positions(self) -> int:
         """Return the number of positions within the polygon."""
         if self.fov_width is None or self.fov_height is None:
