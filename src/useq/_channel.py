@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Any, Optional
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from useq._base_model import FrozenModel
 
@@ -38,3 +38,10 @@ class Channel(FrozenModel):
     z_offset: float = 0.0
     acquire_every: int = Field(default=1, gt=0)  # acquire every n frames
     camera: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _cast(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            value = {"config": value}
+        return value

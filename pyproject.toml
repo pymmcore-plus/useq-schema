@@ -54,6 +54,7 @@ plot = ["matplotlib >=3.7"]
 test = ["psygnal>=0.13.0", "pytest>=8.0", "pytest-cov>=6.1.1", "pyyaml>=6.0.2"]
 dev = [
     { include-group = "test" },
+    "matplotlib >=3.7",
     "ipython>=8.18.1",
     "mypy>=1.15.0",
     "pdbpp>=0.11.6 ; sys_platform != 'win32'",
@@ -61,6 +62,7 @@ dev = [
     "rich>=14.0.0",
     "ruff>=0.11.9",
     "types-pyyaml>=6.0.12.20250402",
+    "pyright>=1.1.401",
 ]
 docs = [
     "mkdocs >=1.4",
@@ -88,6 +90,8 @@ packages = ["src/useq"]
 line-length = 88
 target-version = "py39"
 src = ["src", "tests"]
+fix = true
+unsafe-fixes = true
 
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
