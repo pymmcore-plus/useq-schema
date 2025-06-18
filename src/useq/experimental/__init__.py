@@ -1,6 +1,12 @@
-"""MDARunner class for running an Iterable[MDAEvent]."""
+"""Experimental features for useq."""
 
-from useq.experimental._runner import MDARunner
-from useq.experimental.protocols import PMDAEngine
 
-__all__ = ["MDARunner", "PMDAEngine"]
+def __getattr__(name: str) -> object:
+    """Get an attribute from the module."""
+    if name in {"MDARunner", "PMDAEngine"}:
+        raise AttributeError(
+            f"{name!r} is no longer available in {__name__}. "
+            "Please depend on pymmcore-plus instead. (You can still use MDARunner "
+            "and PMDAEngine without any other micro-manager dependencies.)"
+        )
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
