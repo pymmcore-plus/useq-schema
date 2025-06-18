@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class StagePositions(AxisIterable[Position], FrozenModel):
-    axis_key: Literal[Axis.POSITION] = Field(
+    axis_key: Literal[Axis.POSITION] = Field(  # pyright: ignore[reportIncompatibleVariableOverride]
         default=Axis.POSITION, frozen=True, init=False
     )
     values: list[Union[Position, MDASequence]] = Field(default_factory=list)
@@ -47,8 +47,7 @@ class StagePositions(AxisIterable[Position], FrozenModel):
 
         return values
 
-    # FIXME: fix type ignores
-    def contribute_event_kwargs(  # type: ignore
+    def contribute_event_kwargs(
         self,
         value: Position,
         index: Mapping[str, int],

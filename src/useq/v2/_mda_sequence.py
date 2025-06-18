@@ -325,7 +325,7 @@ def _extract_legacy_axes(kwargs: dict[str, Any]) -> tuple[AxisIterable, ...]:
                     raise ValueError(
                         f"Failed to process legacy axis '{key}': {e}"
                     ) from e
-            return val  # type: ignore[no-any-return]
+            return val
         return None  # pragma: no cover
 
     axes = [

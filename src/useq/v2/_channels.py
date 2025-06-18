@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class ChannelsPlan(SimpleValueAxis[Channel], FrozenModel):
-    axis_key: Literal[Axis.CHANNEL] = Field(
+    axis_key: Literal[Axis.CHANNEL] = Field(  # pyright: ignore[reportIncompatibleVariableOverride]
         default=Axis.CHANNEL, frozen=True, init=False
     )
 

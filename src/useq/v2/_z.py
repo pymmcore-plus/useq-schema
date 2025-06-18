@@ -19,7 +19,7 @@ from useq import _z
 
 
 class ZPlan(_z.ZPlan, AxisIterable[Position]):
-    axis_key: Literal[Axis.Z] = Field(default=Axis.Z, frozen=True, init=False)
+    axis_key: Literal[Axis.Z] = Field(default=Axis.Z, frozen=True, init=False)  # pyright: ignore[reportIncompatibleVariableOverride]
 
     def __iter__(self) -> Iterator[Position]:  # type: ignore[override]
         """Iterate over Z positions."""

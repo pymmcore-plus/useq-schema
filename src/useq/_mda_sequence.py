@@ -182,7 +182,7 @@ class MDASequence(UseqModel):
     axis_order: tuple[str, ...] = AXES
     # note that these are BOTH just `Sequence[Position]` but we retain the distinction
     # here so that WellPlatePlans are preserved in the model instance.
-    stage_positions: Union[WellPlatePlan, tuple[Position, ...]] = Field(  # type: ignore
+    stage_positions: Union[WellPlatePlan, tuple[Position, ...]] = Field(
         default_factory=tuple, union_mode="left_to_right"
     )
     grid_plan: Optional[MultiPointPlan] = Field(

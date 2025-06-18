@@ -60,7 +60,7 @@ class _GridPlan(_GridMixin, MultiPositionPlan):
         Engines MAY override this even if provided.
     """
 
-    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)
+    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @deprecated(
         "num_positions() is deprecated, use len(grid_plan) instead.",
@@ -334,7 +334,7 @@ class RandomPoints(MultiPositionPlan):
         points; this likely only makes sense when `random_seed` is provided.
     """
 
-    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)
+    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)  # pyright: ignore[reportIncompatibleVariableOverride]
 
     num_points: Annotated[int, Gt(0)]
     max_width: Annotated[float, Gt(0)] = 1

@@ -87,7 +87,7 @@ def _rect_indices(
             c[1::2, :] = c[1::2, :][:, ::-1]
         else:
             r[:, 1::2] = r[:, 1::2][::-1, :]
-    return zip(r.ravel(), c.ravel()) if row_wise else zip(r.T.ravel(), c.T.ravel())
+    return zip(r.ravel(), c.ravel()) if row_wise else zip(r.T.ravel(), c.T.ravel())  # pyright: ignore
 
 
 IndexGenerator = Callable[[int, int], Iterator[tuple[int, int]]]
