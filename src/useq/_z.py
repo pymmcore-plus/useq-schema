@@ -37,6 +37,10 @@ class ZPlan(FrozenModel):
         return [float(x) for x in np.arange(start, stop, step)]
 
     def num_positions(self) -> int:
+        return len(self)
+
+    def __len__(self) -> int:
+        """Get the number of Z positions."""
         start, stop, step = self._start_stop_step()
         if step == 0:
             return 1
@@ -156,7 +160,7 @@ class ZRelativePositions(ZPlan):
     def positions(self) -> Sequence[float]:
         return self.relative
 
-    def num_positions(self) -> int:
+    def __len__(self) -> int:
         return len(self.relative)
 
 
@@ -179,7 +183,7 @@ class ZAbsolutePositions(ZPlan):
     def positions(self) -> Sequence[float]:
         return self.absolute
 
-    def num_positions(self) -> int:
+    def __len__(self) -> int:
         return len(self.absolute)
 
     @property

@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import re
 from datetime import timedelta
-from enum import Enum
 from typing import TYPE_CHECKING, NamedTuple
 
 from useq._time import MultiPhaseTimePlan
 
 if TYPE_CHECKING:
-    from typing import Final, Literal, TypeVar
+    from typing import TypeVar
 
     from typing_extensions import TypeGuard
 
@@ -17,44 +16,6 @@ if TYPE_CHECKING:
 
     KT = TypeVar("KT")
     VT = TypeVar("VT")
-
-
-# could be an enum, but this more easily allows Axis.Z to be a string
-class Axis(str, Enum):
-    """Recognized useq-schema axis keys.
-
-    Attributes
-    ----------
-    TIME : Literal["t"]
-        Time axis.
-    POSITION : Literal["p"]
-        XY Stage Position axis.
-    GRID : Literal["g"]
-        Grid axis (usually an additional row/column iteration around a position).
-    CHANNEL : Literal["c"]
-        Channel axis.
-    Z : Literal["z"]
-        Z axis.
-    """
-
-    TIME = "t"
-    POSITION = "p"
-    GRID = "g"
-    CHANNEL = "c"
-    Z = "z"
-
-    def __str__(self) -> Literal["t", "p", "g", "c", "z"]:
-        return self.value
-
-
-# note: order affects the default axis_order in MDASequence
-AXES: Final[tuple[Axis, ...]] = (
-    Axis.TIME,
-    Axis.POSITION,
-    Axis.GRID,
-    Axis.CHANNEL,
-    Axis.Z,
-)
 
 
 class TimeEstimate(NamedTuple):

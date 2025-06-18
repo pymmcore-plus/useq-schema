@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
+from useq._enums import Axis, RelativeTo, Shape
 from useq._grid import (
     GridFromEdges,
     GridRowsColumns,
@@ -12,11 +13,10 @@ from useq._grid import (
     MultiPointPlan,
     RandomPoints,
     RelativeMultiPointPlan,
-    Shape,
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import Channel as EventChannel
-from useq._mda_event import MDAEvent, PropertyTuple, SLMImage
+from useq._mda_event import MDAEvent, MutableMDAEvent, PropertyTuple, SLMImage
 from useq._mda_sequence import MDASequence
 from useq._plate import WellPlate, WellPlatePlan
 from useq._plate_registry import register_well_plates, registered_well_plate_keys
@@ -29,7 +29,6 @@ from useq._time import (
     TIntervalDuration,
     TIntervalLoops,
 )
-from useq._utils import Axis
 from useq._z import (
     AnyZPlan,
     ZAboveBelow,
@@ -65,12 +64,14 @@ __all__ = [
     "MDASequence",
     "MultiPhaseTimePlan",
     "MultiPointPlan",
+    "MutableMDAEvent",
     "OrderMode",
     "Position",  # alias for AbsolutePosition
     "PropertyTuple",
     "RandomPoints",
     "RelativeMultiPointPlan",
     "RelativePosition",
+    "RelativeTo",
     "SLMImage",
     "Shape",
     "TDurationLoops",

@@ -22,7 +22,8 @@ from pydantic import (
 )
 
 from useq._base_model import FrozenModel, UseqModel
-from useq._grid import RandomPoints, RelativeMultiPointPlan, Shape
+from useq._enums import Shape
+from useq._grid import RandomPoints, RelativeMultiPointPlan
 from useq._plate_registry import _PLATE_REGISTRY
 from useq._position import Position, PositionBase, RelativePosition
 

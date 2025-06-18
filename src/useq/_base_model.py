@@ -1,5 +1,4 @@
 from pathlib import Path
-from re import findall
 from types import MappingProxyType
 from typing import (
     IO,
@@ -27,10 +26,11 @@ __all__ = ["FrozenModel", "UseqModel"]
 _T = TypeVar("_T", bound="FrozenModel")
 _Y = TypeVar("_Y", bound="UseqModel")
 
-PYDANTIC_VERSION = tuple(int(x) for x in findall(r"\d_", pydantic.__version__)[:3])
-GET_DEFAULT_KWARGS: dict = {}
+PYDANTIC_VERSION = tuple(int(x) for x in pydantic.__version__.split(".")[:2])
 if PYDANTIC_VERSION >= (2, 10):
-    GET_DEFAULT_KWARGS = {"validated_data": {}}
+    GET_DEFAULT_KWARGS: dict = {"validated_data": {}}
+else:
+    GET_DEFAULT_KWARGS = {}
 
 
 class _ReplaceableModel(BaseModel):
@@ -87,9 +87,9 @@ class MutableModel(_ReplaceableModel):
     )
 
 
-class UseqModel(FrozenModel):
+class IOMixin(BaseModel):
     @classmethod
-    def from_file(cls: type[_Y], path: Union[str, Path]) -> _Y:
+    def from_file(cls, path: Union[str, Path]) -> "Self":
         """Return an instance of this class from a file.  Supports JSON and YAML."""
         path = Path(path)
         if path.suffix in {".yaml", ".yml"}:
@@ -148,3 +148,9 @@ class UseqModel(FrozenModel):
             exclude_none=exclude_none,
         )
         return yaml.safe_dump(data, stream=stream)
+
+
+class MutableUseqModel(IOMixin, MutableModel): ...
+
+
+class UseqModel(FrozenModel, IOMixin): ...
