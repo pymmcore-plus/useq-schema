@@ -112,8 +112,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         size. If no field of view size is provided, the number of positions will be 1.
         """
         if isinstance(self, (GridFromEdges, GridWidthHeight)) and (
-            # type ignore is because mypy thinks self is Never here...
-            self.fov_width is None or self.fov_height is None  # type: ignore [attr-defined]
+            self.fov_width is None or self.fov_height is None
         ):
             raise ValueError(
                 "Retrieving the number of positions in a GridFromEdges or "
