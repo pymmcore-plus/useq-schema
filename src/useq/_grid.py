@@ -38,6 +38,7 @@ except ImportError:
         "Please install it with 'pip install shapely'."
     ) from None
 
+
 if TYPE_CHECKING:
     PointGenerator: TypeAlias = Callable[
         [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
@@ -246,7 +247,7 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         # start the _centre_ half a FOV down from the top edge
         return max(self.top, self.bottom) - (self.fov_height or 0) / 2
 
-    def plot(self, *, show: bool = True) -> Axes:
+    def plot(self, *, show: bool = True) -> axes:
         """Plot the positions in the plan."""
         from useq._plot import plot_points
 
@@ -379,12 +380,12 @@ class GridWidthHeight(_GridPlan[RelativePosition]):
 
 
 class GridFromPolygon(_GridPlan[AbsolutePosition]):
-    """Yield absolute stage positions to cover a polygon.
+    """Yield absolute stage positions to cover an area defined by a polygon.
 
-    Ordered list of tiles is created by intersecting the
-    polygon's-bounding-box-grid with the polygon.
-    Additionally the convex hull, and/or a offsetted polygon can be
-    created to improve tile coverage of the polygon.
+    Tiles are created by intersecting the polygon's-bounding-box-grid with
+    the polygon. Additionally the convex hull, and/or a buffered
+    polygon can be created to generate
+    tiles over a larger area surrounding the initial polygon.
 
     Attributes
     ----------
@@ -412,14 +413,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         Height of the field of view in microns. If not provided, acquisition engines
         should use current height of the FOV based on the current objective and camera.
         Engines MAY override this even if provided.
-    #TODO Add def _two_opt_order from _point_visiting as an order_mode option
-    #TODO improve reliability:
-        Adjusting the bounds seems to give slightly more satisfying tile coverage of the polygon.
-            But I feel like this should be solved in a more elegant way.. or copy pasting the grid logic from
-            GridFromEdges, may not be nrowws/columns and offsetsx/y should not be used here.
-        Offset has an edge case where it leaves a single tile empty within the polygon,
-            maybe another buffer style is better
-    #TODO check how to hide plot_poly from pydantic
+    #TODO Add TraversalOrder as an option after polygon tile creation.
     """
 
     polygon: Annotated[
@@ -444,47 +438,52 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         Field(
             None,
             frozen=True,
-            description="Offsets the polygon in all directions to improve tile coverage.",
+            description="Offsets the polygon in all directions to "
+            "improve tile coverage.",
         ),
     ]
-    prepared_poly: Annotated[Optional[object], Field(None, init=False)] = None
-    top_bound: Annotated[Optional[float], Field(None, init=False)] = None
-    left_bound: Annotated[Optional[float], Field(None, init=False)] = None
-    bottom_bound: Annotated[Optional[float], Field(None, init=False)] = None
-    right_bound: Annotated[Optional[float], Field(None, init=False)] = None
-    plot_poly: Annotated[Optional[object], Field(None, init=False)] = (
-        None  # for plotting purposes only, pydantic private
-    )
+    prepared_poly: Annotated[Optional[object], Field(...)] = None
+    top_bound: Annotated[Optional[float], Field(..., init=False)] = None
+    left_bound: Annotated[Optional[float], Field(..., init=False)] = None
+    bottom_bound: Annotated[Optional[float], Field(..., init=False)] = None
+    right_bound: Annotated[Optional[float], Field(..., init=False)] = None
+    plot_poly: Annotated[
+        Optional[object], Field(..., description="An unprepared polygon for plotting")
+    ] = None
 
     def model_post_init(self, __context) -> None:
         poly = Polygon(self.polygon)
         if not poly.is_valid:
             raise ValueError("Invalid or self-intersecting polygon.")
-
+        # Buffers the polygon with a given diistance
         if self.offset is not None:
             poly = self._offset_polygon(Polygon(self.polygon), self.offset)
-        self.plot_poly = poly  # for plotting purposes only
-        ##"Convex hull is not implemented yet.")
-        # if self.convex_hull:
-        #     poly = poly.convex_hull()
-        self.prepared_poly = prep(poly)
+        # Creates a convex hull of the input polygon
+        if self.convex_hull:
+            poly = poly.convex_hull
+        self.plot_poly = poly
+        self.prepared_poly = prep(
+            poly
+        )  # operations on prepared polygon are more efficient.
+
         self.left_bound, self.bottom_bound, self.right_bound, self.top_bound = (
             poly.bounds
         )
-        # self.top_bound += self.fov_height / 2
-        # self.left_bound -= self.fov_width / 2
-        # self.bottom_bound -= self.fov_height / 2
-        ## self.right_bound +=  self.fov_width /2
+        # Enlarge the Bbox slightly based on fov dimensions
+        self.top_bound += self.fov_height / 4
+        self.left_bound -= self.fov_width / 4
+        self.bottom_bound -= self.fov_height / 4
+        self.right_bound += self.fov_width / 4
 
     def _offset_polygon(self, vertices, offset) -> list:
-        """Buffer the polygon with a given distance, bound should be recomputed after."""
+        """Offsets/buffers the polygon with a given distance and joins when overlapping."""
         geom = vertices
         vertices = geom.buffer(distance=offset, cap_style="round", join_style="round")
         return vertices
 
     def _intersect_raster_with_polygon(self) -> Iterator[PositionT]:
-        """Loops through bounding box grid positions and yields the position
-        if the tile intersects the polygon.
+        """Loops through bounding box grid positions and yields/retains the position
+        if the tile intersects with the polygon.
         """
         grid_from_bounding_box = self.iter_grid_positions()
         for position in list(grid_from_bounding_box):
@@ -541,7 +540,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         return plot_points(
             self,
             rect_size=rect,
-            polygon=self.plot_poly.exterior.coords,  # Linea
+            polygon=self.plot_poly.exterior.coords,  # exterior creates a linearRing from the polygon, coords gets the vertices
             bounding_box=(
                 self.left_bound,
                 self.top_bound,
