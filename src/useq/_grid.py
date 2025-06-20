@@ -442,12 +442,12 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             "improve tile coverage.",
         ),
     ]
-    prepared_poly: Annotated[Optional[object], Field(...)] = PrivateAttr(None)
-    top_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
-    left_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
-    bottom_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
-    right_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
-    plot_poly: Annotated[
+    _prepared_poly: Annotated[Optional[object], Field(...)] = PrivateAttr(None)
+    _top_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
+    _left_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
+    _bottom_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
+    _right_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
+    _plot_poly: Annotated[
         Optional[object], Field(..., description="An unprepared polygon for plotting purposes only")
     ] = PrivateAttr(None)
 
@@ -461,19 +461,19 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         # Creates a convex hull of the input polygon
         if self.convex_hull:
             poly = poly.convex_hull
-        self.plot_poly = poly
-        self.prepared_poly = prep(
+        self._plot_poly = poly
+        self._prepared_poly = prep(
             poly
         )  # operations on prepared polygon are more efficient.
 
-        self.left_bound, self.bottom_bound, self.right_bound, self.top_bound = (
+        self._left_bound, self._bottom_bound, self._right_bound, self._top_bound = (
             poly.bounds
         )
         # Enlarge the Bbox slightly based on fov dimensions
-        self.top_bound += self.fov_height / 4
-        self.left_bound -= self.fov_width / 4
-        self.bottom_bound -= self.fov_height / 4
-        self.right_bound += self.fov_width / 4
+        self._top_bound += self.fov_height / 4
+        self._left_bound -= self.fov_width / 4
+        self._bottom_bound -= self.fov_height / 4
+        self._right_bound += self.fov_width / 4
 
     def _offset_polygon(self, vertices, offset) -> list:
         """Offsets/buffers the polygon with a given distance and joins when overlapping."""
@@ -493,7 +493,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
                 position.x + self.fov_width / 2,
                 position.y + self.fov_height / 2,
             )
-            if self.prepared_poly.intersects(tile):
+            if self._prepared_poly.intersects(tile):
                 yield position
 
     @property
@@ -502,10 +502,10 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
 
     def _nrows(self, dy: float) -> int:
         if self.fov_height is None:
-            total_height = abs(self.top_bound - self.bottom_bound) + dy
+            total_height = abs(self._top_bound - self._bottom_bound) + dy
             return math.ceil(total_height / dy)
 
-        span = abs(self.top_bound - self.bottom_bound)
+        span = abs(self._top_bound - self._bottom_bound)
         # if the span is smaller than one FOV, just one row
         if span <= self.fov_height:
             return 1
@@ -514,19 +514,19 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
 
     def _ncolumns(self, dx: float) -> int:
         if self.fov_width is None:
-            total_width = abs(self.right_bound - self.left_bound) + dx
+            total_width = abs(self._right_bound - self._left_bound) + dx
             return math.ceil(total_width / dx)
 
-        span = abs(self.right_bound - self.left_bound)
+        span = abs(self._right_bound - self._left_bound)
         if span <= self.fov_width:
             return 1
         return math.ceil((span - self.fov_width) / dx) + 1
 
     def _offset_x(self, dx: float) -> float:
-        return min(self.left_bound, self.right_bound) + (self.fov_width or 0) / 2
+        return min(self._left_bound, self._right_bound) + (self.fov_width or 0) / 2
 
     def _offset_y(self, dy: float) -> float:
-        return max(self.top_bound, self.bottom_bound) - (self.fov_height or 0) / 2
+        return max(self._top_bound, self._bottom_bound) - (self.fov_height or 0) / 2
 
     def plot(self, *, show: bool = True) -> Axes:
         """Plot the positions in the plan."""
@@ -540,12 +540,12 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         return plot_points(
             self,
             rect_size=rect,
-            polygon=self.plot_poly.exterior.coords,  # exterior creates a linearRing from the polygon, coords gets the vertices
+            polygon=self._plot_poly.exterior.coords,  # exterior creates a linearRing from the polygon, coords gets the vertices
             bounding_box=(
-                self.left_bound,
-                self.top_bound,
-                self.right_bound,
-                self.bottom_bound,
+                self._left_bound,
+                self._top_bound,
+                self._right_bound,
+                self._bottom_bound,
             ),
             show=show,
         )
