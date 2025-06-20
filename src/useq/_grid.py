@@ -16,7 +16,7 @@ from typing import (
 
 import numpy as np
 from annotated_types import Ge, Gt
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator, PrivateAttr
 from typing_extensions import Self, TypeAlias
 
 from useq._point_visiting import OrderMode, TraversalOrder
@@ -442,14 +442,14 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             "improve tile coverage.",
         ),
     ]
-    prepared_poly: Annotated[Optional[object], Field(...)] = None
-    top_bound: Annotated[Optional[float], Field(..., init=False)] = None
-    left_bound: Annotated[Optional[float], Field(..., init=False)] = None
-    bottom_bound: Annotated[Optional[float], Field(..., init=False)] = None
-    right_bound: Annotated[Optional[float], Field(..., init=False)] = None
+    prepared_poly: Annotated[Optional[object], Field(...)] = PrivateAttr(None)
+    top_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
+    left_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
+    bottom_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
+    right_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
     plot_poly: Annotated[
-        Optional[object], Field(..., description="An unprepared polygon for plotting")
-    ] = None
+        Optional[object], Field(..., description="An unprepared polygon for plotting purposes only")
+    ] = PrivateAttr(None)
 
     def model_post_init(self, __context) -> None:
         poly = Polygon(self.polygon)
