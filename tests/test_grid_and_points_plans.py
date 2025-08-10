@@ -81,6 +81,23 @@ g_inputs = [
             useq.RelativePosition(x=-0.8, y=-0.4, name="0002"),
         ],
     ),
+    (
+        useq.GridFromPolygon(
+            vertices=[(0, 0), (4, 0), (2, 4)],
+            fov_width=2,
+            fov_height=2,
+            overlap=0,
+        ),
+        [
+            useq.Position(x=2.0, y=4.0, name="0000"),
+            useq.Position(x=4.0, y=2.0, name="0001"),
+            useq.Position(x=2.0, y=2.0, name="0002"),
+            useq.Position(x=0.0, y=2.0, name="0003"),
+            useq.Position(x=0.0, y=0.0, name="0004"),
+            useq.Position(x=2.0, y=0.0, name="0005"),
+            useq.Position(x=4.0, y=0.0, name="0006"),
+        ],
+    ),
 ]
 
 
@@ -281,4 +298,15 @@ def test_grid_from_edges_plot(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(mpl, "show", lambda: None)
     useq.GridFromEdges(
         overlap=10, top=0, left=0, bottom=20, right=30, fov_height=10, fov_width=20
+    ).plot()
+
+
+def test_grid_from_polygon_plot(monkeypatch: pytest.MonkeyPatch) -> None:
+    mpl = pytest.importorskip("matplotlib.pyplot")
+    monkeypatch.setattr(mpl, "show", lambda: None)
+    useq.GridFromPolygon(
+        vertices=[(0, 0), (10, 0), (10, 10), (0, 10)],
+        fov_width=3,
+        fov_height=3,
+        overlap=0,
     ).plot()
