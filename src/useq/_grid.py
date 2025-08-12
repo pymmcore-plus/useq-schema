@@ -425,7 +425,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             False,
             description="If True, the convex hull of the polygon will be used.",
         ),
-    ]
+    ] = None
     offset: Annotated[
         Optional[float],
         Field(
@@ -434,7 +434,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             description="Offsets the polygon in all directions to "
             "improve tile coverage.",
         ),
-    ]
+    ] = None
 
     _poly_cache: dict[tuple, list[tuple[float, float]]] = PrivateAttr(
         default_factory=dict
