@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
+from matplotlib.pyplot import tight_layout
+
 try:
     import matplotlib.pyplot as plt
     from matplotlib import patches
@@ -26,6 +28,7 @@ def plot_points(
     bounding_box: tuple[float, float, float, float] | None = None,
     polygon: tuple[float, float] | None = None,
     ax: Axes | None = None,
+    hide_axes: bool = False,
     show: bool = True,
 ) -> Axes:
     """Plot a list of positions.
@@ -44,6 +47,8 @@ def plot_points(
         If None, no bounding box is drawn.
     ax : Axes | None
         The axes to plot on. If None, a new figure and axes are created.
+    hide_axes : bool
+        Whether to hide the axes. Defaults to False.
     show : bool
         Whether to show the plot. If False, the plot is not shown.
         Defaults to True.
@@ -96,7 +101,7 @@ def plot_points(
             [y0, y0, y1, y1, y0],
             color="black",
             linestyle="--",
-            linewidth=4,
+            linewidth=2,
             alpha=0.25,
         )
         # ensure the bounding box is visible
@@ -104,6 +109,8 @@ def plot_points(
         ax.set_ylim(min(y0, y1) - 10, max(y0, y1) + 10)
     # ax.invert_yaxis()
     ax.axis("equal")
+    if hide_axes:
+        ax.axis("off")
     if show:
         plt.show()
     return ax

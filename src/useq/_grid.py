@@ -241,7 +241,7 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         # start the _centre_ half a FOV down from the top edge
         return max(self.top, self.bottom) - (self.fov_height or 0) / 2
 
-    def plot(self, *, show: bool = True) -> Axes:
+    def plot(self, *, axes: Axes | None = None, hide_axes: bool = False, show: bool = True) -> Axes:
         """Plot the positions in the plan."""
         from useq._plot import plot_points
 
@@ -254,6 +254,8 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
             self,
             rect_size=rect,
             bounding_box=(self.left, self.top, self.right, self.bottom),
+            ax=axes,
+            hide_axes=hide_axes,
             show=show,
         )
 
@@ -459,7 +461,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
                 poly = buffered
             else:
                 # Handle MultiPolygon case - take the largest polygon
-                if hasattr(buffered, 'geoms'):
+                if hasattr(buffered, "geoms"):
                     poly = max(buffered.geoms, key=lambda p: p.area)
                 else:
                     poly = buffered
@@ -582,7 +584,9 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         _, _, _, max_y = self.poly.bounds
         return max_y - (self.fov_height or 0) / 2  # type: ignore
 
-    def plot(self, *, show: bool = True) -> Axes:
+    def plot(
+        self, *, axes: Axes | None = None, hide_axes: bool = False, show: bool = True
+    ) -> Axes:
         """Plot the positions in the plan."""
         from useq._plot import plot_points
 
@@ -598,6 +602,8 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             self,
             rect_size=rect,
             bounding_box=(min_x, max_y, max_x, min_y),
+            ax=axes,
+            hide_axes=hide_axes,
             show=show,
         )
 
