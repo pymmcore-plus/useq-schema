@@ -17,7 +17,6 @@ from pydantic import Field, PrivateAttr, field_validator, model_validator
 from useq._base_model import UseqModel
 from useq._channel import Channel
 from useq._grid import (
-    GridFromPolygon,  # noqa: TC001
     MultiPointPlan,  # noqa: TC001
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
@@ -184,9 +183,9 @@ class MDASequence(UseqModel):
     axis_order: tuple[str, ...] = AXES
     # note that these are BOTH just `Sequence[Position]` but we retain the distinction
     # here so that WellPlatePlans are preserved in the model instance.
-    stage_positions: Union[WellPlatePlan, GridFromPolygon, tuple[Position, ...]] = (
-        Field(default_factory=tuple, union_mode="left_to_right")  # type: ignore
-    )
+    stage_positions: Union[WellPlatePlan, tuple[Position, ...]] = Field(
+        default_factory=tuple, union_mode="left_to_right"
+    )  # type: ignore
     grid_plan: Optional[MultiPointPlan] = Field(
         default=None, union_mode="left_to_right"
     )

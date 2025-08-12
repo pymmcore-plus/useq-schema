@@ -116,8 +116,8 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         Note: For GridFromEdges and GridWidthHeight, this will depend on field of view
         size. If no field of view size is provided, the number of positions will be 1.
         """
-        if isinstance(self, (GridFromEdges, GridWidthHeight)) and (
-            self.fov_width is None or self.fov_height is None
+        if (self.fov_width is None or self.fov_height is None) and isinstance(
+            self, (GridFromEdges, GridWidthHeight)
         ):
             raise ValueError(
                 "Retrieving the number of positions in a GridFromEdges or "
@@ -241,7 +241,14 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         # start the _centre_ half a FOV down from the top edge
         return max(self.top, self.bottom) - (self.fov_height or 0) / 2
 
-    def plot(self, *, axes: Axes | None = None, hide_axes: bool = False, show: bool = True) -> Axes:
+    def plot(
+        self,
+        *,
+        axes: Axes | None = None,
+        aspect_ratio_multiplier: float = 5.0,
+        hide_axes: bool = False,
+        show: bool = True,
+    ) -> Axes:
         """Plot the positions in the plan."""
         from useq._plot import plot_points
 
@@ -255,6 +262,7 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
             rect_size=rect,
             bounding_box=(self.left, self.top, self.right, self.bottom),
             ax=axes,
+            aspect_ratio_multiplier=aspect_ratio_multiplier,
             hide_axes=hide_axes,
             show=show,
         )
@@ -482,7 +490,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
     def num_positions(self) -> int:
         """Return the number of positions in the grid."""
         if self.fov_width is None or self.fov_height is None:
-            raise ValueError("fov_width and fov_height must be set")
+            raise ValueError("`fov_width` and `fov_height` must be set!")
         return len(
             self._cached_tiles(
                 fov=(self.fov_width, self.fov_height), overlap=self.overlap
@@ -585,7 +593,12 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         return max_y - (self.fov_height or 0) / 2  # type: ignore
 
     def plot(
-        self, *, axes: Axes | None = None, hide_axes: bool = False, show: bool = True
+        self,
+        *,
+        axes: Axes | None = None,
+        aspect_ratio_multiplier: float = 5.0,
+        hide_axes: bool = False,
+        show: bool = True,
     ) -> Axes:
         """Plot the positions in the plan."""
         from useq._plot import plot_points
@@ -603,6 +616,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             rect_size=rect,
             bounding_box=(min_x, max_y, max_x, min_y),
             ax=axes,
+            aspect_ratio_multiplier=aspect_ratio_multiplier,
             hide_axes=hide_axes,
             show=show,
         )

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
-from matplotlib.pyplot import tight_layout
-
 try:
     import matplotlib.pyplot as plt
     from matplotlib import patches
@@ -29,6 +27,7 @@ def plot_points(
     polygon: tuple[float, float] | None = None,
     ax: Axes | None = None,
     hide_axes: bool = False,
+    aspect_ratio_multiplier: float = 5.0,
     show: bool = True,
 ) -> Axes:
     """Plot a list of positions.
@@ -49,6 +48,9 @@ def plot_points(
         The axes to plot on. If None, a new figure and axes are created.
     hide_axes : bool
         Whether to hide the axes. Defaults to False.
+    aspect_ratio_multiplier : float
+        The multiplier for the aspect ratio of the plot. Defaults to 5.0.
+        This is used to dynamically adjust the figure size based on the aspect ratio.
     show : bool
         Whether to show the plot. If False, the plot is not shown.
         Defaults to True.
@@ -59,7 +61,9 @@ def plot_points(
         The axes with the plot.
     """
     if ax is None:
-        _, ax = plt.subplots()
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
 
     x, y = zip(*[(point.x, point.y) for point in points])
     ax.scatter(x, y)
@@ -109,6 +113,17 @@ def plot_points(
         ax.set_ylim(min(y0, y1) - 10, max(y0, y1) + 10)
     # ax.invert_yaxis()
     ax.axis("equal")
+
+    # dynamically adjust figure size based on aspect ratio
+    x_range = max(x) - min(x)
+    y_range = (max(y) - min(y)) or 1
+    aspect_ratio = x_range / y_range
+    mpx = aspect_ratio_multiplier
+    if x_range < y_range:
+        fig.set_size_inches(mpx, mpx / aspect_ratio, forward=True)
+    else:
+        fig.set_size_inches(mpx * aspect_ratio, mpx, forward=True)
+
     if hide_axes:
         ax.axis("off")
     if show:
