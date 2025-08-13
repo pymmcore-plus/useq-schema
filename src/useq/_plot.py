@@ -120,7 +120,9 @@ def plot_points(
     aspect_ratio = x_range / y_range
     mpx = aspect_ratio_multiplier
     if x_range < y_range:
-        fig.set_size_inches(mpx, mpx / aspect_ratio, forward=True)
+        fig.set_size_inches(
+            mpx, mpx / (aspect_ratio if aspect_ratio > 0.0 else 1), forward=True
+        )
     else:
         fig.set_size_inches(mpx * aspect_ratio, mpx, forward=True)
 

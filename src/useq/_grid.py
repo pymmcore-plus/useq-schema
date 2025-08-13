@@ -433,7 +433,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             False,
             description="If True, the convex hull of the polygon will be used.",
         ),
-    ] = None
+    ] = False
     offset: Annotated[
         Optional[float],
         Field(
