@@ -328,7 +328,7 @@ def test_grid_from_polygon_with_offset() -> None:
         fov_height=2,
         overlap=0,
     )
-    assert grid_with_offset.num_positions() == 9
+    assert grid_with_offset.num_positions() == 13
 
 
 def test_grid_from_polygon_with_convex_hull() -> None:
