@@ -24,6 +24,7 @@ def plot_points(
     *,
     rect_size: tuple[float, float] | None = None,
     bounding_box: tuple[float, float, float, float] | None = None,
+    polygon: tuple[float, float] | None = None,
     ax: Axes | None = None,
     show: bool = True,
 ) -> Axes:
@@ -80,6 +81,13 @@ def plot_points(
                 ax.set_xlim(min(x) - half_width, max(x) + half_width)
                 ax.set_ylim(min(y) - half_height, max(y) + half_height)
 
+    if polygon is not None:
+        y_poly, x_poly, *_ = zip(*list(polygon))
+        y_poly += (y_poly[0],)
+        x_poly += (x_poly[0],)
+        ax.scatter(y_poly, x_poly, color="magenta")
+        ax.plot(y_poly, x_poly, color="yellow")
+
     if bounding_box is not None:
         # draw a thicker dashed line around the bounding box
         x0, y0, x1, y1 = bounding_box
@@ -94,7 +102,7 @@ def plot_points(
         # ensure the bounding box is visible
         ax.set_xlim(min(x0, x1) - 10, max(x0, x1) + 10)
         ax.set_ylim(min(y0, y1) - 10, max(y0, y1) + 10)
-
+    # ax.invert_yaxis()
     ax.axis("equal")
     if show:
         plt.show()
