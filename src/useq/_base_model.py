@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self
 
-    ReprArgs = Iterable[tuple[str | None, Any]]
+    ReprArgs = Iterable[tuple["str | None", Any]]
 
 __all__ = ["FrozenModel", "UseqModel"]
 

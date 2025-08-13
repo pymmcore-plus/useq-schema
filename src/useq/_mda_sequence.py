@@ -185,7 +185,7 @@ class MDASequence(UseqModel):
     # here so that WellPlatePlans are preserved in the model instance.
     stage_positions: Union[WellPlatePlan, tuple[Position, ...]] = Field(
         default_factory=tuple, union_mode="left_to_right"
-    )  # type: ignore
+    )
     grid_plan: Optional[MultiPointPlan] = Field(
         default=None, union_mode="left_to_right"
     )

@@ -4,7 +4,9 @@ from typing import TYPE_CHECKING, overload
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
-    from typing import Required, TypeAlias, TypedDict
+    from typing import TypedDict
+
+    from typing_extensions import Required, TypeAlias
 
     from useq._plate import WellPlate
 
@@ -16,7 +18,7 @@ if TYPE_CHECKING:
         circular_wells: bool
         name: str
 
-    PlateOrKwargs: TypeAlias = KnownPlateKwargs | WellPlate
+    PlateOrKwargs: TypeAlias = "KnownPlateKwargs | WellPlate"
 
 
 _PLATE_REGISTRY: dict[str, PlateOrKwargs] = {
