@@ -533,8 +533,8 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
 
         if key not in self._poly_cache:
             w, h = fov
-            dx = w * (1 - overlap[0])
-            dy = h * (1 - overlap[1])
+            dx = w * (1 - (overlap[0] / 100))  # convert overlap percentage to absolute
+            dy = h * (1 - (overlap[1] / 100))  # convert overlap percentage to absolute
             half_w, half_h = w / 2, h / 2
 
             # expand bounds to ensure full coverage
