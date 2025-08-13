@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Callable
 try:
     import matplotlib.pyplot as plt
     from matplotlib import patches
+    from matplotlib.figure import Figure
 except ImportError as e:
     raise ImportError(
         "Matplotlib is required for plotting functions.  Please install matplotlib."
@@ -64,6 +65,8 @@ def plot_points(
         fig, ax = plt.subplots()
     else:
         fig = ax.figure
+    if not isinstance(fig, Figure):
+        raise TypeError("Expected a Figure instance.")
 
     x, y = zip(*[(point.x, point.y) for point in points])
     ax.scatter(x, y)
