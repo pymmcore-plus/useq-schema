@@ -16,7 +16,7 @@ from typing import (
 
 import numpy as np
 from annotated_types import Ge, Gt
-from pydantic import Field, field_validator, model_validator, PrivateAttr
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 from typing_extensions import Self, TypeAlias
 
 from useq._point_visiting import OrderMode, TraversalOrder
@@ -445,10 +445,13 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
     _prepared_poly: Annotated[Optional[object], Field(...)] = PrivateAttr(None)
     _top_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
     _left_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
-    _bottom_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
+    _bottom_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(
+        None
+    )
     _right_bound: Annotated[Optional[float], Field(..., init=False)] = PrivateAttr(None)
     _plot_poly: Annotated[
-        Optional[object], Field(..., description="An unprepared polygon for plotting purposes only")
+        Optional[object],
+        Field(..., description="An unprepared polygon for plotting purposes only"),
     ] = PrivateAttr(None)
 
     def model_post_init(self, __context) -> None:
