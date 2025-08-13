@@ -89,13 +89,10 @@ g_inputs = [
             overlap=0,
         ),
         [
-            useq.Position(x=2.0, y=4.0, name="0000"),
-            useq.Position(x=4.0, y=2.0, name="0001"),
-            useq.Position(x=2.0, y=2.0, name="0002"),
-            useq.Position(x=0.0, y=2.0, name="0003"),
-            useq.Position(x=0.0, y=0.0, name="0004"),
-            useq.Position(x=2.0, y=0.0, name="0005"),
-            useq.Position(x=4.0, y=0.0, name="0006"),
+            useq.Position(x=1.0, y=3.0, name="0000"),
+            useq.Position(x=3.0, y=3.0, name="0001"),
+            useq.Position(x=3.0, y=1.0, name="0002"),
+            useq.Position(x=1.0, y=1.0, name="0003"),
         ],
     ),
 ]
@@ -322,7 +319,7 @@ def test_grid_from_polygon_with_offset() -> None:
         fov_height=2,
         overlap=0,
     )
-    assert grid_no_offset.num_positions() == 7
+    assert grid_no_offset.num_positions() == 4
 
     grid_with_offset = useq.GridFromPolygon(
         vertices=vertices,
@@ -331,7 +328,7 @@ def test_grid_from_polygon_with_offset() -> None:
         fov_height=2,
         overlap=0,
     )
-    assert grid_with_offset.num_positions() == 14
+    assert grid_with_offset.num_positions() == 9
 
 
 def test_grid_from_polygon_with_convex_hull() -> None:
@@ -346,7 +343,7 @@ def test_grid_from_polygon_with_convex_hull() -> None:
         fov_height=1,
         overlap=0,
     )
-    assert grid_no_hull.num_positions() == 12
+    assert grid_no_hull.num_positions() == 8
 
     # grid with convex hull (should fill in the concave part)
     grid_with_hull = useq.GridFromPolygon(
@@ -356,4 +353,4 @@ def test_grid_from_polygon_with_convex_hull() -> None:
         fov_height=1,
         overlap=0,
     )
-    assert grid_with_hull.num_positions() == 15
+    assert grid_with_hull.num_positions() == 9

@@ -260,7 +260,12 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         return plot_points(
             self,
             rect_size=rect,
-            bounding_box=(self.left, self.top, self.right, self.bottom),
+            bounding_poly=[
+                (self.left, self.top),
+                (self.right, self.top),
+                (self.right, self.bottom),
+                (self.left, self.bottom),
+            ],
             ax=axes,
             aspect_ratio_multiplier=aspect_ratio_multiplier,
             hide_axes=hide_axes,
@@ -497,6 +502,9 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             )
         )
 
+    def __iter__(self) -> Iterator[AbsolutePosition]:  # type: ignore [override]
+        yield from self.iter_grid_positions()
+
     def iter_grid_positions(
         self,
         fov_width: float | None = None,
@@ -537,24 +545,36 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             dy = h * (1 - (overlap[1] / 100))  # convert overlap percentage to absolute
             half_w, half_h = w / 2, h / 2
 
-            # expand bounds to ensure full coverage
+            # Get polygon bounds - do NOT expand by half FOV
+            # This ensures FOV edges align with polygon bounds (like GridFromEdges)
             min_x, min_y, max_x, max_y = self.poly.bounds
-            min_x -= half_w
-            min_y -= half_h
-            max_x += half_w
-            max_y += half_h
 
-            # determine grid dimensions
-            n_cols = int(np.ceil((max_x - min_x) / dx))
-            n_rows = int(np.ceil((max_y - min_y) / dy))
+            # Position the first FOV center half a FOV in from the bounds
+            # (matching GridFromEdges semantics)
+            start_x = min_x + half_w
+            start_y = max_y - half_h
+
+            # determine grid dimensions based on the span that needs to be covered
+            span_x = max_x - min_x
+            span_y = max_y - min_y
+
+            if span_x <= w:
+                n_cols = 1
+            else:
+                n_cols = int(np.ceil((span_x - w) / dx)) + 1
+
+            if span_y <= h:
+                n_rows = 1
+            else:
+                n_rows = int(np.ceil((span_y - h) / dy)) + 1
 
             # generate grid positions
             positions: list[tuple[float, float]] = []
             prepared_poly = self.prepared_poly
 
             for r, c in mode.generate_indices(n_rows, n_cols):
-                x = min_x + (c + 0.5) * dx
-                y = max_y - (r + 0.5) * dy
+                x = start_x + c * dx
+                y = start_y - r * dy
                 tile = box(x - half_w, y - half_h, x + half_w, y + half_h)
                 if prepared_poly.intersects(tile):
                     positions.append((x, y))
@@ -570,7 +590,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         span = abs(max_y - min_y)
         if span <= self.fov_height:
             return 1
-        return math.ceil((span - self.fov_height) / dy) + 1  # type: ignore
+        return math.ceil((span - self.fov_height) / dy) + 1  # type: ignore[no-any-return]
 
     def _ncolumns(self, dx: float) -> int:
         """Return the number of columns for the polygon bounding box."""
@@ -580,17 +600,17 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         span = abs(max_x - min_x)
         if span <= self.fov_width:
             return 1
-        return math.ceil((span - self.fov_width) / dx) + 1  # type: ignore
+        return math.ceil((span - self.fov_width) / dx) + 1  # type: ignore[no-any-return]
 
     def _offset_x(self, dx: float) -> float:
         """Return the x offset for the first column."""
         min_x, _, _, _ = self.poly.bounds
-        return min_x + (self.fov_width or 0) / 2  # type: ignore
+        return min_x + (self.fov_width or 0) / 2  # type: ignore[no-any-return]
 
     def _offset_y(self, dy: float) -> float:
         """Return the y offset for the first row."""
         _, _, _, max_y = self.poly.bounds
-        return max_y - (self.fov_height or 0) / 2  # type: ignore
+        return max_y - (self.fov_height or 0) / 2  # type: ignore[no-any-return]
 
     def plot(
         self,
@@ -614,15 +634,12 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         return plot_points(
             self,
             rect_size=rect,
-            bounding_box=(min_x, max_y, max_x, min_y),
+            bounding_poly=[(x, y) for x, y in self.poly.exterior.coords],
             ax=axes,
             aspect_ratio_multiplier=aspect_ratio_multiplier,
             hide_axes=hide_axes,
             show=show,
         )
-
-    def __iter__(self) -> Iterator[AbsolutePosition]:  # type: ignore [override]
-        yield from self.iter_grid_positions()
 
 
 # ------------------------ RANDOM ------------------------
