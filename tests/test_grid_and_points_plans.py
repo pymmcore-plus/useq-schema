@@ -357,4 +357,3 @@ def test_grid_from_polygon_with_convex_hull() -> None:
         overlap=0,
     )
     assert grid_with_hull.num_positions() == 15
-
