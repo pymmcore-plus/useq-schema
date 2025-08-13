@@ -5,7 +5,6 @@ import math
 import warnings
 from collections.abc import Iterable, Iterator, Sequence
 from enum import Enum
-from functools import cached_property
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -403,7 +402,9 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
     convex_hull : Optional[bool]
         If True, the convex hull of the polygon will be used.
     offset : Optional[float]
-        Offsets the polygon in all directions to improve tile coverage.
+        Expand area bounded by vertices to include all points within a `offset` of the
+        original boundary. A positive offset produces a dilation, a negative offset an
+        erosion.
     overlap : float | Tuple[float, float]
         Overlap between grid positions in percent. If a single value is provided, it is
         used for both x and y. If a tuple is provided, the first value is used
@@ -457,7 +458,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
     def is_relative(self) -> bool:
         return False
 
-    @cached_property
+    @property
     def poly(self) -> Polygon:
         """Return the processed polygon vertices as a shapely Polygon."""
         poly = Polygon(self.vertices)
@@ -467,7 +468,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         # Apply offset if specified
         if self.offset is not None:
             buffered = poly.buffer(
-                distance=self.offset, cap_style="round", join_style="round"
+                distance=self.offset, cap_style="square", join_style="mitre"
             )
             # Ensure we have a Polygon
             if isinstance(buffered, Polygon):
@@ -487,7 +488,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
 
         return poly
 
-    @cached_property
+    @property
     def prepared_poly(self) -> PreparedGeometry:
         """Return the prepared polygon for faster intersection tests."""
         return prepared.prep(self.poly)
