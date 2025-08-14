@@ -5,13 +5,14 @@ from typing import TYPE_CHECKING, Callable
 try:
     import matplotlib.pyplot as plt
     from matplotlib import patches
+    from matplotlib.figure import Figure
 except ImportError as e:
     raise ImportError(
         "Matplotlib is required for plotting functions.  Please install matplotlib."
     ) from e
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
     from matplotlib.axes import Axes
 
@@ -23,9 +24,11 @@ def plot_points(
     points: Iterable[PositionBase],
     *,
     rect_size: tuple[float, float] | None = None,
-    bounding_box: tuple[float, float, float, float] | None = None,
+    bounding_poly: Sequence[tuple[float, float]] | None = None,
     polygon: tuple[float, float] | None = None,
     ax: Axes | None = None,
+    hide_axes: bool = False,
+    aspect_ratio_multiplier: float = 5.0,
     show: bool = True,
 ) -> Axes:
     """Plot a list of positions.
@@ -39,11 +42,16 @@ def plot_points(
     rect_size : tuple[float, float] | None
         The size of the rectangles to draw around each point. If None, no rectangles
         are drawn.
-    bounding_box : tuple[float, float, float, float] | None
-        A bounding box to draw around the points (left, top, right, bottom).
-        If None, no bounding box is drawn.
+    bounding_poly : Sequence[tuple[float, float]] | None
+        A polygon to draw around the points as a sequence of (x, y) vertices.
+        If None, no bounding polygon is drawn.
     ax : Axes | None
         The axes to plot on. If None, a new figure and axes are created.
+    hide_axes : bool
+        Whether to hide the axes. Defaults to False.
+    aspect_ratio_multiplier : float
+        The multiplier for the aspect ratio of the plot. Defaults to 5.0.
+        This is used to dynamically adjust the figure size based on the aspect ratio.
     show : bool
         Whether to show the plot. If False, the plot is not shown.
         Defaults to True.
@@ -54,7 +62,11 @@ def plot_points(
         The axes with the plot.
     """
     if ax is None:
-        _, ax = plt.subplots()
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
+    if not isinstance(fig, Figure):
+        raise TypeError("Expected a Figure instance.")
 
     x, y = zip(*[(point.x, point.y) for point in points])
     ax.scatter(x, y)
@@ -88,22 +100,40 @@ def plot_points(
         ax.scatter(y_poly, x_poly, color="magenta")
         ax.plot(y_poly, x_poly, color="yellow")
 
-    if bounding_box is not None:
-        # draw a thicker dashed line around the bounding box
-        x0, y0, x1, y1 = bounding_box
+    if bounding_poly is not None:
+        # draw a thicker dashed line around the bounding polygon
+        poly_x = [vertex[0] for vertex in bounding_poly] + [bounding_poly[0][0]]
+        poly_y = [vertex[1] for vertex in bounding_poly] + [bounding_poly[0][1]]
         ax.plot(
-            [x0, x1, x1, x0, x0],
-            [y0, y0, y1, y1, y0],
+            poly_x,
+            poly_y,
             color="black",
             linestyle="--",
-            linewidth=4,
-            alpha=0.25,
+            linewidth=2,
+            alpha=0.5,
         )
-        # ensure the bounding box is visible
-        ax.set_xlim(min(x0, x1) - 10, max(x0, x1) + 10)
-        ax.set_ylim(min(y0, y1) - 10, max(y0, y1) + 10)
+        # ensure the bounding polygon is visible
+        min_x, max_x = min(poly_x), max(poly_x)
+        min_y, max_y = min(poly_y), max(poly_y)
+        ax.set_xlim(min_x - 10, max_x + 10)
+        ax.set_ylim(min_y - 10, max_y + 10)
     # ax.invert_yaxis()
     ax.axis("equal")
+
+    # dynamically adjust figure size based on aspect ratio
+    x_range = max(x) - min(x)
+    y_range = (max(y) - min(y)) or 1
+    aspect_ratio = x_range / y_range
+    mpx = aspect_ratio_multiplier
+    if x_range < y_range:
+        fig.set_size_inches(
+            mpx, mpx / (aspect_ratio if aspect_ratio > 0.0 else 1), forward=True
+        )
+    else:
+        fig.set_size_inches(mpx * aspect_ratio, mpx, forward=True)
+
+    if hide_axes:
+        ax.axis("off")
     if show:
         plt.show()
     return ax

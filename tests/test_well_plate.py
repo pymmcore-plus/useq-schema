@@ -1,3 +1,5 @@
+import os
+import sys
 from typing import Any
 
 import numpy as np
@@ -43,6 +45,10 @@ def test_plate_plan_well_points() -> None:
     assert len(pp2) == 0
 
 
+@pytest.mark.skipif(
+    bool(os.name == "nt" and sys.version_info < (3, 10)),
+    reason="tcl/tkinter failing on CI",
+)
 def test_plate_plan_plot(monkeypatch: pytest.MonkeyPatch) -> None:
     mpl = pytest.importorskip("matplotlib.pyplot")
     monkeypatch.setattr(mpl, "show", lambda: None)

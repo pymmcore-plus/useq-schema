@@ -81,6 +81,20 @@ g_inputs = [
             useq.RelativePosition(x=-0.8, y=-0.4, name="0002"),
         ],
     ),
+    (
+        useq.GridFromPolygon(
+            vertices=[(0, 0), (4, 0), (2, 4)],
+            fov_width=2,
+            fov_height=2,
+            overlap=0,
+        ),
+        [
+            useq.Position(x=1.0, y=3.0, name="0000"),
+            useq.Position(x=3.0, y=3.0, name="0001"),
+            useq.Position(x=3.0, y=1.0, name="0002"),
+            useq.Position(x=1.0, y=1.0, name="0003"),
+        ],
+    ),
 ]
 
 
@@ -282,3 +296,61 @@ def test_grid_from_edges_plot(monkeypatch: pytest.MonkeyPatch) -> None:
     useq.GridFromEdges(
         overlap=10, top=0, left=0, bottom=20, right=30, fov_height=10, fov_width=20
     ).plot()
+
+
+def test_grid_from_polygon_plot(monkeypatch: pytest.MonkeyPatch) -> None:
+    mpl = pytest.importorskip("matplotlib.pyplot")
+    monkeypatch.setattr(mpl, "show", lambda: None)
+    useq.GridFromPolygon(
+        vertices=[(0, 0), (10, 0), (10, 10), (0, 10)],
+        fov_width=3,
+        fov_height=3,
+        overlap=0,
+    ).plot()
+
+
+def test_grid_from_polygon_with_offset() -> None:
+    """Test GridFromPolygon with offset feature."""
+    vertices = [(0, 0), (4, 0), (2, 4)]
+
+    grid_no_offset = useq.GridFromPolygon(
+        vertices=vertices,
+        fov_width=2,
+        fov_height=2,
+        overlap=0,
+    )
+    assert grid_no_offset.num_positions() == 4
+
+    grid_with_offset = useq.GridFromPolygon(
+        vertices=vertices,
+        offset=1.0,
+        fov_width=2,
+        fov_height=2,
+        overlap=0,
+    )
+    assert grid_with_offset.num_positions() == 13
+
+
+def test_grid_from_polygon_with_convex_hull() -> None:
+    """Test GridFromPolygon with convex_hull feature."""
+    # create a concave polygon (L-shape)
+    vertices = [(0, 0), (3, 0), (3, 1), (1, 1), (1, 3), (0, 3)]
+
+    # grid without convex hull
+    grid_no_hull = useq.GridFromPolygon(
+        vertices=vertices,
+        fov_width=1,
+        fov_height=1,
+        overlap=0,
+    )
+    assert grid_no_hull.num_positions() == 8
+
+    # grid with convex hull (should fill in the concave part)
+    grid_with_hull = useq.GridFromPolygon(
+        vertices=vertices,
+        convex_hull=True,
+        fov_width=1,
+        fov_height=1,
+        overlap=0,
+    )
+    assert grid_with_hull.num_positions() == 9
