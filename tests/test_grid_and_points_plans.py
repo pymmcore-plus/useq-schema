@@ -354,3 +354,10 @@ def test_grid_from_polygon_with_convex_hull() -> None:
         overlap=0,
     )
     assert grid_with_hull.num_positions() == 9
+
+
+def test_invalid_poly() -> None:
+    """Test that self-intersecting polygons are invalid."""
+    vertices = [(0, 0), (2, 2), (0, 2), (2, 0)]
+    with pytest.raises(ValueError, match="Invalid or self-intersecting polygon"):
+        useq.GridFromPolygon(vertices=vertices, fov_width=1, fov_height=1)

@@ -458,12 +458,18 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
     def is_relative(self) -> bool:
         return False
 
+    @field_validator("vertices", mode="after")
+    def validate_vertices(
+        cls, value: list[tuple[float, float]]
+    ) -> list[tuple[float, float]]:
+        if not Polygon(value).is_valid:
+            raise ValueError("Invalid or self-intersecting polygon.")
+        return value
+
     @property
     def poly(self) -> Polygon:
         """Return the processed polygon vertices as a shapely Polygon."""
         poly = Polygon(self.vertices)
-        if not poly.is_valid:
-            raise ValueError("Invalid or self-intersecting polygon.")
 
         # Apply offset if specified
         if self.offset is not None:
