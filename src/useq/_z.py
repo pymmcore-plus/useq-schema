@@ -165,8 +165,8 @@ class ZAbsolutePositions(ZPlan):
 
     Attributes
     ----------
-    relative : list[float]
-        List of relative z positions.
+    absolute : list[float]
+        List of absolute z positions.
     go_up : bool
         If `True` (the default), visits points in the order provided, otherwise in
         reverse.
