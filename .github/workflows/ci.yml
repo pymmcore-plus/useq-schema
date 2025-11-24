@@ -16,7 +16,7 @@ jobs:
     name: Check Manifest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - run: pip3 install check-manifest && check-manifest
 
   test:
@@ -35,7 +35,7 @@ jobs:
             python-version: "3.13"
             extra: "plot"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: astral-sh/setup-uv@v6
         with:
@@ -77,11 +77,11 @@ jobs:
         # note: hard-coding pymmcore-plus/ org for now
         repo: ["pymmcore-plus", "pymmcore-widgets"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: pymmcore-plus/${{ matrix.repo }}
           fetch-depth: 0
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           path: useq-schema
           fetch-depth: 0
@@ -112,7 +112,7 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v6
