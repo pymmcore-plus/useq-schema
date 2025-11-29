@@ -452,7 +452,7 @@ class _Repr:
 def _expression_repr(expr: tuple[Sequence[int], Sequence[int]]) -> _Repr:
     """Try to represent an index expression as slice objects if possible."""
     e0, e1 = expr
-    ptrn1, repeats = _find_pattern(e1)
+    ptrn1, _repeats = _find_pattern(e1)
     if ptrn1 is None:
         return _Repr(str(expr))
     ptrn0 = e0[:: len(ptrn1)]

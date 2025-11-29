@@ -636,7 +636,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             rect = None
 
         # Get polygon bounds for plotting
-        min_x, min_y, max_x, max_y = self.poly.bounds
+        _min_x, _min_y, _max_x, _max_y = self.poly.bounds
 
         return plot_points(
             self,
