@@ -46,7 +46,7 @@ def test_plate_plan_well_points() -> None:
 
 
 @pytest.mark.skipif(
-    bool(os.name == "nt" and sys.version_info < (3, 10)),
+    bool(os.name == "nt" and sys.version_info < (3, 12)),
     reason="tcl/tkinter failing on CI",
 )
 def test_plate_plan_plot(monkeypatch: pytest.MonkeyPatch) -> None:
