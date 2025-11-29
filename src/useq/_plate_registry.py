@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING, overload
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
-    from typing import TypedDict
+    from typing import TypeAlias, TypedDict
 
-    from typing_extensions import Required, TypeAlias
+    from typing_extensions import Required
 
     from useq._plate import WellPlate
 

@@ -1,6 +1,6 @@
 from collections.abc import Iterator, Sequence
 from datetime import timedelta
-from typing import Annotated, Any, Union
+from typing import Annotated, Any
 
 from pydantic import BeforeValidator, Field, PlainSerializer, model_validator
 
@@ -104,7 +104,7 @@ class TIntervalDuration(TimePlan):
         return self.duration // self.interval + 1
 
 
-SinglePhaseTimePlan = Union[TIntervalDuration, TIntervalLoops, TDurationLoops]
+SinglePhaseTimePlan = TIntervalDuration | TIntervalLoops | TDurationLoops
 
 
 class MultiPhaseTimePlan(TimePlan):
@@ -143,4 +143,4 @@ class MultiPhaseTimePlan(TimePlan):
         return value
 
 
-AnyTimePlan = Union[MultiPhaseTimePlan, SinglePhaseTimePlan]
+AnyTimePlan = MultiPhaseTimePlan | SinglePhaseTimePlan

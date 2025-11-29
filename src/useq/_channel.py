@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import Field, model_validator
 
@@ -33,11 +33,11 @@ class Channel(FrozenModel):
 
     config: str
     group: str = "Channel"
-    exposure: Optional[float] = Field(None, gt=0.0)
+    exposure: float | None = Field(None, gt=0.0)
     do_stack: bool = True
     z_offset: float = 0.0
     acquire_every: int = Field(default=1, gt=0)  # acquire every n frames
-    camera: Optional[str] = None
+    camera: str | None = None
 
     @model_validator(mode="before")
     @classmethod

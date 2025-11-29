@@ -38,15 +38,15 @@ class PositionBase(MutableModel):
         Optional column index, when used in a grid.
     """
 
-    x: Optional[float] = None
-    y: Optional[float] = None
-    z: Optional[float] = None
-    name: Optional[str] = None
+    x: float | None = None
+    y: float | None = None
+    z: float | None = None
+    name: str | None = None
     sequence: Optional["MDASequence"] = None
 
     # excluded from serialization
-    row: Optional[int] = Field(default=None, exclude=True)
-    col: Optional[int] = Field(default=None, exclude=True)
+    row: int | None = Field(default=None, exclude=True)
+    col: int | None = Field(default=None, exclude=True)
 
     def __add__(self, other: "RelativePosition") -> "Self":
         """Add two positions together to create a new position."""
@@ -104,8 +104,8 @@ PositionT = TypeVar("PositionT", bound=PositionBase)
 class _MultiPointPlan(MutableModel, Generic[PositionT]):
     """Any plan that yields multiple positions."""
 
-    fov_width: Optional[float] = None
-    fov_height: Optional[float] = None
+    fov_width: float | None = None
+    fov_height: float | None = None
 
     @property
     def is_relative(self) -> bool:

@@ -6,7 +6,6 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    Union,
     cast,
     overload,
 )
@@ -29,8 +28,8 @@ from useq._position import Position, PositionBase, RelativePosition
 if TYPE_CHECKING:
     from pydantic_core import core_schema
 
-    Index = Union[int, list[int], slice]
-    IndexExpression = Union[tuple[Index, ...], Index]
+    Index = int | list[int] | slice
+    IndexExpression = tuple[Index, ...] | Index
 
 
 class WellPlate(FrozenModel):
@@ -159,8 +158,8 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
 
     plate: WellPlate
     a1_center_xy: tuple[float, float]
-    rotation: Union[float, None] = None
-    selected_wells: Union[tuple[tuple[int, ...], tuple[int, ...]], None] = None
+    rotation: float | None = None
+    selected_wells: tuple[tuple[int, ...], tuple[int, ...]] | None = None
     well_points_plan: RelativeMultiPointPlan = Field(
         default_factory=RelativePosition, union_mode="left_to_right"
     )
@@ -337,7 +336,7 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
         return [
             Position(x=x * 1000, y=y * 1000, name=name)  # convert to µm
             for (y, x), name in zip(
-                self.all_well_coordinates, self.all_well_names.reshape(-1)
+                self.all_well_coordinates, self.all_well_names.reshape(-1), strict=False
             )
         ]
 
@@ -347,7 +346,7 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
         return [
             Position(x=x * 1000, y=y * 1000, name=name)  # convert to µm
             for (y, x), name in zip(
-                self.selected_well_coordinates, self.selected_well_names
+                self.selected_well_coordinates, self.selected_well_names, strict=False
             )
         ]
 

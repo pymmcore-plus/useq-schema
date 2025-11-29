@@ -1,8 +1,7 @@
-from typing import Optional, Union
+from typing import Literal
 
 from pydantic import ConfigDict, Field, TypeAdapter, field_validator
 from pydantic_core import PydanticSerializationError
-from typing_extensions import Literal
 
 from useq._base_model import FrozenModel
 
@@ -63,8 +62,8 @@ class HardwareAutofocus(Action):
     """
 
     type: Literal["hardware_autofocus"] = "hardware_autofocus"  # pyright: ignore[reportIncompatibleVariableOverride]
-    autofocus_device_name: Optional[str] = None
-    autofocus_motor_offset: Optional[float] = None
+    autofocus_device_name: str | None = None
+    autofocus_motor_offset: float | None = None
     max_retries: int = 3
 
 
@@ -106,4 +105,4 @@ class CustomAction(Action):
         return data
 
 
-AnyAction = Union[HardwareAutofocus, AcquireImage, CustomAction]
+AnyAction = HardwareAutofocus | AcquireImage | CustomAction

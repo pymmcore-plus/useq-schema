@@ -6,9 +6,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Optional,
     TypeVar,
-    Union,
 )
 
 import numpy as np
@@ -89,7 +87,7 @@ class MutableModel(_ReplaceableModel):
 
 class UseqModel(FrozenModel):
     @classmethod
-    def from_file(cls: type[_Y], path: Union[str, Path]) -> _Y:
+    def from_file(cls: type[_Y], path: str | Path) -> _Y:
         """Return an instance of this class from a file.  Supports JSON and YAML."""
         path = Path(path)
         if path.suffix in {".yaml", ".yml"}:
@@ -106,14 +104,14 @@ class UseqModel(FrozenModel):
     def yaml(
         self,
         *,
-        include: Optional[Union[set, dict]] = None,
-        exclude: Optional[Union[set, dict]] = None,
+        include: set | dict | None = None,
+        exclude: set | dict | None = None,
         by_alias: bool = False,
         exclude_unset: bool = True,  # pydantic has False by default
         exclude_defaults: bool = False,
         exclude_none: bool = False,
-        stream: Optional[IO[str]] = None,
-    ) -> Optional[str]:
+        stream: IO[str] | None = None,
+    ) -> str | None:
         """Generate a YAML representation of the model.
 
         Returns

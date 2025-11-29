@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import product
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -22,7 +22,7 @@ from useq import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
 
 @dataclass(frozen=True)
@@ -64,7 +64,8 @@ class MDATestCase:
 def genindex(axes: dict[str, int]) -> list[dict[str, int]]:
     """Produce the cartesian product of `range(n)` for the given axes."""
     return [
-        dict(zip(axes, prod)) for prod in product(*(range(v) for v in axes.values()))
+        dict(zip(axes, prod, strict=False))
+        for prod in product(*(range(v) for v in axes.values()))
     ]
 
 

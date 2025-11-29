@@ -6,7 +6,9 @@ from useq import MDAEvent, MDASequence
 from useq._utils import Axis
 
 if TYPE_CHECKING:
-    from typing_extensions import Literal, Required, TypedDict
+    from typing import Literal
+
+    from typing_extensions import Required, TypedDict
 
     class PycroManagerAxes(TypedDict, total=False):
         """Axes dict used by pycro-manager."""

@@ -9,7 +9,7 @@ name = "useq-schema"
 description = "Schema for multi-dimensional microscopy experiments"
 readme = "README.md"
 keywords = ["microscopy", "schema"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "BSD 3-Clause License" }
 authors = [
     { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
@@ -23,11 +23,11 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Topic :: Scientific/Engineering :: Image Processing",
@@ -37,11 +37,15 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
+    "pydantic >=2.12; python_version >= '3.14'",
+    "pydantic >=2.8; python_version >= '3.13'",
     "pydantic >=2.6",
+    "numpy >=2.3.2; python_version >= '3.14'",
     "numpy >=2.1.0; python_version >= '3.13'",
     "numpy >=1.26.0; python_version >= '3.12'",
     "numpy >=1.25.2",
     "typing-extensions >=4",
+    "shapely>=2.1.2; python_version >= '3.14'",
     "shapely>=2.0.7",
 ]
 
@@ -49,12 +53,20 @@ dependencies = [
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
 yaml = ["PyYAML >=5.0"]
-plot = ["matplotlib >=3.7"]
+plot = [
+    "matplotlib >=3.10.5; python_version >= '3.14'",
+    "matplotlib >=3.9.2; python_version >= '3.13'",
+    "matplotlib >=3.7.3; python_version >= '3.12'",
+    "matplotlib >=3.7",
+]
 
 [dependency-groups]
 test = ["psygnal>=0.13.0", "pytest>=8.0", "pytest-cov>=6.1.1", "pyyaml>=6.0.2"]
 dev = [
     { include-group = "test" },
+    "matplotlib >=3.10.5; python_version >= '3.14'",
+    "matplotlib >=3.9.2; python_version >= '3.13'",
+    "matplotlib >=3.7.3; python_version >= '3.12'",
     "matplotlib >=3.7",
     "ipython>=8.18.1",
     "mypy>=1.15.0",
@@ -89,7 +101,7 @@ packages = ["src/useq"]
 # https://beta.ruff.rs/docs/rules/
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = "py310"
 src = ["src", "tests"]
 fix = true
 unsafe-fixes = true

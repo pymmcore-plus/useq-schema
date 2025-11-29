@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
     from useq._mda_sequence import MDASequence
 
-    ReprArgs = Sequence[tuple[Optional[str], Any]]
+    ReprArgs = Sequence[tuple[str | None, Any]]
 
 
 class Channel(UseqModel):
@@ -83,8 +83,8 @@ class SLMImage(UseqModel):
     """
 
     data: Any = Field(..., repr=False)
-    device: Optional[str] = None
-    exposure: Optional[float] = Field(default=None, gt=0.0)
+    device: str | None = None
+    exposure: float | None = Field(default=None, gt=0.0)
 
     @model_validator(mode="before")
     def _cast_data(cls, v: Any) -> Any:
@@ -112,8 +112,8 @@ class SLMImage(UseqModel):
             """Type for the kwargs passed to the SLM image."""
 
             data: npt.ArrayLike
-            device: Optional[str]
-            exposure: Optional[float]
+            device: str | None
+            exposure: float | None
 
 
 class PropertyTuple(NamedTuple):
@@ -134,7 +134,7 @@ class PropertyTuple(NamedTuple):
     property_value: Any
 
 
-def _float_or_none(v: Any) -> Optional[float]:
+def _float_or_none(v: Any) -> float | None:
     return float(v) if v is not None else v
 
 
@@ -238,16 +238,16 @@ class MDAEvent(UseqModel):
     """
 
     index: ReadOnlyDict = Field(default_factory=ReadOnlyDict)
-    channel: Optional[Channel] = None
-    exposure: Optional[float] = Field(default=None, gt=0.0)
-    min_start_time: Optional[float] = None  # time in sec
-    pos_name: Optional[str] = None
-    x_pos: Optional[float] = None
-    y_pos: Optional[float] = None
-    z_pos: Optional[float] = None
-    slm_image: Optional[SLMImage] = None
+    channel: Channel | None = None
+    exposure: float | None = Field(default=None, gt=0.0)
+    min_start_time: float | None = None  # time in sec
+    pos_name: str | None = None
+    x_pos: float | None = None
+    y_pos: float | None = None
+    z_pos: float | None = None
+    slm_image: SLMImage | None = None
     sequence: Optional["MDASequence"] = Field(default=None, repr=False)
-    properties: Optional[list[PropertyTuple]] = None
+    properties: list[PropertyTuple] | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage, discriminator="type")
     keep_shutter_open: bool = False

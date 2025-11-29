@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import PrivateAttr
 
@@ -22,8 +22,8 @@ class AutoFocusPlan(FrozenModel):
         If None, the autofocus motor should not be moved.
     """
 
-    autofocus_device_name: Optional[str] = None
-    autofocus_motor_offset: Optional[float] = None
+    autofocus_device_name: str | None = None
+    autofocus_motor_offset: float | None = None
 
     def as_action(self) -> HardwareAutofocus:
         """Return a [`useq.HardwareAutofocus`][] for this autofocus plan."""
@@ -32,7 +32,7 @@ class AutoFocusPlan(FrozenModel):
             autofocus_motor_offset=self.autofocus_motor_offset,
         )
 
-    def event(self, event: MDAEvent) -> Optional[MDAEvent]:
+    def event(self, event: MDAEvent) -> MDAEvent | None:
         """Return an autofocus [`useq.MDAEvent`][] if autofocus should be performed.
 
         The z position of the new [`useq.MDAEvent`][] is also updated if a relative

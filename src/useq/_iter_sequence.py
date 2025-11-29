@@ -151,7 +151,9 @@ def _iter_sequence(
         if not item:  # the case with no events
             continue  # pragma: no cover
         # get axes objects for this event
-        index, time, position, grid, channel, z_pos = _parse_axes(zip(order, item))
+        index, time, position, grid, channel, z_pos = _parse_axes(
+            zip(order, item, strict=False)
+        )
 
         # skip if necessary
         if _should_skip(position, channel, index, sequence.z_plan):
