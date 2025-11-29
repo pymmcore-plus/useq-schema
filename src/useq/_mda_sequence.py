@@ -5,8 +5,6 @@ from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
-    Union,
 )
 from uuid import UUID, uuid4
 from warnings import warn
@@ -181,20 +179,18 @@ class MDASequence(UseqModel):
     axis_order: tuple[str, ...] = AXES
     # note that these are BOTH just `Sequence[Position]` but we retain the distinction
     # here so that WellPlatePlans are preserved in the model instance.
-    stage_positions: Union[WellPlatePlan, tuple[Position, ...]] = Field(
+    stage_positions: WellPlatePlan | tuple[Position, ...] = Field(
         default_factory=tuple, union_mode="left_to_right"
     )
-    grid_plan: Optional[MultiPointPlan] = Field(
-        default=None, union_mode="left_to_right"
-    )
+    grid_plan: MultiPointPlan | None = Field(default=None, union_mode="left_to_right")
     channels: tuple[Channel, ...] = Field(default_factory=tuple)
-    time_plan: Optional[AnyTimePlan] = None
-    z_plan: Optional[AnyZPlan] = None
-    autofocus_plan: Optional[AnyAutofocusPlan] = None
+    time_plan: AnyTimePlan | None = None
+    z_plan: AnyZPlan | None = None
+    autofocus_plan: AnyAutofocusPlan | None = None
     keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
-    _sizes: Optional[dict[str, int]] = PrivateAttr(default=None)
+    _sizes: dict[str, int] | None = PrivateAttr(default=None)
 
     @property
     def uid(self) -> UUID:
@@ -205,7 +201,7 @@ class MDASequence(UseqModel):
         return hash(self.uid)
 
     @field_validator("z_plan", mode="before")
-    def _validate_zplan(cls, v: Any) -> Optional[dict]:
+    def _validate_zplan(cls, v: Any) -> dict | None:
         return v or None
 
     @field_validator("keep_shutter_open_across", mode="before")
@@ -240,7 +236,7 @@ class MDASequence(UseqModel):
     @field_validator("stage_positions", mode="before")
     def _validate_stage_positions(
         cls, value: Any
-    ) -> Union[WellPlatePlan, tuple[Position, ...]]:
+    ) -> WellPlatePlan | tuple[Position, ...]:
         if isinstance(value, np.ndarray):
             if value.ndim == 1:
                 value = [value]
@@ -272,7 +268,7 @@ class MDASequence(UseqModel):
         return tuple(positions)
 
     @field_validator("time_plan", mode="before")
-    def _validate_time_plan(cls, v: Any) -> Optional[dict]:
+    def _validate_time_plan(cls, v: Any) -> dict | None:
         return {"phases": v} if isinstance(v, (tuple, list)) else v or None
 
     @field_validator("axis_order", mode="before")
@@ -324,11 +320,11 @@ class MDASequence(UseqModel):
     @staticmethod
     def _check_order(
         order: tuple[str, ...],
-        z_plan: Optional[AnyZPlan] = None,
+        z_plan: AnyZPlan | None = None,
         stage_positions: Sequence[Position] = (),
         channels: Sequence[Channel] = (),
-        grid_plan: Optional[MultiPointPlan] = None,
-        autofocus_plan: Optional[AnyAutofocusPlan] = None,
+        grid_plan: MultiPointPlan | None = None,
+        autofocus_plan: AnyAutofocusPlan | None = None,
     ) -> None:
         if (
             Axis.Z in order

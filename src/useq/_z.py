@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Callable, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 from pydantic import field_validator
@@ -9,7 +9,7 @@ from pydantic import field_validator
 from useq._base_model import FrozenModel
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Callable, Iterator, Sequence
 
 
 def _list_cast(field: str) -> Callable:
@@ -189,6 +189,6 @@ class ZAbsolutePositions(ZPlan):
 
 # order matters... this is the order in which pydantic will try to coerce input.
 # should go from most specific to least specific
-AnyZPlan = Union[
-    ZTopBottom, ZAboveBelow, ZRangeAround, ZAbsolutePositions, ZRelativePositions
-]
+AnyZPlan = (
+    ZTopBottom | ZAboveBelow | ZRangeAround | ZAbsolutePositions | ZRelativePositions
+)

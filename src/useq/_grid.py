@@ -3,22 +3,20 @@ from __future__ import annotations
 import contextlib
 import math
 import warnings
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    Callable,
-    Optional,
-    Union,
+    TypeAlias,
 )
 
 import numpy as np
 from annotated_types import Ge, Gt
 from pydantic import Field, PrivateAttr, field_validator, model_validator
 from shapely import Polygon, box, prepared
-from typing_extensions import Self, TypeAlias
+from typing_extensions import Self
 
 from useq._point_visiting import OrderMode, TraversalOrder
 from useq._position import (
@@ -434,14 +432,14 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         ),
     ]
     convex_hull: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             False,
             description="If True, the convex hull of the polygon will be used.",
         ),
     ] = False
     offset: Annotated[
-        Optional[float],
+        float | None,
         Field(
             None,
             frozen=True,
@@ -702,10 +700,10 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     max_width: Annotated[float, Gt(0)] = 1
     max_height: Annotated[float, Gt(0)] = 1
     shape: Shape = Shape.ELLIPSE
-    random_seed: Optional[int] = None
+    random_seed: int | None = None
     allow_overlap: bool = True
-    order: Optional[TraversalOrder] = TraversalOrder.TWO_OPT
-    start_at: Union[RelativePosition, Annotated[int, Ge(0)]] = 0
+    order: TraversalOrder | None = TraversalOrder.TWO_OPT
+    start_at: RelativePosition | Annotated[int, Ge(0)] = 0
 
     @model_validator(mode="after")
     def _validate_startat(self) -> Self:
@@ -818,8 +816,8 @@ _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
 
 
 # all of these support __iter__() -> Iterator[PositionBase] and num_positions() -> int
-RelativeMultiPointPlan = Union[
-    GridRowsColumns, GridWidthHeight, RandomPoints, RelativePosition
-]
-AbsoluteMultiPointPlan = Union[GridFromEdges, GridFromPolygon]
-MultiPointPlan = Union[AbsoluteMultiPointPlan, RelativeMultiPointPlan]
+RelativeMultiPointPlan = (
+    GridRowsColumns | GridWidthHeight | RandomPoints | RelativePosition
+)
+AbsoluteMultiPointPlan = GridFromEdges | GridFromPolygon
+MultiPointPlan = AbsoluteMultiPointPlan | RelativeMultiPointPlan

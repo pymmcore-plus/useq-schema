@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 try:
     import matplotlib.pyplot as plt
@@ -12,7 +12,7 @@ except ImportError as e:
     ) from e
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
     from matplotlib.axes import Axes
 
@@ -68,7 +68,7 @@ def plot_points(
     if not isinstance(fig, Figure):
         raise TypeError("Expected a Figure instance.")
 
-    x, y = zip(*[(point.x, point.y) for point in points])
+    x, y = zip(*[(point.x, point.y) for point in points], strict=False)
     ax.scatter(x, y)
     ax.scatter(x[0], y[0], color="red")  # mark the first point
     ax.plot(x, y, alpha=0.5, color="gray")  # connect the points
@@ -94,7 +94,7 @@ def plot_points(
                 ax.set_ylim(min(y) - half_height, max(y) + half_height)
 
     if polygon is not None:
-        y_poly, x_poly, *_ = zip(*list(polygon))
+        y_poly, x_poly, *_ = zip(*list(polygon), strict=False)
         y_poly += (y_poly[0],)
         x_poly += (x_poly[0],)
         ax.scatter(y_poly, x_poly, color="magenta")

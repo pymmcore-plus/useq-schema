@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from enum import Enum
 from functools import partial
-from typing import Callable
 
 import numpy as np
 
@@ -87,7 +86,11 @@ def _rect_indices(
             c[1::2, :] = c[1::2, :][:, ::-1]
         else:
             r[:, 1::2] = r[:, 1::2][::-1, :]
-    return zip(r.ravel(), c.ravel()) if row_wise else zip(r.T.ravel(), c.T.ravel())  # pyright: ignore
+    return (
+        zip(r.ravel(), c.ravel(), strict=False)
+        if row_wise
+        else zip(r.T.ravel(), c.T.ravel(), strict=False)
+    )  # pyright: ignore
 
 
 IndexGenerator = Callable[[int, int], Iterator[tuple[int, int]]]

@@ -8,9 +8,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from useq._time import MultiPhaseTimePlan
 
 if TYPE_CHECKING:
-    from typing import Final, Literal, TypeVar
-
-    from typing_extensions import TypeGuard
+    from typing import Final, Literal, TypeGuard, TypeVar
 
     import useq
     from useq._time import SinglePhaseTimePlan

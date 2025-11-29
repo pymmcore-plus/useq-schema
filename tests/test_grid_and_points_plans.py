@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, get_args
+from typing import TYPE_CHECKING, Any, get_args
 
 import pytest
 from pydantic import TypeAdapter
@@ -225,7 +225,7 @@ expected_ellipse = [(-0.9, -1.1), (0.9, -0.5), (-0.8, -0.4)]
 @pytest.mark.parametrize("n_points", [3, 100])
 @pytest.mark.parametrize("shape", ["rectangle", "ellipse"])
 @pytest.mark.parametrize("seed", [None, 0])
-def test_random_points(n_points: int, shape: str, seed: Optional[int]) -> None:
+def test_random_points(n_points: int, shape: str, seed: int | None) -> None:
     rp = useq.RandomPoints(
         num_points=n_points,
         max_width=4,
