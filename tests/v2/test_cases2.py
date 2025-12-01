@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.filterwarnings("ignore:Conflicting absolute pos")
+@pytest.mark.filterwarnings("ignore:In useq.v2 Positions no longer have a sequence")
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
 def test_mda_sequence(case: MDATestCase) -> None:
     if "af_z_position" in case.name:
