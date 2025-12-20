@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import math
+import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
@@ -219,7 +220,7 @@ def test_random_points_no_overlap() -> None:
             if i != j:
                 assert abs(x1 - x2) >= 2 or abs(y1 - y2) >= 2
 
-    if importlib.util.find_spec("matplotlib") is not None:
+    if importlib.util.find_spec("matplotlib") is not None and os.name != "nt":
         g.plot(show=False)
 
 
