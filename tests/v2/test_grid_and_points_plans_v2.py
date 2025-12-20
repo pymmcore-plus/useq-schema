@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Any, get_args
 
 import pytest
@@ -266,6 +267,7 @@ def test_traversal(order: TraversalOrder):
 fov = {"fov_height": 200, "fov_width": 200}
 
 
+@pytest.mark.skipif(os.name == "nt", reason="tcl on CI")
 @pytest.mark.filterwarnings("ignore:num_positions\\(\\) is deprecated")
 @pytest.mark.parametrize(
     "obj",
