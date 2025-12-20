@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import warnings
 from typing import TYPE_CHECKING, Any, SupportsIndex
 
@@ -100,15 +99,6 @@ class Position(MutableModel):
                 "z": _none_round(self.z, ndigits),
             }
         )
-
-    # FIXME: before merge
-    if "PYTEST_VERSION" in os.environ:
-
-        def __eq__(self, other: object) -> bool:
-            """Compare two positions for equality."""
-            if isinstance(other, (float, int)):
-                return self.z == other
-            return super().__eq__(other)
 
 
 def _none_sum(a: float | None, b: float | None) -> float | None:
