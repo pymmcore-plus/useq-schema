@@ -2,13 +2,7 @@
 # pydantic2 isn't rebuilding the model correctly
 
 from collections import UserDict
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    NamedTuple,
-    Optional,
-    TypedDict,
-)
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional, TypedDict
 
 import numpy as np
 import numpy.typing as npt
