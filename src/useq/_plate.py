@@ -22,9 +22,9 @@ from pydantic import (
 
 from useq._base_model import FrozenModel, UseqModel
 from useq._enums import Shape
+from useq._grid import RandomPoints, RelativeMultiPointPlan
 from useq._plate_registry import _PLATE_REGISTRY
-from useq.v1._grid import RandomPoints, RelativeMultiPointPlan
-from useq.v1._position import Position, PositionBase, RelativePosition
+from useq._position import Position, PositionBase, RelativePosition
 
 if TYPE_CHECKING:
     from pydantic_core import core_schema

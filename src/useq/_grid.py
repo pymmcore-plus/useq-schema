@@ -19,7 +19,7 @@ from typing_extensions import Self
 
 from useq._enums import RelativeTo, Shape
 from useq._point_visiting import OrderMode, TraversalOrder
-from useq.v1._position import (
+from useq._position import (
     AbsolutePosition,
     PositionT,
     RelativePosition,

@@ -20,7 +20,7 @@ except ImportError:
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from useq.v1._mda_sequence import MDASequence
+    from useq._mda_sequence import MDASequence
 
     ReprArgs = Sequence[tuple[str | None, Any]]
 

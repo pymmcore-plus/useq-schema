@@ -5,7 +5,7 @@ import pytest
 from pydantic import TypeAdapter
 
 import useq
-import useq.v1._z
+import useq._z
 
 z_inputs: list[tuple[Any, Sequence[float]]] = [
     (useq.ZAboveBelow(above=8, below=4, step=2), [-4, -2, 0, 2, 4, 6, 8]),
@@ -21,7 +21,7 @@ z_inputs: list[tuple[Any, Sequence[float]]] = [
 
 @pytest.mark.parametrize("zplan, zexpectation", z_inputs)
 def test_z_plan(zplan: Any, zexpectation: Sequence[float]) -> None:
-    z_plan: useq.v1._z.ZPlan = TypeAdapter(useq.AnyZPlan).validate_python(zplan)
-    assert isinstance(z_plan, useq.v1._z.ZPlan)
+    z_plan: useq._z.ZPlan = TypeAdapter(useq.AnyZPlan).validate_python(zplan)
+    assert isinstance(z_plan, useq._z.ZPlan)
     assert z_plan and list(z_plan) == zexpectation
     assert z_plan.num_positions() == len(zexpectation)

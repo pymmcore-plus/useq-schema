@@ -6,13 +6,7 @@ from typing import TYPE_CHECKING, Any
 from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
 from useq._enums import Axis, Shape
-from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
-from useq._mda_event import Channel as EventChannel
-from useq._mda_event import MDAEvent, PropertyTuple, SLMImage
-from useq._plate import WellPlate, WellPlatePlan
-from useq._plate_registry import register_well_plates, registered_well_plate_keys
-from useq._point_visiting import OrderMode, TraversalOrder
-from useq.v1._grid import (
+from useq._grid import (
     GridFromEdges,
     GridFromPolygon,
     GridRowsColumns,
@@ -21,16 +15,22 @@ from useq.v1._grid import (
     RandomPoints,
     RelativeMultiPointPlan,
 )
-from useq.v1._mda_sequence import MDASequence
-from useq.v1._position import AbsolutePosition, Position, RelativePosition
-from useq.v1._time import (
+from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
+from useq._mda_event import Channel as EventChannel
+from useq._mda_event import MDAEvent, PropertyTuple, SLMImage
+from useq._mda_sequence import MDASequence
+from useq._plate import WellPlate, WellPlatePlan
+from useq._plate_registry import register_well_plates, registered_well_plate_keys
+from useq._point_visiting import OrderMode, TraversalOrder
+from useq._position import AbsolutePosition, Position, RelativePosition
+from useq._time import (
     AnyTimePlan,
     MultiPhaseTimePlan,
     TDurationLoops,
     TIntervalDuration,
     TIntervalLoops,
 )
-from useq.v1._z import (
+from useq._z import (
     AnyZPlan,
     ZAboveBelow,
     ZAbsolutePositions,
@@ -40,7 +40,7 @@ from useq.v1._z import (
 )
 
 if TYPE_CHECKING:
-    from useq.v1._grid import GridRelative
+    from useq._grid import GridRelative
 
 
 __all__ = [
@@ -98,7 +98,7 @@ RelativePosition.model_rebuild()
 
 def __getattr__(name: str) -> Any:
     if name == "GridRelative":
-        from useq.v1._grid import GridRowsColumns
+        from useq._grid import GridRowsColumns
 
         # warnings.warn(
         #     "useq.GridRelative has been renamed to useq.GridFromEdges",
