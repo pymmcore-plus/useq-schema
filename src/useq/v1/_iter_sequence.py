@@ -11,13 +11,13 @@ from useq._enums import AXES, Axis
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent, ReadOnlyDict
 from useq._utils import _has_axes
-from useq._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
+from useq.v1._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from useq._mda_sequence import MDASequence
-    from useq._position import Position, PositionBase, RelativePosition
+    from useq.v1._mda_sequence import MDASequence
+    from useq.v1._position import Position, PositionBase, RelativePosition
 
 
 class MDAEventDict(TypedDict, total=False):
