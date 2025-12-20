@@ -4,7 +4,6 @@ import contextlib
 import math
 import warnings
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -18,6 +17,7 @@ from pydantic import Field, PrivateAttr, field_validator, model_validator
 from shapely import Polygon, box, prepared
 from typing_extensions import Self
 
+from useq._enums import RelativeTo, Shape
 from useq._point_visiting import OrderMode, TraversalOrder
 from useq._position import (
     AbsolutePosition,
@@ -37,21 +37,6 @@ if TYPE_CHECKING:
     ]
 
 MIN_RANDOM_POINTS = 10000
-
-
-class RelativeTo(Enum):
-    """Where the coordinates of the grid are relative to.
-
-    Attributes
-    ----------
-    center : Literal['center']
-        Grid is centered around the origin.
-    top_left : Literal['top_left']
-        Grid is positioned such that the top left corner is at the origin.
-    """
-
-    center = "center"
-    top_left = "top_left"
 
 
 # used in iter_indices below, to determine the order in which indices are yielded
@@ -648,21 +633,6 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
 
 
 # ------------------------ RANDOM ------------------------
-
-
-class Shape(Enum):
-    """Shape of the bounding box for random points.
-
-    Attributes
-    ----------
-    ELLIPSE : Literal['ellipse']
-        The bounding box is an ellipse.
-    RECTANGLE : Literal['rectangle']
-        The bounding box is a rectangle.
-    """
-
-    ELLIPSE = "ellipse"
-    RECTANGLE = "rectangle"
 
 
 class RandomPoints(_MultiPointPlan[RelativePosition]):

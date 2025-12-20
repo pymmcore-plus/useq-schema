@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 import pytest
 
+from useq._enums import RelativeTo, Shape
 from useq.v2 import (
     GridFromEdges,
     GridRowsColumns,
@@ -16,8 +17,6 @@ from useq.v2 import (
     MultiPointPlan,
     OrderMode,
     RandomPoints,
-    RelativeTo,
-    Shape,
     TraversalOrder,
 )
 

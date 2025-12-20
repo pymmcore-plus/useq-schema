@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+from useq._enums import Axis
 from useq.v2 import (
-    Axis,
     MDAEvent,
     Position,
     ZAboveBelow,

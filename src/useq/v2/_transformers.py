@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from useq._mda_event import MDAEvent
-
 # transformers.py
-from useq._utils import Axis
+from useq._enums import Axis
+from useq._mda_event import MDAEvent
 from useq.v2._axes_iterator import EventTransform  # helper you already have
 
 if TYPE_CHECKING:

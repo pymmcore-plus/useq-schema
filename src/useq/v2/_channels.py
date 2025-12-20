@@ -3,8 +3,9 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import Field, model_validator
 
-from useq import Axis, Channel
+from useq import Channel
 from useq._base_model import FrozenModel
+from useq._enums import Axis
 from useq.v2._axes_iterator import SimpleValueAxis
 
 if TYPE_CHECKING:

@@ -17,8 +17,7 @@ from annotated_types import Ge, Gt
 from pydantic import Field, field_validator, model_validator
 from typing_extensions import Self, deprecated
 
-from useq import Axis
-from useq._grid import RelativeTo, Shape
+from useq._enums import Axis, RelativeTo, Shape
 from useq._point_visiting import OrderMode, TraversalOrder
 from useq.v2._multi_point import MultiPositionPlan
 from useq.v2._position import Position

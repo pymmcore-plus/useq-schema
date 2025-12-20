@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import Field
 
-from useq.v2 import Axis, AxisIterable, MultiAxisSequence, SimpleValueAxis
+from useq._enums import Axis
+from useq.v2 import AxisIterable, MultiAxisSequence, SimpleValueAxis
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator

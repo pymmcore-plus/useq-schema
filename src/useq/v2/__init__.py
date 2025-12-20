@@ -7,14 +7,13 @@ from typing_extensions import deprecated
 
 from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
-from useq._grid import RelativeTo, Shape
+from useq._enums import Axis, RelativeTo, Shape
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent, PropertyTuple, SLMImage
 from useq._plate import WellPlate, WellPlatePlan
 from useq._plate_registry import register_well_plates, registered_well_plate_keys
 from useq._point_visiting import OrderMode, TraversalOrder
-from useq._utils import Axis
 from useq.v2._axes_iterator import AxisIterable, MultiAxisSequence, SimpleValueAxis
 from useq.v2._channels import ChannelsPlan
 from useq.v2._grid import (

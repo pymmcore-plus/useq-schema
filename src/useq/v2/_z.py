@@ -9,7 +9,7 @@ from pydantic import Field
 from typing_extensions import deprecated
 
 from useq._base_model import FrozenModel
-from useq._utils import Axis
+from useq._enums import Axis
 from useq.v2._axes_iterator import AxisIterable
 from useq.v2._position import Position
 
