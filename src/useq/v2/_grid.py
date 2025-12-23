@@ -14,7 +14,8 @@ from typing import (
 
 import numpy as np
 from annotated_types import Ge, Gt
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
+from shapely import Polygon, box, prepared
 from typing_extensions import Self, deprecated
 
 from useq._enums import Axis, RelativeTo, Shape
@@ -24,6 +25,7 @@ from useq.v2._position import Position
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
+    from shapely.prepared import PreparedGeometry
 
     PointGenerator: TypeAlias = Callable[
         [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
@@ -364,6 +366,255 @@ class GridWidthHeight(_GridPlan):
         )
 
 
+class GridFromPolygon(_GridPlan):
+    """Grid plan based on a polygon boundary.
+
+    This grid plan generates absolute stage positions that cover a polygon region.
+    Additionally the convex hull, and/or a buffered polygon can be created to generate
+    tiles over a larger area surrounding the initial polygon.
+
+    Attributes
+    ----------
+    vertices : list[tuple[float, float]]
+        List of (x, y) points that define the polygon boundary.
+        Must have at least 3 points.
+    convex_hull : Optional[bool]
+        If True, the convex hull of the polygon will be used.
+    offset : Optional[float]
+        Expand area bounded by vertices to include all points within a `offset` of the
+        original boundary. A positive offset produces a dilation, a negative offset an
+        erosion.
+    overlap : float | Tuple[float, float]
+        Overlap between grid positions in percent. If a single value is provided, it is
+        used for both x and y. If a tuple is provided, the first value is used
+        for x and the second for y.
+    mode : OrderMode
+        Define the ways of ordering the grid positions. Options are
+        row_wise, column_wise, row_wise_snake, column_wise_snake and spiral.
+        By default, row_wise_snake.
+    fov_width : Optional[float]
+        Width of the field of view in microns.  If not provided, acquisition engines
+        should use current width of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    fov_height : Optional[float]
+        Height of the field of view in microns. If not provided, acquisition engines
+        should use current height of the FOV based on the current objective and camera.
+        Engines MAY override this even if provided.
+    """
+
+    vertices: Annotated[
+        list[tuple[float, float]],
+        Field(
+            ...,
+            min_length=3,
+            description="List of vertices that define the polygon,"
+            " must have at least 3 vertices.",
+            frozen=True,
+        ),
+    ]
+    convex_hull: Annotated[
+        bool | None,
+        Field(
+            False,
+            description="If True, the convex hull of the polygon will be used.",
+        ),
+    ] = False
+    offset: Annotated[
+        float | None,
+        Field(
+            None,
+            frozen=True,
+            description="Offsets the polygon in all directions to "
+            "improve tile coverage.",
+        ),
+    ] = None
+
+    _poly_cache: dict[tuple, list[tuple[float, float]]] = PrivateAttr(
+        default_factory=dict
+    )
+
+    @property
+    def is_relative(self) -> bool:
+        return False
+
+    @field_validator("vertices", mode="after")
+    def validate_vertices(
+        cls, value: list[tuple[float, float]]
+    ) -> list[tuple[float, float]]:
+        if not Polygon(value).is_valid:
+            raise ValueError("Invalid or self-intersecting polygon.")
+        return value
+
+    @property
+    def poly(self) -> Polygon:
+        """Return the processed polygon vertices as a shapely Polygon."""
+        poly = Polygon(self.vertices)
+
+        # Apply offset if specified
+        if self.offset is not None:
+            buffered = poly.buffer(
+                distance=self.offset, cap_style="square", join_style="mitre"
+            )
+            # Ensure we have a Polygon
+            if isinstance(buffered, Polygon):
+                poly = buffered
+            else:
+                # Handle MultiPolygon case - take the largest polygon
+                if hasattr(buffered, "geoms"):
+                    poly = max(buffered.geoms, key=lambda p: p.area)
+                else:
+                    poly = buffered
+
+        # Create convex hull if specified
+        if self.convex_hull:
+            hull = poly.convex_hull
+            if isinstance(hull, Polygon):
+                poly = hull
+
+        return poly
+
+    @property
+    def prepared_poly(self) -> PreparedGeometry:
+        """Return the prepared polygon for faster intersection tests."""
+        return prepared.prep(self.poly)
+
+    def __len__(self) -> int:
+        """Return the number of positions in the grid."""
+        if self.fov_width is None or self.fov_height is None:
+            raise ValueError("`fov_width` and `fov_height` must be set!")
+        return len(
+            self._cached_tiles(
+                fov=(self.fov_width, self.fov_height), overlap=self.overlap
+            )
+        )
+
+    def __iter__(self) -> Iterator[Position]:  # type: ignore [override]
+        yield from self.iter_grid_positions()
+
+    def iter_grid_positions(
+        self,
+        fov_width: float | None = None,
+        fov_height: float | None = None,
+        *,
+        order: OrderMode | None = None,
+    ) -> Iterator[Position]:
+        """Iterate over all grid positions, given a field of view size."""
+        try:
+            pos = self._cached_tiles(
+                fov=(
+                    fov_width or self.fov_width or 1,
+                    fov_height or self.fov_height or 1,
+                ),
+                overlap=self.overlap,
+                order=order,
+            )
+        except ValueError:
+            pos = []
+        for idx, (x, y) in enumerate(pos):
+            yield Position(x=x, y=y, name=f"{str(idx).zfill(4)}", is_relative=False)
+
+    def _cached_tiles(
+        self,
+        *,
+        fov: tuple[float, float],
+        overlap: tuple[float, float],
+        order: OrderMode | None = None,
+    ) -> list[tuple[float, float]]:
+        """Compute an ordered list of (x, y) stage positions that cover the polygon."""
+        # compute grid spacing and half-extents
+        mode = OrderMode(order) if order is not None else self.mode
+        key = (fov, overlap, mode)
+
+        if key not in self._poly_cache:
+            w, h = fov
+            dx = w * (1 - (overlap[0] / 100))  # convert overlap percentage to absolute
+            dy = h * (1 - (overlap[1] / 100))  # convert overlap percentage to absolute
+            half_w, half_h = w / 2, h / 2
+
+            # Get polygon bounds - do NOT expand by half FOV
+            # This ensures FOV edges align with polygon bounds (like GridFromEdges)
+            min_x, min_y, max_x, max_y = self.poly.bounds
+
+            # Position the first FOV center half a FOV in from the bounds
+            # (matching GridFromEdges semantics)
+            start_x = min_x + half_w
+            start_y = max_y - half_h
+
+            # determine grid dimensions based on the span that needs to be covered
+            span_x = max_x - min_x
+            span_y = max_y - min_y
+
+            if span_x <= w:
+                n_cols = 1
+            else:
+                n_cols = int(np.ceil((span_x - w) / dx)) + 1
+
+            if span_y <= h:
+                n_rows = 1
+            else:
+                n_rows = int(np.ceil((span_y - h) / dy)) + 1
+
+            # generate grid positions
+            positions: list[tuple[float, float]] = []
+            prepared_poly = self.prepared_poly
+
+            for r, c in mode.generate_indices(n_rows, n_cols):
+                x = start_x + c * dx
+                y = start_y - r * dy
+                tile = box(x - half_w, y - half_h, x + half_w, y + half_h)
+                if prepared_poly.intersects(tile):
+                    positions.append((x, y))
+
+            self._poly_cache[key] = positions
+        return self._poly_cache[key]
+
+    def _nrows(self, dy: float) -> int:
+        """Return the number of rows for the polygon bounding box."""
+        if self.fov_height is None:
+            raise ValueError("fov_height must be set for polygon grids")
+        _, min_y, _, max_y = self.poly.bounds
+        span = abs(max_y - min_y)
+        if span <= self.fov_height:
+            return 1
+        return math.ceil((span - self.fov_height) / dy) + 1  # type: ignore [no-any-return]
+
+    def _ncolumns(self, dx: float) -> int:
+        """Return the number of columns for the polygon bounding box."""
+        if self.fov_width is None:
+            raise ValueError("fov_width must be set for polygon grids")
+        min_x, _, max_x, _ = self.poly.bounds
+        span = abs(max_x - min_x)
+        if span <= self.fov_width:
+            return 1
+        return math.ceil((span - self.fov_width) / dx) + 1  # type: ignore [no-any-return]
+
+    def _offset_x(self, dx: float) -> float:
+        """Return the x offset for the first column."""
+        min_x, _, _, _ = self.poly.bounds
+        return min_x + (self.fov_width or 0) / 2  # type: ignore [no-any-return]
+
+    def _offset_y(self, dy: float) -> float:
+        """Return the y offset for the first row."""
+        _, _, _, max_y = self.poly.bounds
+        return max_y - (self.fov_height or 0) / 2  # type: ignore [no-any-return]
+
+    def plot(self, *, show: bool = True) -> Axes:
+        """Plot the positions in the plan."""
+        from useq._plot import plot_points
+
+        if self.fov_width is not None and self.fov_height is not None:
+            rect = (self.fov_width, self.fov_height)
+        else:
+            rect = None
+
+        return plot_points(
+            self,  # type: ignore [arg-type]
+            rect_size=rect,
+            bounding_poly=[(x, y) for x, y in self.poly.exterior.coords],
+            show=show,
+        )
+
+
 # ------------------------ RANDOM ------------------------
 
 
@@ -521,5 +772,5 @@ _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
 
 # all of these support __iter__() -> Iterator[PositionBase] and num_positions() -> int
 RelativeMultiPointPlan = GridRowsColumns | GridWidthHeight | RandomPoints
-AbsoluteMultiPointPlan = GridFromEdges
+AbsoluteMultiPointPlan = GridFromEdges | GridFromPolygon
 MultiPointPlan = AbsoluteMultiPointPlan | RelativeMultiPointPlan

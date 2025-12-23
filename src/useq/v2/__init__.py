@@ -24,6 +24,7 @@ from useq.v2._axes_iterator import (
 from useq.v2._channels import ChannelsPlan
 from useq.v2._grid import (
     GridFromEdges,
+    GridFromPolygon,
     GridRowsColumns,
     GridWidthHeight,
     MultiPointPlan,
@@ -92,6 +93,7 @@ __all__ = [
     "EventChannel",
     "EventTransform",
     "GridFromEdges",
+    "GridFromPolygon",
     "GridRowsColumns",
     "GridWidthHeight",
     "HardwareAutofocus",

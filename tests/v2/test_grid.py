@@ -13,6 +13,7 @@ import pytest
 from useq._enums import RelativeTo, Shape
 from useq.v2 import (
     GridFromEdges,
+    GridFromPolygon,
     GridRowsColumns,
     GridWidthHeight,
     MultiPointPlan,
@@ -259,3 +260,113 @@ def test_position_naming() -> None:
         p.name for p in GridRowsColumns(rows=2, columns=2, fov_width=1, fov_height=1)
     ]
     assert names == ["0000", "0001", "0002", "0003"]
+
+
+# ---------------------------------------------------------------------------
+# GridFromPolygon tests
+# ---------------------------------------------------------------------------
+
+
+def test_grid_from_polygon_basic() -> None:
+    """Test basic GridFromPolygon functionality."""
+    # Simple square polygon
+    grid = GridFromPolygon(
+        vertices=[(0, 0), (10, 0), (10, 10), (0, 10)],
+        fov_width=5,
+        fov_height=5,
+    )
+    positions = list(grid)
+    coords = _coords(positions)
+
+    # Should produce a 2x2 grid similar to GridFromEdges with same bounds
+    assert len(positions) == 4
+    # First position should be at center of top-left tile
+    np.testing.assert_allclose(coords[0], (2.5, 7.5), atol=1e-4)
+
+    # Check that all positions are marked as absolute (not relative)
+    for p in positions:
+        assert p.is_relative is False
+
+
+def test_grid_from_polygon_triangle() -> None:
+    """Test GridFromPolygon with a triangular polygon."""
+    vertices = [(0, 0), (4, 0), (2, 4)]
+    grid = GridFromPolygon(
+        vertices=vertices,
+        fov_width=2,
+        fov_height=2,
+        overlap=0,
+    )
+    assert len(grid) == 4
+
+
+def test_grid_from_polygon_with_offset() -> None:
+    """Test GridFromPolygon with offset feature."""
+    vertices = [(0, 0), (4, 0), (2, 4)]
+
+    grid_no_offset = GridFromPolygon(
+        vertices=vertices,
+        fov_width=2,
+        fov_height=2,
+        overlap=0,
+    )
+    assert len(grid_no_offset) == 4
+
+    grid_with_offset = GridFromPolygon(
+        vertices=vertices,
+        offset=1.0,
+        fov_width=2,
+        fov_height=2,
+        overlap=0,
+    )
+    assert len(grid_with_offset) == 13
+
+
+def test_grid_from_polygon_with_convex_hull() -> None:
+    """Test GridFromPolygon with convex_hull feature."""
+    # create a concave polygon (L-shape)
+    vertices = [(0, 0), (3, 0), (3, 1), (1, 1), (1, 3), (0, 3)]
+
+    # grid without convex hull
+    grid_no_hull = GridFromPolygon(
+        vertices=vertices,
+        fov_width=1,
+        fov_height=1,
+        overlap=0,
+    )
+    assert len(grid_no_hull) == 8
+
+    # grid with convex hull (should fill in the concave part)
+    grid_with_hull = GridFromPolygon(
+        vertices=vertices,
+        convex_hull=True,
+        fov_width=1,
+        fov_height=1,
+        overlap=0,
+    )
+    assert len(grid_with_hull) == 9
+
+
+def test_grid_from_polygon_invalid_poly() -> None:
+    """Test that self-intersecting polygons are invalid."""
+    vertices = [(0, 0), (2, 2), (0, 2), (2, 0)]
+    with pytest.raises(ValueError, match="Invalid or self-intersecting polygon"):
+        GridFromPolygon(vertices=vertices, fov_width=1, fov_height=1)
+
+
+def test_grid_from_polygon_plot(monkeypatch: pytest.MonkeyPatch) -> None:
+    mpl = pytest.importorskip("matplotlib.pyplot")
+    monkeypatch.setattr(mpl, "show", lambda: None)
+    GridFromPolygon(
+        vertices=[(0, 0), (10, 0), (10, 10), (0, 10)],
+        fov_width=3,
+        fov_height=3,
+        overlap=0,
+    ).plot()
+
+
+def test_grid_from_polygon_len_requires_fov() -> None:
+    """Test that len() raises error when fov not set."""
+    grid = GridFromPolygon(vertices=[(0, 0), (10, 0), (10, 10), (0, 10)])
+    with pytest.raises(ValueError, match=r"fov_width.*fov_height.*must be set"):
+        len(grid)
