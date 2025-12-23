@@ -195,6 +195,7 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
         return self
 
     @field_validator("keep_shutter_open_across", mode="before")
+    @classmethod
     def _validate_keep_shutter_open_across(cls, v: tuple[str, ...]) -> tuple[str, ...]:
         try:
             v = tuple(v)

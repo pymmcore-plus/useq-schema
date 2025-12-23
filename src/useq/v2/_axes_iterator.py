@@ -439,6 +439,7 @@ class MultiAxisSequence(MutableModel, Generic[EventTco]):
     # ----------------------- Validation -----------------------
 
     @field_validator("axes", mode="after")
+    @classmethod
     def _validate_axes(cls, v: tuple[AxisIterable, ...]) -> tuple[AxisIterable, ...]:
         keys = [x.axis_key for x in v]
         if dupes := {k for k in keys if keys.count(k) > 1}:

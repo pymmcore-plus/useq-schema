@@ -33,6 +33,7 @@ class BPlan(SimpleValueAxis[Position]):
     axis_key: str = "b"
 
     @field_validator("values", mode="before")
+    @classmethod
     def _value_to_position(cls, values: list[float]) -> list[Position]:
         return [Position(z=v) for v in values]
 
@@ -46,6 +47,7 @@ class CPlan(SimpleValueAxis[Channel]):
     axis_key: str = "c"
 
     @field_validator("values", mode="before")
+    @classmethod
     def _value_to_channel(cls, values: list[str]) -> list[Channel]:
         return [Channel(config=v, exposure=None) for v in values]
 

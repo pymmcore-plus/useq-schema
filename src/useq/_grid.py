@@ -67,6 +67,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
     mode: OrderMode = Field(default=OrderMode.row_wise_snake, frozen=True)
 
     @field_validator("overlap", mode="before")
+    @classmethod
     def _validate_overlap(cls, v: Any) -> tuple[float, float]:
         with contextlib.suppress(TypeError, ValueError):
             v = float(v)
@@ -442,6 +443,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         return False
 
     @field_validator("vertices", mode="after")
+    @classmethod
     def validate_vertices(
         cls, value: list[tuple[float, float]]
     ) -> list[tuple[float, float]]:
