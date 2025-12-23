@@ -1,4 +1,4 @@
-# useq-schema v2: Major Architecture Overhaul
+# v2 Migration Guide
 
 ## Overview
 
@@ -23,20 +23,28 @@ new features, how to use and extend them, and the breaking changes from v1.
 #### 1. `AxisIterable[V]` Protocol
 
 The foundation of v2 is the `AxisIterable` protocol, which defines how any axis
-should behave:
+should behave.  In short, an `AxisIterable` is an object that yields values (of
+any type), has an associated `axis_key`, and can contribute to event building
+and skipping logic.
 
 ```python
+from pydantic import BaseModel, Field
+from typing import Generic, Iterator, Mapping, TypeVar
+from abc import abstractmethod
+
+V = TypeVar("V")
+
 class AxisIterable(BaseModel, Generic[V]):
     axis_key: str  # Unique identifier for this axis
-    
+
     @abstractmethod
     def __iter__(self) -> Iterator[V]:
         """Iterate over axis values"""
-    
+
     def should_skip(self, prefix: AxesIndex) -> bool:
         """Return True to skip this combination"""
         return False
-        
+
     def contribute_to_mda_event(
         self, value: V, index: Mapping[str, int]
     ) -> MDAEvent.Kwargs:
@@ -51,24 +59,51 @@ For simple cases where you just want to iterate over a list of values:
 ```python
 class SimpleValueAxis(AxisIterable[V]):
     values: list[V] = Field(default_factory=list)
-    
+
     def __iter__(self) -> Iterator[V | MultiAxisSequence]:
         yield from self.values
+```
+
+```python
+axis = SimpleValueAxis(axis_key="z", values=[0, 1, 2, 3, 4])
+for z in axis:
+    print(z)  # Outputs 0, 1, 2, 3, 4
 ```
 
 #### 3. `MultiAxisSequence[EventT]` - The New Sequence Container
 
 Replaces the old `MDASequence` as the core container, but with generic event
-support:
+support.  A `MultiAxisSequence` holds any number of `AxisIterable` objects,
+defines their order, and manages how the values from each axis get merged into
+an event.
 
 ```python
-class MultiAxisSequence(MutableModel, Generic[EventTco]):
+EventT = TypeVar("EventT")
+
+class MultiAxisSequence(BaseModel, Generic[EventT]):
     axes: tuple[AxisIterable, ...] = ()
     axis_order: Optional[tuple[str, ...]] = None
+
     value: Any = None  # Used when this sequence is nested
-    event_builder: Optional[EventBuilder[EventTco]] = None
+    event_builder: Optional[EventBuilder[EventT]] = None
     transforms: tuple[EventTransform, ...] = ()
 ```
+
+#### 4. `MDASequence`
+
+There *is* still an `MDASequence` class in v2, which is a subclass of
+`MultiAxisSequence` specialized for building `MDAEvent` objects.
+
+```python
+from useq.v2 import MDAEvent
+
+class MDASequence(MultiAxisSequence[MDAEvent]):
+    ...
+```
+
+In other words, `MultiAxisSequence` is a generic iterator over multiple
+axes that can build *any* type of event, while `MDASequence` is a specific
+implementation that builds `MDAEvent` objects (just like v1).
 
 ## New Features
 
@@ -77,15 +112,17 @@ class MultiAxisSequence(MutableModel, Generic[EventTco]):
 You can now define completely custom axes for any dimension:
 
 ```python
+from useq import v2
+
 # Custom axis for laser power
-class LaserPowerAxis(SimpleValueAxis[float]):
+class LaserPowerAxis(v2.SimpleValueAxis[float]):
     axis_key: str = "laser_power"
     
-    def contribute_to_mda_event(self, value: float, index: Mapping[str, int]) -> MDAEvent.Kwargs:
+    def contribute_to_mda_event(self, value: float, index: Mapping[str, int]) -> v2.MDAEvent.Kwargs:
         return {"metadata": {"laser_power": value}}
 
 # Custom axis for temperature
-class TemperatureAxis(AxisIterable[float]):
+class TemperatureAxis(v2.AxisIterable[float]):
     axis_key: str = "temperature"
     min_temp: float
     max_temp: float
@@ -97,17 +134,19 @@ class TemperatureAxis(AxisIterable[float]):
             yield temp
             temp += self.step
             
-    def contribute_to_mda_event(self, value: float, index: Mapping[str, int]) -> MDAEvent.Kwargs:
+    def contribute_to_mda_event(self, value: float, index: Mapping[str, int]) -> v2.MDAEvent.Kwargs:
         return {"metadata": {"temperature": value}}
 ```
 
 ### 2. **Conditional Skipping with `should_skip`**
 
-Implement complex conditional logic to skip certain axis combinations:
+`should_skip` method on any axis allows context-aware skipping of specific
+combinations.  It receives an `AxesIndex`, which contains information on
+the exact value and index being yielded by each axis in this iteration step.
 
 ```python
-class FilteredChannelAxis(SimpleValueAxis[Channel]):
-    def should_skip(self, prefix: AxesIndex) -> bool:
+class FilteredChannelAxis(v2.SimpleValueAxis[v2.Channel]):
+    def should_skip(self, prefix: v2.AxesIndex) -> bool:
         # Skip FITC channel for even numbered Z positions
         z_idx = prefix.get("z", (None, None, None))[0]
         current_channel = prefix.get("c", (None, None, None))[1]
@@ -120,15 +159,22 @@ class FilteredChannelAxis(SimpleValueAxis[Channel]):
 ### 3. **Hierarchical Nested Sequences**
 
 The new system supports arbitrarily nested sequences that can override or extend
-parent axes:
+parent axes.  A `MultiAxisSequence` *itself* can have a `value`, allowing it to
+be used as a yielded value from a parent axis.
+
+In the following example, we define a sub-sequence for a specific position that
+adds a temperature axis and overrides the Z plan defined in the parent sequence:
 
 ```python
-# Position with custom sub-sequence
-sub_sequence = v2.MultiAxisSequence(
-    value=Position(x=10, y=20),  # The value represents this position
+from useq import v2
+# Position with custom sub-sequence (uses MDASequence, which StagePositions accepts)
+sub_sequence = v2.MDASequence(
+    value=v2.Position(x=10, y=20),  # The value represents this position
     axes=(
-        CustomTemperatureAxis(values=[20, 25, 30]),  # Add temperature dimension
-        v2.ZRangeAround(range=2, step=0.5),  # Override parent Z plan
+        # Add temperature dimension
+        v2.SimpleValueAxis(axis_key="temperature", values=[20, 25, 30]),
+        # Override parent Z plan
+        v2.ZRangeAround(range=2, step=0.5),
     ),
     axis_order=("temperature", "z")
 )
@@ -136,7 +182,7 @@ sub_sequence = v2.MultiAxisSequence(
 main_sequence = v2.MDASequence(
     axes=(
         v2.TIntervalLoops(interval=1.0, loops=5),
-        v2.StagePositions([sub_sequence, Position(x=0, y=0)]),
+        v2.StagePositions(values=[sub_sequence, v2.Position(x=0, y=0)]),
         v2.ZRangeAround(range=4, step=1.0),  # This gets overridden for the first position
     )
 )
@@ -144,10 +190,13 @@ main_sequence = v2.MDASequence(
 
 ### 4. **Event Transform Pipeline**
 
-Replace the old hardcoded event modifications with a composable transform
-pipeline:
+Transforms allow you to modify events after they are built but before they are
+yielded. This replaces the old hardcoded event modification logic with a
+flexible, composable pipeline:
 
 ```python
+from useq.v2 import KeepShutterOpenTransform, EventTransform
+
 class CustomTransform(EventTransform[MDAEvent]):
     def __call__(
         self,
@@ -159,29 +208,33 @@ class CustomTransform(EventTransform[MDAEvent]):
         # Modify event
         if event.index.get("c") == 0:  # First channel
             event = event.model_copy(update={"exposure": 100})
-        
+
         # Can return multiple events, no events, or modify the event
         return [event]
 
 seq = v2.MDASequence(
-    axes=(...),
-    transforms=(CustomTransform(), v2.KeepShutterOpenTransform(("z",)))
+    channels=["DAPI", "FITC"],  # Using legacy API for brevity
+    transforms=(CustomTransform(), KeepShutterOpenTransform(("z",)))
 )
 ```
 
 #### 4.1 **Built-in Transforms**
 
-v2 provides several built-in transforms that replicate v1 behavior:
+v2 provides several built-in transforms that replicate v1 behavior.
+Note: transforms are currently available from `useq.v2._transformers`:
 
 ```python
-# Autofocus transform - inserts hardware autofocus events
-v2.AutoFocusTransform(autofocus_plan)
+from useq.v2 import (
+    AutoFocusTransform,
+    KeepShutterOpenTransform,
+    ResetEventTimerTransform,
+)
 
 # Shutter management - keeps shutter open across specified axes
-v2.KeepShutterOpenTransform(("z", "c"))
+KeepShutterOpenTransform(("z", "c"))
 
 # Event timing - marks first frame of each timepoint for timer reset
-v2.ResetEventTimerTransform()
+ResetEventTimerTransform()
 ```
 
 #### 4.2 **Non-Imaging Events with Transforms**
@@ -244,15 +297,17 @@ seq = v2.MDASequence(
 Customize how raw axis data gets converted into events:
 
 ```python
-class CustomEventBuilder(EventBuilder[MyCustomEvent]):
+class MyCustomEvent: ...
+
+class CustomEventBuilder(v2.EventBuilder[MyCustomEvent]):
     def __call__(
-        self, axes_index: AxesIndex, context: tuple[MultiAxisSequence, ...]
+        self, axes_index: v2.AxesIndex, context: tuple[v2.MultiAxisSequence, ...]
     ) -> MyCustomEvent:
         # Build your custom event type
         return MyCustomEvent(...)
 
 seq = v2.MultiAxisSequence(
-    axes=(...),
+    axes=(),
     event_builder=CustomEventBuilder()
 )
 ```
@@ -262,7 +317,7 @@ seq = v2.MultiAxisSequence(
 Unlike v1, v2 supports infinite sequences:
 
 ```python
-class InfiniteTimeAxis(AxisIterable[float]):
+class InfiniteTimeAxis(v2.AxisIterable[float]):
     axis_key: str = "t"
     interval: float = 1.0
     
@@ -290,15 +345,16 @@ seq = v2.MDASequence(
 )
 
 # Internally converted to:
-seq = v2.MDASequence(
+seq2 = v2.MDASequence(
     axes=(
         v2.TIntervalLoops(interval=1.0, loops=5),
-        v2.StagePositions([v2.Position(x=10, y=20, z=5)]),
+        v2.StagePositions(values=[v2.Position(x=10, y=20, z=5)]),
+        v2.ChannelsPlan(values=[v2.Channel(config="DAPI"), v2.Channel(config="FITC")]),
         v2.ZRangeAround(range=4, step=1),
-        v2.ChannelsPlan(values=[Channel(config="DAPI"), Channel(config="FITC")]),
     ),
-    axis_order=("t", "p", "z", "c")  # Derived from AXES constant
 )
+
+assert list(seq) == list(seq2)
 ```
 
 ### Breaking Changes
@@ -317,17 +373,22 @@ logic.
 #### 2. **Shape and Sizes Properties**
 
 ```python
+from useq import MDASequence
+from useq import v2
+
 # v1
+seq = MDASequence()
 seq.shape  # Returns tuple of sizes
 seq.sizes  # Returns mapping of axis -> size
 
 # v2 - DEPRECATED
-seq.shape  # Deprecated - raises FutureWarning
-seq.sizes  # Deprecated - raises FutureWarning
+seq2 = v2.MDASequence()
+seq2.shape  # Deprecated - raises FutureWarning
+seq2.sizes  # Deprecated - raises FutureWarning
 
 # v2 - New approach
-len(axis) for axis in seq.axes  # Get size per axis
-seq.is_finite()  # Check if sequence is finite
+[len(axis) for axis in seq2.axes]  # Get size per axis
+seq2.is_finite()  # Check if sequence is finite
 ```
 
 #### 3. **Axis Access**
@@ -341,12 +402,16 @@ seq.stage_positions
 seq.grid_plan
 
 # v2 - Legacy properties still work but deprecated
-seq.time_plan  # Returns the time axis or None
-seq.z_plan     # Returns the z axis or None
+seq2.time_plan  # Returns the time axis or None
+seq2.z_plan     # Returns the z axis or None
 
 # v2 - New approach
-time_axis = next((ax for ax in seq.axes if ax.axis_key == "t"), None)
-z_axis = next((ax for ax in seq.axes if ax.axis_key == "z"), None)
+time_axis = next((ax for ax in seq2.axes if ax.axis_key == "t"), None)
+z_axis = next((ax for ax in seq2.axes if ax.axis_key == "z"), None)
+
+# each of which have convenience methods:
+time_axis = seq2.time_plan
+z_axis = seq2.z_plan
 ```
 
 #### 4. **Custom Skip Logic**
@@ -408,7 +473,7 @@ All the original v1 plans are now `AxisIterable` implementations:
 ### Creating a Custom Scientific Axis
 
 ```python
-class PHAxis(AxisIterable[float]):
+class PHAxis(v2.AxisIterable[float]):
     """Axis for pH titration experiments."""
     axis_key: str = "ph"
     start_ph: float = 6.0
@@ -428,38 +493,52 @@ class PHAxis(AxisIterable[float]):
     
     def should_skip(self, prefix: AxesIndex) -> bool:
         # Skip pH 7.5+ for channel index > 2
-        channel_idx = prefix.get("c", (None, None, None))[0] 
-        return channel_idx is not None and channel_idx > 2 and value >= 7.5
+        channel_idx = prefix.get("c", (None, None, None))[0]
+        ph_value = prefix.get("ph", (None, None, None))[1]
+        return channel_idx is not None and channel_idx > 2 and ph_value >= 7.5
 ```
 
 ### Complex Nested Workflow
 
 ```python
+from useq import v2
+
 # Different regions with different imaging parameters
-region1 = v2.MultiAxisSequence(
+region1 = v2.MDASequence(
     value=v2.Position(x=0, y=0, name="Region1"),
     axes=(
         v2.ZRangeAround(range=10, step=0.2),  # High-res Z
-        v2.ChannelsPlan(["DAPI", "FITC", "Cy3"]),  # 3 channels
+        v2.ChannelsPlan(values=["DAPI", "FITC", "Cy3"]),  # 3 channels
     )
 )
 
-region2 = v2.MultiAxisSequence(
-    value=v2.Position(x=100, y=100, name="Region2"), 
+region2 = v2.MDASequence(
+    value=v2.Position(x=100, y=100, name="Region2"),
     axes=(
         v2.ZRangeAround(range=20, step=0.5),  # Lower-res Z
-        v2.ChannelsPlan(["DAPI", "Cy5"]),  # Only 2 channels
+        v2.ChannelsPlan(values=["DAPI", "Cy5"]),  # Only 2 channels
         PHAxis(start_ph=6.5, end_ph=7.5, steps=5),  # pH titration
     )
 )
 
+class CustomTransform:
+    def __call__(
+        self,
+        event: v2.MDAEvent,
+        *,
+        prev_event: v2.MDAEvent | None,
+        make_next_event: Callable[[], v2.MDAEvent | None],
+    ) -> Iterable[v2.MDAEvent]:
+        # possibly modify event... based on conditions
+        yield event
+
 main_seq = v2.MDASequence(
     axes=(
         v2.TIntervalLoops(interval=60, loops=10),  # Every minute for 10 minutes
-        v2.StagePositions([region1, region2]),
+        v2.StagePositions(values=[region1, region2]),
     ),
     transforms=(
-        CustomExposureTransform(),  # Adjust exposure per region
+        CustomTransform(),
         v2.KeepShutterOpenTransform(("z", "c")),  # Keep shutter open for Z and C
     )
 )

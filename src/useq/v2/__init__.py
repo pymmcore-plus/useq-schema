@@ -14,7 +14,13 @@ from useq._mda_event import MDAEvent, PropertyTuple, SLMImage
 from useq._plate import WellPlate, WellPlatePlan
 from useq._plate_registry import register_well_plates, registered_well_plate_keys
 from useq._point_visiting import OrderMode, TraversalOrder
-from useq.v2._axes_iterator import AxisIterable, MultiAxisSequence, SimpleValueAxis
+from useq.v2._axes_iterator import (
+    AxisIterable,
+    EventBuilder,
+    EventTransform,
+    MultiAxisSequence,
+    SimpleValueAxis,
+)
 from useq.v2._channels import ChannelsPlan
 from useq.v2._grid import (
     GridFromEdges,
@@ -37,6 +43,11 @@ from useq.v2._time import (
     TimePlan,
     TIntervalDuration,
     TIntervalLoops,
+)
+from useq.v2._transformers import (
+    AutoFocusTransform,
+    KeepShutterOpenTransform,
+    ResetEventTimerTransform,
 )
 from useq.v2._z import (
     AnyZPlan,
@@ -70,17 +81,21 @@ __all__ = [
     "AnyTimePlan",
     "AnyZPlan",
     "AutoFocusPlan",
+    "AutoFocusTransform",
     "AxesBasedAF",
     "Axis",
     "AxisIterable",
     "Channel",
     "ChannelsPlan",
     "CustomAction",
+    "EventBuilder",
     "EventChannel",
+    "EventTransform",
     "GridFromEdges",
     "GridRowsColumns",
     "GridWidthHeight",
     "HardwareAutofocus",
+    "KeepShutterOpenTransform",
     "MDAEvent",
     "MDASequence",
     "MultiAxisSequence",
@@ -94,6 +109,7 @@ __all__ = [
     "RelativeMultiPointPlan",
     "RelativePosition",
     "RelativeTo",
+    "ResetEventTimerTransform",
     "SLMImage",
     "Shape",
     "SimpleValueAxis",
@@ -119,6 +135,7 @@ __all__ = [
     "registered_well_plate_keys",
 ]
 
+MDASequence.model_rebuild()
 
 for item in list(globals().values()):
     if (
