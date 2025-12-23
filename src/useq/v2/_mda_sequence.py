@@ -70,31 +70,33 @@ class MDAEventBuilder(EventBuilder[MDAEvent]):
         event_data: dict = {"index": index}
         abs_pos: dict[str, float] = {}
 
-        # First pass: collect all contributions and detect conflicts
         for axis_key, contrib in contributions:
+            is_relative = contrib.get("is_relative", False)
+
             for key, val in contrib.items():
+                if key == "is_relative":
+                    continue  # handled above, don't add to event_data
+
                 if key.endswith("_pos") and val is not None:
-                    if key in abs_pos and abs_pos[key] != val:
-                        warnings.warn(
-                            f"Conflicting absolute position from {axis_key}: "
-                            f"existing {key}={abs_pos[key]}, new {key}={val}",
-                            UserWarning,
-                            stacklevel=3,
-                        )
-                    abs_pos[key] = val
+                    if is_relative:
+                        # Relative positions are added to the accumulated value
+                        abs_pos.setdefault(key, 0.0)
+                        abs_pos[key] += val
+                    else:
+                        # Absolute positions: warn on conflict, then overwrite
+                        if key in abs_pos and abs_pos[key] != val:
+                            warnings.warn(
+                                f"Conflicting absolute position from {axis_key}: "
+                                f"existing {key}={abs_pos[key]}, new {key}={val}",
+                                UserWarning,
+                                stacklevel=3,
+                            )
+                        abs_pos[key] = val
                 elif key in event_data and event_data[key] != val:  # pragma: no cover
                     # Could implement different strategies here
                     raise ValueError(f"Conflicting values for {key} from {axis_key}")
                 else:
                     event_data[key] = val
-
-        # Second pass: handle relative positions
-        for _, contrib in contributions:
-            for key, val in contrib.items():
-                if key.endswith("_pos_rel") and val is not None:
-                    abs_key = key.replace("_rel", "")
-                    abs_pos.setdefault(abs_key, 0.0)
-                    abs_pos[abs_key] += val
 
         # Merge final positions
         event_data.update(abs_pos)

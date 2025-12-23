@@ -65,7 +65,7 @@ class TestZTopBottom:
         """Test contribute_to_mda_event method."""
         plan = ZTopBottom(top=10.0, bottom=0.0, step=2.0)
         contribution = plan.contribute_to_mda_event(Position(z=5.0), {"z": 2})
-        assert contribution == {"z_pos": 5.0}
+        assert contribution == {"z_pos": 5.0, "is_relative": False}
 
 
 class TestZRangeAround:
@@ -284,7 +284,7 @@ def test_contribute_to_mda_event_integration() -> None:
 
     # Test contribution
     contribution = plan.contribute_to_mda_event(Position(z=7.5), {"z": 1})
-    assert contribution == {"z_pos": 7.5}
+    assert contribution == {"z_pos": 7.5, "is_relative": False}
 
     # Test that the contribution can be used to create an MDAEvent
     event_data = {"index": {"z": 1}, **contribution}

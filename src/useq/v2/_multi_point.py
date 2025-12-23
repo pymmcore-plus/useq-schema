@@ -31,20 +31,19 @@ class MultiPositionPlan(AxisIterable[Position]):
 
     def contribute_to_mda_event(
         self, value: Position, index: Mapping[str, int]
-    ) -> MDAEvent.Kwargs:
-        out: dict = {}
-        rel = "_rel" if self.is_relative else ""
+    ) -> MDAEvent.KwargsContribution:
+        out: MDAEvent.KwargsContribution = {}
         if value.x is not None:
-            out[f"x_pos{rel}"] = value.x
+            out["x_pos"] = value.x
         if value.y is not None:
-            out[f"y_pos{rel}"] = value.y
+            out["y_pos"] = value.y
         if value.z is not None:
-            out[f"z_pos{rel}"] = value.z
-        # if value.name is not None:
-        # out["pos_name"] = value.name
-
-        # TODO: deal with the _rel suffix hack
-        return out  # type: ignore[return-value]
+            out["z_pos"] = value.z
+        # Note: pos_name is intentionally NOT included here for grid plans.
+        # In v1, pos_name comes from stage positions, not grid positions.
+        if out:
+            out["is_relative"] = value.is_relative
+        return out
 
     def plot(self, *, show: bool = True) -> Axes:
         """Plot the positions in the plan."""

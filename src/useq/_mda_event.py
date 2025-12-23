@@ -277,3 +277,6 @@ class MDAEvent(UseqModel):
             action: AnyAction
             keep_shutter_open: bool
             reset_event_timer: bool
+
+        class KwargsContribution(Kwargs, total=False):
+            is_relative: bool

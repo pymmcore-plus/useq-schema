@@ -69,13 +69,10 @@ class ZPlan(AxisIterable[Position], FrozenModel):
 
     def contribute_to_mda_event(
         self, value: Position, index: Mapping[str, int]
-    ) -> MDAEvent.Kwargs:
+    ) -> MDAEvent.KwargsContribution:
         """Contribute Z position to the MDA event."""
         if value.z is not None:
-            if self.is_relative:
-                return {"z_pos_rel": value.z}  # type: ignore [typeddict-unknown-key]
-            else:
-                return {"z_pos": value.z}
+            return {"z_pos": value.z, "is_relative": value.is_relative}
         return {}
 
     @deprecated(
