@@ -8,6 +8,7 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
+    Literal,
     TypeAlias,
 )
 
@@ -15,23 +16,17 @@ import numpy as np
 from annotated_types import Ge, Gt
 from pydantic import Field, PrivateAttr, field_validator, model_validator
 from shapely import Polygon, box, prepared
-from typing_extensions import Self
+from typing_extensions import Self, deprecated
 
-from useq._enums import RelativeTo, Shape
+from useq._enums import Axis, RelativeTo, Shape
 from useq._point_visiting import OrderMode, TraversalOrder
-from useq._position import (
-    AbsolutePosition,
-    PositionT,
-    RelativePosition,
-    _MultiPointPlan,
-)
+from useq.v2._multi_point import MultiPositionPlan
+from useq.v2._position import Position
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from shapely.prepared import PreparedGeometry
 
-
-if TYPE_CHECKING:
     PointGenerator: TypeAlias = Callable[
         [np.random.RandomState, int, float, float], Iterable[tuple[float, float]]
     ]
@@ -40,7 +35,7 @@ MIN_RANDOM_POINTS = 10000
 
 
 # used in iter_indices below, to determine the order in which indices are yielded
-class _GridPlan(_MultiPointPlan[PositionT]):
+class _GridPlan(MultiPositionPlan):
     """Base class for all grid plans.
 
     Attributes
@@ -63,11 +58,12 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         Engines MAY override this even if provided.
     """
 
+    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)
+
     overlap: tuple[float, float] = Field(default=(0.0, 0.0), frozen=True)
     mode: OrderMode = Field(default=OrderMode.row_wise_snake, frozen=True)
 
     @field_validator("overlap", mode="before")
-    @classmethod
     def _validate_overlap(cls, v: Any) -> tuple[float, float]:
         with contextlib.suppress(TypeError, ValueError):
             v = float(v)
@@ -93,14 +89,24 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         """Return the number of columns, given a grid step size."""
         raise NotImplementedError
 
+    @deprecated(
+        "num_positions() is deprecated, use len(grid_plan) instead.",
+        category=UserWarning,
+        stacklevel=2,
+    )
     def num_positions(self) -> int:
+        """Return the number of positions in the grid."""
+        return len(self)
+
+    def __len__(self) -> int:
         """Return the number of individual positions in the grid.
 
         Note: For GridFromEdges and GridWidthHeight, this will depend on field of view
         size. If no field of view size is provided, the number of positions will be 1.
         """
-        if (self.fov_width is None or self.fov_height is None) and isinstance(
-            self, (GridFromEdges, GridWidthHeight)
+        if isinstance(self, (GridFromEdges, GridWidthHeight)) and (
+            # type ignore is because mypy thinks self is Never here...
+            self.fov_width is None or self.fov_height is None
         ):
             raise ValueError(
                 "Retrieving the number of positions in a GridFromEdges or "
@@ -118,7 +124,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         fov_height: float | None = None,
         *,
         order: OrderMode | None = None,
-    ) -> Iterator[PositionT]:
+    ) -> Iterator[Position]:
         """Iterate over all grid positions, given a field of view size."""
         _fov_width = fov_width or self.fov_width or 1.0
         _fov_height = fov_height or self.fov_height or 1.0
@@ -130,17 +136,17 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         x0 = self._offset_x(dx)
         y0 = self._offset_y(dy)
 
-        pos_cls = RelativePosition if self.is_relative else AbsolutePosition
         for idx, (r, c) in enumerate(order.generate_indices(rows, cols)):
-            yield pos_cls(  # type: ignore [misc]
+            yield Position(
                 x=x0 + c * dx,
                 y=y0 - r * dy,
-                row=r,
-                col=c,
+                # row=r,
+                # col=c,
+                is_relative=self.is_relative,
                 name=f"{str(idx).zfill(4)}",
             )
 
-    def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
+    def __iter__(self) -> Iterator[Position]:  # type: ignore [override]
         yield from self.iter_grid_positions()
 
     def _step_size(self, fov_width: float, fov_height: float) -> tuple[float, float]:
@@ -149,7 +155,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         return dx, dy
 
 
-class GridFromEdges(_GridPlan[AbsolutePosition]):
+class GridFromEdges(_GridPlan):
     """Yield absolute stage positions to cover a bounded area.
 
     The bounded area is defined by top, left, bottom and right edges in
@@ -224,14 +230,7 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         # start the _centre_ half a FOV down from the top edge
         return max(self.top, self.bottom) - (self.fov_height or 0) / 2
 
-    def plot(
-        self,
-        *,
-        axes: Axes | None = None,
-        aspect_ratio_multiplier: float = 5.0,
-        hide_axes: bool = False,
-        show: bool = True,
-    ) -> Axes:
+    def plot(self, *, show: bool = True) -> Axes:
         """Plot the positions in the plan."""
         from useq._plot import plot_points
 
@@ -240,23 +239,22 @@ class GridFromEdges(_GridPlan[AbsolutePosition]):
         else:
             rect = None
 
+        # Convert bounding box to polygon vertices
+        bounding_poly = [
+            (self.left, self.top),
+            (self.right, self.top),
+            (self.right, self.bottom),
+            (self.left, self.bottom),
+        ]
         return plot_points(
-            self,
+            self,  # type: ignore [arg-type]
             rect_size=rect,
-            bounding_poly=[
-                (self.left, self.top),
-                (self.right, self.top),
-                (self.right, self.bottom),
-                (self.left, self.bottom),
-            ],
-            ax=axes,
-            aspect_ratio_multiplier=aspect_ratio_multiplier,
-            hide_axes=hide_axes,
+            bounding_poly=bounding_poly,
             show=show,
         )
 
 
-class GridRowsColumns(_GridPlan[RelativePosition]):
+class GridRowsColumns(_GridPlan):
     """Grid plan based on number of rows and columns.
 
     Attributes
@@ -311,10 +309,7 @@ class GridRowsColumns(_GridPlan[RelativePosition]):
         )
 
 
-GridRelative = GridRowsColumns
-
-
-class GridWidthHeight(_GridPlan[RelativePosition]):
+class GridWidthHeight(_GridPlan):
     """Grid plan based on total width and height.
 
     Attributes
@@ -371,7 +366,7 @@ class GridWidthHeight(_GridPlan[RelativePosition]):
         )
 
 
-class GridFromPolygon(_GridPlan[AbsolutePosition]):
+class GridFromPolygon(_GridPlan):
     """Grid plan based on a polygon boundary.
 
     This grid plan generates absolute stage positions that cover a polygon region.
@@ -443,7 +438,6 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         return False
 
     @field_validator("vertices", mode="after")
-    @classmethod
     def validate_vertices(
         cls, value: list[tuple[float, float]]
     ) -> list[tuple[float, float]]:
@@ -484,7 +478,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         """Return the prepared polygon for faster intersection tests."""
         return prepared.prep(self.poly)
 
-    def num_positions(self) -> int:
+    def __len__(self) -> int:
         """Return the number of positions in the grid."""
         if self.fov_width is None or self.fov_height is None:
             raise ValueError("`fov_width` and `fov_height` must be set!")
@@ -494,7 +488,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             )
         )
 
-    def __iter__(self) -> Iterator[AbsolutePosition]:  # type: ignore [override]
+    def __iter__(self) -> Iterator[Position]:  # type: ignore [override]
         yield from self.iter_grid_positions()
 
     def iter_grid_positions(
@@ -503,7 +497,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         fov_height: float | None = None,
         *,
         order: OrderMode | None = None,
-    ) -> Iterator[AbsolutePosition]:
+    ) -> Iterator[Position]:
         """Iterate over all grid positions, given a field of view size."""
         try:
             pos = self._cached_tiles(
@@ -517,7 +511,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         except ValueError:
             pos = []
         for idx, (x, y) in enumerate(pos):
-            yield AbsolutePosition(x=x, y=y, name=f"{str(idx).zfill(4)}")
+            yield Position(x=x, y=y, name=f"{str(idx).zfill(4)}", is_relative=False)
 
     def _cached_tiles(
         self,
@@ -582,7 +576,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         span = abs(max_y - min_y)
         if span <= self.fov_height:
             return 1
-        return math.ceil((span - self.fov_height) / dy) + 1  # type: ignore[no-any-return]
+        return math.ceil((span - self.fov_height) / dy) + 1  # type: ignore [no-any-return]
 
     def _ncolumns(self, dx: float) -> int:
         """Return the number of columns for the polygon bounding box."""
@@ -592,26 +586,19 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         span = abs(max_x - min_x)
         if span <= self.fov_width:
             return 1
-        return math.ceil((span - self.fov_width) / dx) + 1  # type: ignore[no-any-return]
+        return math.ceil((span - self.fov_width) / dx) + 1  # type: ignore [no-any-return]
 
     def _offset_x(self, dx: float) -> float:
         """Return the x offset for the first column."""
         min_x, _, _, _ = self.poly.bounds
-        return min_x + (self.fov_width or 0) / 2  # type: ignore[no-any-return]
+        return min_x + (self.fov_width or 0) / 2  # type: ignore [no-any-return]
 
     def _offset_y(self, dy: float) -> float:
         """Return the y offset for the first row."""
         _, _, _, max_y = self.poly.bounds
-        return max_y - (self.fov_height or 0) / 2  # type: ignore[no-any-return]
+        return max_y - (self.fov_height or 0) / 2  # type: ignore [no-any-return]
 
-    def plot(
-        self,
-        *,
-        axes: Axes | None = None,
-        aspect_ratio_multiplier: float = 5.0,
-        hide_axes: bool = False,
-        show: bool = True,
-    ) -> Axes:
+    def plot(self, *, show: bool = True) -> Axes:
         """Plot the positions in the plan."""
         from useq._plot import plot_points
 
@@ -620,16 +607,10 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         else:
             rect = None
 
-        # Get polygon bounds for plotting
-        _min_x, _min_y, _max_x, _max_y = self.poly.bounds
-
         return plot_points(
-            self,
+            self,  # type: ignore [arg-type]
             rect_size=rect,
             bounding_poly=[(x, y) for x, y in self.poly.exterior.coords],
-            ax=axes,
-            aspect_ratio_multiplier=aspect_ratio_multiplier,
-            hide_axes=hide_axes,
             show=show,
         )
 
@@ -637,7 +618,7 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
 # ------------------------ RANDOM ------------------------
 
 
-class RandomPoints(_MultiPointPlan[RelativePosition]):
+class RandomPoints(MultiPositionPlan):
     """Yield random points in a specified geometric shape.
 
     Attributes
@@ -668,6 +649,8 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
         points; this likely only makes sense when `random_seed` is provided.
     """
 
+    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)
+
     num_points: Annotated[int, Gt(0)]
     max_width: Annotated[float, Gt(0)] = 1
     max_height: Annotated[float, Gt(0)] = 1
@@ -675,7 +658,7 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     random_seed: int | None = None
     allow_overlap: bool = True
     order: TraversalOrder | None = TraversalOrder.TWO_OPT
-    start_at: RelativePosition | Annotated[int, Ge(0)] = 0
+    start_at: Position | Annotated[int, Ge(0)] = 0
 
     @model_validator(mode="after")
     def _validate_startat(self) -> Self:
@@ -688,15 +671,15 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
             self.start_at = self.num_points - 1
         return self
 
-    def __iter__(self) -> Iterator[RelativePosition]:  # type: ignore [override]
+    def __iter__(self) -> Iterator[Position]:  # type: ignore [override]
         seed = np.random.RandomState(self.random_seed)
         func = _POINTS_GENERATORS[self.shape]
 
         points: list[tuple[float, float]] = []
         needed_points = self.num_points
         start_at = self.start_at
-        if isinstance(start_at, RelativePosition):
-            points = [(start_at.x, start_at.y)]
+        if isinstance(start_at, Position):
+            points = [(start_at.x, start_at.y)]  # type: ignore [list-item]
             needed_points -= 1
             start_at = 0
 
@@ -730,7 +713,7 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
             points = self.order(points, start_at=start_at)  # type: ignore [assignment]
 
         for idx, (x, y) in enumerate(points):
-            yield RelativePosition(x=x, y=y, name=f"{str(idx).zfill(4)}")
+            yield Position(x=x, y=y, name=f"{str(idx).zfill(4)}", is_relative=True)
 
     def num_positions(self) -> int:
         return self.num_points
@@ -788,8 +771,6 @@ _POINTS_GENERATORS: dict[Shape, PointGenerator] = {
 
 
 # all of these support __iter__() -> Iterator[PositionBase] and num_positions() -> int
-RelativeMultiPointPlan = (
-    GridRowsColumns | GridWidthHeight | RandomPoints | RelativePosition
-)
+RelativeMultiPointPlan = GridRowsColumns | GridWidthHeight | RandomPoints
 AbsoluteMultiPointPlan = GridFromEdges | GridFromPolygon
 MultiPointPlan = AbsoluteMultiPointPlan | RelativeMultiPointPlan

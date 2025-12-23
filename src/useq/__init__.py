@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
+from useq._enums import Axis, Shape
 from useq._grid import (
     GridFromEdges,
     GridFromPolygon,
@@ -13,7 +14,6 @@ from useq._grid import (
     MultiPointPlan,
     RandomPoints,
     RelativeMultiPointPlan,
-    Shape,
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
 from useq._mda_event import Channel as EventChannel
@@ -30,7 +30,6 @@ from useq._time import (
     TIntervalDuration,
     TIntervalLoops,
 )
-from useq._utils import Axis
 from useq._z import (
     AnyZPlan,
     ZAboveBelow,
