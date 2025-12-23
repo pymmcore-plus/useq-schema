@@ -63,10 +63,7 @@ plot = [
 test = ["psygnal>=0.13.0", "pytest>=8.0", "pytest-cov>=6.1.1", "pyyaml>=6.0.2"]
 dev = [
     { include-group = "test" },
-    "matplotlib >=3.10.5; python_version >= '3.14'",
-    "matplotlib >=3.9.2; python_version >= '3.13'",
-    "matplotlib >=3.7.3; python_version >= '3.12'",
-    "matplotlib >=3.7",
+    "useq-schema[plot]",
     "ipython>=8.18.1",
     "mypy>=1.15.0",
     "pdbpp>=0.11.6 ; sys_platform != 'win32'",
@@ -147,6 +144,8 @@ testpaths = ["tests"]
 filterwarnings = [
     "error",
     "ignore:'mode' parameter is deprecated and will be removed:DeprecationWarning",
+    "ignore:'parseString' deprecated::matplotlib",
+    "ignore:'resetCache' deprecated::matplotlib",
 ]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
