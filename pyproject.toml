@@ -146,6 +146,7 @@ filterwarnings = [
     "ignore:'mode' parameter is deprecated and will be removed:DeprecationWarning",
     "ignore:'parseString' deprecated::matplotlib",
     "ignore:'resetCache' deprecated::matplotlib",
+    "ignore:'oneOf' deprecated::matplotlib",
 ]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
