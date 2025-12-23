@@ -1,6 +1,13 @@
+from contextlib import suppress
+
 import pytest
 
 from useq import MDASequence
+
+with suppress(ImportError):
+    import matplotlib
+
+    matplotlib.use("Agg")
 
 
 @pytest.fixture

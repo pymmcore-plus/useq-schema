@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING, Any, cast
 from typing_extensions import TypedDict
 
 from useq._channel import Channel  # noqa: TC001  # noqa: TCH001
+from useq._enums import AXES, Axis
 from useq._mda_event import Channel as EventChannel
 from useq._mda_event import MDAEvent, ReadOnlyDict
-from useq._utils import AXES, Axis, _has_axes
+from useq._utils import _has_axes
 from useq._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
 
 if TYPE_CHECKING:

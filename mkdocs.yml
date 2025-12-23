@@ -21,6 +21,7 @@ nav:
         - schema/axes.md
         - schema/hardware_autofocus.md
       - api.md
+      - v2-migration.md
   - pymmcore-widgets: /pymmcore-widgets/
   - napari-micromanager: /napari-micromanager/
 

@@ -14,13 +14,14 @@ from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from useq._base_model import UseqModel
 from useq._channel import Channel
+from useq._enums import AXES, Axis
 from useq._grid import MultiPointPlan  # noqa: TC001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._plate import WellPlatePlan
 from useq._position import Position, PositionBase
 from useq._time import AnyTimePlan  # noqa: TC001
-from useq._utils import AXES, Axis, TimeEstimate, estimate_sequence_duration
+from useq._utils import TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TC001
 
 if TYPE_CHECKING:
@@ -433,8 +434,8 @@ class MDASequence(UseqModel):
     def iter_events(self) -> Iterator[MDAEvent]:
         """Iterate over all events in the MDA sequence.
 
-        See source of [useq._mda_sequence.iter_sequence][] for details on how
-        events are constructed and yielded.
+        See source of [`iter_sequence`][useq._iter_sequence.iter_sequence] for
+        details on how events are constructed and yielded.
 
         Yields
         ------
