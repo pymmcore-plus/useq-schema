@@ -19,7 +19,9 @@ DOCS_PATH = Path(__file__).parent.parent.parent / "docs" / "v2-migration.md"
 CODE_PATTERN = re.compile(r"```python\n(.*?)```", re.DOTALL)
 
 
-def test_code_block(capsys: pytest.CaptureFixture) -> None:
+@pytest.mark.filterwarnings("ignore:The shape of an MDASequence is ill-defined")
+@pytest.mark.filterwarnings("ignore:The sizes of an MDASequence is ill-defined")
+def test_v2_docs_code(capsys: pytest.CaptureFixture) -> None:
     """Test that a code block from the documentation runs without error."""
     exec_globals: dict[str, Any] = {}
     docs_src = DOCS_PATH.read_text()
