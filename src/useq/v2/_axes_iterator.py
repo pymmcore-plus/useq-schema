@@ -146,11 +146,6 @@ Usage Notes:
 - The should_skip mechanism gives each axis an opportunity to veto a final combination.
   By default, SimpleValueAxis does not skip any combination, but you can subclass it to
   implement custom filtering logic.
-
-This module is intended for cases where complex, declarative multidimensional iteration
-is required—such as in microscope acquisitions, high-content imaging, or other
-experimental designs where the sequence of events must be generated in a flexible,
-hierarchical manner.
 """
 
 from __future__ import annotations
