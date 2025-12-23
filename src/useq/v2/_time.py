@@ -4,10 +4,10 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Annotated, Any, cast
 
 from pydantic import (
+    AfterValidator,
     BeforeValidator,
     Field,
     PlainSerializer,
-    field_validator,
     model_validator,
 )
 from typing_extensions import deprecated
@@ -28,6 +28,15 @@ TimeDelta = Annotated[
     BeforeValidator(lambda v: timedelta(**v) if isinstance(v, dict) else v),
     PlainSerializer(lambda td: cast("timedelta", td).total_seconds()),
 ]
+
+
+def _ensure_non_negative(td: timedelta) -> timedelta:
+    if td.total_seconds() < 0:
+        raise ValueError("TimeDelta must be non-negative")
+    return td
+
+
+NonNegativeTimeDelta = Annotated[TimeDelta, AfterValidator(_ensure_non_negative)]
 
 
 class TimePlan(AxisIterable[float], FrozenModel):
@@ -124,16 +133,8 @@ class TDurationLoops(_SizedTimePlan):
         of conflict. By default, `False`.
     """
 
-    duration: TimeDelta
+    duration: NonNegativeTimeDelta
     loops: int = Field(..., gt=0)
-
-    # FIXME: add to pydantic type hint
-    @field_validator("duration")
-    @classmethod
-    def _validate_duration(cls, v: timedelta) -> timedelta:
-        if v.total_seconds() < 0:
-            raise ValueError("Duration must be non-negative")
-        return v
 
     @property
     def interval(self) -> timedelta:
@@ -161,7 +162,7 @@ class TIntervalDuration(TimePlan):
     """
 
     interval: TimeDelta
-    duration: TimeDelta | None = None
+    duration: NonNegativeTimeDelta | None = None
     prioritize_duration: bool = True
 
     def __iter__(self) -> Iterator[float]:  # type: ignore[override]

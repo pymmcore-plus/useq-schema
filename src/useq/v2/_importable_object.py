@@ -58,7 +58,6 @@ class ImportableObject:
             val_type = type(value)
             return f"{val_type.__module__}.{val_type.__qualname__}"
 
-        # TODO: check me
         origin = source_type
         try:
             isinstance(None, origin)
