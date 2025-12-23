@@ -57,7 +57,9 @@ def _non_default_repr_args(obj: BaseModel, fields: "ReprArgs") -> "ReprArgs":
     """Set fields on a model instance."""
     for k, val in fields:
         if k and (field := type(obj).model_fields.get(k)) and field.repr:
-            default = field.get_default(call_default_factory=True, **GET_DEFAULT_KWARGS)
+            kwargs = {**GET_DEFAULT_KWARGS}
+            kwargs.setdefault("validated_data", {})
+            default = field.get_default(call_default_factory=True, **kwargs)
             try:
                 if val == default:
                     continue
