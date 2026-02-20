@@ -307,6 +307,36 @@ class MDASequence(UseqModel):
                         "keep_shutter_open_across cannot currently be set on a "
                         "Position sequence"
                     )
+                pos_x, pos_y = p.x, p.y
+                if pos_x is not None or pos_y is not None:
+                    # Check sub-sequence absolute grid
+                    pos_seq = p.sequence
+                    sub_grid = pos_seq.grid_plan if pos_seq is not None else None
+                    if sub_grid is not None and not sub_grid.is_relative:
+                        warn(
+                            f"Position x={pos_x!r}, y={pos_y!r} is ignored when the "
+                            f"sub-sequence uses an absolute grid plan "
+                            f"({type(sub_grid).__name__}). "
+                            "Set x=None, y=None on the position to silence this "
+                            "warning. In a future version this will raise an error.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                    # Check global absolute grid
+                    elif (
+                        sub_grid is None
+                        and self.grid_plan is not None
+                        and not self.grid_plan.is_relative
+                    ):
+                        warn(
+                            f"Position x={pos_x!r}, y={pos_y!r} is ignored when the "
+                            f"sequence uses an absolute grid plan "
+                            f"({type(self.grid_plan).__name__}). "
+                            "Set x=None, y=None on the position to silence this "
+                            "warning. In a future version this will raise an error.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
         return self
 
     def __eq__(self, other: Any) -> bool:
