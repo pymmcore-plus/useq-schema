@@ -32,35 +32,31 @@ def test_stage_positions(position: Any, pexpectation: Sequence[float]) -> None:
     assert (position.x, position.y, position.z) == pexpectation
 
 
-def test_position_warns_on_absolute_sub_sequence_grid() -> None:
+_ABSOLUTE_GRID_PLANS = [
+    pytest.param(
+        {"top": 1, "bottom": -1, "left": 0, "right": 0},
+        id="GridFromEdges",
+    ),
+    pytest.param(
+        {"vertices": [(0, 0), (4, 0), (2, 4)], "fov_width": 2, "fov_height": 2},
+        id="GridFromPolygon",
+    ),
+]
+
+
+@pytest.mark.parametrize("grid_plan", _ABSOLUTE_GRID_PLANS)
+def test_position_warns_on_absolute_sub_sequence_grid(
+    grid_plan: dict,
+) -> None:
     """Position clears x/y and warns at construction when sub-sequence uses an absolute grid."""
-    # GridFromEdges
     with pytest.warns(UserWarning, match="is ignored when a position sequence uses"):
-        pos = useq.Position(
-            x=1,
-            y=2,
-            sequence={"grid_plan": {"top": 1, "bottom": -1, "left": 0, "right": 0}},
-        )
+        pos = useq.Position(x=1, y=2, sequence={"grid_plan": grid_plan})
     assert pos.x is None
     assert pos.y is None
 
-    # GridFromPolygon
-    with pytest.warns(UserWarning, match="is ignored when a position sequence uses"):
-        pos2 = useq.Position(
-            x=1,
-            y=2,
-            sequence={
-                "grid_plan": {
-                    "vertices": [(0, 0), (4, 0), (2, 4)],
-                    "fov_width": 2,
-                    "fov_height": 2,
-                }
-            },
-        )
-    assert pos2.x is None
-    assert pos2.y is None
 
-    # relative sub-sequence grid — no warning
-    pos3 = useq.Position(x=1, y=2, sequence={"grid_plan": {"rows": 2, "columns": 2}})
-    assert pos3.x == 1
-    assert pos3.y == 2
+def test_position_no_warn_on_relative_sub_sequence_grid() -> None:
+    """Position keeps x/y when sub-sequence uses a relative grid."""
+    pos = useq.Position(x=1, y=2, sequence={"grid_plan": {"rows": 2, "columns": 2}})
+    assert pos.x == 1
+    assert pos.y == 2
