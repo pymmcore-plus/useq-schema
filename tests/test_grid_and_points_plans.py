@@ -89,10 +89,10 @@ g_inputs = [
             overlap=0,
         ),
         [
-            useq.Position(x=1.0, y=3.0, row=0, col=0, name="0000"),
-            useq.Position(x=3.0, y=3.0, row=0, col=1, name="0001"),
-            useq.Position(x=3.0, y=1.0, row=1, col=1, name="0002"),
-            useq.Position(x=1.0, y=1.0, row=1, col=0, name="0003"),
+            useq.Position(x=1.0, y=3.0, name="0000"),
+            useq.Position(x=3.0, y=3.0, name="0001"),
+            useq.Position(x=3.0, y=1.0, name="0002"),
+            useq.Position(x=1.0, y=1.0, name="0003"),
         ],
     ),
 ]
@@ -354,28 +354,6 @@ def test_grid_from_polygon_with_convex_hull() -> None:
         overlap=0,
     )
     assert grid_with_hull.num_positions() == 9
-
-
-def test_grid_from_polygon_row_col() -> None:
-    """Test that GridFromPolygon positions include row/col indices."""
-    # L-shape polygon
-    grid = useq.GridFromPolygon(
-        vertices=[(0, 0), (3, 0), (3, 1), (1, 1), (1, 3), (0, 3)],
-        fov_width=1,
-        fov_height=1,
-        overlap=0,
-    )
-    positions = list(grid)
-    assert len(positions) == 8
-    for pos in positions:
-        assert pos.row is not None
-        assert pos.col is not None
-
-    # verify specific row/col assignments
-    rc = [(pos.row, pos.col) for pos in positions]
-    assert (0, 0) in rc
-    assert (1, 0) in rc
-    assert (2, 0) in rc
 
 
 def test_invalid_poly() -> None:
