@@ -89,10 +89,10 @@ g_inputs = [
             overlap=0,
         ),
         [
-            useq.Position(x=1.0, y=3.0, name="0000"),
-            useq.Position(x=3.0, y=3.0, name="0001"),
-            useq.Position(x=3.0, y=1.0, name="0002"),
-            useq.Position(x=1.0, y=1.0, name="0003"),
+            useq.Position(x=1.0, y=3.0, row=0, col=0, name="0000"),
+            useq.Position(x=3.0, y=3.0, row=0, col=1, name="0001"),
+            useq.Position(x=3.0, y=1.0, row=1, col=1, name="0002"),
+            useq.Position(x=1.0, y=1.0, row=1, col=0, name="0003"),
         ],
     ),
 ]
