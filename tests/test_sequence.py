@@ -69,9 +69,13 @@ def test_axis_order_errors() -> None:
 
     # absolute grid_plan with multiple stage positions
 
-    with pytest.warns(UserWarning, match="Global grid plan will override"):
+    with (
+        pytest.warns(UserWarning, match="Position x=0.0, y=0.0 is ignored"),
+        pytest.warns(UserWarning, match="Position x=10.0, y=10.0 is ignored"),
+        pytest.warns(UserWarning, match="Global grid plan will override"),
+    ):
         MDASequence(
-            stage_positions=[{"z": 0}, {"z": 10}],
+            stage_positions=[(0, 0, 0), (10, 10, 10)],
             grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
         )
 
