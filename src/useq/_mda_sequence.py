@@ -299,8 +299,6 @@ class MDASequence(UseqModel):
                 autofocus_plan=self.autofocus_plan,
             )
         if self.stage_positions and not isinstance(self.stage_positions, WellPlatePlan):
-            new_positions: list[Position] = []
-            modified = False
             for p in self.stage_positions:
                 if hasattr(p, "sequence") and getattr(
                     p.sequence, "keep_shutter_open_across", None
@@ -309,25 +307,23 @@ class MDASequence(UseqModel):
                         "keep_shutter_open_across cannot currently be set on a "
                         "Position sequence"
                     )
-                if p.x is not None or p.y is not None:
-                    sub_grid = p.sequence.grid_plan if p.sequence is not None else None
-                    abs_grid = None
-                    # if we have an absolute sub-sequence grid
-                    if sub_grid is not None and not sub_grid.is_relative:
-                        abs_grid = sub_grid
-                    # or if we have an absolute global grid
-                    elif (
-                        sub_grid is None
-                        and self.grid_plan is not None
-                        and not self.grid_plan.is_relative
+            # it should not be possible to specify x and y with a global absolute grid
+            # plan.
+            if self.grid_plan is not None and not self.grid_plan.is_relative:
+                new_positions: list[Position] = []
+                modified = False
+                for p in self.stage_positions:
+                    if (
+                        (p.x is not None or p.y is not None)
+                        # Skip positions that have their own sub-sequence grid plan:
+                        # - relative sub-sequence grid: x/y allowed.
+                        # - absolute sub-sequence grid: x/y already cleared by the
+                        #   Position validator before we get here.
+                        and (p.sequence is None or p.sequence.grid_plan is None)
                     ):
-                        abs_grid = self.grid_plan
-
-                    if abs_grid is not None:
                         warn(
-                            f"Position x={p.x!r}, y={p.y!r} is ignored when a "
-                            f"sequence or sub-sequence uses an absolute grid plan "
-                            f"({type(abs_grid).__name__}). "
+                            f"Position x={p.x!r}, y={p.y!r} is ignored when using an "
+                            f"absolute grid plan ({type(self.grid_plan).__name__}). "
                             "Set x=None, y=None on the position to silence this "
                             "warning. In a future version this will raise an error.",
                             UserWarning,
@@ -335,9 +331,9 @@ class MDASequence(UseqModel):
                         )
                         p = p.model_copy(update={"x": None, "y": None})
                         modified = True
-                new_positions.append(p)
-            if modified:
-                object.__setattr__(self, "stage_positions", tuple(new_positions))
+                    new_positions.append(p)
+                if modified:
+                    object.__setattr__(self, "stage_positions", tuple(new_positions))
         return self
 
     def __eq__(self, other: Any) -> bool:

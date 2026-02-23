@@ -1,3 +1,4 @@
+import warnings
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Generic, Optional, SupportsIndex, TypeVar
 
@@ -87,6 +88,28 @@ class PositionBase(MutableModel):
                 z = value[2]
             value = {"x": x, "y": y, "z": z}
         return value
+
+    @model_validator(mode="after")
+    def _validate_position(self) -> "Self":
+        # x and y should not be set when using an absolute grid plan.
+        if (
+            (self.x is not None or self.y is not None)
+            and self.sequence is not None
+            and self.sequence.grid_plan is not None
+            and not self.sequence.grid_plan.is_relative
+        ):
+            grid = self.sequence.grid_plan
+            warnings.warn(
+                f"Position x={self.x!r}, y={self.y!r} is ignored when a position "
+                f"sequence uses an absolute grid plan ({type(grid).__name__}). "
+                "Set x=None, y=None on the position to silence this warning. "
+                "In a future version this will raise an error.",
+                UserWarning,
+                stacklevel=2,
+            )
+            object.__setattr__(self, "x", None)
+            object.__setattr__(self, "y", None)
+        return self
 
 
 class AbsolutePosition(PositionBase, FrozenModel):
