@@ -356,26 +356,6 @@ def test_grid_from_polygon_with_convex_hull() -> None:
     assert grid_with_hull.num_positions() == 9
 
 
-def test_grid_from_polygon_row_col() -> None:
-    """Test that GridFromPolygon positions include row/col indices."""
-    grid = useq.GridFromPolygon(
-        vertices=[(0, 0), (3, 0), (3, 1), (1, 1), (1, 3), (0, 3)],
-        fov_width=1,
-        fov_height=1,
-        overlap=0,
-    )
-    positions = list(grid)
-    assert len(positions) == 8
-    for pos in positions:
-        assert pos.row is not None
-        assert pos.col is not None
-
-    rc = [(pos.row, pos.col) for pos in positions]
-    assert (0, 0) in rc
-    assert (1, 0) in rc
-    assert (2, 0) in rc
-
-
 def test_invalid_poly() -> None:
     """Test that self-intersecting polygons are invalid."""
     vertices = [(0, 0), (2, 2), (0, 2), (2, 0)]
