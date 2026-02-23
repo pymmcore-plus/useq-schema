@@ -69,7 +69,11 @@ def test_axis_order_errors() -> None:
 
     # absolute grid_plan with multiple stage positions
 
-    with pytest.warns(UserWarning, match="Global grid plan will override"):
+    with (
+        pytest.warns(UserWarning, match="Position x=0.0, y=0.0 is ignored"),
+        pytest.warns(UserWarning, match="Position x=10.0, y=10.0 is ignored"),
+        pytest.warns(UserWarning, match="Global grid plan will override"),
+    ):
         MDASequence(
             stage_positions=[(0, 0, 0), (10, 10, 10)],
             grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
@@ -84,7 +88,7 @@ def test_axis_order_errors() -> None:
     # if all but one sub-position has a grid plan , is ok
     MDASequence(
         stage_positions=[
-            (0, 0, 0),
+            {"z": 0},
             {"sequence": {"grid_plan": {"rows": 2, "columns": 2}}},
             {
                 "sequence": {
@@ -102,6 +106,46 @@ def test_axis_order_errors() -> None:
                 {"sequence": {"stage_positions": [(10, 10, 10), (20, 20, 20)]}}
             ]
         )
+
+    # x/y on a position is ignored with a global absolute grid
+    # --- GridFromEdges ---
+    with pytest.warns(
+        UserWarning, match="is ignored when using a global absolute grid plan"
+    ):
+        seq = MDASequence(
+            stage_positions=[{"x": 10, "y": 20}],
+            grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
+        )
+    assert seq.stage_positions[0].x is None
+    assert seq.stage_positions[0].y is None
+    # --- GridFromPolygon ---
+    with pytest.warns(
+        UserWarning, match="is ignored when using a global absolute grid plan"
+    ):
+        seq = MDASequence(
+            stage_positions=[{"x": 10, "y": 20}],
+            grid_plan={
+                "vertices": [(0, 0), (4, 0), (2, 4)],
+                "fov_width": 2,
+                "fov_height": 2,
+            },
+        )
+    assert seq.stage_positions[0].x is None
+    assert seq.stage_positions[0].y is None
+
+    # no warning when x/y are None with absolute grids
+    MDASequence(
+        stage_positions=[{}],
+        grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
+    )
+    MDASequence(
+        stage_positions=[{}],
+        grid_plan={
+            "vertices": [(0, 0), (4, 0), (2, 4)],
+            "fov_width": 2,
+            "fov_height": 2,
+        },
+    )
 
 
 @pytest.mark.parametrize("cls", [MDASequence, MDAEvent])

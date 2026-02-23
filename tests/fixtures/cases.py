@@ -172,8 +172,6 @@ GRID_SUBSEQ_CASES: list[MDATestCase] = [
             stage_positions=[
                 Position(x=0, y=0),
                 Position(
-                    x=10,
-                    y=10,
                     sequence={
                         "grid_plan": GridFromEdges(top=1, bottom=-1, left=0, right=0)
                     },
@@ -602,7 +600,7 @@ GRID_SUBSEQ_CASES: list[MDATestCase] = [
         seq=MDASequence(
             axis_order="tpgcz",
             stage_positions=[
-                Position(x=0, y=0),
+                Position(z=3),
                 Position(
                     name="name",
                     x=10,
