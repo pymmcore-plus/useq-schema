@@ -307,23 +307,22 @@ class MDASequence(UseqModel):
                         "keep_shutter_open_across cannot currently be set on a "
                         "Position sequence"
                     )
-            # it should not be possible to specify x and y with a global absolute grid
-            # plan.
+            # it's invalid to have stage positions with x/y coordinates
+            # when using a global absolute grid plan
             if self.grid_plan is not None and not self.grid_plan.is_relative:
                 new_positions: list[Position] = []
                 modified = False
                 for p in self.stage_positions:
-                    if (
-                        (p.x is not None or p.y is not None)
-                        # Skip positions that have their own sub-sequence grid plan:
-                        # - relative sub-sequence grid: x/y allowed.
-                        # - absolute sub-sequence grid: x/y already cleared by the
-                        #   Position validator before we get here.
-                        and (p.sequence is None or p.sequence.grid_plan is None)
+                    # Positions that have their own grid plan are exempt from this
+                    # warning, since their local grid plans will override the global one
+                    # and they are already validated to be internally consistent.
+                    if (p.x is not None or p.y is not None) and (
+                        p.sequence is None or p.sequence.grid_plan is None
                     ):
+                        grid_plan_type = type(self.grid_plan).__name__
                         warn(
-                            f"Position x={p.x!r}, y={p.y!r} is ignored when using an "
-                            f"absolute grid plan ({type(self.grid_plan).__name__}). "
+                            f"Position x={p.x!r}, y={p.y!r} is ignored when using a "
+                            f"global absolute grid plan ({grid_plan_type}). "
                             "Set x=None, y=None on the position to silence this "
                             "warning. In a future version this will raise an error.",
                             UserWarning,
