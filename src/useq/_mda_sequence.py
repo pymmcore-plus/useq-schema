@@ -310,31 +310,24 @@ class MDASequence(UseqModel):
                         "Position sequence"
                     )
                 if p.x is not None or p.y is not None:
-                    # Check sub-sequence absolute grid
-                    pos_seq = p.sequence
-                    sub_grid = pos_seq.grid_plan if pos_seq is not None else None
+                    sub_grid = p.sequence.grid_plan if p.sequence is not None else None
+                    abs_grid = None
+                    # if we have an absolute sub-sequence grid
                     if sub_grid is not None and not sub_grid.is_relative:
-                        warn(
-                            f"Position x={p.x!r}, y={p.y!r} is ignored when the "
-                            f"sub-sequence uses an absolute grid plan "
-                            f"({type(sub_grid).__name__}). "
-                            "Set x=None, y=None on the position to silence this "
-                            "warning. In a future version this will raise an error.",
-                            UserWarning,
-                            stacklevel=2,
-                        )
-                        p = p.model_copy(update={"x": None, "y": None})
-                        modified = True
-                    # Check global absolute grid
+                        abs_grid = sub_grid
+                    # or if we have an absolute global grid
                     elif (
                         sub_grid is None
                         and self.grid_plan is not None
                         and not self.grid_plan.is_relative
                     ):
+                        abs_grid = self.grid_plan
+
+                    if abs_grid is not None:
                         warn(
-                            f"Position x={p.x!r}, y={p.y!r} is ignored when the "
-                            f"sequence uses an absolute grid plan "
-                            f"({type(self.grid_plan).__name__}). "
+                            f"Position x={p.x!r}, y={p.y!r} is ignored when a "
+                            f"sequence or sub-sequence uses an absolute grid plan "
+                            f"({type(abs_grid).__name__}). "
                             "Set x=None, y=None on the position to silence this "
                             "warning. In a future version this will raise an error.",
                             UserWarning,

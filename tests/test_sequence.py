@@ -105,7 +105,9 @@ def test_axis_order_errors() -> None:
 
     # x/y on a position is ignored with an absolute sub-sequence grid
     # --- GridFromEdges ---
-    with pytest.warns(UserWarning, match="is ignored when the sub-sequence uses"):
+    with pytest.warns(
+        UserWarning, match="is ignored when a sequence or sub-sequence uses"
+    ):
         seq = MDASequence(
             stage_positions=[
                 {
@@ -120,7 +122,9 @@ def test_axis_order_errors() -> None:
     assert seq.stage_positions[0].x is None
     assert seq.stage_positions[0].y is None
     # --- GridFromPolygon ---
-    with pytest.warns(UserWarning, match="is ignored when the sub-sequence uses"):
+    with pytest.warns(
+        UserWarning, match="is ignored when a sequence or sub-sequence uses"
+    ):
         seq = MDASequence(
             stage_positions=[
                 {
@@ -141,7 +145,9 @@ def test_axis_order_errors() -> None:
 
     # x/y on a position is ignored with a global absolute grid
     # --- GridFromEdges ---
-    with pytest.warns(UserWarning, match="is ignored when the sequence uses"):
+    with pytest.warns(
+        UserWarning, match="is ignored when a sequence or sub-sequence uses"
+    ):
         seq = MDASequence(
             stage_positions=[{"x": 10, "y": 20}],
             grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
@@ -149,7 +155,9 @@ def test_axis_order_errors() -> None:
     assert seq.stage_positions[0].x is None
     assert seq.stage_positions[0].y is None
     # --- GridFromPolygon ---
-    with pytest.warns(UserWarning, match="is ignored when the sequence uses"):
+    with pytest.warns(
+        UserWarning, match="is ignored when a sequence or sub-sequence uses"
+    ):
         seq = MDASequence(
             stage_positions=[{"x": 10, "y": 20}],
             grid_plan={
