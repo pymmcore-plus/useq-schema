@@ -600,7 +600,7 @@ GRID_SUBSEQ_CASES: list[MDATestCase] = [
         seq=MDASequence(
             axis_order="tpgcz",
             stage_positions=[
-                Position(),
+                Position(z=3),
                 Position(
                     name="name",
                     x=10,
