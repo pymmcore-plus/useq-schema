@@ -104,6 +104,7 @@ def test_axis_order_errors() -> None:
         )
 
     # x/y on a position is ignored with an absolute sub-sequence grid
+    # --- GridFromEdges ---
     with pytest.warns(UserWarning, match="is ignored when the sub-sequence uses"):
         MDASequence(
             stage_positions=[
@@ -116,18 +117,54 @@ def test_axis_order_errors() -> None:
                 }
             ]
         )
+    # --- GridFromPolygon ---
+    with pytest.warns(UserWarning, match="is ignored when the sub-sequence uses"):
+        MDASequence(
+            stage_positions=[
+                {
+                    "x": 10,
+                    "y": 20,
+                    "sequence": {
+                        "grid_plan": {
+                            "vertices": [(0, 0), (4, 0), (2, 4)],
+                            "fov_width": 2,
+                            "fov_height": 2,
+                        }
+                    },
+                }
+            ]
+        )
 
     # x/y on a position is ignored with a global absolute grid
+    # --- GridFromEdges ---
     with pytest.warns(UserWarning, match="is ignored when the sequence uses"):
         MDASequence(
             stage_positions=[{"x": 10, "y": 20}],
             grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
+        )
+    # --- GridFromPolygon ---
+    with pytest.warns(UserWarning, match="is ignored when the sequence uses"):
+        MDASequence(
+            stage_positions=[{"x": 10, "y": 20}],
+            grid_plan={
+                "vertices": [(0, 0), (4, 0), (2, 4)],
+                "fov_width": 2,
+                "fov_height": 2,
+            },
         )
 
     # no warning when x/y are None with absolute grids
     MDASequence(
         stage_positions=[{}],
         grid_plan={"top": 1, "bottom": -1, "left": 0, "right": 0},
+    )
+    MDASequence(
+        stage_positions=[{}],
+        grid_plan={
+            "vertices": [(0, 0), (4, 0), (2, 4)],
+            "fov_width": 2,
+            "fov_height": 2,
+        },
     )
 
 
