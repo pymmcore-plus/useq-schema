@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://pymmcore-plus.github.io/useq-schema/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://pymmcore-plus.github.io/useq-schema/api/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://pymmcore-plus.github.io/useq-schema/v2-migration/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://pymmcore-plus.github.io/useq-schema/schema/axes/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://pymmcore-plus.github.io/useq-schema/schema/event/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://pymmcore-plus.github.io/useq-schema/schema/hardware_autofocus/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://pymmcore-plus.github.io/useq-schema/schema/sequence/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+</urlset>

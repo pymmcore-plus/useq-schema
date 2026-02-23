@@ -1,0 +1,2373 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Implementation agnostic schema for microscopy experiments">
+      
+      
+      
+        <link rel="canonical" href="https://pymmcore-plus.github.io/useq-schema/v2-migration/">
+      
+      
+        <link rel="prev" href="../api/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../docs/images/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>v2 Migration Guide - useq-schema</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="dark-blue" data-md-color-accent="dark-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#v2-migration-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="useq-schema" class="md-header__button md-logo" aria-label="useq-schema" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M176 0c-26.5 0-48 21.5-48 48v208c0 26.5 21.5 48 48 48h64c26.5 0 48-21.5 48-48v-64h32c70.7 0 128 57.3 128 128s-57.3 128-128 128H32c-17.7 0-32 14.3-32 32s14.3 32 32 32h448c17.7 0 32-14.3 32-32s-14.3-32-32-32h-16.9c30.4-34 48.9-78.8 48.9-128 0-106-86-192-192-192h-32V48c0-26.5-21.5-48-48-48zm-56 352c-13.3 0-24 10.7-24 24s10.7 24 24 24h176c13.3 0 24-10.7 24-24s-10.7-24-24-24z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            useq-schema
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              v2 Migration Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="dark-blue" data-md-color-accent="dark-blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="light-green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/pymmcore-plus/useq-schema" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pymmcore-plus/useq-schema
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="/pymmcore-plus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  pymmcore-plus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  useq-schema
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="/pymmcore-widgets/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  pymmcore-widgets
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="/napari-micromanager/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  napari-micromanager
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="useq-schema" class="md-nav__button md-logo" aria-label="useq-schema" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M176 0c-26.5 0-48 21.5-48 48v208c0 26.5 21.5 48 48 48h64c26.5 0 48-21.5 48-48v-64h32c70.7 0 128 57.3 128 128s-57.3 128-128 128H32c-17.7 0-32 14.3-32 32s14.3 32 32 32h448c17.7 0 32-14.3 32-32s-14.3-32-32-32h-16.9c30.4-34 48.9-78.8 48.9-128 0-106-86-192-192-192h-32V48c0-26.5-21.5-48-48-48zm-56 352c-13.3 0-24 10.7-24 24s10.7 24 24 24h176c13.3 0 24-10.7 24-24s-10.7-24-24-24z"/></svg>
+
+    </a>
+    useq-schema
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/pymmcore-plus/useq-schema" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pymmcore-plus/useq-schema
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/pymmcore-plus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pymmcore-plus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    useq-schema
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    useq-schema
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Schema
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schema/sequence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sequence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schema/event/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schema/axes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Axes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schema/hardware_autofocus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware Autofocus Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v2 Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v2 Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-architectural-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Architectural Changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Architectural Changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#from-fixed-axes-to-extensible-axis-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From Fixed Axes to Extensible Axis System
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#core-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Concepts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-axisiterablev-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. AxisIterable[V] Protocol
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-simplevalueaxisv-basic-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. SimpleValueAxis[V] - Basic Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-multiaxissequenceeventt-the-new-sequence-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. MultiAxisSequence[EventT] - The New Sequence Container
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-mdasequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. MDASequence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#new-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New Features
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="New Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-arbitrary-custom-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Arbitrary Custom Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-conditional-skipping-with-should_skip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Conditional Skipping with should_skip
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-hierarchical-nested-sequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Hierarchical Nested Sequences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-event-transform-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Event Transform Pipeline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Event Transform Pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-built-in-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Built-in Transforms
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-non-imaging-events-with-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Non-Imaging Events with Transforms
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-pluggable-event-builders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Pluggable Event Builders
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-infinite-axes-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Infinite Axes Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-from-v1-to-v2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration from v1 to v2
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Migration from v1 to v2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backward-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward Compatibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking Changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Breaking Changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-event-building-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Event Building Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-shape-and-sizes-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Shape and Sizes Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-axis-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Axis Access
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-custom-skip-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Custom Skip Logic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#z-z-plans-yield-positions-not-floats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Z. Z-Plans yield Positions, not floats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-axes-in-v2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in Axes in v2
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Built-in Axes in v2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#z-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Z Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channel Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#position-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Position Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grid-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grid Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extension-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extension Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-custom-scientific-axis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating a Custom Scientific Axis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complex-nested-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complex Nested Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-and-design-benefits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance and Design Benefits
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance and Design Benefits">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#separation-of-concerns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Separation of Concerns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extensibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extensibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type Safety
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maintainability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Maintainability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/pymmcore-widgets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pymmcore-widgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/napari-micromanager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    napari-micromanager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-architectural-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Architectural Changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Architectural Changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#from-fixed-axes-to-extensible-axis-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From Fixed Axes to Extensible Axis System
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#core-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Concepts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-axisiterablev-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. AxisIterable[V] Protocol
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-simplevalueaxisv-basic-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. SimpleValueAxis[V] - Basic Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-multiaxissequenceeventt-the-new-sequence-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. MultiAxisSequence[EventT] - The New Sequence Container
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-mdasequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. MDASequence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#new-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New Features
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="New Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-arbitrary-custom-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Arbitrary Custom Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-conditional-skipping-with-should_skip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Conditional Skipping with should_skip
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-hierarchical-nested-sequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Hierarchical Nested Sequences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-event-transform-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Event Transform Pipeline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Event Transform Pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-built-in-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Built-in Transforms
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-non-imaging-events-with-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Non-Imaging Events with Transforms
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-pluggable-event-builders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Pluggable Event Builders
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-infinite-axes-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Infinite Axes Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-from-v1-to-v2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration from v1 to v2
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Migration from v1 to v2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backward-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward Compatibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking Changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Breaking Changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-event-building-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Event Building Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-shape-and-sizes-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Shape and Sizes Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-axis-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Axis Access
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-custom-skip-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Custom Skip Logic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#z-z-plans-yield-positions-not-floats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Z. Z-Plans yield Positions, not floats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-axes-in-v2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in Axes in v2
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Built-in Axes in v2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#z-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Z Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channel Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#position-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Position Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grid-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grid Axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extension-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extension Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-custom-scientific-axis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating a Custom Scientific Axis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complex-nested-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complex Nested Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-and-design-benefits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance and Design Benefits
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance and Design Benefits">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#separation-of-concerns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Separation of Concerns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extensibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extensibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type Safety
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maintainability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Maintainability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="v2-migration-guide">v2 Migration Guide<a class="headerlink" href="#v2-migration-guide" title="Permanent link">#</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">#</a></h2>
+<p>The v2 version of <code>useq-schema</code> represents a fundamental architectural redesign
+that generalizes the multi-dimensional axis iteration pattern to support
+arbitrary dimensions while preserving the complex event building, nesting, and
+skipping capabilities of the original implementation. This document explains the
+new features, how to use and extend them, and the breaking changes from v1.</p>
+<h2 id="key-architectural-changes">Key Architectural Changes<a class="headerlink" href="#key-architectural-changes" title="Permanent link">#</a></h2>
+<h3 id="from-fixed-axes-to-extensible-axis-system">From Fixed Axes to Extensible Axis System<a class="headerlink" href="#from-fixed-axes-to-extensible-axis-system" title="Permanent link">#</a></h3>
+<p><strong>v1 Approach</strong>: Hard-coded support for specific axes (<code>time</code>, <code>position</code>,
+<code>grid</code>, <code>channel</code>, <code>z</code>) with bespoke iteration logic in <code>_iter_sequence.py</code>.</p>
+<p><strong>v2 Approach</strong>: Generic, protocol-based system where any object implementing
+<code>AxisIterable</code> can participate in multi-dimensional iteration.</p>
+<h3 id="core-concepts">Core Concepts<a class="headerlink" href="#core-concepts" title="Permanent link">#</a></h3>
+<h4 id="1-axisiterablev-protocol">1. <code>AxisIterable[V]</code> Protocol<a class="headerlink" href="#1-axisiterablev-protocol" title="Permanent link">#</a></h4>
+<p>The foundation of v2 is the <code>AxisIterable</code> protocol, which defines how any axis
+should behave.  In short, an <code>AxisIterable</code> is an object that yields values (of
+any type), has an associated <code>axis_key</code>, and can contribute to event building
+and skipping logic.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generic</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">TypeVar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstractmethod</span>
+
+<span class="n">V</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;V&quot;</span><span class="p">)</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AxisIterable</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">V</span><span class="p">]):</span>
+    <span class="n">axis_key</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Unique identifier for this axis</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">V</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate over axis values&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">should_skip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="n">AxesIndex</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True to skip this combination&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">contribute_to_mda_event</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MDAEvent</span><span class="o">.</span><span class="n">Kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Contribute data to the event being built&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{}</span>
+</code></pre></div>
+<h4 id="2-simplevalueaxisv-basic-implementation">2. <code>SimpleValueAxis[V]</code> - Basic Implementation<a class="headerlink" href="#2-simplevalueaxisv-basic-implementation" title="Permanent link">#</a></h4>
+<p>For simple cases where you just want to iterate over a list of values:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SimpleValueAxis</span><span class="p">(</span><span class="n">AxisIterable</span><span class="p">[</span><span class="n">V</span><span class="p">]):</span>
+    <span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">V</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">V</span> <span class="o">|</span> <span class="n">MultiAxisSequence</span><span class="p">]:</span>
+        <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="n">axis</span> <span class="o">=</span> <span class="n">SimpleValueAxis</span><span class="p">(</span><span class="n">axis_key</span><span class="o">=</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># Outputs 0, 1, 2, 3, 4</span>
+</code></pre></div>
+<h4 id="3-multiaxissequenceeventt-the-new-sequence-container">3. <code>MultiAxisSequence[EventT]</code> - The New Sequence Container<a class="headerlink" href="#3-multiaxissequenceeventt-the-new-sequence-container" title="Permanent link">#</a></h4>
+<p>Replaces the old <code>MDASequence</code> as the core container, but with generic event
+support.  A <code>MultiAxisSequence</code> holds any number of <code>AxisIterable</code> objects,
+defines their order, and manages how the values from each axis get merged into
+an event.</p>
+<div class="highlight"><pre><span></span><code><span class="n">EventT</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;EventT&quot;</span><span class="p">)</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MultiAxisSequence</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">EventT</span><span class="p">]):</span>
+    <span class="n">axes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">AxisIterable</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">axis_order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Used when this sequence is nested</span>
+    <span class="n">event_builder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EventBuilder</span><span class="p">[</span><span class="n">EventT</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">transforms</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">EventTransform</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+</code></pre></div>
+<h4 id="4-mdasequence">4. <code>MDASequence</code><a class="headerlink" href="#4-mdasequence" title="Permanent link">#</a></h4>
+<p>There <em>is</em> still an <code>MDASequence</code> class in v2, which is a subclass of
+<code>MultiAxisSequence</code> specialized for building <code>MDAEvent</code> objects.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">useq.v2</span><span class="w"> </span><span class="kn">import</span> <span class="n">MDAEvent</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MDASequence</span><span class="p">(</span><span class="n">MultiAxisSequence</span><span class="p">[</span><span class="n">MDAEvent</span><span class="p">]):</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p>In other words, <code>MultiAxisSequence</code> is a generic iterator over multiple
+axes that can build <em>any</em> type of event, while <code>MDASequence</code> is a specific
+implementation that builds <code>MDAEvent</code> objects (just like v1).</p>
+<h2 id="new-features">New Features<a class="headerlink" href="#new-features" title="Permanent link">#</a></h2>
+<h3 id="1-arbitrary-custom-axes">1. <strong>Arbitrary Custom Axes</strong><a class="headerlink" href="#1-arbitrary-custom-axes" title="Permanent link">#</a></h3>
+<p>You can now define completely custom axes for any dimension:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">useq</span><span class="w"> </span><span class="kn">import</span> <span class="n">v2</span>
+
+<span class="c1"># Custom axis for laser power</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LaserPowerAxis</span><span class="p">(</span><span class="n">v2</span><span class="o">.</span><span class="n">SimpleValueAxis</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
+    <span class="n">axis_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;laser_power&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">contribute_to_mda_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDAEvent</span><span class="o">.</span><span class="n">Kwargs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;laser_power&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">}}</span>
+
+<span class="c1"># Custom axis for temperature</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TemperatureAxis</span><span class="p">(</span><span class="n">v2</span><span class="o">.</span><span class="n">AxisIterable</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
+    <span class="n">axis_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;temperature&quot;</span>
+    <span class="n">min_temp</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">max_temp</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">step</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_temp</span>
+        <span class="k">while</span> <span class="n">temp</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_temp</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">temp</span>
+            <span class="n">temp</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">contribute_to_mda_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDAEvent</span><span class="o">.</span><span class="n">Kwargs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">}}</span>
+</code></pre></div>
+<h3 id="2-conditional-skipping-with-should_skip">2. <strong>Conditional Skipping with <code>should_skip</code></strong><a class="headerlink" href="#2-conditional-skipping-with-should_skip" title="Permanent link">#</a></h3>
+<p><code>should_skip</code> method on any axis allows context-aware skipping of specific
+combinations.  It receives an <code>AxesIndex</code>, which contains information on
+the exact value and index being yielded by each axis in this iteration step.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FilteredChannelAxis</span><span class="p">(</span><span class="n">v2</span><span class="o">.</span><span class="n">SimpleValueAxis</span><span class="p">[</span><span class="n">v2</span><span class="o">.</span><span class="n">Channel</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">should_skip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="n">v2</span><span class="o">.</span><span class="n">AxesIndex</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="c1"># Skip FITC channel for even numbered Z positions</span>
+        <span class="n">z_idx</span> <span class="o">=</span> <span class="n">prefix</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">current_channel</span> <span class="o">=</span> <span class="n">prefix</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">z_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">z_idx</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">current_channel</span><span class="o">.</span><span class="n">config</span> <span class="o">==</span> <span class="s2">&quot;FITC&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+<h3 id="3-hierarchical-nested-sequences">3. <strong>Hierarchical Nested Sequences</strong><a class="headerlink" href="#3-hierarchical-nested-sequences" title="Permanent link">#</a></h3>
+<p>The new system supports arbitrarily nested sequences that can override or extend
+parent axes.  A <code>MultiAxisSequence</code> <em>itself</em> can have a <code>value</code>, allowing it to
+be used as a yielded value from a parent axis.</p>
+<p>In the following example, we define a sub-sequence for a specific position that
+adds a temperature axis and overrides the Z plan defined in the parent sequence:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">useq</span><span class="w"> </span><span class="kn">import</span> <span class="n">v2</span>
+<span class="c1"># Position with custom sub-sequence (uses MDASequence, which StagePositions accepts)</span>
+<span class="n">sub_sequence</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDASequence</span><span class="p">(</span>
+    <span class="n">value</span><span class="o">=</span><span class="n">v2</span><span class="o">.</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span>  <span class="c1"># The value represents this position</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">(</span>
+        <span class="c1"># Add temperature dimension</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">SimpleValueAxis</span><span class="p">(</span><span class="n">axis_key</span><span class="o">=</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">30</span><span class="p">]),</span>
+        <span class="c1"># Override parent Z plan</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">ZRangeAround</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">axis_order</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">main_sequence</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDASequence</span><span class="p">(</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">TIntervalLoops</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">loops</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">StagePositions</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="n">sub_sequence</span><span class="p">,</span> <span class="n">v2</span><span class="o">.</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">)]),</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">ZRangeAround</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span>  <span class="c1"># This gets overridden for the first position</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="4-event-transform-pipeline">4. <strong>Event Transform Pipeline</strong><a class="headerlink" href="#4-event-transform-pipeline" title="Permanent link">#</a></h3>
+<p>Transforms allow you to modify events after they are built but before they are
+yielded. This replaces the old hardcoded event modification logic with a
+flexible, composable pipeline:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">useq.v2</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeepShutterOpenTransform</span><span class="p">,</span> <span class="n">EventTransform</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomTransform</span><span class="p">(</span><span class="n">EventTransform</span><span class="p">[</span><span class="n">MDAEvent</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">event</span><span class="p">:</span> <span class="n">MDAEvent</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">prev_event</span><span class="p">:</span> <span class="n">MDAEvent</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">make_next_event</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">MDAEvent</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">MDAEvent</span><span class="p">]:</span>
+        <span class="c1"># Modify event</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;c&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># First channel</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">model_copy</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;exposure&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">})</span>
+
+        <span class="c1"># Can return multiple events, no events, or modify the event</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">event</span><span class="p">]</span>
+
+<span class="n">seq</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDASequence</span><span class="p">(</span>
+    <span class="n">channels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;DAPI&quot;</span><span class="p">,</span> <span class="s2">&quot;FITC&quot;</span><span class="p">],</span>  <span class="c1"># Using legacy API for brevity</span>
+    <span class="n">transforms</span><span class="o">=</span><span class="p">(</span><span class="n">CustomTransform</span><span class="p">(),</span> <span class="n">KeepShutterOpenTransform</span><span class="p">((</span><span class="s2">&quot;z&quot;</span><span class="p">,)))</span>
+<span class="p">)</span>
+</code></pre></div>
+<h4 id="41-built-in-transforms">4.1 <strong>Built-in Transforms</strong><a class="headerlink" href="#41-built-in-transforms" title="Permanent link">#</a></h4>
+<p>v2 provides several built-in transforms that replicate v1 behavior.
+Note: transforms are currently available from <code>useq.v2._transformers</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">useq.v2</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AutoFocusTransform</span><span class="p">,</span>
+    <span class="n">KeepShutterOpenTransform</span><span class="p">,</span>
+    <span class="n">ResetEventTimerTransform</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Shutter management - keeps shutter open across specified axes</span>
+<span class="n">KeepShutterOpenTransform</span><span class="p">((</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">))</span>
+
+<span class="c1"># Event timing - marks first frame of each timepoint for timer reset</span>
+<span class="n">ResetEventTimerTransform</span><span class="p">()</span>
+</code></pre></div>
+<h4 id="42-non-imaging-events-with-transforms">4.2 <strong>Non-Imaging Events with Transforms</strong><a class="headerlink" href="#42-non-imaging-events-with-transforms" title="Permanent link">#</a></h4>
+<p>A key innovation in v2 is the ability to use transforms to insert <strong>non-imaging
+events</strong> that don't contribute to the sequence shape. This addresses GitHub
+issue <a href="https://github.com/pymmcore-plus/useq-schema/issues/41">#41</a> for use
+cases like laser measurements and Raman spectroscopy:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LaserMeasurementTransform</span><span class="p">(</span><span class="n">EventTransform</span><span class="p">[</span><span class="n">MDAEvent</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Insert laser measurement events after BF z-stacks.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">event</span><span class="p">:</span> <span class="n">MDAEvent</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">prev_event</span><span class="p">:</span> <span class="n">MDAEvent</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">make_next_event</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">MDAEvent</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">MDAEvent</span><span class="p">]:</span>
+        <span class="c1"># Yield the original imaging event</span>
+        <span class="k">yield</span> <span class="n">event</span>
+
+        <span class="c1"># If this is the last event in a BF z-stack, add laser measurements</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">channel</span> <span class="ow">and</span> <span class="n">event</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">config</span> <span class="o">==</span> <span class="s2">&quot;BF&quot;</span> <span class="ow">and</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">_is_last_z_event</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">make_next_event</span><span class="p">)):</span>
+
+            <span class="c1"># Insert 5 laser measurement events at different points</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">x_offset</span><span class="p">,</span> <span class="n">y_offset</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">)]):</span>
+                <span class="n">laser_event</span> <span class="o">=</span> <span class="n">MDAEvent</span><span class="p">(</span>
+                    <span class="n">index</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="s2">&quot;laser&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">},</span>
+                    <span class="n">x_pos</span><span class="o">=</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">x_pos</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">x_offset</span><span class="p">,</span>
+                    <span class="n">y_pos</span><span class="o">=</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">y_pos</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">y_offset</span><span class="p">,</span>
+                    <span class="n">action</span><span class="o">=</span><span class="n">CustomAction</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;laser_measurement&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;laser_power&quot;</span><span class="p">:</span> <span class="mi">75</span><span class="p">})</span>
+                <span class="p">)</span>
+                <span class="k">yield</span> <span class="n">laser_event</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_last_z_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">MDAEvent</span><span class="p">,</span> <span class="n">make_next_event</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">next_event</span> <span class="o">=</span> <span class="n">make_next_event</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">next_event</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> 
+                <span class="n">next_event</span><span class="o">.</span><span class="n">channel</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> 
+                <span class="n">next_event</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">config</span> <span class="o">!=</span> <span class="s2">&quot;BF&quot;</span><span class="p">)</span>
+
+<span class="c1"># Usage for the GitHub issue #41 use case:</span>
+<span class="c1"># 1. Collect BF z-stack → 2. Laser measurements → 3. GFP z-stack</span>
+<span class="n">seq</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDASequence</span><span class="p">(</span>
+    <span class="n">channels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;BF&quot;</span><span class="p">,</span> <span class="s2">&quot;GFP&quot;</span><span class="p">],</span>  
+    <span class="n">z_plan</span><span class="o">=</span><span class="n">v2</span><span class="o">.</span><span class="n">ZRangeAround</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
+    <span class="n">transforms</span><span class="o">=</span><span class="p">(</span><span class="n">LaserMeasurementTransform</span><span class="p">(),)</span>
+<span class="p">)</span>
+
+<span class="c1"># This generates:</span>
+<span class="c1"># - BF z-stack events (contribute to shape)</span>
+<span class="c1"># - 5 laser measurement events (inserted by transform, don&#39;t affect shape)</span>
+<span class="c1"># - GFP z-stack events (contribute to shape)</span>
+</code></pre></div>
+<h3 id="5-pluggable-event-builders">5. <strong>Pluggable Event Builders</strong><a class="headerlink" href="#5-pluggable-event-builders" title="Permanent link">#</a></h3>
+<p>Customize how raw axis data gets converted into events:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyCustomEvent</span><span class="p">:</span> <span class="o">...</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomEventBuilder</span><span class="p">(</span><span class="n">v2</span><span class="o">.</span><span class="n">EventBuilder</span><span class="p">[</span><span class="n">MyCustomEvent</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">axes_index</span><span class="p">:</span> <span class="n">v2</span><span class="o">.</span><span class="n">AxesIndex</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">v2</span><span class="o">.</span><span class="n">MultiAxisSequence</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MyCustomEvent</span><span class="p">:</span>
+        <span class="c1"># Build your custom event type</span>
+        <span class="k">return</span> <span class="n">MyCustomEvent</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">seq</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MultiAxisSequence</span><span class="p">(</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">(),</span>
+    <span class="n">event_builder</span><span class="o">=</span><span class="n">CustomEventBuilder</span><span class="p">()</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="6-infinite-axes-support">6. <strong>Infinite Axes Support</strong><a class="headerlink" href="#6-infinite-axes-support" title="Permanent link">#</a></h3>
+<p>Unlike v1, v2 supports infinite sequences:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InfiniteTimeAxis</span><span class="p">(</span><span class="n">v2</span><span class="o">.</span><span class="n">AxisIterable</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
+    <span class="n">axis_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;t&quot;</span>
+    <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">time</span>
+            <span class="n">time</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span>
+</code></pre></div>
+<h2 id="migration-from-v1-to-v2">Migration from v1 to v2<a class="headerlink" href="#migration-from-v1-to-v2" title="Permanent link">#</a></h2>
+<h3 id="backward-compatibility">Backward Compatibility<a class="headerlink" href="#backward-compatibility" title="Permanent link">#</a></h3>
+<p>v2 <code>MDASequence</code> accepts the same constructor parameters as v1 through automatic
+conversion:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># This v1 style still works</span>
+<span class="n">seq</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDASequence</span><span class="p">(</span>
+    <span class="n">time_plan</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;interval&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;loops&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span>
+    <span class="n">z_plan</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;range&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+    <span class="n">channels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;DAPI&quot;</span><span class="p">,</span> <span class="s2">&quot;FITC&quot;</span><span class="p">],</span>
+    <span class="n">stage_positions</span><span class="o">=</span><span class="p">[(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">)],</span>
+<span class="p">)</span>
+
+<span class="c1"># Internally converted to:</span>
+<span class="n">seq2</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDASequence</span><span class="p">(</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">TIntervalLoops</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">loops</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">StagePositions</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="n">v2</span><span class="o">.</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">5</span><span class="p">)]),</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">ChannelsPlan</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="n">v2</span><span class="o">.</span><span class="n">Channel</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="s2">&quot;DAPI&quot;</span><span class="p">),</span> <span class="n">v2</span><span class="o">.</span><span class="n">Channel</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="s2">&quot;FITC&quot;</span><span class="p">)]),</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">ZRangeAround</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">(</span><span class="n">seq2</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="breaking-changes">Breaking Changes<a class="headerlink" href="#breaking-changes" title="Permanent link">#</a></h3>
+<h4 id="1-event-building-architecture">1. <strong>Event Building Architecture</strong><a class="headerlink" href="#1-event-building-architecture" title="Permanent link">#</a></h4>
+<p><strong>v1</strong>: Monolithic <code>_iter_sequence</code> function with hardcoded event building
+logic.</p>
+<p><strong>v2</strong>: Separation of concerns:</p>
+<ul>
+<li>Axis iteration handled by <code>iterate_multi_dim_sequence</code></li>
+<li>Event building handled by <code>EventBuilder</code></li>
+<li>Event modification handled by <code>EventTransform</code> pipeline</li>
+</ul>
+<h4 id="2-shape-and-sizes-properties">2. <strong>Shape and Sizes Properties</strong><a class="headerlink" href="#2-shape-and-sizes-properties" title="Permanent link">#</a></h4>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">useq</span><span class="w"> </span><span class="kn">import</span> <span class="n">MDASequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">useq</span><span class="w"> </span><span class="kn">import</span> <span class="n">v2</span>
+
+<span class="c1"># v1</span>
+<span class="n">seq</span> <span class="o">=</span> <span class="n">MDASequence</span><span class="p">()</span>
+<span class="n">seq</span><span class="o">.</span><span class="n">shape</span>  <span class="c1"># Returns tuple of sizes</span>
+<span class="n">seq</span><span class="o">.</span><span class="n">sizes</span>  <span class="c1"># Returns mapping of axis -&gt; size</span>
+
+<span class="c1"># v2 - DEPRECATED</span>
+<span class="n">seq2</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDASequence</span><span class="p">()</span>
+<span class="n">seq2</span><span class="o">.</span><span class="n">shape</span>  <span class="c1"># Deprecated - raises FutureWarning</span>
+<span class="n">seq2</span><span class="o">.</span><span class="n">sizes</span>  <span class="c1"># Deprecated - raises FutureWarning</span>
+
+<span class="c1"># v2 - New approach</span>
+<span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span> <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">seq2</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>  <span class="c1"># Get size per axis</span>
+<span class="n">seq2</span><span class="o">.</span><span class="n">is_finite</span><span class="p">()</span>  <span class="c1"># Check if sequence is finite</span>
+</code></pre></div>
+<h4 id="3-axis-access">3. <strong>Axis Access</strong><a class="headerlink" href="#3-axis-access" title="Permanent link">#</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># v1</span>
+<span class="n">seq</span><span class="o">.</span><span class="n">time_plan</span>
+<span class="n">seq</span><span class="o">.</span><span class="n">z_plan</span>
+<span class="n">seq</span><span class="o">.</span><span class="n">channels</span>
+<span class="n">seq</span><span class="o">.</span><span class="n">stage_positions</span>
+<span class="n">seq</span><span class="o">.</span><span class="n">grid_plan</span>
+
+<span class="c1"># v2 - Legacy properties still work but deprecated</span>
+<span class="n">seq2</span><span class="o">.</span><span class="n">time_plan</span>  <span class="c1"># Returns the time axis or None</span>
+<span class="n">seq2</span><span class="o">.</span><span class="n">z_plan</span>     <span class="c1"># Returns the z axis or None</span>
+
+<span class="c1"># v2 - New approach</span>
+<span class="n">time_axis</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">ax</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">seq2</span><span class="o">.</span><span class="n">axes</span> <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">axis_key</span> <span class="o">==</span> <span class="s2">&quot;t&quot;</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+<span class="n">z_axis</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">ax</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">seq2</span><span class="o">.</span><span class="n">axes</span> <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">axis_key</span> <span class="o">==</span> <span class="s2">&quot;z&quot;</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+
+<span class="c1"># each of which have convenience methods:</span>
+<span class="n">time_axis</span> <span class="o">=</span> <span class="n">seq2</span><span class="o">.</span><span class="n">time_plan</span>
+<span class="n">z_axis</span> <span class="o">=</span> <span class="n">seq2</span><span class="o">.</span><span class="n">z_plan</span>
+</code></pre></div>
+<h4 id="4-custom-skip-logic">4. <strong>Custom Skip Logic</strong><a class="headerlink" href="#4-custom-skip-logic" title="Permanent link">#</a></h4>
+<p><strong>v1</strong>: Hardcoded in <code>_should_skip</code> function within <code>_iter_sequence.py</code></p>
+<p><strong>v2</strong>: Implemented per-axis via <code>should_skip</code> method:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CustomZAxis</span><span class="p">(</span><span class="n">v2</span><span class="o">.</span><span class="n">ZRangeAround</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">should_skip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="n">AxesIndex</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="c1"># Custom logic here</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">should_skip</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="z-z-plans-yield-positions-not-floats">Z. <strong>Z-Plans yield Positions, not floats</strong><a class="headerlink" href="#z-z-plans-yield-positions-not-floats" title="Permanent link">#</a></h4>
+<p><strong>v1</strong>: Z plans yielded floats representing Z positions.</p>
+<p><strong>v2</strong>: Z plans yield <code>Position</code> objects that (usually) include only z
+coordinates:</p>
+<h2 id="built-in-axes-in-v2">Built-in Axes in v2<a class="headerlink" href="#built-in-axes-in-v2" title="Permanent link">#</a></h2>
+<p>All the original v1 plans are now <code>AxisIterable</code> implementations:</p>
+<h3 id="time-axes">Time Axes<a class="headerlink" href="#time-axes" title="Permanent link">#</a></h3>
+<ul>
+<li><code>TIntervalLoops</code></li>
+<li><code>TIntervalDuration</code></li>
+<li><code>TDurationLoops</code></li>
+<li><code>MultiPhaseTimePlan</code></li>
+</ul>
+<h3 id="z-axes">Z Axes<a class="headerlink" href="#z-axes" title="Permanent link">#</a></h3>
+<ul>
+<li><code>ZRangeAround</code></li>
+<li><code>ZTopBottom</code></li>
+<li><code>ZAboveBelow</code></li>
+<li><code>ZAbsolutePositions</code></li>
+<li><code>ZRelativePositions</code></li>
+</ul>
+<h3 id="channel-axes">Channel Axes<a class="headerlink" href="#channel-axes" title="Permanent link">#</a></h3>
+<ul>
+<li><code>ChannelsPlan</code> (wraps list of <code>Channel</code> objects)</li>
+</ul>
+<h3 id="position-axes">Position Axes<a class="headerlink" href="#position-axes" title="Permanent link">#</a></h3>
+<ul>
+<li><code>StagePositions</code> (wraps list of <code>Position</code> objects)</li>
+</ul>
+<h3 id="grid-axes">Grid Axes<a class="headerlink" href="#grid-axes" title="Permanent link">#</a></h3>
+<ul>
+<li><code>GridRowsColumns</code></li>
+<li><code>GridFromEdges</code></li>
+<li><code>GridWidthHeight</code></li>
+<li><code>RandomPoints</code></li>
+</ul>
+<h2 id="extension-examples">Extension Examples<a class="headerlink" href="#extension-examples" title="Permanent link">#</a></h2>
+<h3 id="creating-a-custom-scientific-axis">Creating a Custom Scientific Axis<a class="headerlink" href="#creating-a-custom-scientific-axis" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PHAxis</span><span class="p">(</span><span class="n">v2</span><span class="o">.</span><span class="n">AxisIterable</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Axis for pH titration experiments.&quot;&quot;&quot;</span>
+    <span class="n">axis_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ph&quot;</span>
+    <span class="n">start_ph</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">6.0</span>
+    <span class="n">end_ph</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">8.0</span>
+    <span class="n">steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+        <span class="n">step_size</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_ph</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_ph</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_ph</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">step_size</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">contribute_to_mda_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MDAEvent</span><span class="o">.</span><span class="n">Kwargs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;ph&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">},</span>
+            <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">[(</span><span class="s2">&quot;pH_Controller&quot;</span><span class="p">,</span> <span class="s2">&quot;target_ph&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">)]</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">should_skip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="n">AxesIndex</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="c1"># Skip pH 7.5+ for channel index &gt; 2</span>
+        <span class="n">channel_idx</span> <span class="o">=</span> <span class="n">prefix</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ph_value</span> <span class="o">=</span> <span class="n">prefix</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ph&quot;</span><span class="p">,</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">channel_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">channel_idx</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">ph_value</span> <span class="o">&gt;=</span> <span class="mf">7.5</span>
+</code></pre></div>
+<h3 id="complex-nested-workflow">Complex Nested Workflow<a class="headerlink" href="#complex-nested-workflow" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">useq</span><span class="w"> </span><span class="kn">import</span> <span class="n">v2</span>
+
+<span class="c1"># Different regions with different imaging parameters</span>
+<span class="n">region1</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDASequence</span><span class="p">(</span>
+    <span class="n">value</span><span class="o">=</span><span class="n">v2</span><span class="o">.</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Region1&quot;</span><span class="p">),</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">ZRangeAround</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.2</span><span class="p">),</span>  <span class="c1"># High-res Z</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">ChannelsPlan</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;DAPI&quot;</span><span class="p">,</span> <span class="s2">&quot;FITC&quot;</span><span class="p">,</span> <span class="s2">&quot;Cy3&quot;</span><span class="p">]),</span>  <span class="c1"># 3 channels</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">region2</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDASequence</span><span class="p">(</span>
+    <span class="n">value</span><span class="o">=</span><span class="n">v2</span><span class="o">.</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Region2&quot;</span><span class="p">),</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">ZRangeAround</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>  <span class="c1"># Lower-res Z</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">ChannelsPlan</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;DAPI&quot;</span><span class="p">,</span> <span class="s2">&quot;Cy5&quot;</span><span class="p">]),</span>  <span class="c1"># Only 2 channels</span>
+        <span class="n">PHAxis</span><span class="p">(</span><span class="n">start_ph</span><span class="o">=</span><span class="mf">6.5</span><span class="p">,</span> <span class="n">end_ph</span><span class="o">=</span><span class="mf">7.5</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>  <span class="c1"># pH titration</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomTransform</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">event</span><span class="p">:</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDAEvent</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">prev_event</span><span class="p">:</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDAEvent</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">make_next_event</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDAEvent</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">v2</span><span class="o">.</span><span class="n">MDAEvent</span><span class="p">]:</span>
+        <span class="c1"># possibly modify event... based on conditions</span>
+        <span class="k">yield</span> <span class="n">event</span>
+
+<span class="n">main_seq</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="n">MDASequence</span><span class="p">(</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">TIntervalLoops</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">loops</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>  <span class="c1"># Every minute for 10 minutes</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">StagePositions</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="n">region1</span><span class="p">,</span> <span class="n">region2</span><span class="p">]),</span>
+    <span class="p">),</span>
+    <span class="n">transforms</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">CustomTransform</span><span class="p">(),</span>
+        <span class="n">v2</span><span class="o">.</span><span class="n">KeepShutterOpenTransform</span><span class="p">((</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">)),</span>  <span class="c1"># Keep shutter open for Z and C</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+<h2 id="performance-and-design-benefits">Performance and Design Benefits<a class="headerlink" href="#performance-and-design-benefits" title="Permanent link">#</a></h2>
+<h3 id="separation-of-concerns">Separation of Concerns<a class="headerlink" href="#separation-of-concerns" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Axis logic</strong>: Isolated in individual <code>AxisIterable</code> implementations</li>
+<li><strong>Event building</strong>: Centralized in <code>EventBuilder</code></li>
+<li><strong>Event modification</strong>: Composable <code>EventTransform</code> pipeline</li>
+</ul>
+<h3 id="extensibility">Extensibility<a class="headerlink" href="#extensibility" title="Permanent link">#</a></h3>
+<ul>
+<li>Add new dimensions without modifying core code</li>
+<li>Custom skip logic per axis</li>
+<li>Pluggable event builders for different event types</li>
+<li>Composable transform pipeline</li>
+</ul>
+<h3 id="type-safety">Type Safety<a class="headerlink" href="#type-safety" title="Permanent link">#</a></h3>
+<ul>
+<li>Generic types ensure type safety across the pipeline</li>
+<li>Protocol-based design enables duck typing</li>
+<li>Clear interfaces for each component</li>
+</ul>
+<h3 id="maintainability">Maintainability<a class="headerlink" href="#maintainability" title="Permanent link">#</a></h3>
+<ul>
+<li>Individual axis implementations are easier to test and debug</li>
+<li>Transform pipeline is easier to reason about than monolithic logic</li>
+<li>Clear separation between axis iteration and event building</li>
+</ul>
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">#</a></h2>
+<p>useq-schema v2 transforms the library from a fixed-axis system to a fully
+extensible, protocol-based architecture that supports:</p>
+<ul>
+<li><strong>Arbitrary custom axes</strong> with their own iteration and contribution logic</li>
+<li><strong>Conditional skipping</strong> per axis with full context awareness  </li>
+<li><strong>Hierarchical nesting</strong> with axis override capabilities</li>
+<li><strong>Composable transforms</strong> for event modification</li>
+<li><strong>Pluggable event builders</strong> for different event types</li>
+<li><strong>Type-safe extensibility</strong> through generic protocols</li>
+</ul>
+<p>While maintaining full backward compatibility with v1 API patterns, v2 opens up
+useq-schema for complex, multi-dimensional experimental workflows that were
+impossible to express in the original architecture.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.tabs.link", "navigation.tabs"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

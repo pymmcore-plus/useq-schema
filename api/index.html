@@ -1,0 +1,1858 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Implementation agnostic schema for microscopy experiments">
+      
+      
+      
+        <link rel="canonical" href="https://pymmcore-plus.github.io/useq-schema/api/">
+      
+      
+        <link rel="prev" href="../schema/hardware_autofocus/">
+      
+      
+        <link rel="next" href="../v2-migration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../docs/images/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>API - useq-schema</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="dark-blue" data-md-color-accent="dark-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="useq-schema" class="md-header__button md-logo" aria-label="useq-schema" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M176 0c-26.5 0-48 21.5-48 48v208c0 26.5 21.5 48 48 48h64c26.5 0 48-21.5 48-48v-64h32c70.7 0 128 57.3 128 128s-57.3 128-128 128H32c-17.7 0-32 14.3-32 32s14.3 32 32 32h448c17.7 0 32-14.3 32-32s-14.3-32-32-32h-16.9c30.4-34 48.9-78.8 48.9-128 0-106-86-192-192-192h-32V48c0-26.5-21.5-48-48-48zm-56 352c-13.3 0-24 10.7-24 24s10.7 24 24 24h176c13.3 0 24-10.7 24-24s-10.7-24-24-24z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            useq-schema
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="dark-blue" data-md-color-accent="dark-blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="light-green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/pymmcore-plus/useq-schema" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pymmcore-plus/useq-schema
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="/pymmcore-plus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  pymmcore-plus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  useq-schema
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="/pymmcore-widgets/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  pymmcore-widgets
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="/napari-micromanager/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  napari-micromanager
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="useq-schema" class="md-nav__button md-logo" aria-label="useq-schema" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M176 0c-26.5 0-48 21.5-48 48v208c0 26.5 21.5 48 48 48h64c26.5 0 48-21.5 48-48v-64h32c70.7 0 128 57.3 128 128s-57.3 128-128 128H32c-17.7 0-32 14.3-32 32s14.3 32 32 32h448c17.7 0 32-14.3 32-32s-14.3-32-32-32h-16.9c30.4-34 48.9-78.8 48.9-128 0-106-86-192-192-192h-32V48c0-26.5-21.5-48-48-48zm-56 352c-13.3 0-24 10.7-24 24s10.7 24 24 24h176c13.3 0 24-10.7 24-24s-10.7-24-24-24z"/></svg>
+
+    </a>
+    useq-schema
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/pymmcore-plus/useq-schema" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pymmcore-plus/useq-schema
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/pymmcore-plus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pymmcore-plus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    useq-schema
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    useq-schema
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Schema
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schema/sequence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sequence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schema/event/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schema/axes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Axes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schema/hardware_autofocus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware Autofocus Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#useq.MDASequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MDASequence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MDASequence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        shape
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.sizes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sizes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.uid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        uid
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.used_axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        used_axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.__eq__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        __eq__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.__iter__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        __iter__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.estimate_duration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        estimate_duration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.iter_axis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iter_axis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.iter_events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iter_events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#useq._mda_sequence.iter_sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iter_sequence
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../v2-migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v2 Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/pymmcore-widgets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pymmcore-widgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/napari-micromanager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    napari-micromanager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#useq.MDASequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MDASequence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MDASequence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        shape
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.sizes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sizes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.uid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        uid
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.used_axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        used_axes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.__eq__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        __eq__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.__iter__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        __iter__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.estimate_duration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        estimate_duration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.iter_axis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iter_axis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useq.MDASequence.iter_events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iter_events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#useq._mda_sequence.iter_sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iter_sequence
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="api">API<a class="headerlink" href="#api" title="Permanent link">#</a></h1>
+<p>In addition to declaring a schema (which is intended to be language agnostic),
+<code>useq-schema</code> offers a python API for working with
+<a class="autorefs autorefs-internal" href="#useq.MDASequence"><code>MDASequence</code></a> and <a class="autorefs autorefs-internal" href="../schema/event/#useq.MDAEvent"><code>MDAEvent</code></a> objects.</p>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="useq.MDASequence" class="doc doc-heading">
+            <code>MDASequence</code>
+
+
+<a href="#useq.MDASequence" class="headerlink" title="Permanent link">#</a></h3>
+
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>A sequence of MDA (Multi-Dimensional Acquisition) events.</p>
+<p>This is the core object in the <code>useq</code> library, and is used define a sequence of
+events to be run on a microscope. It object may be constructed manually, or from
+file (e.g. json or yaml).</p>
+<p>The object itself acts as an iterator for <a class="autorefs autorefs-internal" title="MDAEvent" href="../schema/event/#useq.MDAEvent"><code>useq.MDAEvent</code></a> objects:</p>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="useq.MDASequence.metadata">metadata</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A dictionary of user metadata to be stored with the sequence.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="useq.MDASequence.axis_order">axis_order</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The order of the axes in the sequence. Must be a permutation of <code>"tpgcz"</code>. The
+default is <code>"tpgcz"</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="useq.MDASequence.stage_positions">stage_positions</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-internal" title="Position = AbsolutePosition
+
+  
+      module-attribute
+   (useq._position.Position)" href="../schema/axes/#useq.Position">Position</a>, ...]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The stage positions to visit. (each with <code>x</code>, <code>y</code>, <code>z</code>, <code>name</code>, and <code>sequence</code>,
+all of which are optional).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="useq.MDASequence.grid_plan">grid_plan</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="GridFromEdges (useq._grid.GridFromEdges)" href="../schema/axes/#useq.GridFromEdges">GridFromEdges</a> | <span title="useq._grid.GridRelative">GridRelative</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The grid plan to follow. One of <code>GridFromEdges</code>, <code>GridRelative</code> or <code>None</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="useq.MDASequence.channels">channels</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-internal" title="Channel (useq._channel.Channel)" href="../schema/axes/#useq.Channel">Channel</a>, ...]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The channels to acquire. see <code>Channel</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="useq.MDASequence.time_plan">time_plan</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MultiPhaseTimePlan (useq._time.MultiPhaseTimePlan)" href="../schema/axes/#useq.MultiPhaseTimePlan">MultiPhaseTimePlan</a> | <a class="autorefs autorefs-internal" title="TIntervalDuration (useq._time.TIntervalDuration)" href="../schema/axes/#useq.TIntervalDuration">TIntervalDuration</a> | <a class="autorefs autorefs-internal" title="TIntervalLoops (useq._time.TIntervalLoops)" href="../schema/axes/#useq.TIntervalLoops">TIntervalLoops</a> | <a class="autorefs autorefs-internal" title="TDurationLoops (useq._time.TDurationLoops)" href="../schema/axes/#useq.TDurationLoops">TDurationLoops</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The time plan to follow. One of <code>TIntervalDuration</code>, <code>TIntervalLoops</code>,
+<code>TDurationLoops</code>, <code>MultiPhaseTimePlan</code>, or <code>None</code></p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="useq.MDASequence.z_plan">z_plan</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="ZTopBottom (useq._z.ZTopBottom)" href="../schema/axes/#useq.ZTopBottom">ZTopBottom</a> | <a class="autorefs autorefs-internal" title="ZRangeAround (useq._z.ZRangeAround)" href="../schema/axes/#useq.ZRangeAround">ZRangeAround</a> | <a class="autorefs autorefs-internal" title="ZAboveBelow (useq._z.ZAboveBelow)" href="../schema/axes/#useq.ZAboveBelow">ZAboveBelow</a> | <a class="autorefs autorefs-internal" title="ZRelativePositions (useq._z.ZRelativePositions)" href="../schema/axes/#useq.ZRelativePositions">ZRelativePositions</a> | <a class="autorefs autorefs-internal" title="ZAbsolutePositions (useq._z.ZAbsolutePositions)" href="../schema/axes/#useq.ZAbsolutePositions">ZAbsolutePositions</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The z plan to follow. One of <code>ZTopBottom</code>, <code>ZRangeAround</code>, <code>ZAboveBelow</code>,
+<code>ZRelativePositions</code>, <code>ZAbsolutePositions</code>, or <code>None</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="uid: UUID
+
+  
+      property
+   (useq.MDASequence.uid)" href="#useq.MDASequence.uid">uid</a></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A read-only unique identifier (uuid version 4) for the sequence. This will be
+generated, do not set.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="useq.MDASequence.autofocus_plan">autofocus_plan</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="AxesBasedAF (useq._hardware_autofocus.AxesBasedAF)" href="../schema/hardware_autofocus/#useq.AxesBasedAF">AxesBasedAF</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The hardware autofocus plan to follow. One of <code>AxesBasedAF</code> or <code>None</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="useq.MDASequence.keep_shutter_open_across">keep_shutter_open_across</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, ...]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A tuple of axes <code>str</code> across which the illumination shutter should be kept open.
+Resulting events will have <code>keep_shutter_open</code> set to <code>True</code> if and only if
+ALL axes whose indices are changing are in this tuple. For example, if
+<code>keep_shutter_open_across=('z',)</code>, then the shutter would be kept open between
+events axes {'t': 0, 'z: 0} and {'t': 0, 'z': 1}, but not between
+{'t': 0, 'z': 0} and {'t': 1, 'z': 0}.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <p>Create a MDASequence</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">useq</span><span class="w"> </span><span class="kn">import</span> <span class="n">MDASequence</span><span class="p">,</span> <span class="n">Position</span><span class="p">,</span> <span class="n">Channel</span><span class="p">,</span> <span class="n">TIntervalDuration</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">seq</span> <span class="o">=</span> <span class="n">MDASequence</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">axis_order</span><span class="o">=</span><span class="s2">&quot;tpgcz&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">time_plan</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;interval&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;loops&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="n">stage_positions</span><span class="o">=</span><span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)],</span>
+<span class="gp">... </span>    <span class="n">grid_plan</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="n">z_plan</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;range&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="n">channels</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="s2">&quot;DAPI&quot;</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}]</span>
+<span class="gp">... </span><span class="p">)</span>
+</code></pre></div>
+    <p>Print the sequence to visualize its structure</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">MDASequence</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">stage_positions</span><span class="o">=</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">),),</span>
+<span class="gp">... </span>    <span class="n">grid_plan</span><span class="o">=</span><span class="n">GridRowsColumns</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">fov_width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">fov_height</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">overlap</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="n">mode</span><span class="o">=&lt;</span><span class="n">OrderMode</span><span class="o">.</span><span class="n">row_wise_snake</span><span class="p">:</span> <span class="s1">&#39;row_wise_snake&#39;</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">rows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">columns</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">relative_to</span><span class="o">=&lt;</span><span class="n">RelativeTo</span><span class="o">.</span><span class="n">center</span><span class="p">:</span> <span class="s1">&#39;center&#39;</span><span class="o">&gt;</span>
+<span class="gp">... </span>    <span class="p">),</span>
+<span class="gp">... </span>    <span class="n">channels</span><span class="o">=</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">Channel</span><span class="p">(</span>
+<span class="gp">... </span>            <span class="n">config</span><span class="o">=</span><span class="s1">&#39;DAPI&#39;</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">group</span><span class="o">=</span><span class="s1">&#39;Channel&#39;</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">exposure</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">do_stack</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">z_offset</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">acquire_every</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">camera</span><span class="o">=</span><span class="kc">None</span>
+<span class="gp">... </span>        <span class="p">),</span>
+<span class="gp">... </span>    <span class="p">),</span>
+<span class="gp">... </span>    <span class="n">time_plan</span><span class="o">=</span><span class="n">TIntervalLoops</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">prioritize_duration</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">interval</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">microseconds</span><span class="o">=</span><span class="mi">100000</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="n">loops</span><span class="o">=</span><span class="mi">2</span>
+<span class="gp">... </span>    <span class="p">),</span>
+<span class="gp">... </span>    <span class="n">z_plan</span><span class="o">=</span><span class="n">ZRangeAround</span><span class="p">(</span><span class="n">go_up</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="gp">... </span><span class="p">)</span>
+</code></pre></div>
+    <p>Iterate over the events in the sequence</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">seq</span><span class="p">))</span>
+<span class="gp">... </span><span class="p">[</span>
+<span class="gp">... </span>    <span class="n">MDAEvent</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">index</span><span class="o">=</span><span class="n">mappingproxy</span><span class="p">({</span><span class="s1">&#39;t&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;g&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span>
+<span class="gp">... </span>        <span class="n">channel</span><span class="o">=</span><span class="n">Channel</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="s1">&#39;DAPI&#39;</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="n">exposure</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">min_start_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">x_pos</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">y_pos</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">z_pos</span><span class="o">=-</span><span class="mf">0.5</span>
+<span class="gp">... </span>    <span class="p">),</span>
+<span class="gp">... </span>    <span class="n">MDAEvent</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">index</span><span class="o">=</span><span class="n">mappingproxy</span><span class="p">({</span><span class="s1">&#39;t&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;g&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}),</span>
+<span class="gp">... </span>        <span class="n">channel</span><span class="o">=</span><span class="n">Channel</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="s1">&#39;DAPI&#39;</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="n">exposure</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">min_start_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">x_pos</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">y_pos</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">z_pos</span><span class="o">=</span><span class="mf">0.5</span>
+<span class="gp">... </span>    <span class="p">),</span>
+<span class="gp">... </span>    <span class="o">...</span>
+<span class="gp">... </span><span class="p">]</span>
+</code></pre></div>
+    <p>Print the sequence as yaml</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">seq</span><span class="o">.</span><span class="n">yaml</span><span class="p">())</span>
+</code></pre></div>
+    <div class="highlight"><pre><span></span><code><span class="nt">axis_order</span><span class="p">:</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">g</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">c</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">z</span>
+<span class="nt">channels</span><span class="p">:</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DAPI</span>
+<span class="w">     </span><span class="nt">exposure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="nt">grid_plan</span><span class="p">:</span>
+<span class="w">   </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">   </span><span class="nt">rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="nt">stage_positions</span><span class="p">:</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">x</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">     </span><span class="nt">y</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">     </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="nt">time_plan</span><span class="p">:</span>
+<span class="w">   </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;0:00:00.100000&#39;</span>
+<span class="w">   </span><span class="nt">loops</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="nt">z_plan</span><span class="p">:</span>
+<span class="w">   </span><span class="nt">range</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0</span>
+<span class="w">   </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="useq.MDASequence.shape" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#useq.MDASequence.shape" class="headerlink" title="Permanent link">#</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the shape of this sequence.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This doesn't account for jagged arrays, like channels that exclude z
+stacks or skip timepoints.</p>
+</div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="useq.MDASequence.sizes" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">sizes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#useq.MDASequence.sizes" class="headerlink" title="Permanent link">#</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Mapping of axis name to size of that axis.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="useq.MDASequence.uid" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">uid</span><span class="p">:</span> <span class="n">UUID</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#useq.MDASequence.uid" class="headerlink" title="Permanent link">#</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>A unique identifier for this sequence.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="useq.MDASequence.used_axes" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">used_axes</span><span class="p">:</span> <span class="nb">str</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#useq.MDASequence.used_axes" class="headerlink" title="Permanent link">#</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Single letter string of axes used in this sequence, e.g. <code>ztc</code>.</p>
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="useq.MDASequence.__eq__" class="doc doc-heading">
+            <code class="highlight language-python"><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span></code>
+
+<a href="#useq.MDASequence.__eq__" class="headerlink" title="Permanent link">#</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return <code>True</code> if two <code>MDASequences</code> are equal (uid is excluded).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="useq.MDASequence.__iter__" class="doc doc-heading">
+            <code class="highlight language-python"><span class="fm">__iter__</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">MDAEvent</span><span class="p">]</span></code>
+
+<a href="#useq.MDASequence.__iter__" class="headerlink" title="Permanent link">#</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Same as <code>iter_events</code>. Supports <code>for event in sequence: ...</code> syntax.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="useq.MDASequence.estimate_duration" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">estimate_duration</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">TimeEstimate</span></code>
+
+<a href="#useq.MDASequence.estimate_duration" class="headerlink" title="Permanent link">#</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Estimate duration and other timing issues of an MDASequence.</p>
+<p>Notable mis-estimations may include:
+- when the time interval is shorter than the time it takes to acquire the data
+and any of the channels have <code>acquire_every</code> &gt; 1
+- when channel exposure times are omitted. In this case, we assume 1ms exposure.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="useq._utils.TimeEstimate">TimeEstimate</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A named 3-tuple with the following fields:
+- total_duration: float
+    Estimated total duration of the experiment, in seconds.
+- per_t_duration: float
+    Estimated duration of a single timepoint, in seconds.
+- time_interval_exceeded: bool
+    Whether the time interval between timepoints is shorter than the time it
+    takes to acquire the data</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="useq.MDASequence.iter_axis" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">iter_axis</span><span class="p">(</span><span class="n">axis</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Channel</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">PositionBase</span><span class="p">]</span></code>
+
+<a href="#useq.MDASequence.iter_axis" class="headerlink" title="Permanent link">#</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Iterate over the positions or items of a given axis.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="useq.MDASequence.iter_events" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">iter_events</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">MDAEvent</span><span class="p">]</span></code>
+
+<a href="#useq.MDASequence.iter_events" class="headerlink" title="Permanent link">#</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Iterate over all events in the MDA sequence.</p>
+<p>See source of <a class="autorefs autorefs-internal" title="iter_sequence(sequence)" href="#useq._mda_sequence.iter_sequence"><code>iter_sequence</code></a> for
+details on how events are constructed and yielded.</p>
+
+
+    <p><span class="doc-section-title">Yields:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MDAEvent (useq._mda_event.MDAEvent)" href="../schema/event/#useq.MDAEvent">MDAEvent</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Each event in the MDA sequence.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="useq._mda_sequence.iter_sequence" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">iter_sequence</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span></code>
+
+<a href="#useq._mda_sequence.iter_sequence" class="headerlink" title="Permanent link">#</a></h3>
+
+
+    <div class="doc doc-contents first">
+
+        <p>Iterate over all events in the MDA sequence.'.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method will usually be used via <a class="autorefs autorefs-internal" title="iter_events() -> Iterator[MDAEvent]" href="#useq.MDASequence.iter_events"><code>useq.MDASequence.iter_events</code></a>, or by
+simply iterating over the sequence.</p>
+</div>
+<p>This does the job of iterating over all the frames in the MDA sequence,
+handling the logic of merging all z plans in channels and stage positions
+defined in the plans for each axis.</p>
+<p>The is the most "logic heavy" part of <code>useq-schema</code> (the rest of which is
+almost entirely declarative).  This iterator is useful for consuming <code>MDASequence</code>
+objects in a python runtime, but it isn't considered a "core" part of the schema.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>sequence</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MDASequence (useq._mda_sequence.MDASequence)" href="#useq.MDASequence">MDASequence</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The sequence to iterate over.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Yields:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MDAEvent (useq._mda_event.MDAEvent)" href="../schema/event/#useq.MDAEvent">MDAEvent</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Each event in the MDA sequence.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/useq/_iter_sequence.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">iter_sequence</span><span class="p">(</span><span class="n">sequence</span><span class="p">:</span> <span class="n">MDASequence</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">MDAEvent</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Iterate over all events in the MDA sequence.&#39;.</span>
+
+<span class="sd">    !!! note</span>
+<span class="sd">        This method will usually be used via [`useq.MDASequence.iter_events`][], or by</span>
+<span class="sd">        simply iterating over the sequence.</span>
+
+<span class="sd">    This does the job of iterating over all the frames in the MDA sequence,</span>
+<span class="sd">    handling the logic of merging all z plans in channels and stage positions</span>
+<span class="sd">    defined in the plans for each axis.</span>
+
+<span class="sd">    The is the most &quot;logic heavy&quot; part of `useq-schema` (the rest of which is</span>
+<span class="sd">    almost entirely declarative).  This iterator is useful for consuming `MDASequence`</span>
+<span class="sd">    objects in a python runtime, but it isn&#39;t considered a &quot;core&quot; part of the schema.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sequence : MDASequence</span>
+<span class="sd">        The sequence to iterate over.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    MDAEvent</span>
+<span class="sd">        Each event in the MDA sequence.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">keep_shutter_open_axes</span> <span class="o">:=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">keep_shutter_open_across</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="n">_iter_sequence</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">it</span> <span class="o">=</span> <span class="n">_iter_sequence</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">this_e</span> <span class="o">:=</span> <span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
+        <span class="k">return</span>
+
+    <span class="k">for</span> <span class="n">next_e</span> <span class="ow">in</span> <span class="n">it</span><span class="p">:</span>
+        <span class="c1"># set `keep_shutter_open` to `True` if and only if ALL axes whose index</span>
+        <span class="c1"># changes betwee this_event and next_event are in `keep_shutter_open_axes`</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span>
+            <span class="n">axis</span> <span class="ow">in</span> <span class="n">keep_shutter_open_axes</span>
+            <span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">this_e</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">!=</span> <span class="n">next_e</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="n">this_e</span> <span class="o">=</span> <span class="n">this_e</span><span class="o">.</span><span class="n">model_copy</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;keep_shutter_open&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+        <span class="k">yield</span> <span class="n">this_e</span>
+        <span class="n">this_e</span> <span class="o">=</span> <span class="n">next_e</span>
+    <span class="k">yield</span> <span class="n">this_e</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.tabs.link", "navigation.tabs"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
