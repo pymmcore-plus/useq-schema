@@ -210,6 +210,8 @@ class MDAEvent(UseqModel):
         property_value)`.  This is inspired by micro-manager's Device Adapter API, but
         could be used to set arbitrary properties in any backend that supports the
         concept of devices that have properties with values. By default, `None`.
+    roi : tuple[int, int, int, int] | None
+        Region of interest as `(x_offset, y_offset, width, height)`. By default, `None`.
     metadata : dict
         Optional metadata to be associated with this event.
     action : Action
@@ -242,6 +244,7 @@ class MDAEvent(UseqModel):
     slm_image: SLMImage | None = None
     sequence: Optional["MDASequence"] = Field(default=None, repr=False)
     properties: list[PropertyTuple] | None = None
+    roi: tuple[int, int, int, int] | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage, discriminator="type")
     keep_shutter_open: bool = False
@@ -273,6 +276,7 @@ class MDAEvent(UseqModel):
             slm_image: "SLMImage | SLMImage.Kwargs | npt.ArrayLike"
             sequence: "MDASequence | dict"
             properties: list[tuple[str, str, Any]]
+            roi: tuple[int, int, int, int]
             metadata: dict
             action: AnyAction
             keep_shutter_open: bool

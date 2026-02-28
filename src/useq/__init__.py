@@ -91,6 +91,7 @@ __all__ = [
 
 
 MDAEvent.model_rebuild()
+MDASequence.model_rebuild()
 Position.model_rebuild()
 WellPlatePlan.model_rebuild()
 RelativePosition.model_rebuild()
