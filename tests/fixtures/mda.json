@@ -58,6 +58,7 @@
   "metadata": {
     "some info": "something"
   },
+  "setup": null,
   "stage_positions": [
     {
       "name": null,
@@ -92,6 +93,7 @@
         },
         "keep_shutter_open_across": [],
         "metadata": {},
+        "setup": null,
         "stage_positions": [],
         "time_plan": null,
         "z_plan": {

@@ -25,3 +25,7 @@
 ::: useq.HardwareAutofocus
     options:
         members: []
+
+::: useq.CustomAction
+    options:
+        members: []
