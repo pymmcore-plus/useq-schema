@@ -3,13 +3,7 @@
 import warnings
 from typing import TYPE_CHECKING, Any
 
-from useq._actions import (
-    AcquireImage,
-    Action,
-    CustomAction,
-    HardwareAutofocus,
-    SetupAction,
-)
+from useq._actions import AcquireImage, Action, CustomAction, HardwareAutofocus
 from useq._channel import Channel
 from useq._enums import Axis, Shape
 from useq._grid import (
@@ -79,7 +73,6 @@ __all__ = [
     "RelativeMultiPointPlan",
     "RelativePosition",
     "SLMImage",
-    "SetupAction",
     "Shape",
     "TDurationLoops",
     "TIntervalDuration",

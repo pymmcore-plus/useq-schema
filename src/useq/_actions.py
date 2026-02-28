@@ -105,19 +105,4 @@ class CustomAction(Action):
         return data
 
 
-class SetupAction(Action):
-    """[`useq.Action`][] to set up hardware state before acquisition.
-
-    This action is used on the [`MDASequence.setup`][useq.MDASequence] event to
-    configure hardware (device properties, ROI, etc.) without acquiring an image.
-
-    Attributes
-    ----------
-    type : Literal["setup"]
-        Identifies this as a setup action.
-    """
-
-    type: Literal["setup"] = "setup"  # pyright: ignore[reportIncompatibleVariableOverride]
-
-
-AnyAction = HardwareAutofocus | AcquireImage | SetupAction | CustomAction
+AnyAction = HardwareAutofocus | AcquireImage | CustomAction

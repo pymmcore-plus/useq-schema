@@ -14,7 +14,7 @@ from useq import (
     ZAboveBelow,
     ZRangeAround,
 )
-from useq._actions import CustomAction, HardwareAutofocus, SetupAction
+from useq._actions import CustomAction, HardwareAutofocus
 from useq._mda_event import SLMImage
 
 _T = list[tuple[Any, Sequence[float]]]
@@ -289,7 +289,7 @@ def test_mda_sequence_setup() -> None:
     setup_event = MDAEvent(
         properties=[("Camera", "Mode", "12bit")],
         roi=(0, 0, 512, 512),
-        action=SetupAction(),
+        action=CustomAction(name="setup"),
     )
     seq = MDASequence(
         setup=setup_event,
@@ -305,28 +305,28 @@ def test_mda_sequence_setup() -> None:
     events = list(seq)
     assert len(events) > 0
     first = events[0]
-    assert isinstance(first.action, SetupAction)
+    assert isinstance(first.action, CustomAction)
     assert first.roi == (0, 0, 512, 512)
 
     # remaining events are regular AcquireImage events
     for ev in events[1:]:
-        assert not isinstance(ev.action, SetupAction)
+        assert not isinstance(ev.action, CustomAction)
 
 
 def test_mda_sequence_setup_serialization() -> None:
     setup_event = MDAEvent(
         properties=[("Camera", "Mode", "12bit")],
-        action=SetupAction(),
+        action=CustomAction(name="setup"),
     )
     seq = MDASequence(setup=setup_event)
 
     d = seq.model_dump()
     assert "setup" in d
-    assert d["setup"]["action"]["type"] == "setup"
+    assert d["setup"]["action"]["name"] == "setup"
 
     roundtripped = MDASequence(**d)
     assert roundtripped.setup is not None
-    assert isinstance(roundtripped.setup.action, SetupAction)
+    assert isinstance(roundtripped.setup.action, CustomAction)
 
     j = seq.model_dump_json()
     roundtripped2 = MDASequence.model_validate_json(j)
@@ -339,4 +339,4 @@ def test_mda_sequence_no_setup() -> None:
     events = list(seq)
     # no setup event should be prepended
     for ev in events:
-        assert not isinstance(ev.action, SetupAction)
+        assert not isinstance(ev.action, CustomAction)
