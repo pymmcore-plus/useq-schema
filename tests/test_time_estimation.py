@@ -129,7 +129,9 @@ SEQS_WITH_SUBSEQS: dict[useq.MDASequence, float | tuple[float, bool]] = {
         channels=[DAPI_10],
         stage_positions=[
             (0, 0),  # 0.01
-            useq.Position(x=1, sequence=useq.MDASequence(grid_plan=GRID_4)),  # 0.04
+            useq.Position(
+                x=1, y=0, sequence=useq.MDASequence(grid_plan=GRID_4)
+            ),  # 0.04
         ],
     ): 0.05,  # 0.01 + 0.04
 }

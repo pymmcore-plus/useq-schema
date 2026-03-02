@@ -53,16 +53,24 @@ class PositionBase(MutableModel):
         """Add two positions together to create a new position."""
         if not isinstance(other, RelativePosition):  # pragma: no cover
             return NotImplemented
-        if (x := self.x) is not None and other.x is not None:
-            x += other.x
-        if (y := self.y) is not None and other.y is not None:
-            y += other.y
-        if (z := self.z) is not None and other.z is not None:
-            z += other.z
+        if self.x is not None and other.x is not None:
+            x = self.x + other.x
+        else:
+            x = self.x if other.x is None else other.x
+        if self.y is not None and other.y is not None:
+            y = self.y + other.y
+        else:
+            y = self.y if other.y is None else other.y
+        if self.z is not None and other.z is not None:
+            z = self.z + other.z
+        else:
+            z = self.z if other.z is None else other.z
         if (name := self.name) and other.name:
             name = f"{name}_{other.name}"
         kwargs = {**self.model_dump(), "x": x, "y": y, "z": z, "name": name}
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
+
+    __radd__ = __add__
 
     def __round__(self, ndigits: "SupportsIndex | None" = None) -> "Self":
         """Round the position to the given number of decimal places."""
@@ -89,28 +97,6 @@ class PositionBase(MutableModel):
             value = {"x": x, "y": y, "z": z}
         return value
 
-    @model_validator(mode="after")
-    def _validate_position(self) -> "Self":
-        # x and y should not be set when using an absolute grid plan.
-        if (
-            (self.x is not None or self.y is not None)
-            and self.sequence is not None
-            and self.sequence.grid_plan is not None
-            and not self.sequence.grid_plan.is_relative
-        ):
-            grid = self.sequence.grid_plan
-            warnings.warn(
-                f"Position x={self.x!r}, y={self.y!r} is ignored when a position "
-                f"sequence uses an absolute grid plan ({type(grid).__name__}). "
-                "Set x=None, y=None on the position to silence this warning. "
-                "In a future version this will raise an error.",
-                UserWarning,
-                stacklevel=2,
-            )
-            object.__setattr__(self, "x", None)
-            object.__setattr__(self, "y", None)
-        return self
-
 
 class AbsolutePosition(PositionBase, FrozenModel):
     """An absolute position in 3D space."""
@@ -118,6 +104,28 @@ class AbsolutePosition(PositionBase, FrozenModel):
     @property
     def is_relative(self) -> bool:
         return False
+
+    @model_validator(mode="after")
+    def _validate_position(self) -> "Self":
+        if self.sequence is None or self.sequence.grid_plan is None:
+            return self
+        grid = self.sequence.grid_plan
+        if not grid.is_relative:
+            # x/y are meaningless with an absolute sub-grid (the grid defines
+            # them). Warn and clear.
+            if self.x is not None or self.y is not None:
+                warnings.warn(
+                    f"Position x={self.x!r}, y={self.y!r} is ignored when a position "
+                    f"sequence uses an absolute grid plan ({type(grid).__name__}). "
+                    "Set x=None, y=None on the position to silence this warning. "
+                    "In a future version this will raise an error.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                object.__setattr__(self, "x", None)
+                object.__setattr__(self, "y", None)
+
+        return self
 
 
 Position = AbsolutePosition  # for backwards compatibility

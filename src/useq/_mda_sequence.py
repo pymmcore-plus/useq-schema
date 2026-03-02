@@ -19,7 +19,7 @@ from useq._grid import MultiPointPlan  # noqa: TC001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._plate import WellPlatePlan
-from useq._position import Position, PositionBase
+from useq._position import Position, PositionBase, RelativePosition
 from useq._time import AnyTimePlan  # noqa: TC001
 from useq._utils import TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TC001
@@ -255,6 +255,12 @@ class MDASequence(UseqModel):
 
         positions = []
         for v in value:
+            if isinstance(v, RelativePosition):
+                raise ValueError(
+                    "RelativePosition cannot be used in stage_positions. "
+                    "Use AbsolutePosition (Position)) instead. For z-only "
+                    "positions, use Position(z=<value>)."
+                )
             if isinstance(v, Position):
                 positions.append(v)
             elif isinstance(v, dict):

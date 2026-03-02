@@ -301,8 +301,12 @@ GRID_SUBSEQ_CASES: list[MDATestCase] = [
         name="multi_g_in_position_sub_sequence",
         seq=MDASequence(
             stage_positions=[
-                {"sequence": {"grid_plan": {"rows": 1, "columns": 2}}},
-                {"sequence": {"grid_plan": GridRowsColumns(rows=2, columns=2)}},
+                {"x": 0, "y": 0, "sequence": {"grid_plan": {"rows": 1, "columns": 2}}},
+                {
+                    "x": 0,
+                    "y": 0,
+                    "sequence": {"grid_plan": GridRowsColumns(rows=2, columns=2)},
+                },
                 {
                     "sequence": {
                         "grid_plan": GridFromEdges(top=1, bottom=-1, left=0, right=0)
@@ -884,7 +888,7 @@ AF_CASES: list[MDATestCase] = [
     MDATestCase(
         name="af_axes_g_basic",
         seq=MDASequence(
-            stage_positions=[Position(z=30)],
+            stage_positions=[Position(x=0, y=0, z=30)],
             channels=["DAPI", "FITC"],
             grid_plan=GridRowsColumns(rows=2, columns=1),
             autofocus_plan=AxesBasedAF(autofocus_device_name="Z", axes=("g",)),
@@ -1124,7 +1128,7 @@ KEEP_SHUTTER_CASES: list[MDATestCase] = [
             channels=["DAPI", "FITC"],
             stage_positions=[
                 Position(
-                    sequence=MDASequence(grid_plan=GridRowsColumns(rows=2, columns=2))
+                    sequence=MDASequence(grid_plan=GridRowsColumns(rows=2, columns=2)),
                 )
             ],
             keep_shutter_open_across="g",
