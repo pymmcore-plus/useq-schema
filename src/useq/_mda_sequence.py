@@ -12,6 +12,7 @@ from warnings import warn
 import numpy as np
 from pydantic import Field, PrivateAttr, field_validator, model_validator
 
+from useq._actions import AcquireImage, CustomAction
 from useq._base_model import UseqModel
 from useq._channel import Channel
 from useq._enums import AXES, Axis
@@ -183,12 +184,11 @@ class MDASequence(UseqModel):
 
     Create a sequence with a setup event
 
-    >>> from useq import MDASequence, MDAEvent, CustomAction
+    >>> from useq import MDASequence, MDAEvent
     >>> seq = MDASequence(
     ...     setup=MDAEvent(
     ...         properties=[("Camera", "Binning", "2")],
     ...         roi=(0, 0, 512, 512),
-    ...         action=CustomAction(name="setup"),
     ...     ),
     ...     channels=["GFP"],
     ...     time_plan={"interval": 1, "loops": 5},
@@ -254,6 +254,32 @@ class MDASequence(UseqModel):
     @field_validator("z_plan", mode="before")
     def _validate_zplan(cls, v: Any) -> dict | None:
         return v or None
+
+    @field_validator("setup", mode="before")
+    def _validate_setup(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        from useq._mda_event import MDAEvent
+
+        if isinstance(v, MDAEvent):
+            if isinstance(v.action, AcquireImage):
+                # AcquireImage is the default action for MDAEvent; replace it
+                # with a CustomAction to avoid unintended image acquisition.
+                v = v.model_copy(update={"action": CustomAction(name="setup")})
+        elif isinstance(v, dict):
+            action = v.get("action")
+            if action is None:
+                v = {**v, "action": CustomAction(name="setup")}
+            elif (
+                isinstance(action, dict)
+                and action.get("type") == "acquire_image"
+            ) or isinstance(action, AcquireImage):
+                raise ValueError(
+                    "Setup event action cannot be 'AcquireImage'. "
+                    "Omit the action field to automatically use "
+                    "CustomAction(name='setup'), or use a different action type."
+                )
+        return v
 
     @field_validator("keep_shutter_open_across", mode="before")
     def _validate_keep_shutter_open_across(cls, v: tuple[str, ...]) -> tuple[str, ...]:

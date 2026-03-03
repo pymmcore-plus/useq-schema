@@ -286,10 +286,10 @@ def test_mda_event_roi() -> None:
 
 
 def test_mda_sequence_setup() -> None:
+    # action of setup_event defaults to CustomAction(name="setup") when omitted
     setup_event = MDAEvent(
         properties=[("Camera", "Mode", "12bit")],
         roi=(0, 0, 512, 512),
-        action=CustomAction(name="setup"),
     )
     seq = MDASequence(
         setup=setup_event,
@@ -298,6 +298,8 @@ def test_mda_sequence_setup() -> None:
     )
 
     assert seq.setup is not None
+    assert isinstance(seq.setup.action, CustomAction)
+    assert seq.setup.action.name == "setup"
     assert seq.setup.roi == (0, 0, 512, 512)
     assert seq.setup.properties is not None
 
@@ -313,10 +315,29 @@ def test_mda_sequence_setup() -> None:
         assert not isinstance(ev.action, CustomAction)
 
 
+def test_mda_sequence_setup_explicit_custom_action() -> None:
+    # explicitly setting a CustomAction should be preserved
+    setup_event = MDAEvent(
+        properties=[("Camera", "Mode", "12bit")],
+        action=CustomAction(name="my_setup"),
+    )
+    seq = MDASequence(setup=setup_event)
+    assert seq.setup is not None
+    assert isinstance(seq.setup.action, CustomAction)
+    assert seq.setup.action.name == "my_setup"
+
+
+def test_mda_sequence_setup_acquire_image_raises() -> None:
+    # explicitly setting AcquireImage on setup should raise ValueError
+    with pytest.raises(ValidationError):
+        MDASequence(
+            setup={"action": {"type": "acquire_image"}},
+        )
+
+
 def test_mda_sequence_setup_serialization() -> None:
     setup_event = MDAEvent(
         properties=[("Camera", "Mode", "12bit")],
-        action=CustomAction(name="setup"),
     )
     seq = MDASequence(setup=setup_event)
 
