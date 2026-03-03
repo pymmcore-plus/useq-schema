@@ -271,8 +271,7 @@ class MDASequence(UseqModel):
             if action is None:
                 v = {**v, "action": CustomAction(name="setup")}
             elif (
-                isinstance(action, dict)
-                and action.get("type") == "acquire_image"
+                isinstance(action, dict) and action.get("type") == "acquire_image"
             ) or isinstance(action, AcquireImage):
                 raise ValueError(
                     "Setup event action cannot be 'AcquireImage'. "
