@@ -110,6 +110,49 @@ class SLMImage(UseqModel):
             exposure: float | None
 
 
+class CameraROI(UseqModel):
+    """Camera region of interest.
+
+    Attributes
+    ----------
+    x : int
+        X offset of the ROI in pixels.
+    y : int
+        Y offset of the ROI in pixels.
+    width : int
+        Width of the ROI in pixels.
+    height : int
+        Height of the ROI in pixels.
+    camera : str | None
+        Optional name of the camera device. If not provided, the default camera
+        device should be used. By default, `None`.
+    """
+
+    x: int
+    y: int
+    width: int
+    height: int
+    camera: str | None = None
+
+    @model_validator(mode="before")
+    def _cast_tuple(cls, v: Any) -> Any:
+        """Cast bare tuples/lists to CameraROI fields."""
+        if isinstance(v, (tuple, list)) and len(v) == 4:
+            return {"x": v[0], "y": v[1], "width": v[2], "height": v[3]}
+        return v
+
+    if TYPE_CHECKING:
+
+        class Kwargs(TypedDict, total=False):
+            """Type for the kwargs passed to the CameraROI."""
+
+            x: int
+            y: int
+            width: int
+            height: int
+            camera: str | None
+
+
 class PropertyTuple(NamedTuple):
     """Three-tuple capturing a device, property, and value.
 
@@ -210,8 +253,10 @@ class MDAEvent(UseqModel):
         property_value)`.  This is inspired by micro-manager's Device Adapter API, but
         could be used to set arbitrary properties in any backend that supports the
         concept of devices that have properties with values. By default, `None`.
-    roi : tuple[int, int, int, int] | None
-        Region of interest as `(x_offset, y_offset, width, height)`. By default, `None`.
+    roi : CameraROI | None
+        Camera region of interest. Accepts a `CameraROI` object or a bare tuple of
+        `(x, y, width, height)` which will be automatically converted. By default,
+        `None`.
     metadata : dict
         Optional metadata to be associated with this event.
     action : Action
@@ -244,7 +289,7 @@ class MDAEvent(UseqModel):
     slm_image: SLMImage | None = None
     sequence: Optional["MDASequence"] = Field(default=None, repr=False)
     properties: list[PropertyTuple] | None = None
-    roi: tuple[int, int, int, int] | None = None
+    roi: CameraROI | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage, discriminator="type")
     keep_shutter_open: bool = False
@@ -276,7 +321,7 @@ class MDAEvent(UseqModel):
             slm_image: "SLMImage | SLMImage.Kwargs | npt.ArrayLike"
             sequence: "MDASequence | dict"
             properties: list[tuple[str, str, Any]]
-            roi: tuple[int, int, int, int]
+            roi: "CameraROI | CameraROI.Kwargs | tuple[int, int, int, int]"
             metadata: dict
             action: AnyAction
             keep_shutter_open: bool

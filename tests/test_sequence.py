@@ -8,6 +8,7 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from useq import (
+    CameraROI,
     MDAEvent,
     MDASequence,
     TIntervalDuration,
@@ -229,13 +230,23 @@ def test_slm_image() -> None:
 
 
 def test_mda_event_roi() -> None:
+    # bare tuple is cast to CameraROI
     event = MDAEvent(roi=(0, 0, 512, 512))
-    assert event.roi == (0, 0, 512, 512)
+    assert isinstance(event.roi, CameraROI)
+    assert event.roi.x == 0
+    assert event.roi.y == 0
+    assert event.roi.width == 512
+    assert event.roi.height == 512
+    assert event.roi.camera is None
 
     d = event.model_dump()
-    assert d["roi"] == (0, 0, 512, 512)
     roundtripped = MDAEvent(**d)
-    assert roundtripped.roi == (0, 0, 512, 512)
+    assert roundtripped.roi == event.roi
+
+    # CameraROI with explicit camera
+    event2 = MDAEvent(roi=CameraROI(x=0, y=0, width=256, height=256, camera="Cam1"))
+    assert event2.roi is not None
+    assert event2.roi.camera == "Cam1"
 
     event_no_roi = MDAEvent()
     assert event_no_roi.roi is None
@@ -256,7 +267,8 @@ def test_mda_sequence_setup() -> None:
     assert seq.setup is not None
     assert isinstance(seq.setup.action, CustomAction)
     assert seq.setup.action.name == "setup"
-    assert seq.setup.roi == (0, 0, 512, 512)
+    assert isinstance(seq.setup.roi, CameraROI)
+    assert seq.setup.roi.width == 512
     assert seq.setup.properties is not None
 
     # test iteration: setup event is yielded first
@@ -264,7 +276,7 @@ def test_mda_sequence_setup() -> None:
     assert len(events) > 0
     first = events[0]
     assert isinstance(first.action, CustomAction)
-    assert first.roi == (0, 0, 512, 512)
+    assert isinstance(first.roi, CameraROI)
 
     # remaining events are regular AcquireImage events
     for ev in events[1:]:

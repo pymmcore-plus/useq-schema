@@ -200,7 +200,7 @@ class MDASequence(UseqModel):
     >>> events[0].action.name
     'setup'
     >>> events[0].roi
-    (0, 0, 512, 512)
+    CameraROI(x=0, y=0, width=512, height=512)
 
     Print setup sequence as yaml
 
@@ -215,10 +215,10 @@ class MDASequence(UseqModel):
         - Binning
         - '2'
       roi:
-      - 0
-      - 0
-      - 512
-      - 512
+        height: 512
+        width: 512
+        x: 0
+        y: 0
     time_plan:
       interval: 1.0
       loops: 5
