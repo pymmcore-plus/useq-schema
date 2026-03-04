@@ -231,22 +231,26 @@ def test_slm_image() -> None:
 
 def test_mda_event_roi() -> None:
     # bare tuple is cast to CameraROI
-    event = MDAEvent(roi=(0, 0, 512, 512))
+    event = MDAEvent(roi=(0, 12, 256, 512))
     assert isinstance(event.roi, CameraROI)
-    assert event.roi.x == 0
-    assert event.roi.y == 0
-    assert event.roi.width == 512
+    assert event.roi.offset_x == 0
+    assert event.roi.offset_y == 12
+    assert event.roi.width == 256
     assert event.roi.height == 512
-    assert event.roi.camera is None
 
     d = event.model_dump()
     roundtripped = MDAEvent(**d)
     assert roundtripped.roi == event.roi
 
-    # CameraROI with explicit camera
-    event2 = MDAEvent(roi=CameraROI(x=0, y=0, width=256, height=256, camera="Cam1"))
+    # CameraROI with keyword args
+    event2 = MDAEvent(
+        roi=CameraROI(offset_x=12, offset_y=0, width=512, height=256)
+    )
     assert event2.roi is not None
-    assert event2.roi.camera == "Cam1"
+    assert event2.roi.offset_x == 12
+    assert event2.roi.offset_y == 0
+    assert event2.roi.width == 512
+    assert event2.roi.height == 256
 
     event_no_roi = MDAEvent()
     assert event_no_roi.roi is None

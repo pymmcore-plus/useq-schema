@@ -6,7 +6,13 @@ from typing import TYPE_CHECKING, Any, NamedTuple, Optional, TypedDict
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import Field, GetCoreSchemaHandler, field_validator, model_validator
+from pydantic import (
+    Field,
+    GetCoreSchemaHandler,
+    NonNegativeInt,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import core_schema
 
 from useq._actions import AcquireImage, AnyAction
@@ -113,32 +119,35 @@ class SLMImage(UseqModel):
 class CameraROI(UseqModel):
     """Camera region of interest.
 
+    May be initialized with a ``(offset_x, offset_y, width, height)`` tuple.
+
     Attributes
     ----------
-    x : int
-        X offset of the ROI in pixels.
-    y : int
-        Y offset of the ROI in pixels.
+    offset_x : int
+        X offset of the ROI in pixels. Must be >= 0.
+    offset_y : int
+        Y offset of the ROI in pixels. Must be >= 0.
     width : int
-        Width of the ROI in pixels.
+        Width of the ROI in pixels. Must be >= 0.
     height : int
-        Height of the ROI in pixels.
-    camera : str | None
-        Optional name of the camera device. If not provided, the default camera
-        device should be used. By default, `None`.
+        Height of the ROI in pixels. Must be >= 0.
     """
 
-    x: int
-    y: int
-    width: int
-    height: int
-    camera: str | None = None
+    offset_x: NonNegativeInt
+    offset_y: NonNegativeInt
+    width: NonNegativeInt
+    height: NonNegativeInt
 
     @model_validator(mode="before")
     def _cast_tuple(cls, v: Any) -> Any:
         """Cast bare tuples/lists to CameraROI fields."""
         if isinstance(v, (tuple, list)) and len(v) == 4:
-            return {"x": v[0], "y": v[1], "width": v[2], "height": v[3]}
+            return {
+                "offset_x": v[0],
+                "offset_y": v[1],
+                "width": v[2],
+                "height": v[3],
+            }
         return v
 
     if TYPE_CHECKING:
@@ -146,11 +155,10 @@ class CameraROI(UseqModel):
         class Kwargs(TypedDict, total=False):
             """Type for the kwargs passed to the CameraROI."""
 
-            x: int
-            y: int
+            offset_x: int
+            offset_y: int
             width: int
             height: int
-            camera: str | None
 
 
 class PropertyTuple(NamedTuple):
