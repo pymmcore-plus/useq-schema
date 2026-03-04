@@ -258,7 +258,7 @@ def test_mda_sequence_setup() -> None:
     # action of setup_event defaults to CustomAction(name="setup") when omitted
     setup_event = MDAEvent(
         properties=[("Camera", "Mode", "12bit")],
-        roi=(0, 0, 512, 512),
+        roi=(0, 12, 128, 256),
     )
     seq = MDASequence(
         setup=setup_event,
@@ -270,7 +270,10 @@ def test_mda_sequence_setup() -> None:
     assert isinstance(seq.setup.action, CustomAction)
     assert seq.setup.action.name == "setup"
     assert isinstance(seq.setup.roi, CameraROI)
-    assert seq.setup.roi.width == 512
+    assert seq.setup.roi.offset_x == 0
+    assert seq.setup.roi.offset_y == 12
+    assert seq.setup.roi.width == 128
+    assert seq.setup.roi.height == 256
     assert seq.setup.properties is not None
 
     # test iteration: setup event is yielded first
