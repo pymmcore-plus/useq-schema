@@ -243,9 +243,7 @@ def test_mda_event_roi() -> None:
     assert roundtripped.roi == event.roi
 
     # CameraROI with keyword args
-    event2 = MDAEvent(
-        roi=CameraROI(offset_x=12, offset_y=0, width=512, height=256)
-    )
+    event2 = MDAEvent(roi=CameraROI(offset_x=12, offset_y=0, width=512, height=256))
     assert event2.roi is not None
     assert event2.roi.offset_x == 12
     assert event2.roi.offset_y == 0
