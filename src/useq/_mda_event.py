@@ -263,8 +263,8 @@ class MDAEvent(UseqModel):
         concept of devices that have properties with values. By default, `None`.
     roi : CameraROI | None
         Camera region of interest. Accepts a `CameraROI` object or a bare tuple of
-        `(x, y, width, height)` which will be automatically converted. By default,
-        `None`.
+        `(offset_x, offset_y, width, height)` which will be automatically converted.
+        By default, `None`.
     metadata : dict
         Optional metadata to be associated with this event.
     action : Action
