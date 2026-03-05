@@ -70,9 +70,7 @@ class MDASequence(UseqModel):
     setup : MDAEvent | None
         An optional setup event to prepend to the sequence. This event is yielded
         first during iteration and can be used to set hardware state (e.g. device
-        properties, ROI) before the main acquisition events. Typically used with
-        `action=CustomAction(name="setup")` so the engine applies hardware state
-        without acquiring an image. By default, `None`.
+        properties, ROI) before the main acquisition events. By default, `None`.
     keep_shutter_open_across : tuple[str, ...]
         A tuple of axes `str` across which the illumination shutter should be kept open.
         Resulting events will have `keep_shutter_open` set to `True` if and only if
