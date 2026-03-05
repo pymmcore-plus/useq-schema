@@ -6,7 +6,13 @@ from typing import TYPE_CHECKING, Any, NamedTuple, Optional, TypedDict
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import Field, GetCoreSchemaHandler, field_validator, model_validator
+from pydantic import (
+    Field,
+    GetCoreSchemaHandler,
+    NonNegativeInt,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import core_schema
 
 from useq._actions import AcquireImage, AnyAction
@@ -110,6 +116,51 @@ class SLMImage(UseqModel):
             exposure: float | None
 
 
+class CameraROI(UseqModel):
+    """Camera region of interest.
+
+    May be initialized with a ``(offset_x, offset_y, width, height)`` tuple.
+
+    Attributes
+    ----------
+    offset_x : int
+        X offset of the ROI in pixels. Must be >= 0.
+    offset_y : int
+        Y offset of the ROI in pixels. Must be >= 0.
+    width : int
+        Width of the ROI in pixels. Must be >= 0.
+    height : int
+        Height of the ROI in pixels. Must be >= 0.
+    """
+
+    offset_x: NonNegativeInt
+    offset_y: NonNegativeInt
+    width: NonNegativeInt
+    height: NonNegativeInt
+
+    @model_validator(mode="before")
+    def _cast_tuple(cls, v: Any) -> Any:
+        """Cast bare tuples/lists to CameraROI fields."""
+        if isinstance(v, (tuple, list)) and len(v) == 4:
+            return {
+                "offset_x": v[0],
+                "offset_y": v[1],
+                "width": v[2],
+                "height": v[3],
+            }
+        return v
+
+    if TYPE_CHECKING:
+
+        class Kwargs(TypedDict, total=False):
+            """Type for the kwargs passed to the CameraROI."""
+
+            offset_x: int
+            offset_y: int
+            width: int
+            height: int
+
+
 class PropertyTuple(NamedTuple):
     """Three-tuple capturing a device, property, and value.
 
@@ -210,6 +261,10 @@ class MDAEvent(UseqModel):
         property_value)`.  This is inspired by micro-manager's Device Adapter API, but
         could be used to set arbitrary properties in any backend that supports the
         concept of devices that have properties with values. By default, `None`.
+    roi : CameraROI | None
+        Camera region of interest. Accepts a `CameraROI` object or a bare tuple of
+        `(offset_x, offset_y, width, height)` which will be automatically converted.
+        By default, `None`.
     metadata : dict
         Optional metadata to be associated with this event.
     action : Action
@@ -242,6 +297,7 @@ class MDAEvent(UseqModel):
     slm_image: SLMImage | None = None
     sequence: Optional["MDASequence"] = Field(default=None, repr=False)
     properties: list[PropertyTuple] | None = None
+    roi: CameraROI | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     action: AnyAction = Field(default_factory=AcquireImage, discriminator="type")
     keep_shutter_open: bool = False
@@ -273,6 +329,7 @@ class MDAEvent(UseqModel):
             slm_image: "SLMImage | SLMImage.Kwargs | npt.ArrayLike"
             sequence: "MDASequence | dict"
             properties: list[tuple[str, str, Any]]
+            roi: "CameraROI | CameraROI.Kwargs | tuple[int, int, int, int]"
             metadata: dict
             action: AnyAction
             keep_shutter_open: bool

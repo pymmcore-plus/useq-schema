@@ -71,6 +71,9 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     almost entirely declarative).  This iterator is useful for consuming `MDASequence`
     objects in a python runtime, but it isn't considered a "core" part of the schema.
 
+    If `sequence.setup` is not None, it will be yielded as the first event before
+    any events generated from the sequence axes.
+
     Parameters
     ----------
     sequence : MDASequence
@@ -81,6 +84,9 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     MDAEvent
         Each event in the MDA sequence.
     """
+    if sequence.setup is not None:
+        yield sequence.setup
+
     if not (keep_shutter_open_axes := sequence.keep_shutter_open_across):
         yield from _iter_sequence(sequence)
         return

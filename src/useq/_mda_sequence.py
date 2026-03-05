@@ -12,6 +12,7 @@ from warnings import warn
 import numpy as np
 from pydantic import Field, PrivateAttr, field_validator, model_validator
 
+from useq._actions import AcquireImage, CustomAction
 from useq._base_model import UseqModel
 from useq._channel import Channel
 from useq._enums import AXES, Axis
@@ -66,6 +67,10 @@ class MDASequence(UseqModel):
         generated, do not set.
     autofocus_plan : AxesBasedAF | None
         The hardware autofocus plan to follow. One of `AxesBasedAF` or `None`.
+    setup : MDAEvent | None
+        An optional setup event to prepend to the sequence. This event is yielded
+        first during iteration and can be used to set hardware state (e.g. device
+        properties, ROI) before the main acquisition events. By default, `None`.
     keep_shutter_open_across : tuple[str, ...]
         A tuple of axes `str` across which the illumination shutter should be kept open.
         Resulting events will have `keep_shutter_open` set to `True` if and only if
@@ -174,6 +179,48 @@ class MDASequence(UseqModel):
        range: 3.0
        step: 1.0
     ```
+
+    Create a sequence with a setup event
+
+    >>> from useq import MDASequence, MDAEvent
+    >>> seq = MDASequence(
+    ...     setup=MDAEvent(
+    ...         properties=[("Camera", "Binning", "2")],
+    ...         roi=(0, 0, 512, 512),
+    ...     ),
+    ...     channels=["GFP"],
+    ...     time_plan={"interval": 1, "loops": 5},
+    ... )
+
+    The setup event is the first event yielded during iteration:
+
+    >>> events = list(seq)
+    >>> events[0].action.name
+    'setup'
+    >>> events[0].roi
+    CameraROI(offset_x=0, offset_y=0, width=512, height=512)
+
+    Print setup sequence as yaml
+
+    >>> print(seq.yaml())
+    channels:
+    - config: GFP
+    setup:
+      action:
+        name: setup
+      properties:
+      - - Camera
+        - Binning
+        - '2'
+      roi:
+        height: 512
+        offset_x: 0
+        offset_y: 0
+        width: 512
+    time_plan:
+      interval: 1.0
+      loops: 5
+    <BLANKLINE>
     """
 
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -188,6 +235,7 @@ class MDASequence(UseqModel):
     time_plan: AnyTimePlan | None = None
     z_plan: AnyZPlan | None = None
     autofocus_plan: AnyAutofocusPlan | None = None
+    setup: MDAEvent | None = None
     keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
@@ -204,6 +252,21 @@ class MDASequence(UseqModel):
     @field_validator("z_plan", mode="before")
     def _validate_zplan(cls, v: Any) -> dict | None:
         return v or None
+
+    @field_validator("setup", mode="after")
+    def _validate_setup(cls, v: MDAEvent | None) -> MDAEvent | None:
+        if v is None:
+            return v
+        if isinstance(v.action, AcquireImage):
+            if "action" in v.model_fields_set:
+                raise ValueError(
+                    "Setup event action cannot be 'AcquireImage'. "
+                    "Omit the action field to automatically use "
+                    "CustomAction(name='setup'), or use a different "
+                    "action type."
+                )
+            v = v.model_copy(update={"action": CustomAction(name="setup")})
+        return v
 
     @field_validator("keep_shutter_open_across", mode="before")
     def _validate_keep_shutter_open_across(cls, v: tuple[str, ...]) -> tuple[str, ...]:

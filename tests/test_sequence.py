@@ -8,13 +8,14 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from useq import (
+    CameraROI,
     MDAEvent,
     MDASequence,
     TIntervalDuration,
     ZAboveBelow,
     ZRangeAround,
 )
-from useq._actions import CustomAction, HardwareAutofocus
+from useq._actions import AcquireImage, CustomAction, HardwareAutofocus
 from useq._mda_event import SLMImage
 
 _T = list[tuple[Any, Sequence[float]]]
@@ -226,3 +227,116 @@ def test_slm_image() -> None:
     print(repr(event3))
 
     assert event3 != event2
+
+
+def test_mda_event_roi() -> None:
+    # bare tuple is cast to CameraROI
+    event = MDAEvent(roi=(0, 12, 256, 512))
+    assert isinstance(event.roi, CameraROI)
+    assert event.roi.offset_x == 0
+    assert event.roi.offset_y == 12
+    assert event.roi.width == 256
+    assert event.roi.height == 512
+
+    d = event.model_dump()
+    roundtripped = MDAEvent(**d)
+    assert roundtripped.roi == event.roi
+
+    # CameraROI with keyword args
+    event2 = MDAEvent(roi=CameraROI(offset_x=12, offset_y=0, width=512, height=256))
+    assert event2.roi is not None
+    assert event2.roi.offset_x == 12
+    assert event2.roi.offset_y == 0
+    assert event2.roi.width == 512
+    assert event2.roi.height == 256
+
+    event_no_roi = MDAEvent()
+    assert event_no_roi.roi is None
+
+
+def test_mda_sequence_setup() -> None:
+    # action of setup_event defaults to CustomAction(name="setup") when omitted
+    setup_event = MDAEvent(
+        properties=[("Camera", "Mode", "12bit")],
+        roi=(0, 12, 128, 256),
+    )
+    seq = MDASequence(
+        setup=setup_event,
+        channels=["DAPI"],
+        time_plan={"interval": 1, "loops": 2},
+    )
+
+    assert seq.setup is not None
+    assert isinstance(seq.setup.action, CustomAction)
+    assert seq.setup.action.name == "setup"
+    assert isinstance(seq.setup.roi, CameraROI)
+    assert seq.setup.roi.offset_x == 0
+    assert seq.setup.roi.offset_y == 12
+    assert seq.setup.roi.width == 128
+    assert seq.setup.roi.height == 256
+    assert seq.setup.properties is not None
+
+    # test iteration: setup event is yielded first
+    events = list(seq)
+    assert len(events) > 0
+    first = events[0]
+    assert isinstance(first.action, CustomAction)
+    assert isinstance(first.roi, CameraROI)
+
+    # remaining events are regular AcquireImage events
+    for ev in events[1:]:
+        assert not isinstance(ev.action, CustomAction)
+
+
+def test_mda_sequence_setup_explicit_custom_action() -> None:
+    # explicitly setting a CustomAction should be preserved
+    setup_event = MDAEvent(
+        properties=[("Camera", "Mode", "12bit")],
+        action=CustomAction(name="my_setup"),
+    )
+    seq = MDASequence(setup=setup_event)
+    assert seq.setup is not None
+    assert isinstance(seq.setup.action, CustomAction)
+    assert seq.setup.action.name == "my_setup"
+
+
+def test_mda_sequence_setup_acquire_image_raises() -> None:
+    # explicitly setting AcquireImage via dict should raise ValueError
+    with pytest.raises(ValidationError):
+        MDASequence(
+            setup={"action": {"type": "acquire_image"}},
+        )
+
+    # explicitly setting AcquireImage on an MDAEvent should also raise
+    with pytest.raises(ValidationError):
+        MDASequence(
+            setup=MDAEvent(action=AcquireImage()),
+        )
+
+
+def test_mda_sequence_setup_serialization() -> None:
+    setup_event = MDAEvent(
+        properties=[("Camera", "Mode", "12bit")],
+    )
+    seq = MDASequence(setup=setup_event)
+
+    d = seq.model_dump()
+    assert "setup" in d
+    assert d["setup"]["action"]["name"] == "setup"
+
+    roundtripped = MDASequence(**d)
+    assert roundtripped.setup is not None
+    assert isinstance(roundtripped.setup.action, CustomAction)
+
+    j = seq.model_dump_json()
+    roundtripped2 = MDASequence.model_validate_json(j)
+    assert roundtripped2.setup is not None
+
+
+def test_mda_sequence_no_setup() -> None:
+    seq = MDASequence(time_plan={"interval": 1, "loops": 2})
+    assert seq.setup is None
+    events = list(seq)
+    # no setup event should be prepended
+    for ev in events:
+        assert not isinstance(ev.action, CustomAction)
