@@ -259,23 +259,33 @@ class MDASequence(UseqModel):
             return v
         from useq._mda_event import MDAEvent
 
+        _error_msg = (
+            "Setup event action cannot be 'AcquireImage'. "
+            "Omit the action field to automatically use "
+            "CustomAction(name='setup'), or use a different action type."
+        )
+
         if isinstance(v, MDAEvent):
             if isinstance(v.action, AcquireImage):
-                # AcquireImage is the default action for MDAEvent; replace it
-                # with a CustomAction to avoid unintended image acquisition.
+                if "action" in v.model_fields_set:
+                    # User explicitly set AcquireImage — raise an error.
+                    raise ValueError(_error_msg)
+                # Action was not set by the user (AcquireImage is the default
+                # for MDAEvent); replace with CustomAction to avoid
+                # unintended image acquisition.
                 v = v.model_copy(update={"action": CustomAction(name="setup")})
+            # else: action is a non-default type (e.g. CustomAction) — leave it.
         elif isinstance(v, dict):
             action = v.get("action")
             if action is None:
+                # No action specified — set to CustomAction(name="setup").
                 v = {**v, "action": CustomAction(name="setup")}
             elif (
                 isinstance(action, dict) and action.get("type") == "acquire_image"
             ) or isinstance(action, AcquireImage):
-                raise ValueError(
-                    "Setup event action cannot be 'AcquireImage'. "
-                    "Omit the action field to automatically use "
-                    "CustomAction(name='setup'), or use a different action type."
-                )
+                # User explicitly set AcquireImage — raise an error.
+                raise ValueError(_error_msg)
+            # else: action is a non-default type (e.g. CustomAction) — leave it.
         return v
 
     @field_validator("keep_shutter_open_across", mode="before")

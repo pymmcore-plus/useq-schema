@@ -15,7 +15,7 @@ from useq import (
     ZAboveBelow,
     ZRangeAround,
 )
-from useq._actions import CustomAction, HardwareAutofocus
+from useq._actions import AcquireImage, CustomAction, HardwareAutofocus
 from useq._mda_event import SLMImage
 
 _T = list[tuple[Any, Sequence[float]]]
@@ -301,10 +301,16 @@ def test_mda_sequence_setup_explicit_custom_action() -> None:
 
 
 def test_mda_sequence_setup_acquire_image_raises() -> None:
-    # explicitly setting AcquireImage on setup should raise ValueError
+    # explicitly setting AcquireImage via dict should raise ValueError
     with pytest.raises(ValidationError):
         MDASequence(
             setup={"action": {"type": "acquire_image"}},
+        )
+
+    # explicitly setting AcquireImage on an MDAEvent should also raise
+    with pytest.raises(ValidationError):
+        MDASequence(
+            setup=MDAEvent(action=AcquireImage()),
         )
 
 
