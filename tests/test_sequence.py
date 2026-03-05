@@ -276,15 +276,10 @@ def test_mda_sequence_setup() -> None:
     assert seq.setup.roi.height == 256
     assert seq.setup.properties is not None
 
-    # test iteration: setup event is yielded first
+    # setup event is not yielded during iteration
     events = list(seq)
     assert len(events) > 0
-    first = events[0]
-    assert isinstance(first.action, CustomAction)
-    assert isinstance(first.roi, CameraROI)
-
-    # remaining events are regular AcquireImage events
-    for ev in events[1:]:
+    for ev in events:
         assert not isinstance(ev.action, CustomAction)
 
 
@@ -337,6 +332,5 @@ def test_mda_sequence_no_setup() -> None:
     seq = MDASequence(time_plan={"interval": 1, "loops": 2})
     assert seq.setup is None
     events = list(seq)
-    # no setup event should be prepended
     for ev in events:
         assert not isinstance(ev.action, CustomAction)
