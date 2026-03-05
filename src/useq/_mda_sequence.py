@@ -253,39 +253,19 @@ class MDASequence(UseqModel):
     def _validate_zplan(cls, v: Any) -> dict | None:
         return v or None
 
-    @field_validator("setup", mode="before")
-    def _validate_setup(cls, v: Any) -> Any:
+    @field_validator("setup", mode="after")
+    def _validate_setup(cls, v: MDAEvent | None) -> MDAEvent | None:
         if v is None:
             return v
-        from useq._mda_event import MDAEvent
-
-        _error_msg = (
-            "Setup event action cannot be 'AcquireImage'. "
-            "Omit the action field to automatically use "
-            "CustomAction(name='setup'), or use a different action type."
-        )
-
-        if isinstance(v, MDAEvent):
-            if isinstance(v.action, AcquireImage):
-                if "action" in v.model_fields_set:
-                    # User explicitly set AcquireImage — raise an error.
-                    raise ValueError(_error_msg)
-                # Action was not set by the user (AcquireImage is the default
-                # for MDAEvent); replace with CustomAction to avoid
-                # unintended image acquisition.
-                v = v.model_copy(update={"action": CustomAction(name="setup")})
-            # else: action is a non-default type (e.g. CustomAction) — leave it.
-        elif isinstance(v, dict):
-            action = v.get("action")
-            if action is None:
-                # No action specified — set to CustomAction(name="setup").
-                v = {**v, "action": CustomAction(name="setup")}
-            elif (
-                isinstance(action, dict) and action.get("type") == "acquire_image"
-            ) or isinstance(action, AcquireImage):
-                # User explicitly set AcquireImage — raise an error.
-                raise ValueError(_error_msg)
-            # else: action is a non-default type (e.g. CustomAction) — leave it.
+        if isinstance(v.action, AcquireImage):
+            if "action" in v.model_fields_set:
+                raise ValueError(
+                    "Setup event action cannot be 'AcquireImage'. "
+                    "Omit the action field to automatically use "
+                    "CustomAction(name='setup'), or use a different "
+                    "action type."
+                )
+            v = v.model_copy(update={"action": CustomAction(name="setup")})
         return v
 
     @field_validator("keep_shutter_open_across", mode="before")
