@@ -68,9 +68,10 @@ class MDASequence(UseqModel):
     autofocus_plan : AxesBasedAF | None
         The hardware autofocus plan to follow. One of `AxesBasedAF` or `None`.
     setup : MDAEvent | None
-        An optional setup event to prepend to the sequence. This event is yielded
-        first during iteration and can be used to set hardware state (e.g. device
-        properties, ROI) before the main acquisition events. By default, `None`.
+        An optional setup event for the sequence. This event is **not** yielded
+        during iteration; it is intended to be handled separately by the engine.
+        It can be used to set hardware state (e.g. device properties, ROI)
+        before the main acquisition events. By default, `None`.
     keep_shutter_open_across : tuple[str, ...]
         A tuple of axes `str` across which the illumination shutter should be kept open.
         Resulting events will have `keep_shutter_open` set to `True` if and only if
@@ -192,12 +193,12 @@ class MDASequence(UseqModel):
     ...     time_plan={"interval": 1, "loops": 5},
     ... )
 
-    The setup event is the first event yielded during iteration:
+    The setup event is accessible via ``seq.setup`` but is not yielded
+    during iteration (it should be handled separately by implementing engines):
 
-    >>> events = list(seq)
-    >>> events[0].action.name
+    >>> seq.setup.action.name
     'setup'
-    >>> events[0].roi
+    >>> seq.setup.roi
     CameraROI(offset_x=0, offset_y=0, width=512, height=512)
 
     Print setup sequence as yaml
