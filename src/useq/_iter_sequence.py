@@ -72,7 +72,7 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     objects in a python runtime, but it isn't considered a "core" part of the schema.
 
     The `sequence.setup` event is not yielded during iteration. It is intended
-    to be handled separately by the engine (e.g. in `setup_sequence()`).
+    to be handled separately by an engine.
 
     Parameters
     ----------
