@@ -194,7 +194,7 @@ class MDASequence(UseqModel):
     ... )
 
     The setup event is accessible via ``seq.setup`` but is not yielded
-    during iteration (it is handled separately by the engine):
+    during iteration (it should be handled separately by implementing engines):
 
     >>> seq.setup.action.name
     'setup'
