@@ -332,5 +332,6 @@ def test_mda_sequence_no_setup() -> None:
     seq = MDASequence(time_plan={"interval": 1, "loops": 2})
     assert seq.setup is None
     events = list(seq)
+    # no setup event should be prepended
     for ev in events:
         assert not isinstance(ev.action, CustomAction)
