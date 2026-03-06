@@ -69,10 +69,9 @@ class MDASequence(UseqModel):
         The hardware autofocus plan to follow. One of `AxesBasedAF` or `None`.
     setup : MDAEvent | None
         An optional setup event for the sequence. This event is **not** yielded
-        during iteration; it is intended to be handled separately by the engine
-        (e.g. in ``setup_sequence()``). It can be used to set hardware state
-        (e.g. device properties, ROI) before the main acquisition events.
-        By default, `None`.
+        during iteration; it is intended to be handled separately by the engine.
+        It can be used to set hardware state (e.g. device properties, ROI)
+        before the main acquisition events. By default, `None`.
     keep_shutter_open_across : tuple[str, ...]
         A tuple of axes `str` across which the illumination shutter should be kept open.
         Resulting events will have `keep_shutter_open` set to `True` if and only if
