@@ -20,7 +20,7 @@ from useq._grid import MultiPointPlan  # noqa: TC001
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._iter_sequence import iter_sequence
 from useq._plate import WellPlatePlan
-from useq._position import Position, PositionBase
+from useq._position import Position, PositionBase, RelativePosition
 from useq._time import AnyTimePlan  # noqa: TC001
 from useq._utils import TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TC001
@@ -319,6 +319,12 @@ class MDASequence(UseqModel):
 
         positions = []
         for v in value:
+            if isinstance(v, RelativePosition):
+                raise ValueError(
+                    "RelativePosition cannot be used in stage_positions. "
+                    "Use AbsolutePosition (Position)) instead. For z-only "
+                    "positions, use Position(z=<value>)."
+                )
             if isinstance(v, Position):
                 positions.append(v)
             elif isinstance(v, dict):
@@ -371,6 +377,31 @@ class MDASequence(UseqModel):
                         "keep_shutter_open_across cannot currently be set on a "
                         "Position sequence"
                     )
+
+            # warn and clear x/y on positions when using a global absolute grid
+            if self.grid_plan is not None and not self.grid_plan.is_relative:
+                new_positions = list(self.stage_positions)
+                for i, p in enumerate(new_positions):
+                    # skip positions with their own sub-sequence grid;
+                    # x/y serves as the origin for that grid
+                    if p.sequence is not None and p.sequence.grid_plan:
+                        continue
+                    if p.x is not None or p.y is not None:
+                        import warnings
+
+                        warnings.warn(
+                            f"Position x={p.x!r}, y={p.y!r} is ignored when "
+                            f"using a global absolute grid plan "
+                            f"({type(self.grid_plan).__name__}). "
+                            "Set x=None, y=None on the position to silence "
+                            "this warning. In a future version this will raise "
+                            "an error.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                        new_positions[i] = p.model_copy(update={"x": None, "y": None})
+                object.__setattr__(self, "stage_positions", tuple(new_positions))
+
         return self
 
     def __eq__(self, other: Any) -> bool:
