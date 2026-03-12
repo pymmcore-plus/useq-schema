@@ -172,8 +172,8 @@ GRID_SUBSEQ_CASES: list[MDATestCase] = [
             stage_positions=[
                 Position(x=0, y=0),
                 Position(
-                    x=10,
-                    y=10,
+                    x=None,
+                    y=None,
                     sequence={
                         "grid_plan": GridFromEdges(top=1, bottom=-1, left=0, right=0)
                     },
