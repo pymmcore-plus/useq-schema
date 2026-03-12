@@ -12,6 +12,7 @@ from warnings import warn
 import numpy as np
 from pydantic import Field, PrivateAttr, field_validator, model_validator
 
+from useq._actions import AcquireImage, CustomAction
 from useq._base_model import UseqModel
 from useq._channel import Channel
 from useq._enums import AXES, Axis
@@ -66,6 +67,11 @@ class MDASequence(UseqModel):
         generated, do not set.
     autofocus_plan : AxesBasedAF | None
         The hardware autofocus plan to follow. One of `AxesBasedAF` or `None`.
+    setup : MDAEvent | None
+        An optional setup event for the sequence. This event is **not** yielded
+        during iteration; it is intended to be handled separately by the engine.
+        It can be used to set hardware state (e.g. device properties, ROI)
+        before the main acquisition events. By default, `None`.
     keep_shutter_open_across : tuple[str, ...]
         A tuple of axes `str` across which the illumination shutter should be kept open.
         Resulting events will have `keep_shutter_open` set to `True` if and only if
@@ -174,6 +180,48 @@ class MDASequence(UseqModel):
        range: 3.0
        step: 1.0
     ```
+
+    Create a sequence with a setup event
+
+    >>> from useq import MDASequence, MDAEvent
+    >>> seq = MDASequence(
+    ...     setup=MDAEvent(
+    ...         properties=[("Camera", "Binning", "2")],
+    ...         roi=(0, 0, 512, 512),
+    ...     ),
+    ...     channels=["GFP"],
+    ...     time_plan={"interval": 1, "loops": 5},
+    ... )
+
+    The setup event is accessible via ``seq.setup`` but is not yielded
+    during iteration (it should be handled separately by implementing engines):
+
+    >>> seq.setup.action.name
+    'setup'
+    >>> seq.setup.roi
+    CameraROI(offset_x=0, offset_y=0, width=512, height=512)
+
+    Print setup sequence as yaml
+
+    >>> print(seq.yaml())
+    channels:
+    - config: GFP
+    setup:
+      action:
+        name: setup
+      properties:
+      - - Camera
+        - Binning
+        - '2'
+      roi:
+        height: 512
+        offset_x: 0
+        offset_y: 0
+        width: 512
+    time_plan:
+      interval: 1.0
+      loops: 5
+    <BLANKLINE>
     """
 
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -188,6 +236,7 @@ class MDASequence(UseqModel):
     time_plan: AnyTimePlan | None = None
     z_plan: AnyZPlan | None = None
     autofocus_plan: AnyAutofocusPlan | None = None
+    setup: MDAEvent | None = None
     keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
@@ -204,6 +253,21 @@ class MDASequence(UseqModel):
     @field_validator("z_plan", mode="before")
     def _validate_zplan(cls, v: Any) -> dict | None:
         return v or None
+
+    @field_validator("setup", mode="after")
+    def _validate_setup(cls, v: MDAEvent | None) -> MDAEvent | None:
+        if v is None:
+            return v
+        if isinstance(v.action, AcquireImage):
+            if "action" in v.model_fields_set:
+                raise ValueError(
+                    "Setup event action cannot be 'AcquireImage'. "
+                    "Omit the action field to automatically use "
+                    "CustomAction(name='setup'), or use a different "
+                    "action type."
+                )
+            v = v.model_copy(update={"action": CustomAction(name="setup")})
+        return v
 
     @field_validator("keep_shutter_open_across", mode="before")
     def _validate_keep_shutter_open_across(cls, v: tuple[str, ...]) -> tuple[str, ...]:
@@ -313,32 +377,6 @@ class MDASequence(UseqModel):
                         "keep_shutter_open_across cannot currently be set on a "
                         "Position sequence"
                     )
-            # it's invalid to have stage positions with x/y coordinates
-            # when using a global absolute grid plan
-            if self.grid_plan is not None and not self.grid_plan.is_relative:
-                new_positions: list[Position] = []
-                modified = False
-                for p in self.stage_positions:
-                    # Positions that have their own grid plan are exempt from this
-                    # warning, since their local grid plans will override the global one
-                    # and they are already validated to be internally consistent.
-                    if (p.x is not None or p.y is not None) and (
-                        p.sequence is None or p.sequence.grid_plan is None
-                    ):
-                        grid_plan_type = type(self.grid_plan).__name__
-                        warn(
-                            f"Position x={p.x!r}, y={p.y!r} is ignored when using a "
-                            f"global absolute grid plan ({grid_plan_type}). "
-                            "Set x=None, y=None on the position to silence this "
-                            "warning. In a future version this will raise an error.",
-                            UserWarning,
-                            stacklevel=2,
-                        )
-                        p = p.model_copy(update={"x": None, "y": None})
-                        modified = True
-                    new_positions.append(p)
-                if modified:
-                    object.__setattr__(self, "stage_positions", tuple(new_positions))
         return self
 
     def __eq__(self, other: Any) -> bool:

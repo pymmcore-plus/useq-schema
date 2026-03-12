@@ -71,6 +71,9 @@ def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
     almost entirely declarative).  This iterator is useful for consuming `MDASequence`
     objects in a python runtime, but it isn't considered a "core" part of the schema.
 
+    The `sequence.setup` event is not yielded during iteration. It is intended
+    to be handled separately by an engine.
+
     Parameters
     ----------
     sequence : MDASequence

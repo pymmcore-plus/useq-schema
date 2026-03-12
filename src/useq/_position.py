@@ -1,4 +1,3 @@
-import warnings
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Generic, Optional, SupportsIndex, TypeVar
 
