@@ -62,13 +62,17 @@
   "stage_positions": [
     {
       "name": null,
+      "other_stages": {},
       "sequence": null,
       "x": 10.0,
+      "xy_stage": null,
       "y": 20.0,
-      "z": null
+      "z": null,
+      "z_stage": null
     },
     {
       "name": "test_name",
+      "other_stages": {},
       "sequence": {
         "autofocus_plan": null,
         "axis_order": [
@@ -104,8 +108,10 @@
         }
       },
       "x": 10.0,
+      "xy_stage": null,
       "y": 20.0,
-      "z": 50.0
+      "z": 50.0,
+      "z_stage": null
     }
   ],
   "time_plan": {
