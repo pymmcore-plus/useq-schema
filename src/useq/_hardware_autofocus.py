@@ -47,12 +47,12 @@ class AutoFocusPlan(FrozenModel):
             zplan = event.sequence.z_plan
             if zplan and zplan.is_relative and "z" in event.index:
                 new_z = event.z_pos - list(zplan)[event.index["z"]]
-                z_sp = event.positions.get("z")
-                new_positions = dict(event.positions)
-                new_positions["z"] = StagePosition(
+                z_sp = event.position.get("z")
+                new_position = dict(event.position)
+                new_position["z"] = StagePosition(
                     pos=new_z, stage=z_sp.stage if z_sp else None
                 )
-                updates["positions"] = new_positions
+                updates["position"] = new_position
 
         return event.model_copy(update=updates)
 

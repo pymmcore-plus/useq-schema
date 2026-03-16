@@ -57,15 +57,15 @@ def test_mda_event_legacy_construction() -> None:
     assert event.x_pos == 100.0
     assert event.y_pos == 200.0
     assert event.z_pos == 50.0
-    assert "x" in event.positions
-    assert "y" in event.positions
-    assert "z" in event.positions
-    assert event.positions["x"].pos == 100.0
+    assert "x" in event.position
+    assert "y" in event.position
+    assert "z" in event.position
+    assert event.position["x"].pos == 100.0
 
 
-def test_mda_event_positions_dict_construction() -> None:
+def test_mda_event_position_dict_construction() -> None:
     event = useq.MDAEvent(
-        positions={
+        position={
             "x": {"pos": 100},
             "z": {"pos": 50, "stage": "PiezoZ"},
         }
@@ -73,13 +73,13 @@ def test_mda_event_positions_dict_construction() -> None:
     assert event.x_pos == 100.0
     assert event.y_pos is None
     assert event.z_pos == 50.0
-    assert event.positions["z"].stage == "PiezoZ"
+    assert event.position["z"].stage == "PiezoZ"
 
 
-def test_mda_event_positions_none_values() -> None:
-    """x_pos=None should not create an entry in positions."""
+def test_mda_event_position_none_values() -> None:
+    """x_pos=None should not create an entry in position."""
     event = useq.MDAEvent(x_pos=None, y_pos=200)
-    assert "x" not in event.positions
+    assert "x" not in event.position
     assert event.x_pos is None
     assert event.y_pos == 200.0
 
@@ -94,36 +94,36 @@ def test_mda_event_serialization_legacy_format() -> None:
     assert data["x_pos"] == 100.0
     assert data["y_pos"] == 200.0
     assert data["z_pos"] == 50.0
-    assert "positions" not in data
+    assert "position" not in data
 
 
 def test_mda_event_serialization_with_stage_names() -> None:
-    """When stage names are present, serialize to positions format."""
+    """When stage names are present, serialize to position format."""
     event = useq.MDAEvent(
-        positions={"x": {"pos": 100}, "z": {"pos": 50, "stage": "PiezoZ"}}
+        position={"x": {"pos": 100}, "z": {"pos": 50, "stage": "PiezoZ"}}
     )
     data = event.model_dump(exclude_unset=True)
-    assert "positions" in data
+    assert "position" in data
     assert "x_pos" not in data
 
 
 def test_mda_event_serialization_with_non_spatial_axes() -> None:
-    """Non-spatial axes should use positions format."""
+    """Non-spatial axes should use position format."""
     event = useq.MDAEvent(
-        positions={
+        position={
             "x": {"pos": 100},
             "FilterWheel": {"pos": 3.0, "stage": "FilterWheel"},
         }
     )
     data = event.model_dump(exclude_unset=True)
-    assert "positions" in data
+    assert "position" in data
     assert "x_pos" not in data
 
 
 def test_mda_event_xy_stage_mismatch_raises() -> None:
     with pytest.raises(ValueError, match="x and y positions must use the same"):
         useq.MDAEvent(
-            positions={
+            position={
                 "x": {"pos": 100, "stage": "StageA"},
                 "y": {"pos": 200, "stage": "StageB"},
             }
@@ -153,7 +153,7 @@ def test_mda_event_round_trip() -> None:
 def test_mda_event_round_trip_with_stages() -> None:
     """Round-trip with stage names."""
     event = useq.MDAEvent(
-        positions={
+        position={
             "x": {"pos": 100, "stage": "XYStage"},
             "y": {"pos": 200, "stage": "XYStage"},
             "z": {"pos": 50, "stage": "PiezoZ"},
@@ -161,9 +161,9 @@ def test_mda_event_round_trip_with_stages() -> None:
     )
     data = event.model_dump()
     event2 = useq.MDAEvent.model_validate(data)
-    assert event2.positions["x"].pos == 100.0
-    assert event2.positions["x"].stage == "XYStage"
-    assert event2.positions["z"].stage == "PiezoZ"
+    assert event2.position["x"].pos == 100.0
+    assert event2.position["x"].stage == "XYStage"
+    assert event2.position["z"].stage == "PiezoZ"
 
 
 # ---------- MDASequence propagation ----------
@@ -187,8 +187,8 @@ def test_mda_sequence_propagates_stage_names() -> None:
     assert event.x_pos == 10.0
     assert event.y_pos == 20.0
     assert event.z_pos == 30.0
-    assert event.positions["x"].stage == "XYStage"
-    assert event.positions["y"].stage == "XYStage"
-    assert event.positions["z"].stage == "PiezoZ"
-    assert event.positions["FilterWheel"].pos == 3.0
-    assert event.positions["FilterWheel"].stage == "FilterWheel"
+    assert event.position["x"].stage == "XYStage"
+    assert event.position["y"].stage == "XYStage"
+    assert event.position["z"].stage == "PiezoZ"
+    assert event.position["FilterWheel"].pos == 3.0
+    assert event.position["FilterWheel"].stage == "FilterWheel"

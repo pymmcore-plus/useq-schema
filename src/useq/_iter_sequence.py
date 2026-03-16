@@ -26,7 +26,7 @@ class MDAEventDict(TypedDict, total=False):
     exposure: float | None
     min_start_time: float | None
     pos_name: str | None
-    positions: dict[str, Any]
+    position: dict[str, Any]
     sequence: MDASequence | None
     # properties: list[tuple] | None
     metadata: dict
@@ -187,15 +187,15 @@ def _iter_sequence(
         # apply any overrides
         if event_kwarg_overrides:
             # merge positions dicts rather than replacing
-            if "positions" in event_kwarg_overrides and "positions" in event_kwargs:
-                event_kwargs["positions"] = {
-                    **event_kwargs.get("positions", {}),
-                    **event_kwarg_overrides["positions"],
+            if "position" in event_kwarg_overrides and "position" in event_kwargs:
+                event_kwargs["position"] = {
+                    **event_kwargs.get("position", {}),
+                    **event_kwarg_overrides["position"],
                 }
                 overrides_without_pos = {
                     k: v
                     for k, v in event_kwarg_overrides.items()
-                    if k != "positions"
+                    if k != "position"
                 }
                 event_kwargs.update(overrides_without_pos)  # type: ignore[typeddict-item]
             else:
@@ -204,7 +204,7 @@ def _iter_sequence(
         # shift positions if position_offsets have been provided
         # (usually from sub-sequences)
         if position_offsets:
-            positions = event_kwargs.get("positions", {})
+            positions = event_kwargs.get("position", {})
             for axis, offset_val in position_offsets.items():
                 sp = positions.get(axis)
                 if sp is not None:
@@ -218,7 +218,7 @@ def _iter_sequence(
                             "pos": sp["pos"] + offset_val,
                         }
             if positions:
-                event_kwargs["positions"] = positions
+                event_kwargs["position"] = positions
 
         # grab global autofocus plan (may be overridden by position-specific plan below)
         autofocus_plan = sequence.autofocus_plan
@@ -279,13 +279,13 @@ def _position_offsets(
     overrides = MDAEventDict()
     offsets = PositionOffsets()
 
-    parent_positions: dict[str, StagePosition] = event_kwargs.get("positions", {})
+    parent_positions: dict[str, StagePosition] = event_kwargs.get("position", {})
 
     if not pos_seq.z_plan:
         # if this position has no z_plan, we use the z_pos from the parent
         z_sp = parent_positions.get("z")
         if z_sp is not None:
-            overrides.setdefault("positions", {})["z"] = z_sp  # type: ignore[union-attr]
+            overrides.setdefault("position", {})["z"] = z_sp  # type: ignore[union-attr]
     elif pos_seq.z_plan.is_relative:
         # otherwise apply z-shifts if this position has a relative z_plan
         offsets["z"] = position.z or 0.0
@@ -295,9 +295,9 @@ def _position_offsets(
         x_sp = parent_positions.get("x")
         y_sp = parent_positions.get("y")
         if x_sp is not None:
-            overrides.setdefault("positions", {})["x"] = x_sp  # type: ignore[union-attr]
+            overrides.setdefault("position", {})["x"] = x_sp  # type: ignore[union-attr]
         if y_sp is not None:
-            overrides.setdefault("positions", {})["y"] = y_sp  # type: ignore[union-attr]
+            overrides.setdefault("position", {})["y"] = y_sp  # type: ignore[union-attr]
     elif pos_seq.grid_plan.is_relative:
         # otherwise apply x/y shifts if this position has a relative grid plan
         offsets["x"] = position.x or 0.0
@@ -434,5 +434,5 @@ def _xyzpos(
 
     result: MDAEventDict = {}
     if positions:
-        result["positions"] = positions
+        result["position"] = positions
     return result
