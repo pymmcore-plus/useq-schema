@@ -4,7 +4,7 @@ from pydantic import PrivateAttr
 
 from useq._actions import HardwareAutofocus
 from useq._base_model import FrozenModel
-from useq._mda_event import MDAEvent
+from useq._mda_event import MDAEvent, StagePosition
 
 
 class AutoFocusPlan(FrozenModel):
@@ -46,7 +46,13 @@ class AutoFocusPlan(FrozenModel):
         if event.z_pos is not None and event.sequence is not None:
             zplan = event.sequence.z_plan
             if zplan and zplan.is_relative and "z" in event.index:
-                updates["z_pos"] = event.z_pos - list(zplan)[event.index["z"]]
+                new_z = event.z_pos - list(zplan)[event.index["z"]]
+                z_sp = event.positions.get("z")
+                new_positions = dict(event.positions)
+                new_positions["z"] = StagePosition(
+                    pos=new_z, stage=z_sp.stage if z_sp else None
+                )
+                updates["positions"] = new_positions
 
         return event.model_copy(update=updates)
 

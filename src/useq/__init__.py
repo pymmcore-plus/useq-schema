@@ -16,7 +16,7 @@ from useq._grid import (
     RelativeMultiPointPlan,
 )
 from useq._hardware_autofocus import AnyAutofocusPlan, AutoFocusPlan, AxesBasedAF
-from useq._mda_event import CameraROI, MDAEvent, PropertyTuple, SLMImage
+from useq._mda_event import CameraROI, MDAEvent, PropertyTuple, SLMImage, StagePosition
 from useq._mda_event import Channel as EventChannel
 from useq._mda_sequence import MDASequence
 from useq._plate import WellPlate, WellPlatePlan
@@ -75,6 +75,7 @@ __all__ = [
     "RelativePosition",
     "SLMImage",
     "Shape",
+    "StagePosition",
     "TDurationLoops",
     "TIntervalDuration",
     "TIntervalLoops",
@@ -91,6 +92,7 @@ __all__ = [
 ]
 
 
+StagePosition.model_rebuild()
 MDAEvent.model_rebuild()
 MDASequence.model_rebuild()
 Position.model_rebuild()

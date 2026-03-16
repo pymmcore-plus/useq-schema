@@ -9,7 +9,7 @@ from typing_extensions import TypedDict
 from useq._channel import Channel  # noqa: TC001  # noqa: TCH001
 from useq._enums import AXES, Axis
 from useq._mda_event import Channel as EventChannel
-from useq._mda_event import MDAEvent, ReadOnlyDict
+from useq._mda_event import MDAEvent, ReadOnlyDict, StagePosition
 from useq._utils import _has_axes
 from useq._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
 
@@ -26,19 +26,17 @@ class MDAEventDict(TypedDict, total=False):
     exposure: float | None
     min_start_time: float | None
     pos_name: str | None
-    x_pos: float | None
-    y_pos: float | None
-    z_pos: float | None
+    positions: dict[str, Any]
     sequence: MDASequence | None
     # properties: list[tuple] | None
     metadata: dict
     reset_event_timer: bool
 
 
-class PositionDict(TypedDict, total=False):
-    x_pos: float
-    y_pos: float
-    z_pos: float
+class PositionOffsets(TypedDict, total=False):
+    x: float
+    y: float
+    z: float
 
 
 @cache
@@ -114,7 +112,7 @@ def _iter_sequence(
     *,
     base_event_kwargs: MDAEventDict | None = None,
     event_kwarg_overrides: MDAEventDict | None = None,
-    position_offsets: PositionDict | None = None,
+    position_offsets: PositionOffsets | None = None,
     _last_t_idx: int = -1,
 ) -> Iterator[MDAEvent]:
     """Helper function for `iter_sequence`.
@@ -138,10 +136,10 @@ def _iter_sequence(
         A dictionary of kwargs that will be applied to all events. Unlike
         `base_event_kwargs`, these kwargs take precedence over any event-specific
         kwargs.
-    position_offsets : PositionDict | None
+    position_offsets : PositionOffsets | None
         A dictionary of offsets to apply to each position. This can be used to shift
-        all positions in a sub-sequence.  Keys must be one of `x_pos`, `y_pos`, or
-        `z_pos` and values should be floats.s
+        all positions in a sub-sequence.  Keys should be one of `x`, `y`, or
+        `z` and values should be floats.
     _last_t_idx : int
         The index of the last timepoint.  This is used to determine if the event
         should reset the event timer.
@@ -188,14 +186,39 @@ def _iter_sequence(
 
         # apply any overrides
         if event_kwarg_overrides:
-            event_kwargs.update(event_kwarg_overrides)
+            # merge positions dicts rather than replacing
+            if "positions" in event_kwarg_overrides and "positions" in event_kwargs:
+                event_kwargs["positions"] = {
+                    **event_kwargs.get("positions", {}),
+                    **event_kwarg_overrides["positions"],
+                }
+                overrides_without_pos = {
+                    k: v
+                    for k, v in event_kwarg_overrides.items()
+                    if k != "positions"
+                }
+                event_kwargs.update(overrides_without_pos)  # type: ignore[typeddict-item]
+            else:
+                event_kwargs.update(event_kwarg_overrides)
 
         # shift positions if position_offsets have been provided
         # (usually from sub-sequences)
         if position_offsets:
-            for k, v in position_offsets.items():
-                if event_kwargs[k] is not None:  # type: ignore[literal-required]
-                    event_kwargs[k] += v  # type: ignore[literal-required]
+            positions = event_kwargs.get("positions", {})
+            for axis, offset_val in position_offsets.items():
+                sp = positions.get(axis)
+                if sp is not None:
+                    if isinstance(sp, StagePosition):
+                        positions[axis] = StagePosition(
+                            pos=sp.pos + offset_val, stage=sp.stage
+                        )
+                    elif isinstance(sp, dict):
+                        positions[axis] = {
+                            **sp,
+                            "pos": sp["pos"] + offset_val,
+                        }
+            if positions:
+                event_kwargs["positions"] = positions
 
         # grab global autofocus plan (may be overridden by position-specific plan below)
         autofocus_plan = sequence.autofocus_plan
@@ -250,26 +273,35 @@ def _iter_sequence(
 
 def _position_offsets(
     position: Position, event_kwargs: MDAEventDict
-) -> tuple[MDAEventDict, PositionDict]:
+) -> tuple[MDAEventDict, PositionOffsets]:
     """Determine shifts and position overrides for position subsequences."""
     pos_seq = cast("MDASequence", position.sequence)
     overrides = MDAEventDict()
-    offsets = PositionDict()
+    offsets = PositionOffsets()
+
+    parent_positions: dict[str, StagePosition] = event_kwargs.get("positions", {})
+
     if not pos_seq.z_plan:
         # if this position has no z_plan, we use the z_pos from the parent
-        overrides["z_pos"] = event_kwargs.get("z_pos")
+        z_sp = parent_positions.get("z")
+        if z_sp is not None:
+            overrides.setdefault("positions", {})["z"] = z_sp  # type: ignore[union-attr]
     elif pos_seq.z_plan.is_relative:
         # otherwise apply z-shifts if this position has a relative z_plan
-        offsets["z_pos"] = position.z or 0.0
+        offsets["z"] = position.z or 0.0
 
     if not pos_seq.grid_plan:
         # if this position has no grid plan, we use the x_pos and y_pos from the parent
-        overrides["x_pos"] = event_kwargs.get("x_pos")
-        overrides["y_pos"] = event_kwargs.get("y_pos")
+        x_sp = parent_positions.get("x")
+        y_sp = parent_positions.get("y")
+        if x_sp is not None:
+            overrides.setdefault("positions", {})["x"] = x_sp  # type: ignore[union-attr]
+        if y_sp is not None:
+            overrides.setdefault("positions", {})["y"] = y_sp  # type: ignore[union-attr]
     elif pos_seq.grid_plan.is_relative:
         # otherwise apply x/y shifts if this position has a relative grid plan
-        offsets["x_pos"] = position.x or 0.0
-        offsets["y_pos"] = position.y or 0.0
+        offsets["x"] = position.x or 0.0
+        offsets["y"] = position.y or 0.0
     return overrides, offsets
 
 
@@ -377,4 +409,30 @@ def _xyzpos(
         x_pos = getattr(position, "x", None)
         y_pos = getattr(position, "y", None)
 
-    return {"x_pos": x_pos, "y_pos": y_pos, "z_pos": z_pos}
+    # Build positions dict
+    positions: dict[str, StagePosition] = {}
+    xy_stage = getattr(position, "xy_stage", None) if position else None
+    z_stage = getattr(position, "z_stage", None) if position else None
+
+    if x_pos is not None:
+        positions["x"] = StagePosition(
+            pos=x_pos, stage=xy_stage if xy_stage else None
+        )
+    if y_pos is not None:
+        positions["y"] = StagePosition(
+            pos=y_pos, stage=xy_stage if xy_stage else None
+        )
+    if z_pos is not None:
+        positions["z"] = StagePosition(
+            pos=z_pos, stage=z_stage if z_stage else None
+        )
+
+    # Add other stages
+    if position:
+        for stage_name, val in getattr(position, "other_stages", {}).items():
+            positions[stage_name] = StagePosition(pos=val, stage=stage_name)
+
+    result: MDAEventDict = {}
+    if positions:
+        result["positions"] = positions
+    return result

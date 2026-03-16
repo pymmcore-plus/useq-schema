@@ -48,6 +48,10 @@ class PositionBase(MutableModel):
     row: int | None = Field(default=None, exclude=True)
     col: int | None = Field(default=None, exclude=True)
 
+    xy_stage: str | None = Field(default=None, exclude=True)
+    z_stage: str | None = Field(default=None, exclude=True)
+    other_stages: dict[str, float] = Field(default_factory=dict, exclude=True)
+
     def __add__(self, other: "RelativePosition") -> "Self":
         """Add two positions together to create a new position."""
         if not isinstance(other, RelativePosition):  # pragma: no cover

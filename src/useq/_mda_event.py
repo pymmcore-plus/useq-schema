@@ -23,6 +23,11 @@ try:
 except ImportError:
     field_serializer = None  # type: ignore
 
+try:
+    from pydantic import model_serializer
+except ImportError:
+    model_serializer = None  # type: ignore
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -210,6 +215,28 @@ class ReadOnlyDict(UserDict[str, int]):
         )
 
 
+class StagePosition(UseqModel):
+    """A position for a single stage axis.
+
+    Attributes
+    ----------
+    pos : float
+        Position value.
+    stage : str | None
+        Device name. Optional for spatial axes (x, y, z), where it overrides
+        the default device. For other stages, this is the device name.
+    """
+
+    pos: float
+    stage: str | None = None
+
+    if TYPE_CHECKING:
+
+        class Kwargs(TypedDict, total=False):
+            pos: float
+            stage: str
+
+
 class MDAEvent(UseqModel):
     """Define a single event in a [`MDASequence`][useq.MDASequence].
 
@@ -237,15 +264,11 @@ class MDAEvent(UseqModel):
         `reset_event_timer` set to `True`.
     pos_name : str | None
         The name assigned to the position. By default, `None`.
-    x_pos : float | None
-        X position in microns. If not provided, implies use current position. By
-        default, `None`.
-    y_pos : float | None
-        Y position in microns. If not provided, implies use current position. By
-        default, `None`.
-    z_pos : float | None
-        Z position in microns. If not provided, implies use current position. By
-        default, `None`.
+    positions : dict[str, StagePosition]
+        A mapping of axis name to StagePosition. For spatial axes ("x", "y", "z"),
+        the stage device name is optional and overrides the default device. For
+        backward compatibility, x_pos, y_pos, and z_pos can still be used as
+        constructor arguments and are available as properties.
     slm_image : SLMImage | None
         Image data to display on an SLM device. `SLMImage` is a simple pydantic object
         with two attributes: `data` and `device`. `data` is the image data (anything
@@ -291,9 +314,7 @@ class MDAEvent(UseqModel):
     exposure: float | None = Field(default=None, gt=0.0)
     min_start_time: float | None = None  # time in sec
     pos_name: str | None = None
-    x_pos: float | None = None
-    y_pos: float | None = None
-    z_pos: float | None = None
+    positions: dict[str, StagePosition] = Field(default_factory=dict)
     slm_image: SLMImage | None = None
     sequence: Optional["MDASequence"] = Field(default=None, repr=False)
     properties: list[PropertyTuple] | None = None
@@ -303,15 +324,92 @@ class MDAEvent(UseqModel):
     keep_shutter_open: bool = False
     reset_event_timer: bool = False
 
+    @property
+    def x_pos(self) -> float | None:
+        sp = self.positions.get("x")
+        return sp.pos if sp else None
+
+    @property
+    def y_pos(self) -> float | None:
+        sp = self.positions.get("y")
+        return sp.pos if sp else None
+
+    @property
+    def z_pos(self) -> float | None:
+        sp = self.positions.get("z")
+        return sp.pos if sp else None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_positions(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            positions = dict(values.pop("positions", {}))
+            for axis in ("x", "y", "z"):
+                key = f"{axis}_pos"
+                if key in values:
+                    val = values.pop(key)
+                    if val is not None:
+                        if isinstance(val, (int, float)):
+                            positions[axis] = {"pos": float(val)}
+                        else:
+                            positions[axis] = val
+            if positions:
+                values["positions"] = positions
+        return values
+
+    @model_validator(mode="after")
+    def _validate_xy_stage(self) -> "MDAEvent":
+        x = self.positions.get("x")
+        y = self.positions.get("y")
+        if x and y and x.stage != y.stage:
+            raise ValueError("x and y positions must use the same XY stage device")
+        return self
+
     @field_validator("channel", mode="before")
     def _validate_channel(cls, val: Any) -> Any:
         return Channel(config=val) if isinstance(val, str) else val
 
     if field_serializer is not None:
         _si = field_serializer("index", mode="plain")(lambda v: dict(v))
-        _sx = field_serializer("x_pos", mode="plain")(_float_or_none)
-        _sy = field_serializer("y_pos", mode="plain")(_float_or_none)
-        _sz = field_serializer("z_pos", mode="plain")(_float_or_none)
+
+        @field_serializer("positions", mode="plain")
+        @classmethod
+        def _serialize_positions(
+            cls, v: dict[str, StagePosition]
+        ) -> dict[str, Any]:
+            result: dict[str, Any] = {}
+            for key, sp in v.items():
+                if sp.stage is None:
+                    result[key] = {"pos": float(sp.pos)}
+                else:
+                    result[key] = {"pos": float(sp.pos), "stage": sp.stage}
+            return result
+
+    if model_serializer is not None:
+
+        @model_serializer(mode="wrap")
+        def _serialize_model(self, handler):  # type: ignore
+            data = handler(self)
+            # Convert positions to legacy format if possible
+            positions = data.pop("positions", {})
+            _SPATIAL = {"x", "y", "z"}
+            all_spatial_no_stage = all(
+                k in _SPATIAL
+                and (not isinstance(v, dict) or v.get("stage") is None)
+                for k, v in positions.items()
+            )
+            if all_spatial_no_stage:
+                for axis in ("x", "y", "z"):
+                    if axis in positions:
+                        val = positions[axis]
+                        data[f"{axis}_pos"] = (
+                            float(val["pos"])
+                            if isinstance(val, dict)
+                            else float(val.pos)
+                        )
+            elif positions:
+                data["positions"] = positions
+            return data
 
     if TYPE_CHECKING:
 
@@ -326,6 +424,7 @@ class MDAEvent(UseqModel):
             x_pos: float
             y_pos: float
             z_pos: float
+            positions: "dict[str, StagePosition | StagePosition.Kwargs]"
             slm_image: "SLMImage | SLMImage.Kwargs | npt.ArrayLike"
             sequence: "MDASequence | dict"
             properties: list[tuple[str, str, Any]]
