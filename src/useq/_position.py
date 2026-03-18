@@ -6,6 +6,7 @@ import numpy as np
 from pydantic import Field, model_validator
 
 from useq._base_model import FrozenModel, MutableModel
+from useq._mda_event import PropertyTuple
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -44,6 +45,7 @@ class PositionBase(MutableModel):
     z: float | None = None
     name: str | None = None
     sequence: Optional["MDASequence"] = None
+    properties: list[PropertyTuple] | None = None
 
     # excluded from serialization
     row: int | None = Field(default=None, exclude=True)

@@ -9,7 +9,7 @@ from typing_extensions import TypedDict
 from useq._channel import Channel  # noqa: TC001  # noqa: TCH001
 from useq._enums import AXES, Axis
 from useq._mda_event import Channel as EventChannel
-from useq._mda_event import MDAEvent, ReadOnlyDict
+from useq._mda_event import MDAEvent, PropertyTuple, ReadOnlyDict
 from useq._utils import _has_axes
 from useq._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
 
@@ -30,7 +30,7 @@ class MDAEventDict(TypedDict, total=False):
     y_pos: float | None
     z_pos: float | None
     sequence: MDASequence | None
-    # properties: list[tuple] | None
+    properties: list[PropertyTuple] | None
     metadata: dict
     reset_event_timer: bool
 
@@ -113,6 +113,7 @@ def _iter_sequence(
     event_kwarg_overrides: MDAEventDict | None = None,
     position_offsets: PositionDict | None = None,
     _last_t_idx: int = -1,
+    _last_p_idx: int = -1,
 ) -> Iterator[MDAEvent]:
     """Helper function for `iter_sequence`.
 
@@ -174,6 +175,11 @@ def _iter_sequence(
         event_kwargs.update(_xyzpos(position, channel, sequence.z_plan, grid, z_pos))
         if position and position.name:
             event_kwargs["pos_name"] = position.name
+        # include position properties only when p-index changes
+        p_idx = index.get(Axis.POSITION, -1)
+        if position and position.properties and p_idx != _last_p_idx:
+            event_kwargs["properties"] = list(position.properties)
+        _last_p_idx = p_idx
         if channel:
             event_kwargs["channel"] = EventChannel.model_construct(
                 config=channel.config, group=channel.group
@@ -223,6 +229,7 @@ def _iter_sequence(
                     event_kwarg_overrides=pos_overrides,
                     position_offsets=_offsets,
                     _last_t_idx=_last_t_idx,
+                    _last_p_idx=_last_p_idx,
                 )
                 continue
             # note that position.sequence may be Falsey even if not None, for example
