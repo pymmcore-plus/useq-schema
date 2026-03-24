@@ -62,7 +62,6 @@
   "stage_positions": [
     {
       "name": null,
-      "properties": null,
       "sequence": null,
       "x": 10.0,
       "y": 20.0,
@@ -70,7 +69,6 @@
     },
     {
       "name": "test_name",
-      "properties": null,
       "sequence": {
         "autofocus_plan": null,
         "axis_order": [
@@ -105,7 +103,6 @@
           "step": 1.0
         }
       },
-      "properties": null,
       "x": 10.0,
       "y": 20.0,
       "z": 50.0

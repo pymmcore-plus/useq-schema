@@ -25,17 +25,11 @@ metadata:
 stage_positions:
 - x: 10.0
   y: 20.0
+  z: null
 - name: test_name
   sequence:
-    axis_order:
-    - t
-    - p
-    - g
-    - c
-    - z
     grid_plan:
       columns: 3
-      mode: row_wise_snake
       rows: 2
     z_plan:
       above: 10.0

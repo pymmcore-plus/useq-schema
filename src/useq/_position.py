@@ -46,6 +46,8 @@ class PositionBase(MutableModel):
     name: str | None = None
     sequence: Optional["MDASequence"] = None
     properties: list[PropertyTuple] | None = None
+    plate_row: int | None = None
+    plate_col: int | None = None
 
     # excluded from serialization
     row: int | None = Field(default=None, exclude=True)
