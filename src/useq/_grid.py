@@ -524,7 +524,10 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             pos = []
         for idx, (x, y, r, c) in enumerate(pos):
             yield AbsolutePosition(
-                x=x, y=y, row=r, col=c,
+                x=x,
+                y=y,
+                row=r,
+                col=c,
                 name=self.name_pattern.format(row=r, col=c, idx=idx),
             )
 
