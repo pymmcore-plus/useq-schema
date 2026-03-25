@@ -61,6 +61,9 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         Height of the field of view in microns. If not provided, acquisition engines
         should use current height of the FOV based on the current objective and camera.
         Engines MAY override this even if provided.
+    name_pattern : str
+        Format pattern for grid position names. Supported variables are
+        ``{row}``, ``{col}``, and ``{idx}``. By default, ``"{idx:04d}"``.
     """
 
     overlap: tuple[float, float] = Field(default=(0.0, 0.0), frozen=True)

@@ -40,9 +40,16 @@ class PositionBase(MutableModel):
     z : float | None
         Z position in microns.
     name : str | None
-        Optional name for the position.
+        Optional name for the position. If not provided but `plate_row` and
+        `plate_col` are set, a well name is auto-generated (e.g., "A1").
     sequence : MDASequence | None
         Optional MDASequence relative this position.
+    plate_row : int | None
+        Optional 0-based row index for well plate positions. Used to indicate
+        which well this position belongs to for HCS data storage.
+    plate_col : int | None
+        Optional 0-based column index for well plate positions. Used together
+        with `plate_row` to identify the well.
     row : int | None
         Optional row index, when used in a grid.
     col : int | None
