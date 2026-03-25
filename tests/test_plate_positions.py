@@ -18,7 +18,12 @@ _NAME_FROM_PLATE_CASES = [
     pytest.param({"plate_row": 25, "plate_col": 0}, "Z1", id="int_25_0"),
     pytest.param({"plate_row": 26, "plate_col": 0}, "AA1", id="int_26_0"),
     pytest.param({"plate_row": "A", "plate_col": "1"}, "A1", id="str_A_1"),
-    pytest.param({"plate_row": "B", "plate_col": 2}, "B3", id="mixed_B_2"),
+    pytest.param({"plate_row": "B", "plate_col": 2}, "B2", id="mixed_B_2"),
+    pytest.param(
+        {"plate_row": "fish0", "plate_col": "neuromast0"},
+        "fish0neuromast0",
+        id="str_custom",
+    ),
 ]
 
 
@@ -33,9 +38,19 @@ def test_matching_explicit_name_accepted() -> None:
     assert pos.name == "A1"
 
 
-def test_mismatched_name_raises() -> None:
+def test_mismatched_name_raises_for_int_plate() -> None:
+    """Int plate coords enforce name == well name."""
     with pytest.raises(ValueError, match="does not match"):
         useq.Position(name="B9", plate_row=0, plate_col=0)
+
+
+def test_str_plate_coords_allow_custom_name() -> None:
+    """Str plate coords accept any explicit name."""
+    pos = useq.Position(plate_row="fish0", plate_col="neuromast0", name="0")
+    assert pos.name == "0"
+
+    pos2 = useq.Position(plate_row="A", plate_col=0, name="site1")
+    assert pos2.name == "site1"
 
 
 def test_no_plate_coords_preserves_name() -> None:

@@ -41,8 +41,10 @@ class PositionBase(MutableModel):
         Z position in microns.
     name : str | None
         Optional name for the position. When `plate_row` and `plate_col` are
-        set, the name is always derived from them (e.g., "A1"). Providing a
-        name that doesn't match the plate coordinates raises a ValueError.
+        both int, the name is derived from them (e.g., "A1") and providing a
+        mismatched name raises ValueError. When either is a str (custom
+        naming), the name defaults to ``f"{plate_row}{plate_col}"`` but can
+        be freely overridden.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
     plate_row : int | str | None
@@ -110,27 +112,35 @@ class PositionBase(MutableModel):
 
     @model_validator(mode="after")
     def _name_from_plate(self) -> "Self":
-        """Set name from plate_row/plate_col. Errors if an explicit name conflicts."""
+        """Set or validate name from plate_row/plate_col.
+
+        When both plate_row and plate_col are int (standard well-plate indices),
+        the name is derived as e.g. "A1" and an explicit mismatch raises
+        ValueError. When either is a str (custom naming), the name is only
+        auto-generated if not provided; explicit names are accepted as-is.
+        """
         if self.plate_row is not None and self.plate_col is not None:
-            row_str = (
-                _index_to_row_name(self.plate_row)
-                if isinstance(self.plate_row, int)
-                else str(self.plate_row)
+            both_int = isinstance(self.plate_row, int) and isinstance(
+                self.plate_col, int
             )
-            col_str = (
-                str(self.plate_col + 1)
-                if isinstance(self.plate_col, int)
-                else str(self.plate_col)
-            )
-            well_name = f"{row_str}{col_str}"
-            if self.name is not None and self.name != well_name:
-                raise ValueError(
-                    f"Position name {self.name!r} does not match plate_row="
-                    f"{self.plate_row}, plate_col={self.plate_col} (expected "
-                    f"{well_name!r}). Remove the name to auto-generate it from "
-                    f"plate coordinates."
+            if both_int:
+                well_name = (
+                    f"{_index_to_row_name(self.plate_row)}{self.plate_col + 1}"
                 )
-            object.__setattr__(self, "name", well_name)
+                if self.name is not None and self.name != well_name:
+                    raise ValueError(
+                        f"Position name {self.name!r} does not match "
+                        f"plate_row={self.plate_row}, plate_col="
+                        f"{self.plate_col} (expected {well_name!r}). "
+                        f"Remove the name to auto-generate it from "
+                        f"plate coordinates."
+                    )
+                object.__setattr__(self, "name", well_name)
+            elif self.name is None:
+                # String plate coords: auto-generate only if no name provided
+                row_str = str(self.plate_row)
+                col_str = str(self.plate_col)
+                object.__setattr__(self, "name", f"{row_str}{col_str}")
         return self
 
     @model_validator(mode="before")
