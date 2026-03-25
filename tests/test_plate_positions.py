@@ -9,7 +9,6 @@ import yaml
 
 import useq
 
-
 # --- plate_row / plate_col name generation -----------------------------------
 
 _NAME_FROM_PLATE_CASES = [
@@ -128,7 +127,12 @@ def test_grid_default_name_pattern() -> None:
 _CUSTOM_PATTERN_CASES = [
     pytest.param(
         "row_{row:03d}_col_{col:04d}",
-        {"row_000_col_0000", "row_000_col_0001", "row_001_col_0001", "row_001_col_0000"},
+        {
+            "row_000_col_0000",
+            "row_000_col_0001",
+            "row_001_col_0001",
+            "row_001_col_0000",
+        },
         id="row_col",
     ),
     pytest.param(
@@ -172,7 +176,9 @@ def test_plate_position_with_grid_composite_pos_name() -> None:
     """Plate positions with grid get composite pos_name: 'A1_0000'."""
     seq = useq.MDASequence(
         stage_positions=[useq.Position(plate_row=0, plate_col=0)],
-        grid_plan=useq.GridRowsColumns(rows=1, columns=2, fov_width=180, fov_height=180),
+        grid_plan=useq.GridRowsColumns(
+            rows=1, columns=2, fov_width=180, fov_height=180
+        ),
     )
     events = list(seq)
     assert events[0].pos_name == "A1_0000"
@@ -183,17 +189,17 @@ def test_regular_position_with_grid_no_composite() -> None:
     """Non-plate positions should NOT get grid name appended."""
     seq = useq.MDASequence(
         stage_positions=[useq.Position(x=1000, y=1000, name="MyPos")],
-        grid_plan=useq.GridRowsColumns(rows=1, columns=2, fov_width=180, fov_height=180),
+        grid_plan=useq.GridRowsColumns(
+            rows=1, columns=2, fov_width=180, fov_height=180
+        ),
     )
     events = list(seq)
     assert all(e.pos_name == "MyPos" for e in events)
 
 
 def test_plate_position_without_grid_pos_name() -> None:
-    seq = useq.MDASequence(
-        stage_positions=[useq.Position(plate_row=0, plate_col=0)]
-    )
-    assert list(seq)[0].pos_name == "A1"
+    seq = useq.MDASequence(stage_positions=[useq.Position(plate_row=0, plate_col=0)])
+    assert next(iter(seq)).pos_name == "A1"
 
 
 def test_multiple_wells_with_grid_pos_names() -> None:
@@ -202,7 +208,9 @@ def test_multiple_wells_with_grid_pos_names() -> None:
             useq.Position(x=1000, y=1000, plate_row=0, plate_col=0),
             useq.Position(x=2000, y=2000, plate_row=1, plate_col=1),
         ],
-        grid_plan=useq.GridRowsColumns(rows=1, columns=2, fov_width=180, fov_height=180),
+        grid_plan=useq.GridRowsColumns(
+            rows=1, columns=2, fov_width=180, fov_height=180
+        ),
     )
     pos_names = {e.pos_name for e in seq}
     assert pos_names == {"A1_0000", "A1_0001", "B2_0000", "B2_0001"}
