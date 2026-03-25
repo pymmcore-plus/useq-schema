@@ -124,9 +124,7 @@ class PositionBase(MutableModel):
                 self.plate_col, int
             )
             if both_int:
-                well_name = (
-                    f"{_index_to_row_name(self.plate_row)}{self.plate_col + 1}"
-                )
+                well_name = f"{_index_to_row_name(self.plate_row)}{self.plate_col + 1}"
                 if self.name is not None and self.name != well_name:
                     raise ValueError(
                         f"Position name {self.name!r} does not match "
