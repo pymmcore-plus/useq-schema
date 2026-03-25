@@ -418,7 +418,6 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
         plot_plate(self, show_axis=show_axis)
 
 
-
 def _find_pattern(seq: Sequence[int]) -> tuple[list[int] | None, int | None]:
     n = len(seq)
 

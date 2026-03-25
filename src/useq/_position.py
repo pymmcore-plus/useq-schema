@@ -99,7 +99,11 @@ class PositionBase(MutableModel):
     @model_validator(mode="after")
     def _name_from_plate(self) -> "Self":
         """Auto-generate name from plate_row/plate_col if not provided."""
-        if self.name is None and self.plate_row is not None and self.plate_col is not None:
+        if (
+            self.name is None
+            and self.plate_row is not None
+            and self.plate_col is not None
+        ):
             name = f"{_index_to_row_name(self.plate_row)}{self.plate_col + 1}"
             object.__setattr__(self, "name", name)
         return self
