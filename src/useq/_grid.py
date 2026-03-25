@@ -65,6 +65,12 @@ class _GridPlan(_MultiPointPlan[PositionT]):
 
     overlap: tuple[float, float] = Field(default=(0.0, 0.0), frozen=True)
     mode: OrderMode = Field(default=OrderMode.row_wise_snake, frozen=True)
+    name_pattern: str = Field(
+        default="{idx:04d}",
+        frozen=True,
+        description="Format pattern for grid position names. "
+        "Supported variables: {row}, {col}, {idx}.",
+    )
 
     @field_validator("overlap", mode="before")
     @classmethod
@@ -137,7 +143,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
                 y=y0 - r * dy,
                 row=r,
                 col=c,
-                name=f"{str(idx).zfill(4)}",
+                name=self.name_pattern.format(row=r, col=c, idx=idx),
             )
 
     def __iter__(self) -> Iterator[PositionT]:  # type: ignore [override]
@@ -517,7 +523,10 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         except ValueError:
             pos = []
         for idx, (x, y, r, c) in enumerate(pos):
-            yield AbsolutePosition(x=x, y=y, row=r, col=c, name=f"{str(idx).zfill(4)}")
+            yield AbsolutePosition(
+                x=x, y=y, row=r, col=c,
+                name=self.name_pattern.format(row=r, col=c, idx=idx),
+            )
 
     def _cached_tiles(
         self,
