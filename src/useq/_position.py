@@ -15,6 +15,15 @@ if TYPE_CHECKING:
     from useq import MDASequence
 
 
+def _index_to_row_name(index: int) -> str:
+    """Convert a zero-based row index to name (A, B, ..., Z, AA, AB, ...)."""
+    name = ""
+    while index >= 0:
+        name = chr(index % 26 + 65) + name
+        index = index // 26 - 1
+    return name
+
+
 class PositionBase(MutableModel):
     """Define a position in 3D space.
 
@@ -86,6 +95,14 @@ class PositionBase(MutableModel):
         }
         # not sure why these Self types are not working
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
+
+    @model_validator(mode="after")
+    def _name_from_plate(self) -> "Self":
+        """Auto-generate name from plate_row/plate_col if not provided."""
+        if self.name is None and self.plate_row is not None and self.plate_col is not None:
+            name = f"{_index_to_row_name(self.plate_row)}{self.plate_col + 1}"
+            object.__setattr__(self, "name", name)
+        return self
 
     @model_validator(mode="before")
     @classmethod
