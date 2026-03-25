@@ -45,12 +45,16 @@ class PositionBase(MutableModel):
         name that doesn't match the plate coordinates raises a ValueError.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
-    plate_row : int | None
-        Optional 0-based row index for well plate positions. Used to indicate
-        which well this position belongs to for HCS data storage.
-    plate_col : int | None
-        Optional 0-based column index for well plate positions. Used together
-        with `plate_row` to identify the well.
+    plate_row : int | str | None
+        Row for well plate positions. Can be a 0-based index (e.g., 0 → "A",
+        1 → "B") or a string name (e.g., "A", "B") used as-is. In YAML,
+        unquoted letters are parsed as strings (``plate_row: A`` works).
+    plate_col : int | str | None
+        Column for well plate positions. Can be a 0-based index (e.g., 0 → "1",
+        1 → "2") or a string name (e.g., "1", "2") used as-is. In YAML,
+        unquoted numbers are parsed as int, so use quotes for string columns
+        (``plate_col: "1"`` for column name "1", vs ``plate_col: 1`` for
+        0-based index 1 → column name "2").
     row : int | None
         Optional row index, when used in a grid.
     col : int | None
@@ -63,8 +67,8 @@ class PositionBase(MutableModel):
     name: str | None = None
     sequence: Optional["MDASequence"] = None
     properties: list[PropertyTuple] | None = None
-    plate_row: int | None = None
-    plate_col: int | None = None
+    plate_row: int | str | None = None
+    plate_col: int | str | None = None
 
     # excluded from serialization
     row: int | None = Field(default=None, exclude=True)
@@ -108,7 +112,17 @@ class PositionBase(MutableModel):
     def _name_from_plate(self) -> "Self":
         """Set name from plate_row/plate_col. Errors if an explicit name conflicts."""
         if self.plate_row is not None and self.plate_col is not None:
-            well_name = f"{_index_to_row_name(self.plate_row)}{self.plate_col + 1}"
+            row_str = (
+                _index_to_row_name(self.plate_row)
+                if isinstance(self.plate_row, int)
+                else str(self.plate_row)
+            )
+            col_str = (
+                str(self.plate_col + 1)
+                if isinstance(self.plate_col, int)
+                else str(self.plate_col)
+            )
+            well_name = f"{row_str}{col_str}"
             if self.name is not None and self.name != well_name:
                 raise ValueError(
                     f"Position name {self.name!r} does not match plate_row="
