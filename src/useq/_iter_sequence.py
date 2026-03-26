@@ -174,7 +174,10 @@ def _iter_sequence(
         # determine x, y, z positions
         event_kwargs.update(_xyzpos(position, channel, sequence.z_plan, grid, z_pos))
         if position and position.name:
-            event_kwargs["pos_name"] = position.name
+            pos_name = position.name
+            if grid and grid.name and getattr(position, "plate_row", None) is not None:
+                pos_name = f"{pos_name}_{grid.name}"
+            event_kwargs["pos_name"] = pos_name
         # include position properties only when p-index changes
         p_idx = index.get(Axis.POSITION, -1)
         if position and position.properties and p_idx != _last_p_idx:

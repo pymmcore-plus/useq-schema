@@ -24,7 +24,7 @@ from useq._base_model import FrozenModel, UseqModel
 from useq._enums import Shape
 from useq._grid import RandomPoints, RelativeMultiPointPlan
 from useq._plate_registry import _PLATE_REGISTRY
-from useq._position import Position, PositionBase, RelativePosition
+from useq._position import Position, PositionBase, RelativePosition, _index_to_row_name
 
 if TYPE_CHECKING:
     from pydantic_core import core_schema
@@ -416,15 +416,6 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
         from useq._plot import plot_plate
 
         plot_plate(self, show_axis=show_axis)
-
-
-def _index_to_row_name(index: int) -> str:
-    """Convert a zero-based column index to row name (A, B, ..., Z, AA, AB, ...)."""
-    name = ""
-    while index >= 0:
-        name = chr(index % 26 + 65) + name
-        index = index // 26 - 1
-    return name
 
 
 def _find_pattern(seq: Sequence[int]) -> tuple[list[int] | None, int | None]:

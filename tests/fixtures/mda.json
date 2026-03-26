@@ -47,6 +47,7 @@
     "fov_height": null,
     "fov_width": null,
     "mode": "row_wise_snake",
+    "name_pattern": "{idx:04d}",
     "overlap": [
       0.0,
       0.0
@@ -62,6 +63,9 @@
   "stage_positions": [
     {
       "name": null,
+      "plate_col": null,
+      "plate_row": null,
+      "properties": null,
       "sequence": null,
       "x": 10.0,
       "y": 20.0,
@@ -69,6 +73,9 @@
     },
     {
       "name": "test_name",
+      "plate_col": null,
+      "plate_row": null,
+      "properties": null,
       "sequence": {
         "autofocus_plan": null,
         "axis_order": [
@@ -84,6 +91,7 @@
           "fov_height": null,
           "fov_width": null,
           "mode": "row_wise_snake",
+          "name_pattern": "{idx:04d}",
           "overlap": [
             0.0,
             0.0
