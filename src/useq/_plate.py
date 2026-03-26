@@ -24,7 +24,7 @@ from useq._base_model import FrozenModel, UseqModel
 from useq._enums import Shape
 from useq._grid import RandomPoints, RelativeMultiPointPlan
 from useq._plate_registry import _PLATE_REGISTRY
-from useq._position import Position, PositionBase, RelativePosition
+from useq._position import Position, PositionBase, RelativePosition, _index_to_row_name
 
 if TYPE_CHECKING:
     from pydantic_core import core_schema
@@ -335,9 +335,18 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
     def all_well_positions(self) -> Sequence[Position]:
         """Return all wells (centers) as Position objects."""
         return [
-            Position(x=x * 1000, y=y * 1000, name=name)  # convert to µm
-            for (y, x), name in zip(
-                self.all_well_coordinates, self.all_well_names.reshape(-1), strict=False
+            Position(
+                x=x * 1000,
+                y=y * 1000,
+                name=name,
+                plate_row=int(row),
+                plate_col=int(col),
+            )
+            for (y, x), name, (row, col) in zip(
+                self.all_well_coordinates,
+                self.all_well_names.reshape(-1),
+                self.all_well_indices.reshape(-1, 2),
+                strict=False,
             )
         ]
 
@@ -345,9 +354,18 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
     def selected_well_positions(self) -> Sequence[Position]:
         """Return selected wells (centers) as Position objects."""
         return [
-            Position(x=x * 1000, y=y * 1000, name=name)  # convert to µm
-            for (y, x), name in zip(
-                self.selected_well_coordinates, self.selected_well_names, strict=False
+            Position(
+                x=x * 1000,
+                y=y * 1000,
+                name=name,
+                plate_row=int(row),
+                plate_col=int(col),
+            )
+            for (y, x), name, (row, col) in zip(
+                self.selected_well_coordinates,
+                self.selected_well_names,
+                self.selected_well_indices,
+                strict=False,
             )
         ]
 
@@ -398,15 +416,6 @@ class WellPlatePlan(UseqModel, Sequence[Position]):
         from useq._plot import plot_plate
 
         plot_plate(self, show_axis=show_axis)
-
-
-def _index_to_row_name(index: int) -> str:
-    """Convert a zero-based column index to row name (A, B, ..., Z, AA, AB, ...)."""
-    name = ""
-    while index >= 0:
-        name = chr(index % 26 + 65) + name
-        index = index // 26 - 1
-    return name
 
 
 def _find_pattern(seq: Sequence[int]) -> tuple[list[int] | None, int | None]:

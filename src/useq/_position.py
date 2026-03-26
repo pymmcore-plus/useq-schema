@@ -15,6 +15,15 @@ if TYPE_CHECKING:
     from useq import MDASequence
 
 
+def _index_to_row_name(index: int) -> str:
+    """Convert a zero-based row index to name (A, B, ..., Z, AA, AB, ...)."""
+    name = ""
+    while index >= 0:
+        name = chr(index % 26 + 65) + name
+        index = index // 26 - 1
+    return name
+
+
 class PositionBase(MutableModel):
     """Define a position in 3D space.
 
@@ -31,9 +40,23 @@ class PositionBase(MutableModel):
     z : float | None
         Z position in microns.
     name : str | None
-        Optional name for the position.
+        Optional name for the position. When `plate_row` and `plate_col` are
+        both int, the name is derived from them (e.g., "A1") and providing a
+        mismatched name raises ValueError. When either is a str (custom
+        naming), the name defaults to ``f"{plate_row}{plate_col}"`` but can
+        be freely overridden.
     sequence : MDASequence | None
         Optional MDASequence relative this position.
+    plate_row : int | str | None
+        Row for well plate positions. Can be a 0-based index (e.g., 0 → "A",
+        1 → "B") or a string name (e.g., "A", "B") used as-is. In YAML,
+        unquoted letters are parsed as strings (``plate_row: A`` works).
+    plate_col : int | str | None
+        Column for well plate positions. Can be a 0-based index (e.g., 0 → "1",
+        1 → "2") or a string name (e.g., "1", "2") used as-is. In YAML,
+        unquoted numbers are parsed as int, so use quotes for string columns
+        (``plate_col: "1"`` for column name "1", vs ``plate_col: 1`` for
+        0-based index 1 → column name "2").
     row : int | None
         Optional row index, when used in a grid.
     col : int | None
@@ -46,6 +69,8 @@ class PositionBase(MutableModel):
     name: str | None = None
     sequence: Optional["MDASequence"] = None
     properties: list[PropertyTuple] | None = None
+    plate_row: int | str | None = None
+    plate_col: int | str | None = None
 
     # excluded from serialization
     row: int | None = Field(default=None, exclude=True)
@@ -84,6 +109,34 @@ class PositionBase(MutableModel):
         }
         # not sure why these Self types are not working
         return type(self).model_construct(**kwargs)  # type: ignore [return-value]
+
+    @model_validator(mode="after")
+    def _name_from_plate(self) -> "Self":
+        """Set or validate name from plate_row/plate_col.
+
+        When both plate_row and plate_col are int (standard well-plate indices),
+        the name is derived as e.g. "A1" and an explicit mismatch raises
+        ValueError. When either is a str (custom naming), the name is only
+        auto-generated if not provided; explicit names are accepted as-is.
+        """
+        if self.plate_row is not None and self.plate_col is not None:
+            if isinstance(self.plate_row, int) and isinstance(self.plate_col, int):
+                well_name = f"{_index_to_row_name(self.plate_row)}{self.plate_col + 1}"
+                if self.name is not None and self.name != well_name:
+                    raise ValueError(
+                        f"Position name {self.name!r} does not match "
+                        f"plate_row={self.plate_row}, plate_col="
+                        f"{self.plate_col} (expected {well_name!r}). "
+                        f"Remove the name to auto-generate it from "
+                        f"plate coordinates."
+                    )
+                object.__setattr__(self, "name", well_name)
+            elif self.name is None:
+                # String plate coords: auto-generate only if no name provided
+                row_str = str(self.plate_row)
+                col_str = str(self.plate_col)
+                object.__setattr__(self, "name", f"{row_str}{col_str}")
+        return self
 
     @model_validator(mode="before")
     @classmethod
