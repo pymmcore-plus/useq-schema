@@ -144,8 +144,8 @@ class _GridPlan(_MultiPointPlan[PositionT]):
             yield pos_cls(  # type: ignore [misc]
                 x=x0 + c * dx,
                 y=y0 - r * dy,
-                row=r,
-                col=c,
+                grid_row=r,
+                grid_col=c,
                 name=self.name_pattern.format(row=r, col=c, idx=idx),
             )
 
@@ -529,8 +529,8 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
             yield AbsolutePosition(
                 x=x,
                 y=y,
-                row=r,
-                col=c,
+                grid_row=r,
+                grid_col=c,
                 name=self.name_pattern.format(row=r, col=c, idx=idx),
             )
 

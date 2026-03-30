@@ -3,7 +3,8 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Generic, Optional, SupportsIndex, TypeVar
 
 import numpy as np
-from pydantic import Field, model_validator
+from pydantic import model_validator
+from typing_extensions import deprecated
 
 from useq._base_model import FrozenModel, MutableModel
 from useq._mda_event import PropertyTuple
@@ -57,9 +58,9 @@ class PositionBase(MutableModel):
         unquoted numbers are parsed as int, so use quotes for string columns
         (``plate_col: "1"`` for column name "1", vs ``plate_col: 1`` for
         0-based index 1 → column name "2").
-    row : int | None
+    grid_row : int | None
         Optional row index, when used in a grid.
-    col : int | None
+    grid_col : int | None
         Optional column index, when used in a grid.
     """
 
@@ -71,10 +72,26 @@ class PositionBase(MutableModel):
     properties: list[PropertyTuple] | None = None
     plate_row: int | str | None = None
     plate_col: int | str | None = None
+    grid_row: int | None = None
+    grid_col: int | None = None
 
-    # excluded from serialization
-    row: int | None = Field(default=None, exclude=True)
-    col: int | None = Field(default=None, exclude=True)
+    @property
+    @deprecated("Use 'grid_row' instead.")
+    def row(self) -> int | None:
+        return self.grid_row
+
+    @row.setter
+    def row(self, value: int | None) -> None:
+        self.grid_row = value
+
+    @property
+    @deprecated("Use 'grid_col' instead.")
+    def col(self) -> int | None:
+        return self.grid_col
+
+    @col.setter
+    def col(self, value: int | None) -> None:
+        self.grid_col = value
 
     def __add__(self, other: "RelativePosition") -> "Self":
         """Add two positions together to create a new position."""
@@ -141,6 +158,11 @@ class PositionBase(MutableModel):
     @model_validator(mode="before")
     @classmethod
     def _cast(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            if "row" in value and "grid_row" not in value:
+                value["grid_row"] = value.pop("row")
+            if "col" in value and "grid_col" not in value:
+                value["grid_col"] = value.pop("col")
         if isinstance(value, (np.ndarray, tuple)):
             x = y = z = None
             if len(value) > 0:
