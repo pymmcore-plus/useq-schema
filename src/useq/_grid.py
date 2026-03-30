@@ -135,8 +135,8 @@ class _GridPlan(_MultiPointPlan[PositionT]):
             yield pos_cls(  # type: ignore [misc]
                 x=x0 + c * dx,
                 y=y0 - r * dy,
-                row=r,
-                col=c,
+                grid_row=r,
+                grid_col=c,
                 name=f"{str(idx).zfill(4)}",
             )
 
@@ -517,7 +517,9 @@ class GridFromPolygon(_GridPlan[AbsolutePosition]):
         except ValueError:
             pos = []
         for idx, (x, y, r, c) in enumerate(pos):
-            yield AbsolutePosition(x=x, y=y, row=r, col=c, name=f"{str(idx).zfill(4)}")
+            yield AbsolutePosition(
+                x=x, y=y, grid_row=r, grid_col=c, name=f"{str(idx).zfill(4)}"
+            )
 
     def _cached_tiles(
         self,
