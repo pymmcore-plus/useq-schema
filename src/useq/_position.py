@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Generic, Optional, SupportsIndex, TypeVar
 
 import numpy as np
-from pydantic import Field, model_validator
+from pydantic import model_validator
 
 from useq._base_model import FrozenModel, MutableModel
 from useq._mda_event import PropertyTuple
@@ -52,10 +52,8 @@ class PositionBase(MutableModel):
     properties: list[PropertyTuple] | None = None
     plate_row: int | None = None
     plate_col: int | None = None
-
-    # excluded from serialization
-    row: int | None = Field(default=None, exclude=True)
-    col: int | None = Field(default=None, exclude=True)
+    row: int | None = None
+    col: int | None = None
 
     def __add__(self, other: "RelativePosition") -> "Self":
         """Add two positions together to create a new position."""
