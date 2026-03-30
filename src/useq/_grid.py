@@ -63,7 +63,7 @@ class _GridPlan(_MultiPointPlan[PositionT]):
         Engines MAY override this even if provided.
     name_pattern : str
         Format pattern for grid position names. Supported variables are
-        ``{row}``, ``{col}``, and ``{idx}``. By default, ``"{idx:04d}"``.
+        `{row}`, `{col}`, and `{idx}`. By default, `"{idx:04d}"`.
     """
 
     overlap: tuple[float, float] = Field(default=(0.0, 0.0), frozen=True)
