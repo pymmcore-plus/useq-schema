@@ -55,7 +55,7 @@ jobs:
             pytest -v --color=yes
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: covreport-${{ matrix.os }}-py${{ matrix.python-version }}-${{ matrix.extra }}
           path: ./.coverage*
