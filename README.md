@@ -122,9 +122,9 @@ from useq import MDASequence
 mda_seq = MDASequence(
     stage_positions=[(100, 100, 30), (200, 150, 35)],
     channels=["DAPI", "FITC"],
-    time_plan={'interval': 1, 'loops': 20},
+    time_plan={"interval": 1, "loops": 20},
     z_plan={"range": 4, "step": 0.5},
-    axis_order='tpcz',
+    axis_order="tpcz",
 )
 ```
 
