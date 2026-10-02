@@ -368,6 +368,8 @@ def _xyzpos(
             z_pos += getattr(position, Axis.Z, None) or 0
     elif position:
         z_pos = position.z
+        if z_pos is not None and channel and channel.z_offset is not None:
+            z_pos += channel.z_offset
 
     if grid:
         x_pos: float | None = grid.x
