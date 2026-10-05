@@ -34,6 +34,7 @@ from abc import abstractmethod
 
 V = TypeVar("V")
 
+
 class AxisIterable(BaseModel, Generic[V]):
     axis_key: str  # Unique identifier for this axis
 
@@ -80,6 +81,7 @@ an event.
 ```python
 EventT = TypeVar("EventT")
 
+
 class MultiAxisSequence(BaseModel, Generic[EventT]):
     axes: tuple[AxisIterable, ...] = ()
     axis_order: Optional[tuple[str, ...]] = None
@@ -97,8 +99,8 @@ There *is* still an `MDASequence` class in v2, which is a subclass of
 ```python
 from useq.v2 import MDAEvent
 
-class MDASequence(MultiAxisSequence[MDAEvent]):
-    ...
+
+class MDASequence(MultiAxisSequence[MDAEvent]): ...
 ```
 
 In other words, `MultiAxisSequence` is a generic iterator over multiple
@@ -114,12 +116,16 @@ You can now define completely custom axes for any dimension:
 ```python
 from useq import v2
 
+
 # Custom axis for laser power
 class LaserPowerAxis(v2.SimpleValueAxis[float]):
     axis_key: str = "laser_power"
-    
-    def contribute_to_mda_event(self, value: float, index: Mapping[str, int]) -> v2.MDAEvent.Kwargs:
+
+    def contribute_to_mda_event(
+        self, value: float, index: Mapping[str, int]
+    ) -> v2.MDAEvent.Kwargs:
         return {"metadata": {"laser_power": value}}
+
 
 # Custom axis for temperature
 class TemperatureAxis(v2.AxisIterable[float]):
@@ -127,14 +133,16 @@ class TemperatureAxis(v2.AxisIterable[float]):
     min_temp: float
     max_temp: float
     step: float
-    
+
     def __iter__(self) -> Iterator[float]:
         temp = self.min_temp
         while temp <= self.max_temp:
             yield temp
             temp += self.step
-            
-    def contribute_to_mda_event(self, value: float, index: Mapping[str, int]) -> v2.MDAEvent.Kwargs:
+
+    def contribute_to_mda_event(
+        self, value: float, index: Mapping[str, int]
+    ) -> v2.MDAEvent.Kwargs:
         return {"metadata": {"temperature": value}}
 ```
 
@@ -167,6 +175,7 @@ adds a temperature axis and overrides the Z plan defined in the parent sequence:
 
 ```python
 from useq import v2
+
 # Position with custom sub-sequence (uses MDASequence, which StagePositions accepts)
 sub_sequence = v2.MDASequence(
     value=v2.Position(x=10, y=20),  # The value represents this position
@@ -176,14 +185,16 @@ sub_sequence = v2.MDASequence(
         # Override parent Z plan
         v2.ZRangeAround(range=2, step=0.5),
     ),
-    axis_order=("temperature", "z")
+    axis_order=("temperature", "z"),
 )
 
 main_sequence = v2.MDASequence(
     axes=(
         v2.TIntervalLoops(interval=1.0, loops=5),
         v2.StagePositions(values=[sub_sequence, v2.Position(x=0, y=0)]),
-        v2.ZRangeAround(range=4, step=1.0),  # This gets overridden for the first position
+        v2.ZRangeAround(
+            range=4, step=1.0
+        ),  # This gets overridden for the first position
     )
 )
 ```
@@ -196,6 +207,7 @@ flexible, composable pipeline:
 
 ```python
 from useq.v2 import KeepShutterOpenTransform, EventTransform
+
 
 class CustomTransform(EventTransform[MDAEvent]):
     def __call__(
@@ -212,9 +224,10 @@ class CustomTransform(EventTransform[MDAEvent]):
         # Can return multiple events, no events, or modify the event
         return [event]
 
+
 seq = v2.MDASequence(
     channels=["DAPI", "FITC"],  # Using legacy API for brevity
-    transforms=(CustomTransform(), KeepShutterOpenTransform(("z",)))
+    transforms=(CustomTransform(), KeepShutterOpenTransform(("z",))),
 )
 ```
 
@@ -247,7 +260,7 @@ cases like laser measurements and Raman spectroscopy:
 ```python
 class LaserMeasurementTransform(EventTransform[MDAEvent]):
     """Insert laser measurement events after BF z-stacks."""
-    
+
     def __call__(
         self,
         event: MDAEvent,
@@ -257,33 +270,42 @@ class LaserMeasurementTransform(EventTransform[MDAEvent]):
     ) -> Iterable[MDAEvent]:
         # Yield the original imaging event
         yield event
-        
+
         # If this is the last event in a BF z-stack, add laser measurements
-        if (event.channel and event.channel.config == "BF" and 
-            self._is_last_z_event(event, make_next_event)):
-            
+        if (
+            event.channel
+            and event.channel.config == "BF"
+            and self._is_last_z_event(event, make_next_event)
+        ):
             # Insert 5 laser measurement events at different points
-            for i, (x_offset, y_offset) in enumerate([(0, 0), (10, 0), (0, 10), (-10, 0), (0, -10)]):
+            for i, (x_offset, y_offset) in enumerate(
+                [(0, 0), (10, 0), (0, 10), (-10, 0), (0, -10)]
+            ):
                 laser_event = MDAEvent(
                     index={"t": event.index.get("t", 0), "laser": i},
                     x_pos=(event.x_pos or 0) + x_offset,
                     y_pos=(event.y_pos or 0) + y_offset,
-                    action=CustomAction(type="laser_measurement", data={"laser_power": 75})
+                    action=CustomAction(
+                        type="laser_measurement", data={"laser_power": 75}
+                    ),
                 )
                 yield laser_event
-    
+
     def _is_last_z_event(self, event: MDAEvent, make_next_event: Callable) -> bool:
         next_event = make_next_event()
-        return (next_event is None or 
-                next_event.channel is None or 
-                next_event.channel.config != "BF")
+        return (
+            next_event is None
+            or next_event.channel is None
+            or next_event.channel.config != "BF"
+        )
+
 
 # Usage for the GitHub issue #41 use case:
 # 1. Collect BF z-stack → 2. Laser measurements → 3. GFP z-stack
 seq = v2.MDASequence(
-    channels=["BF", "GFP"],  
+    channels=["BF", "GFP"],
     z_plan=v2.ZRangeAround(range=2, step=0.5),
-    transforms=(LaserMeasurementTransform(),)
+    transforms=(LaserMeasurementTransform(),),
 )
 
 # This generates:
@@ -299,6 +321,7 @@ Customize how raw axis data gets converted into events:
 ```python
 class MyCustomEvent: ...
 
+
 class CustomEventBuilder(v2.EventBuilder[MyCustomEvent]):
     def __call__(
         self, axes_index: v2.AxesIndex, context: tuple[v2.MultiAxisSequence, ...]
@@ -306,10 +329,8 @@ class CustomEventBuilder(v2.EventBuilder[MyCustomEvent]):
         # Build your custom event type
         return MyCustomEvent(...)
 
-seq = v2.MultiAxisSequence(
-    axes=(),
-    event_builder=CustomEventBuilder()
-)
+
+seq = v2.MultiAxisSequence(axes=(), event_builder=CustomEventBuilder())
 ```
 
 ### 6. **Infinite Axes Support**
@@ -403,7 +424,7 @@ seq.grid_plan
 
 # v2 - Legacy properties still work but deprecated
 seq2.time_plan  # Returns the time axis or None
-seq2.z_plan     # Returns the z axis or None
+seq2.z_plan  # Returns the z axis or None
 
 # v2 - New approach
 time_axis = next((ax for ax in seq2.axes if ax.axis_key == "t"), None)
@@ -475,22 +496,25 @@ All the original v1 plans are now `AxisIterable` implementations:
 ```python
 class PHAxis(v2.AxisIterable[float]):
     """Axis for pH titration experiments."""
+
     axis_key: str = "ph"
     start_ph: float = 6.0
     end_ph: float = 8.0
     steps: int = 10
-    
+
     def __iter__(self) -> Iterator[float]:
         step_size = (self.end_ph - self.start_ph) / (self.steps - 1)
         for i in range(self.steps):
             yield self.start_ph + i * step_size
-            
-    def contribute_to_mda_event(self, value: float, index: Mapping[str, int]) -> MDAEvent.Kwargs:
+
+    def contribute_to_mda_event(
+        self, value: float, index: Mapping[str, int]
+    ) -> MDAEvent.Kwargs:
         return {
             "metadata": {"ph": value},
-            "properties": [("pH_Controller", "target_ph", value)]
+            "properties": [("pH_Controller", "target_ph", value)],
         }
-    
+
     def should_skip(self, prefix: AxesIndex) -> bool:
         # Skip pH 7.5+ for channel index > 2
         channel_idx = prefix.get("c", (None, None, None))[0]
@@ -509,7 +533,7 @@ region1 = v2.MDASequence(
     axes=(
         v2.ZRangeAround(range=10, step=0.2),  # High-res Z
         v2.ChannelsPlan(values=["DAPI", "FITC", "Cy3"]),  # 3 channels
-    )
+    ),
 )
 
 region2 = v2.MDASequence(
@@ -518,8 +542,9 @@ region2 = v2.MDASequence(
         v2.ZRangeAround(range=20, step=0.5),  # Lower-res Z
         v2.ChannelsPlan(values=["DAPI", "Cy5"]),  # Only 2 channels
         PHAxis(start_ph=6.5, end_ph=7.5, steps=5),  # pH titration
-    )
+    ),
 )
+
 
 class CustomTransform:
     def __call__(
@@ -532,6 +557,7 @@ class CustomTransform:
         # possibly modify event... based on conditions
         yield event
 
+
 main_seq = v2.MDASequence(
     axes=(
         v2.TIntervalLoops(interval=60, loops=10),  # Every minute for 10 minutes
@@ -540,7 +566,7 @@ main_seq = v2.MDASequence(
     transforms=(
         CustomTransform(),
         v2.KeepShutterOpenTransform(("z", "c")),  # Keep shutter open for Z and C
-    )
+    ),
 )
 ```
 
