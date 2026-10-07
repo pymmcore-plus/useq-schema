@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class StagePositions(AxisIterable[Position], FrozenModel):
-    axis_key: Literal[Axis.POSITION] = Field(
+    axis_key: Literal[Axis.POSITION] = Field(  # pyright: ignore[reportIncompatibleVariableOverride]
         default=Axis.POSITION, frozen=True, init=False
     )
     values: list[Position | MDASequence] = Field(default_factory=list)

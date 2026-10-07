@@ -135,7 +135,7 @@ class AutoFocusTransform(EventTransform[MDAEvent]):
                     try:
                         positions = list(zplan)
                         val = positions[event.index["z"]]
-                        offset = val.z if hasattr(val, "z") else val
+                        offset = getattr(val, "z", val)
                         updates["z_pos"] = event.z_pos - offset
                     except (IndexError, AttributeError):
                         pass  # fallback to default
