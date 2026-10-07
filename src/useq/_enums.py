@@ -1,8 +1,8 @@
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Final, Literal
 
 
-class Axis(str, Enum):
+class Axis(StrEnum):
     """Recognized useq-schema axis keys.
 
     Attributes

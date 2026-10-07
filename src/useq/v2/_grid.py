@@ -9,6 +9,7 @@ from typing import (
     Annotated,
     Any,
     Literal,
+    Self,
     TypeAlias,
 )
 
@@ -16,7 +17,7 @@ import numpy as np
 from annotated_types import Ge, Gt
 from pydantic import Field, PrivateAttr, field_validator, model_validator
 from shapely import Polygon, box, prepared
-from typing_extensions import Self, deprecated
+from typing_extensions import deprecated
 
 from useq._enums import Axis, RelativeTo, Shape
 from useq._point_visiting import OrderMode, TraversalOrder
