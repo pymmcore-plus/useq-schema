@@ -236,4 +236,4 @@ def _total_distance(points: np.ndarray) -> float:
 
 def _distance_matrix(points: np.ndarray) -> np.ndarray:
     # Calculate the distance matrix (euclidean distance between each pair of points)
-    return np.sqrt(np.sum((points[:, None] - points) ** 2, axis=2))  # type: ignore [no-any-return]
+    return np.sqrt(np.sum((points[:, None] - points) ** 2, axis=2))  # type: ignore[no-any-return, unused-ignore]
