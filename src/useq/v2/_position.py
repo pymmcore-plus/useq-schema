@@ -9,7 +9,7 @@ from pydantic import model_validator
 from useq._base_model import MutableModel
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
+    from typing import Self
 
 
 class Position(MutableModel):

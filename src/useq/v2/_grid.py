@@ -9,6 +9,7 @@ from typing import (
     Annotated,
     Any,
     Literal,
+    Self,
     TypeAlias,
 )
 
@@ -16,7 +17,7 @@ import numpy as np
 from annotated_types import Ge, Gt
 from pydantic import Field, PrivateAttr, field_validator, model_validator
 from shapely import Polygon, box, prepared
-from typing_extensions import Self, deprecated
+from typing_extensions import deprecated
 
 from useq._enums import Axis, RelativeTo, Shape
 from useq._point_visiting import OrderMode, TraversalOrder
@@ -58,7 +59,7 @@ class _GridPlan(MultiPositionPlan):
         Engines MAY override this even if provided.
     """
 
-    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)
+    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)  # pyright: ignore[reportIncompatibleVariableOverride]
 
     overlap: tuple[float, float] = Field(default=(0.0, 0.0), frozen=True)
     mode: OrderMode = Field(default=OrderMode.row_wise_snake, frozen=True)
@@ -649,7 +650,7 @@ class RandomPoints(MultiPositionPlan):
         points; this likely only makes sense when `random_seed` is provided.
     """
 
-    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)
+    axis_key: Literal[Axis.GRID] = Field(default=Axis.GRID, frozen=True, init=False)  # pyright: ignore[reportIncompatibleVariableOverride]
 
     num_points: Annotated[int, Gt(0)]
     max_width: Annotated[float, Gt(0)] = 1
