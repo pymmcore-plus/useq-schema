@@ -244,6 +244,34 @@ def test_z_plan_num_position() -> None:
         assert len(list(plan)) == i
 
 
+def test_channel_z_offset_without_z_plan() -> None:
+    """Channel z_offset is applied to the stage position z when there is no z_plan."""
+    seq = MDASequence(
+        stage_positions=[(0.0, 0.0, 10.0)],
+        channels=[{"config": "a"}, {"config": "b", "z_offset": 5.0}],
+    )
+    assert [e.z_pos for e in seq] == [10.0, 15.0]
+
+
+def test_channel_z_offset_with_z_plan() -> None:
+    """The offset is applied exactly once when z comes from a z_plan."""
+    channels = [{"config": "a"}, {"config": "b", "z_offset": 5.0}]
+    z_plan = {"range": 2.0, "step": 1.0}
+    seq = MDASequence(
+        stage_positions=[(0.0, 0.0, 10.0)], channels=channels, z_plan=z_plan
+    )
+    assert [e.z_pos for e in seq] == [9.0, 10.0, 11.0, 14.0, 15.0, 16.0]
+
+
+def test_channel_z_offset_without_position_z() -> None:
+    """If there is no z at all, z_pos stays None (offset has nothing to apply to)."""
+    seq = MDASequence(
+        stage_positions=[(0.0, 0.0)],
+        channels=[{"config": "a"}, {"config": "b", "z_offset": 5.0}],
+    )
+    assert [e.z_pos for e in seq] == [None, None]
+
+
 def test_channel_str() -> None:
     assert MDAEvent(channel="DAPI") == MDAEvent(channel={"config": "DAPI"})
 
