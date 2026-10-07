@@ -10,8 +10,9 @@ from useq._base_model import FrozenModel, MutableModel
 from useq._mda_event import PropertyTuple
 
 if TYPE_CHECKING:
+    from typing import Self
+
     from matplotlib.axes import Axes
-    from typing_extensions import Self
 
     from useq import MDASequence
 

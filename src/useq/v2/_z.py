@@ -26,7 +26,7 @@ class ZPlan(AxisIterable[Position], FrozenModel):
     the new v2 MDA sequence framework.
     """
 
-    axis_key: Literal[Axis.Z] = Field(default=Axis.Z, frozen=True, init=False)
+    axis_key: Literal[Axis.Z] = Field(default=Axis.Z, frozen=True, init=False)  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @property
     def is_relative(self) -> bool:

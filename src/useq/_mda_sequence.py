@@ -26,7 +26,7 @@ from useq._utils import TimeEstimate, estimate_sequence_duration
 from useq._z import AnyZPlan  # noqa: TC001
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
+    from typing import Self
 
     from useq._mda_event import MDAEvent
 
