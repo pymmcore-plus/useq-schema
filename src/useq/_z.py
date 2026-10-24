@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -37,11 +36,8 @@ class ZPlan(FrozenModel):
         return [float(x) for x in np.arange(start, stop, step)]
 
     def num_positions(self) -> int:
-        start, stop, step = self._start_stop_step()
-        if step == 0:
-            return 1
-        nsteps = (stop + step - start) / step
-        return math.ceil(round(nsteps, 6))
+        # count the positions actually visited, so that the two can never disagree
+        return len(self.positions())
 
     @property
     def is_relative(self) -> bool:

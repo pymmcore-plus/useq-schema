@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING, Annotated, Literal
 
 import numpy as np
@@ -64,8 +63,8 @@ class ZPlan(AxisIterable[Position], FrozenModel):
         start, stop, step = self._start_stop_step()
         if step == 0:
             return 1
-        nsteps = (stop + step - start) / step
-        return math.ceil(round(nsteps, 6))
+        # must match the number of steps used in _z_positions
+        return max(round((stop - start) / step) + 1, 0)
 
     def contribute_to_mda_event(
         self, value: Position, index: Mapping[str, int]

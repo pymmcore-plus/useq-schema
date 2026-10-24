@@ -230,6 +230,19 @@ class TestEdgeCases:
         assert positions[0] == 0.0
         assert positions[-1] == 1000.0
 
+    @pytest.mark.parametrize(
+        "plan",
+        [
+            ZRangeAround(range=5, step=2),
+            ZRangeAround(range=0.4, step=1),
+            ZTopBottom(top=4.5, bottom=0, step=1),
+            ZAboveBelow(above=1.3, below=1, step=1),
+        ],
+    )
+    def test_len_matches_iteration_uneven_step(self, plan: ZPlan) -> None:
+        """Test that len() agrees with iteration when step does not divide range."""
+        assert len(plan) == len(list(plan))
+
 
 class TestSerialization:
     """Test serialization and deserialization."""
