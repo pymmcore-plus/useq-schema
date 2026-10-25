@@ -9,6 +9,7 @@ from typing_extensions import deprecated
 
 from useq._base_model import FrozenModel
 from useq._enums import Axis
+from useq._z import _num_steps
 from useq.v2._axes_iterator import AxisIterable
 from useq.v2._position import Position
 
@@ -43,7 +44,7 @@ class ZPlan(AxisIterable[Position], FrozenModel):
             yield start
             return
 
-        n_steps = round((stop - start) / step)
+        n_steps = _num_steps(start, stop, step)
         z_positions = list(start + step * np.arange(n_steps + 1))
         if not getattr(self, "go_up", True):
             z_positions = z_positions[::-1]
@@ -63,8 +64,7 @@ class ZPlan(AxisIterable[Position], FrozenModel):
         start, stop, step = self._start_stop_step()
         if step == 0:
             return 1
-        # must match the number of steps used in _z_positions
-        return max(round((stop - start) / step) + 1, 0)
+        return max(_num_steps(start, stop, step) + 1, 0)
 
     def contribute_to_mda_event(
         self, value: Position, index: Mapping[str, int]

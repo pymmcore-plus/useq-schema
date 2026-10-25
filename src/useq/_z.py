@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -16,6 +17,12 @@ def _list_cast(field: str) -> Callable:
     return v(list)
 
 
+def _num_steps(start: float, stop: float, step: float) -> int:
+    """Number of whole steps from start to stop, rounding half-steps down."""
+    # round(.., 6) absorbs float error (e.g. 0.3 / 0.1 -> 2.9999999999999996)
+    return math.ceil(round((stop - start) / step, 6) - 0.5)
+
+
 class ZPlan(FrozenModel):
     go_up: bool = True
 
@@ -29,15 +36,18 @@ class ZPlan(FrozenModel):
         raise NotImplementedError
 
     def positions(self) -> Sequence[float]:
-        start, stop, step = self._start_stop_step()
+        start, _, step = self._start_stop_step()
         if step == 0:
             return [start]
-        stop += step / 2  # make sure we include the last point
+        # stop half a step past the last position, so arange yields exactly n values
+        stop = start + (self.num_positions() - 0.5) * step
         return [float(x) for x in np.arange(start, stop, step)]
 
     def num_positions(self) -> int:
-        # count the positions actually visited, so that the two can never disagree
-        return len(self.positions())
+        start, stop, step = self._start_stop_step()
+        if step == 0:
+            return 1
+        return max(_num_steps(start, stop, step) + 1, 0)
 
     @property
     def is_relative(self) -> bool:

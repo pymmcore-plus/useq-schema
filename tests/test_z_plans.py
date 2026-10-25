@@ -55,3 +55,29 @@ def test_do_stack_false_uses_middle_plane() -> None:
     )
     bf = [e for e in seq if e.channel and e.channel.config == "BF"]
     assert [e.z_pos for e in bf] == [-0.2]
+
+
+@pytest.mark.parametrize(
+    "zplan, expected",
+    [
+        (useq.ZRangeAround(range=3, step=2), [-1.5, 0.5]),
+        (useq.ZRangeAround(range=5, step=2), [-2.5, -0.5, 1.5]),
+        (useq.ZTopBottom(top=1.5, bottom=0, step=1), [0, 1]),
+        (
+            useq.ZRangeAround(range=0.55, step=0.1),
+            [-0.275, -0.175, -0.075, 0.025, 0.125, 0.225],
+        ),
+    ],
+)
+def test_half_step_rounds_down(zplan: useq._z.ZPlan, expected: list[float]) -> None:
+    assert list(zplan) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("step", [0.1, 0.2, 0.3, 0.6])
+@pytest.mark.parametrize("range_", [round(x * 0.05, 2) for x in range(1, 40)])
+def test_last_position_within_half_step_of_top(range_: float, step: float) -> None:
+    # the last position may undershoot the top by up to half a step,
+    # and may overshoot it by strictly less than half a step
+    *_, last = useq.ZRangeAround(range=range_, step=step)
+    top = range_ / 2
+    assert -step / 2 - 1e-9 <= last - top < step / 2 - 1e-9
