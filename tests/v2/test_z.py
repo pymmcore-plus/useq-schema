@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+import useq
 from useq._enums import Axis
 from useq.v2 import (
     MDAEvent,
@@ -229,6 +230,35 @@ class TestEdgeCases:
         assert len(positions) == 11
         assert positions[0] == 0.0
         assert positions[-1] == 1000.0
+
+    @pytest.mark.parametrize(
+        "plan",
+        [
+            ZRangeAround(range=5, step=2),
+            ZRangeAround(range=0.4, step=1),
+            ZTopBottom(top=4.5, bottom=0, step=1),
+            ZAboveBelow(above=1.3, below=1, step=1),
+        ],
+    )
+    def test_len_matches_iteration_uneven_step(self, plan: ZPlan) -> None:
+        """Test that len() agrees with iteration when step does not divide range."""
+        assert len(plan) == len(list(plan))
+
+    @pytest.mark.parametrize(
+        "plan",
+        [
+            ZRangeAround(range=3, step=2),
+            ZRangeAround(range=7, step=2),
+            ZRangeAround(range=5, step=2),
+            ZTopBottom(top=1.5, bottom=0, step=1),
+            ZTopBottom(top=0.3, bottom=0, step=0.1),
+            ZAboveBelow(above=2, below=1.5, step=1),
+        ],
+    )
+    def test_matches_v1_positions(self, plan: ZPlan) -> None:
+        """Test that v2 visits the same positions as v1 (half-steps round down)."""
+        v1_plan = getattr(useq, type(plan).__name__)(**plan.model_dump())
+        assert [p.z for p in plan] == list(v1_plan)
 
 
 class TestSerialization:
