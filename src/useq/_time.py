@@ -76,6 +76,9 @@ class TDurationLoops(TimePlan):
 
     @property
     def interval(self) -> timedelta:
+        if self.loops == 1:
+            # with a single loop there is no interval, the only frame is at t=0
+            return timedelta(0)
         # -1 makes it so that the last loop will *occur* at duration, not *finish*
         return self.duration / (self.loops - 1)
 

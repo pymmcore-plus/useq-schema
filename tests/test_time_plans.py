@@ -29,6 +29,8 @@ t_inputs: list[tuple[Any, Sequence[float]]] = [
     ),
     ({"loops": 5, "duration": {"milliseconds": 8}}, [0, 0.002, 0.004, 0.006, 0.008]),
     ({"loops": 5, "duration": {"seconds": 8}}, [0, 2, 4, 6, 8]),
+    # a single frame
+    (useq.TDurationLoops(loops=1, duration=8), [0]),
 ]
 
 

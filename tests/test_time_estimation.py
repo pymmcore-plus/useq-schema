@@ -143,3 +143,12 @@ def test_time_estimation_with_position_seqs(seq: useq.MDASequence) -> None:
     if not isinstance(expect, tuple):
         expect = (expect, False)
     assert _duration_exceeded(seq) == expect
+
+
+def test_time_estimation_single_loop_duration_plan() -> None:
+    seq = useq.MDASequence(
+        time_plan=useq.TDurationLoops(duration=8, loops=1),
+        channels=[{"config": "DAPI", "exposure": 100}],
+    )
+    assert len(list(seq)) == 1
+    assert seq.estimate_duration().total_duration == pytest.approx(0.1)
