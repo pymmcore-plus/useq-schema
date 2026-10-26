@@ -194,3 +194,45 @@ def test_plate_plan_in_seq(pp: Any) -> None:
     seq = useq.MDASequence(stage_positions=pp)
     assert isinstance(seq.stage_positions, useq.WellPlatePlan)
     assert seq.stage_positions.plate.size == 96
+
+
+@pytest.mark.parametrize(
+    "well_points_plan",
+    [
+        useq.RelativePosition(),
+        useq.GridRowsColumns(rows=2, columns=2, fov_width=100, fov_height=100),
+        useq.RandomPoints(num_points=3, max_width=1000, max_height=1000),
+    ],
+    ids=["RelativePosition", "GridRowsColumns", "RandomPoints"],
+)
+def test_plate_plan_positions_without_z(well_points_plan: Any) -> None:
+    """The wells have no z, so the image positions must have no z (not z=0)."""
+    pp = useq.WellPlatePlan(
+        plate=96,
+        a1_center_xy=(500, 200),
+        selected_wells=np.s_[0:2, 0:2],
+        well_points_plan=well_points_plan,
+    )
+    positions = list(pp)
+    assert len(positions) == 4 * pp.num_points_per_well
+    assert all(p.x is not None and p.y is not None for p in positions)
+    assert all(p.z is None for p in positions)
+
+    seq = useq.MDASequence(stage_positions=pp)
+    assert isinstance(seq.stage_positions, useq.WellPlatePlan)
+    assert all(e.z_pos is None for e in seq)
+
+
+@pytest.mark.parametrize(
+    "offset, expected_z",
+    [
+        (useq.RelativePosition(), 100),
+        (useq.RelativePosition(x=10, z=2), 102),
+    ],
+)
+def test_well_with_z_adds_offset_z(
+    offset: useq.RelativePosition, expected_z: float
+) -> None:
+    pp = useq.WellPlatePlan(plate=96, a1_center_xy=(0, 0), selected_wells=([0], [0]))
+    well = pp.selected_well_positions[0].model_copy(update={"z": 100})
+    assert (well + offset).z == expected_z
