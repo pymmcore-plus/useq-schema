@@ -400,6 +400,9 @@ def test_mda_sequence_setup_serialization() -> None:
     roundtripped2 = MDASequence.model_validate_json(j)
     assert roundtripped2.setup is not None
 
+    roundtripped3 = MDASequence(**seq.model_dump(exclude_unset=True))
+    assert roundtripped3.setup == seq.setup
+
 
 def test_mda_sequence_no_setup() -> None:
     seq = MDASequence(time_plan={"interval": 1, "loops": 2})

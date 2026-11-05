@@ -3,8 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from pydantic import field_validator
+from pydantic import ValidationError, field_validator
 
+import useq
+from useq import AcquireImage, CustomAction
 from useq.v2 import (
     Channel,
     MDAEvent,
@@ -143,3 +145,49 @@ def test_basic_properties() -> None:
     assert seq.shape
     assert seq.sizes
     assert seq.used_axes == ("t", "c", "z")
+
+
+def test_setup() -> None:
+    seq = MDASequence(
+        setup=MDAEvent(properties=[("Camera", "Mode", "12bit")], roi=(0, 12, 128, 256)),
+        channels=["DAPI"],
+        time_plan={"interval": 1, "loops": 2},
+    )
+    assert seq.setup is not None
+    # action defaults to CustomAction(name="setup") when omitted
+    assert isinstance(seq.setup.action, CustomAction)
+    assert seq.setup.action.name == "setup"
+    assert seq.setup.roi is not None
+    assert seq.setup.properties is not None
+
+    # the setup event is not yielded during iteration
+    events = list(seq)
+    assert len(events) == 2
+    assert not any(isinstance(e.action, CustomAction) for e in events)
+
+
+def test_setup_explicit_action() -> None:
+    seq = MDASequence(setup=MDAEvent(action=CustomAction(name="my_setup")))
+    assert seq.setup is not None
+    assert isinstance(seq.setup.action, CustomAction)
+    assert seq.setup.action.name == "my_setup"
+
+    with pytest.raises(ValidationError):
+        MDASequence(setup={"action": {"type": "acquire_image"}})
+    with pytest.raises(ValidationError):
+        MDASequence(setup=MDAEvent(action=AcquireImage()))
+
+
+def test_setup_serialization() -> None:
+    seq = MDASequence(setup={"properties": [("Camera", "Mode", "12bit")]})
+    assert seq.model_dump()["setup"]["action"]["name"] == "setup"
+    roundtripped = MDASequence.model_validate_json(seq.model_dump_json())
+    assert roundtripped.setup == seq.setup
+
+
+def test_setup_from_v1() -> None:
+    v1 = useq.MDASequence(
+        setup={"properties": [("Camera", "Binning", "2")]}, channels=["DAPI"]
+    )
+    seq = MDASequence.model_validate(v1)
+    assert seq.setup == v1.setup

@@ -256,18 +256,7 @@ class MDASequence(UseqModel):
 
     @field_validator("setup", mode="after")
     def _validate_setup(cls, v: MDAEvent | None) -> MDAEvent | None:
-        if v is None:
-            return v
-        if isinstance(v.action, AcquireImage):
-            if "action" in v.model_fields_set:
-                raise ValueError(
-                    "Setup event action cannot be 'AcquireImage'. "
-                    "Omit the action field to automatically use "
-                    "CustomAction(name='setup'), or use a different "
-                    "action type."
-                )
-            v = v.model_copy(update={"action": CustomAction(name="setup")})
-        return v
+        return _validate_setup_event(v)
 
     @field_validator("keep_shutter_open_across", mode="before")
     def _validate_keep_shutter_open_across(cls, v: tuple[str, ...]) -> tuple[str, ...]:
@@ -560,3 +549,20 @@ class MDASequence(UseqModel):
                 takes to acquire the data
         """
         return estimate_sequence_duration(self)
+
+
+def _validate_setup_event(v: MDAEvent | None) -> MDAEvent | None:
+    """Default a setup event's action to `CustomAction(name="setup")`."""
+    if v is None:
+        return v
+    if isinstance(v.action, AcquireImage):
+        if "action" in v.model_fields_set:
+            raise ValueError(
+                "Setup event action cannot be 'AcquireImage'. "
+                "Omit the action field to automatically use "
+                "CustomAction(name='setup'), or use a different "
+                "action type."
+            )
+        # set `type` explicitly so it survives `model_dump(exclude_unset=True)`
+        v = v.model_copy(update={"action": CustomAction(type="custom", name="setup")})
+    return v
