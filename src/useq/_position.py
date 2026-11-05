@@ -87,10 +87,12 @@ class PositionBase(MutableModel):
             y = self.y + other.y
         else:
             y = self.y if other.y is None else other.y
+        # Unlike x/y, a relative z offset never becomes an absolute z: if self has
+        # no z (e.g. a well center), the sum has no z either ("do not move" in z).
         if self.z is not None and other.z is not None:
-            z = self.z + other.z
+            z: float | None = self.z + other.z
         else:
-            z = self.z if other.z is None else other.z
+            z = self.z
         if (name := self.name) and other.name:
             name = f"{name}_{other.name}"
         kwargs = {**self.model_dump(), "x": x, "y": y, "z": z, "name": name}
