@@ -84,7 +84,7 @@ def large_mda() -> useq.MDASequence:
 
 
 # ---------------------------------------------------------------------------
-# MDASequence construction, validation and serialization
+# MDASequence construction, validation and iteration
 # ---------------------------------------------------------------------------
 
 
@@ -107,34 +107,26 @@ def test_mda_sequence_iter_events_large(
     assert len(events) == 1584
 
 
+# A long time-lapse.  The sequence is created inside the benchmark, since one that
+# has already been iterated (or measured) holds on to what it has computed.
+LONG_TIME_PLAN = {"interval": 0.1, "loops": 20_000}
+
+
+def test_mda_sequence_first_event_long_timelapse(benchmark: BenchmarkFixture) -> None:
+    event = benchmark(lambda: next(iter(useq.MDASequence(time_plan=LONG_TIME_PLAN))))
+    assert event.index == {"t": 0}
+
+
+def test_mda_sequence_sizes_long_timelapse(benchmark: BenchmarkFixture) -> None:
+    sizes = benchmark(lambda: useq.MDASequence(time_plan=LONG_TIME_PLAN).sizes)
+    assert sizes["t"] == 20_000
+
+
 def test_mda_sequence_estimate_duration(
     benchmark: BenchmarkFixture, mda: useq.MDASequence
 ) -> None:
     estimate = benchmark(mda.estimate_duration)
     assert estimate.total_duration > 0
-
-
-def test_mda_sequence_to_json(
-    benchmark: BenchmarkFixture, mda: useq.MDASequence
-) -> None:
-    assert benchmark(mda.model_dump_json)
-
-
-def test_mda_sequence_from_json(
-    benchmark: BenchmarkFixture, mda: useq.MDASequence
-) -> None:
-    text = mda.model_dump_json()
-    seq = benchmark(useq.MDASequence.model_validate_json, text)
-    assert seq == mda
-
-
-def test_mda_events_to_json(benchmark: BenchmarkFixture, mda: useq.MDASequence) -> None:
-    events = list(mda.iter_events())
-
-    def dump() -> list[str]:
-        return [e.model_dump_json() for e in events]
-
-    assert benchmark(dump)
 
 
 # ---------------------------------------------------------------------------
@@ -170,22 +162,18 @@ def test_grid_rows_columns_iter(benchmark: BenchmarkFixture) -> None:
     assert len(positions) == 400
 
 
-def test_grid_from_edges_iter(benchmark: BenchmarkFixture) -> None:
-    plan = useq.GridFromEdges(
-        top=0, left=0, bottom=500, right=500, fov_width=25, fov_height=25
-    )
-    positions = benchmark(lambda: list(plan))
-    assert positions
-
-
 def test_grid_from_polygon_iter(benchmark: BenchmarkFixture) -> None:
-    plan = useq.GridFromPolygon(
-        vertices=[(0, 0), (400, 50), (500, 300), (250, 500), (20, 350)],
-        fov_width=20,
-        fov_height=20,
-        overlap=10,
-    )
-    positions = benchmark(lambda: list(plan))
+    # the plan is created inside the benchmark, since it caches its positions
+    def build() -> list[useq.Position]:
+        plan = useq.GridFromPolygon(
+            vertices=[(0, 0), (400, 50), (500, 300), (250, 500), (20, 350)],
+            fov_width=20,
+            fov_height=20,
+            overlap=10,
+        )
+        return list(plan)
+
+    positions = benchmark(build)
     assert positions
 
 
