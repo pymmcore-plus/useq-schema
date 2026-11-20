@@ -241,7 +241,6 @@ class MDASequence(UseqModel):
 
     _uid: UUID = PrivateAttr(default_factory=uuid4)
     _sizes: dict[str, int] | None = PrivateAttr(default=None)
-    _axis_cache: dict[str, tuple[Any, ...]] = PrivateAttr(default_factory=dict)
 
     @property
     def uid(self) -> UUID:
@@ -394,17 +393,6 @@ class MDASequence(UseqModel):
 
         return self
 
-    def model_copy(
-        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
-    ) -> Self:
-        """Return a copy of the sequence, see `pydantic.BaseModel.model_copy`."""
-        copied = super().model_copy(update=update, deep=deep)
-        if update:
-            # these were derived from fields that may have changed
-            copied._sizes = None  # noqa: SLF001
-            copied._axis_cache = {}  # noqa: SLF001
-        return copied
-
     def __eq__(self, other: Any) -> bool:
         """Return `True` if two `MDASequences` are equal (uid is excluded)."""
         if isinstance(other, MDASequence):
@@ -503,7 +491,7 @@ class MDASequence(UseqModel):
     def sizes(self) -> Mapping[str, int]:
         """Mapping of axis name to size of that axis."""
         if self._sizes is None:
-            self._sizes = {k: self._axis_size(k) for k in self.axis_order}
+            self._sizes = {k: len(list(self.iter_axis(k))) for k in self.axis_order}
         return self._sizes
 
     @property
@@ -523,28 +511,9 @@ class MDASequence(UseqModel):
         if plan:
             yield from plan
 
-    def _axis_size(self, axis: str) -> int:
-        """Return the number of items on `axis`."""
-        if axis != Axis.TIME:
-            return len(self._axis_items(axis))
-        # there may be millions of timepoints: don't create them if we don't have to
-        if type(self).iter_axis is MDASequence.iter_axis:
-            return self.time_plan.num_timepoints() if self.time_plan else 0
-        return sum(1 for _ in self.iter_axis(axis))
-
-    def _axis_items(self, axis: str) -> tuple[Any, ...]:
-        """Return the items of a (non-time) `axis`, creating them only once.
-
-        This is only for speed: they would otherwise be recreated on each iteration,
-        and on each visit of a position sub-sequence.
-        """
-        if (items := self._axis_cache.get(axis)) is None:
-            items = self._axis_cache[axis] = tuple(self.iter_axis(axis))
-        return items
-
     def __iter__(self) -> Iterator[MDAEvent]:  # type: ignore [override]
         """Same as `iter_events`. Supports `for event in sequence: ...` syntax."""
-        return self.iter_events()
+        yield from self.iter_events()
 
     def iter_events(self) -> Iterator[MDAEvent]:
         """Iterate over all events in the MDA sequence.

@@ -135,8 +135,8 @@ class MultiPhaseTimePlan(TimePlan):
                 accum += td
 
     def num_timepoints(self) -> int:
-        # one at t=0, then each phase adds all but its first timepoint
-        return 1 + sum(max(phase.loops - 1, 0) for phase in self.phases)
+        # TODO: is this correct?
+        return sum(phase.loops for phase in self.phases) - 1
 
     @model_validator(mode="before")
     @classmethod

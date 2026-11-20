@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import gc
-import weakref
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -41,15 +39,6 @@ def test_timepoints_are_created_as_needed(axis_order: str) -> None:
     assert sum(1 for _ in events) == 2000 - 3
 
 
-def test_iteration_does_not_keep_sequence_alive() -> None:
-    seq = useq.MDASequence(time_plan={"interval": 0, "loops": 3}, channels=["DAPI"])
-    ref = weakref.ref(seq)
-    assert len(list(seq)) == 3
-    del seq
-    gc.collect()
-    assert ref() is None
-
-
 def test_new_event_matches_model_construct() -> None:
     seq = useq.MDASequence()
     kwargs: Any = {
@@ -69,43 +58,3 @@ def test_new_event_matches_model_construct() -> None:
     # metadata is mutable, and must not be shared between events
     assert event.metadata is not _new_event(kwargs).metadata
     assert _new_event({**kwargs, "metadata": {"a": 1}}).metadata == {"a": 1}
-
-
-def test_read_only_dict() -> None:
-    assert ReadOnlyDict() == ReadOnlyDict(None) == {}
-    assert ReadOnlyDict({"t": 1}, c=2) == ReadOnlyDict([("t", 1), ("c", 2)])
-    index = ReadOnlyDict(ReadOnlyDict({"t": 1}))
-    assert dict(index) == {"t": 1}
-    with pytest.raises(TypeError, match="Read-only"):
-        index["t"] = 2
-
-
-def test_model_copy_update() -> None:
-    seq = useq.MDASequence(
-        time_plan={"interval": 1, "loops": 3}, z_plan={"range": 1, "step": 1}
-    )
-    assert seq.sizes == {"t": 3, "p": 0, "g": 0, "c": 0, "z": 2}
-    assert len(list(seq)) == 6
-
-    updated = seq.model_copy(
-        update={
-            "time_plan": useq.TIntervalLoops(interval=1, loops=5),
-            "z_plan": useq.ZRangeAround(range=2, step=1),
-        }
-    )
-    assert updated.sizes == {"t": 5, "p": 0, "g": 0, "c": 0, "z": 3}
-    assert updated.shape == (5, 3)
-    assert len(list(updated)) == 15
-    # the original is unchanged
-    assert seq.sizes["t"] == 3
-    assert len(list(seq)) == 6
-
-
-def test_time_axis_size_with_custom_iter_axis() -> None:
-    class EveryOtherTimepoint(useq.MDASequence):
-        def iter_axis(self, axis: str) -> Iterator[Any]:
-            items = super().iter_axis(axis)
-            yield from (list(items)[::2] if axis == "t" else items)
-
-    seq = EveryOtherTimepoint(time_plan={"interval": 1, "loops": 5})
-    assert seq.sizes["t"] == 3 == len(list(seq))

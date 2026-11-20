@@ -189,9 +189,8 @@ class ReadOnlyDict(UserDict[str, int]):
     _initialized: bool = False
     if not TYPE_CHECKING:
 
-        def __init__(self, data=None, /, **kwargs) -> None:
-            # set directly: `UserDict.__init__` adds one item at a time
-            self.data = dict(data or (), **kwargs)
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
             self._initialized = True
 
     def __setitem__(self, key: str, value: int) -> None:
