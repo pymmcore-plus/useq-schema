@@ -79,6 +79,7 @@ docs = [
     "mkdocs-material>=9.6.13",
     "mkdocstrings-python>=1.16.10",
 ]
+bench = [{ include-group = "test" }, "pytest-codspeed>=5.0.4"]
 
 [tool.uv.sources]
 useq-schema = { workspace = true }
@@ -132,6 +133,7 @@ keep-runtime-typing = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["D", "S101", "E501", "SLF"]
+"benchmarks/*.py" = ["D", "S101"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 # Disallow all relative imports.
