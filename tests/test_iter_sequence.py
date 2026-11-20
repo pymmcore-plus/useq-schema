@@ -13,6 +13,9 @@ from useq._mda_event import ReadOnlyDict
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+AF_ON_P = {"autofocus_motor_offset": 10, "axes": ("p",)}
+SUB_Z = useq.MDASequence(z_plan={"range": 1, "step": 1})
+
 
 @pytest.mark.parametrize("axis_order", ["tpgcz", "ptgcz"])
 def test_timepoints_are_created_as_needed(axis_order: str) -> None:
@@ -77,3 +80,40 @@ def test_iterate_copy_with_new_plan() -> None:
     copied = seq.model_copy(update={"z_plan": useq.ZRangeAround(range=2, step=1)})
     assert len(list(copied)) == 3
     assert len(list(seq)) == 2
+
+
+def test_autofocus_events_are_the_same_each_iteration() -> None:
+    seq = useq.MDASequence(stage_positions=[(0, 0, 0)], autofocus_plan=AF_ON_P)
+    events = list(seq)
+    assert [e.action.type for e in events] == ["hardware_autofocus", "acquire_image"]
+    assert list(seq) == events
+
+
+def test_autofocus_with_concurrent_iteration() -> None:
+    seq = useq.MDASequence(
+        time_plan={"interval": 1, "loops": 2},
+        stage_positions=[(0, 0, 0), useq.Position(x=1, y=1, z=1, sequence=SUB_Z)],
+        autofocus_plan=AF_ON_P,
+    )
+    events = list(seq)
+    assert sum(isinstance(e.action, useq.HardwareAutofocus) for e in events) == 4
+
+    first, second = iter(seq), iter(seq)
+    interleaved = [e for pair in zip(first, second, strict=True) for e in pair]
+    assert interleaved[::2] == events
+    assert interleaved[1::2] == events
+
+
+def test_sub_sequence_exposure_does_not_carry_over() -> None:
+    """A channel without an exposure must not use that of the previous channel."""
+    channels = [useq.Channel(config="A", exposure=10), useq.Channel(config="B")]
+    seq = useq.MDASequence(
+        stage_positions=[useq.Position(x=0, y=0, sequence={"channels": channels})]
+    )
+    assert [(e.channel.config, e.exposure) for e in seq if e.channel] == [
+        ("A", 10),
+        ("B", None),
+    ]
+    # ... as is the case when the channels are declared on the main sequence
+    seq = useq.MDASequence(stage_positions=[(0, 0)], channels=channels)
+    assert [e.exposure for e in seq] == [10, None]
