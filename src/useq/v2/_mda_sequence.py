@@ -18,6 +18,7 @@ from useq._enums import AXES, Axis
 from useq._hardware_autofocus import AnyAutofocusPlan, AxesBasedAF
 from useq._mda_event import MDAEvent
 from useq._mda_sequence import MDASequence as MDASequenceV1
+from useq._mda_sequence import _validate_setup_event
 from useq.v2 import _position
 from useq.v2._axes_iterator import (
     AxisIterable,
@@ -111,6 +112,8 @@ def _default_transforms(data: dict) -> tuple[EventTransform[MDAEvent], ...]:
 
 class MDASequence(MultiAxisSequence[MDAEvent]):
     autofocus_plan: AnyAutofocusPlan | None = None
+    # applied by the engine before the sequence starts; not yielded during iteration
+    setup: MDAEvent | None = None
     keep_shutter_open_across: tuple[str, ...] = Field(default_factory=tuple)
     metadata: dict[str, Any] = Field(default_factory=dict)
     event_builder: Annotated[EventBuilder[MDAEvent], ImportableObject()] | None = Field(
@@ -138,6 +141,7 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
             stage_positions: AxisIterable[Position] | list | None = ...,
             grid_plan: AxisIterable[Position] | None = ...,
             autofocus_plan: AnyAutofocusPlan | None = ...,
+            setup: MDAEvent | None = ...,
             keep_shutter_open_across: str | tuple[str, ...] = ...,
             metadata: dict[str, Any] = ...,
             event_builder: EventBuilder[MDAEvent] = ...,
@@ -152,6 +156,7 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
             axis_order: tuple[str, ...] | None = ...,
             value: Any = ...,
             autofocus_plan: AnyAutofocusPlan | None = ...,
+            setup: MDAEvent | None = ...,
             keep_shutter_open_across: tuple[str, ...] = ...,
             metadata: dict[str, Any] = ...,
             event_builder: EventBuilder[MDAEvent] = ...,
@@ -193,6 +198,11 @@ class MDASequence(MultiAxisSequence[MDAEvent]):
                 KeepShutterOpenTransform(self.keep_shutter_open_across),
             )
         return self
+
+    @field_validator("setup", mode="after")
+    @classmethod
+    def _validate_setup(cls, v: MDAEvent | None) -> MDAEvent | None:
+        return _validate_setup_event(v)
 
     @field_validator("keep_shutter_open_across", mode="before")
     @classmethod
