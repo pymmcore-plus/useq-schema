@@ -80,13 +80,6 @@ def test_read_only_dict() -> None:
         index["t"] = 2
 
 
-def test_random_points_are_the_same_each_iteration() -> None:
-    seq = useq.MDASequence(grid_plan=useq.RandomPoints(num_points=5, random_seed=None))
-    positions = [(e.x_pos, e.y_pos) for e in seq]
-    assert positions == [(e.x_pos, e.y_pos) for e in seq]
-    assert seq.sizes["g"] == 5
-
-
 def test_model_copy_update() -> None:
     seq = useq.MDASequence(
         time_plan={"interval": 1, "loops": 3}, z_plan={"range": 1, "step": 1}

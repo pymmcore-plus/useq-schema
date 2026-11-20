@@ -535,8 +535,8 @@ class MDASequence(UseqModel):
     def _axis_items(self, axis: str) -> tuple[Any, ...]:
         """Return the items of a (non-time) `axis`, creating them only once.
 
-        So that every iteration visits the same items (e.g. `RandomPoints` without a
-        seed), and position sub-sequences needn't recreate them on each visit.
+        This is only for speed: they would otherwise be recreated on each iteration,
+        and on each visit of a position sub-sequence.
         """
         if (items := self._axis_cache.get(axis)) is None:
             items = self._axis_cache[axis] = tuple(self.iter_axis(axis))
