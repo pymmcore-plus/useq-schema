@@ -361,3 +361,8 @@ def test_invalid_poly() -> None:
     vertices = [(0, 0), (2, 2), (0, 2), (2, 0)]
     with pytest.raises(ValueError, match="Invalid or self-intersecting polygon"):
         useq.GridFromPolygon(vertices=vertices, fov_width=1, fov_height=1)
+
+
+def test_random_points_are_repeatable() -> None:
+    plan = useq.RandomPoints(num_points=5)
+    assert list(plan) == list(plan)
