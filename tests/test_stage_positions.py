@@ -86,6 +86,18 @@ _ADD_CASES = [
         (5, 10, 3),
         id="none_falls_back_to_other",
     ),
+    pytest.param(
+        useq.Position(x=1, y=2),
+        useq.RelativePosition(x=5, y=10),
+        (6, 12, None),
+        id="no_z_stays_none",
+    ),
+    pytest.param(
+        useq.Position(x=1, y=2),
+        useq.RelativePosition(x=5, y=10, z=4),
+        (6, 12, None),
+        id="z_offset_without_z_stays_none",
+    ),
 ]
 
 
@@ -103,6 +115,10 @@ def test_position_radd() -> None:
     rel = useq.RelativePosition(x=5, y=10, z=0)
     result = rel + pos
     assert (result.x, result.y, result.z) == (6, 12, 3)
+
+    # a relative z offset does not become an absolute z
+    result = rel + useq.Position(x=1, y=2)
+    assert (result.x, result.y, result.z) == (6, 12, None)
 
 
 # --- RelativePosition rejected in stage_positions --------------------------------
