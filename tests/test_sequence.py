@@ -1,6 +1,6 @@
 import itertools
 import json
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 import numpy as np
@@ -187,6 +187,26 @@ def test_shape_and_axes() -> None:
 
     with pytest.raises(ValueError):
         mda.replace(axis_order=tuple("zptasdfs"))
+
+
+def test_sizes_after_model_copy() -> None:
+    seq = MDASequence(time_plan={"interval": 1, "loops": 3})
+    assert seq.sizes["t"] == 3
+    copied = seq.model_copy(
+        update={"time_plan": TIntervalDuration(interval=1, duration=6)}
+    )
+    assert copied.sizes["t"] == 7
+    assert seq.sizes["t"] == 3
+
+
+def test_sizes_with_custom_iter_axis() -> None:
+    class EveryOtherTimepoint(MDASequence):
+        def iter_axis(self, axis: str) -> Iterator[Any]:
+            items = super().iter_axis(axis)
+            yield from (list(items)[::2] if axis == "t" else items)
+
+    seq = EveryOtherTimepoint(time_plan={"interval": 1, "loops": 5})
+    assert seq.sizes["t"] == 3 == len(list(seq))
 
 
 def test_hashable(mda1: MDASequence) -> None:

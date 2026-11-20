@@ -393,6 +393,15 @@ class MDASequence(UseqModel):
 
         return self
 
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        """Return a copy of the sequence, see `pydantic.BaseModel.model_copy`."""
+        copied = super().model_copy(update=update, deep=deep)
+        if update:
+            copied._sizes = None  # noqa: SLF001  # the fields may have changed
+        return copied
+
     def __eq__(self, other: Any) -> bool:
         """Return `True` if two `MDASequences` are equal (uid is excluded)."""
         if isinstance(other, MDASequence):
@@ -491,8 +500,15 @@ class MDASequence(UseqModel):
     def sizes(self) -> Mapping[str, int]:
         """Mapping of axis name to size of that axis."""
         if self._sizes is None:
-            self._sizes = {k: len(list(self.iter_axis(k))) for k in self.axis_order}
+            self._sizes = {k: self._axis_size(k) for k in self.axis_order}
         return self._sizes
+
+    def _axis_size(self, axis: str) -> int:
+        """Return the number of items on `axis`."""
+        # there may be millions of timepoints: don't create them if we don't have to
+        if axis == Axis.TIME and type(self).iter_axis is MDASequence.iter_axis:
+            return self.time_plan.num_timepoints() if self.time_plan else 0
+        return len(list(self.iter_axis(axis)))
 
     @property
     def used_axes(self) -> str:

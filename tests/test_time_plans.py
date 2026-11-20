@@ -31,6 +31,9 @@ t_inputs: list[tuple[Any, Sequence[float]]] = [
     ({"loops": 5, "duration": {"seconds": 8}}, [0, 2, 4, 6, 8]),
     # a single frame
     (useq.TDurationLoops(loops=1, duration=8), [0]),
+    # multi-phase plans with one and three phases
+    ([{"loops": 3, "interval": 1}], [0, 1, 2]),
+    ([{"loops": 3, "interval": 1}] * 3, [0, 1, 2, 3, 4, 5, 6]),
 ]
 
 
@@ -40,3 +43,4 @@ def test_time_plan(tplan: useq.AnyTimePlan, texpectation: Sequence[float]) -> No
     assert isinstance(time_plan, get_args(useq.AnyTimePlan))
     assert time_plan and list(time_plan) == texpectation
     assert time_plan.num_timepoints() == len(texpectation)
+    assert useq.MDASequence(time_plan=time_plan).sizes["t"] == len(texpectation)
