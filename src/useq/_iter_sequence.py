@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import cache
 from itertools import product
 from typing import TYPE_CHECKING, Any, cast
 
@@ -16,8 +15,11 @@ from useq._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from useq._hardware_autofocus import AnyAutofocusPlan
     from useq._mda_sequence import MDASequence
-    from useq._position import Position, PositionBase, RelativePosition
+    from useq._position import Position, RelativePosition
+
+    AxisItems = tuple[tuple[int, Any], ...]  # (index, item) of each used axis
 
 
 class MDAEventDict(TypedDict, total=False):
@@ -41,19 +43,51 @@ class PositionDict(TypedDict, total=False):
     z_pos: float
 
 
-@cache
-def _iter_axis(seq: MDASequence, ax: str) -> tuple[Channel | float | PositionBase, ...]:
-    return tuple(seq.iter_axis(ax))
+# An event with every field at its default value.  Copying it is much faster than
+# `MDAEvent.model_construct`, which looks up the default of each missing field
+# (and pydantic inspects the signature of every default factory, on every call).
+_DEFAULT_EVENT = MDAEvent.model_construct()
 
 
-@cache
-def _sizes(seq: MDASequence) -> dict[str, int]:
-    return {k: len(list(_iter_axis(seq, k))) for k in seq.axis_order}
+def _new_event(kwargs: MDAEventDict) -> MDAEvent:
+    """Same as `MDAEvent.model_construct(**kwargs)`, but faster."""
+    event = _DEFAULT_EVENT.model_copy(update=kwargs)
+    if "metadata" not in kwargs:
+        event.__dict__["metadata"] = {}  # model_copy is shallow: don't share it
+    return event
 
 
-@cache
-def _used_axes(seq: MDASequence) -> str:
-    return "".join(k for k in seq.axis_order if _sizes(seq)[k])
+def _iter_axes(sequence: MDASequence) -> tuple[str, Iterator[AxisItems]]:
+    """Return the used axes of `sequence` and the product of their (index, item)s.
+
+    Like `itertools.product` (the last axis changes fastest), but the time axis is
+    never held in memory, since it may be millions of timepoints long.  It is
+    recreated each time the axes outside of it advance.
+    """
+    order = ""
+    outer: list[AxisItems] = []  # axes outside the time axis (all, if there is none)
+    inner: list[AxisItems] = []  # axes inside the time axis
+    has_time = False
+    for ax in sequence.axis_order:
+        if ax == Axis.TIME:
+            # True if there is at least one timepoint
+            has_time = any(True for _ in sequence.iter_axis(ax))
+            if not has_time:
+                continue
+        elif items := sequence._axis_items(ax):  # noqa: SLF001
+            (inner if has_time else outer).append(tuple(enumerate(items)))
+        else:
+            continue
+        order += ax
+
+    if not has_time:
+        return order, product(*outer) if outer else iter(())
+    return order, (
+        (*head, timepoint, *tail)
+        for head in product(*outer)
+        for timepoint in enumerate(sequence.iter_axis(Axis.TIME))
+        for tail in product(*inner)
+    )
 
 
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
@@ -112,6 +146,7 @@ def _iter_sequence(
     base_event_kwargs: MDAEventDict | None = None,
     event_kwarg_overrides: MDAEventDict | None = None,
     position_offsets: PositionDict | None = None,
+    parent_autofocus_plan: AnyAutofocusPlan | None = None,
     _last_t_idx: int = -1,
     _last_p_idx: int = -1,
 ) -> Iterator[MDAEvent]:
@@ -140,6 +175,8 @@ def _iter_sequence(
         A dictionary of offsets to apply to each position. This can be used to shift
         all positions in a sub-sequence.  Keys must be one of `x_pos`, `y_pos`, or
         `z_pos` and values should be floats.s
+    parent_autofocus_plan : AnyAutofocusPlan | None
+        The autofocus plan to use if `sequence` doesn't have its own.
     _last_t_idx : int
         The index of the last timepoint.  This is used to determine if the event
         should reset the event timer.
@@ -149,12 +186,9 @@ def _iter_sequence(
     MDAEvent
         Each event in the MDA sequence.
     """
-    order = _used_axes(sequence)
-    # this needs to be tuple(...) to work for mypyc
-    axis_iterators = tuple(enumerate(_iter_axis(sequence, ax)) for ax in order)
-    for item in product(*axis_iterators):
-        if not item:  # the case with no events
-            continue  # pragma: no cover
+    order, items = _iter_axes(sequence)
+    sequence_autofocus_plan = sequence.autofocus_plan or parent_autofocus_plan
+    for item in items:
         # get axes objects for this event
         index, time, position, grid, channel, z_pos = _parse_axes(
             zip(order, item, strict=False)
@@ -201,7 +235,7 @@ def _iter_sequence(
                     event_kwargs[k] += v  # type: ignore[literal-required]
 
         # grab global autofocus plan (may be overridden by position-specific plan below)
-        autofocus_plan = sequence.autofocus_plan
+        autofocus_plan = sequence_autofocus_plan
 
         # if a position has been declared with a sub-sequence, we recurse into it
         if position:
@@ -214,20 +248,14 @@ def _iter_sequence(
                 if position.name:
                     pos_overrides["pos_name"] = position.name
 
-                sub_seq = position.sequence
-                # if the sub-sequence doe not have an autofocus plan, we override it
-                # with the parent sequence's autofocus plan
-                if not sub_seq.autofocus_plan:
-                    sub_seq = sub_seq.model_copy(
-                        update={"autofocus_plan": autofocus_plan}
-                    )
-
-                # recurse into the sub-sequence
+                # recurse into the sub-sequence (which uses this sequence's
+                # autofocus plan, if it doesn't have its own)
                 yield from _iter_sequence(
-                    sub_seq,
+                    position.sequence,
                     base_event_kwargs=event_kwargs.copy(),
                     event_kwarg_overrides=pos_overrides,
                     position_offsets=_offsets,
+                    parent_autofocus_plan=autofocus_plan,
                     _last_t_idx=_last_t_idx,
                     _last_p_idx=_last_p_idx,
                 )
@@ -240,7 +268,7 @@ def _iter_sequence(
 
         if event_kwargs["index"].get(Axis.TIME) == 0 and _last_t_idx != 0:
             event_kwargs["reset_event_timer"] = True
-        event = MDAEvent.model_construct(**event_kwargs)
+        event = _new_event(event_kwargs)
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
             if af_event:
