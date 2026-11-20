@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import math
+import secrets
 import warnings
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import (
@@ -655,9 +656,9 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
         Maximum height of the bounding box in microns.
     shape : Shape
         Shape of the bounding box. Current options are "ellipse" and "rectangle".
-    random_seed : Optional[int]
-        Random numpy seed that should be used to generate the points. If None, a random
-        seed will be used.
+    random_seed : int
+        Random numpy seed that should be used to generate the points. By default, a
+        random seed is chosen when the plan is created.
     allow_overlap : bool
         By defaut, True. If False and `fov_width` and `fov_height` are specified, points
         will not overlap and will be at least `fov_width` and `fov_height apart.
@@ -677,10 +678,16 @@ class RandomPoints(_MultiPointPlan[RelativePosition]):
     max_width: Annotated[float, Gt(0)] = 1
     max_height: Annotated[float, Gt(0)] = 1
     shape: Shape = Shape.ELLIPSE
-    random_seed: int | None = None
+    random_seed: int = Field(default_factory=lambda: secrets.randbits(32))
     allow_overlap: bool = True
     order: TraversalOrder | None = TraversalOrder.TWO_OPT
     start_at: RelativePosition | Annotated[int, Ge(0)] = 0
+
+    @field_validator("random_seed", mode="before")
+    @classmethod
+    def _validate_seed(cls, v: Any) -> Any:
+        # None used to be allowed, and meant a new seed each time the plan was iterated
+        return secrets.randbits(32) if v is None else v
 
     @model_validator(mode="after")
     def _validate_startat(self) -> Self:

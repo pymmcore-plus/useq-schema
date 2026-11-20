@@ -294,3 +294,8 @@ def test_grid_from_edges_plot(monkeypatch: pytest.MonkeyPatch) -> None:
     GridFromEdges(
         overlap=10, top=0, left=0, bottom=20, right=30, fov_height=10, fov_width=20
     ).plot()
+
+
+def test_random_points_are_repeatable() -> None:
+    plan = RandomPoints(num_points=5)
+    assert list(plan) == list(plan)
