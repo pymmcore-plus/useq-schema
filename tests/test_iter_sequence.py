@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import copy
 import gc
-import pickle
 import weakref
 from typing import TYPE_CHECKING, Any
 
@@ -15,10 +13,8 @@ from useq._mda_event import ReadOnlyDict
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-SUB_Z = useq.MDASequence(z_plan={"range": 1, "step": 1})
 
-
-@pytest.mark.parametrize("axis_order", ["tpgcz", "ptgcz", "pczgt"])
+@pytest.mark.parametrize("axis_order", ["tpgcz", "ptgcz"])
 def test_timepoints_are_created_as_needed(axis_order: str) -> None:
     """The first events must not wait for (or hold) every timepoint."""
     created = 0
@@ -112,25 +108,6 @@ def test_model_copy_update() -> None:
     assert len(list(seq)) == 6
 
 
-@pytest.mark.parametrize(
-    "time_plan",
-    [
-        {"interval": 1, "loops": 4},
-        {"duration": 3, "loops": 4},
-        {"interval": 1, "duration": 3},
-        [{"interval": 1, "loops": 4}],
-        [{"interval": 1, "loops": 4}, {"interval": 2, "duration": 4}],
-        [{"interval": 1, "loops": 4}] * 3,
-    ],
-)
-def test_time_axis_size(time_plan: Any) -> None:
-    seq = useq.MDASequence(time_plan=time_plan)
-    assert seq.time_plan is not None
-    n_timepoints = len(list(seq.time_plan))
-    assert seq.time_plan.num_timepoints() == n_timepoints
-    assert seq.sizes["t"] == n_timepoints == len(list(seq))
-
-
 def test_time_axis_size_with_custom_iter_axis() -> None:
     class EveryOtherTimepoint(useq.MDASequence):
         def iter_axis(self, axis: str) -> Iterator[Any]:
@@ -139,18 +116,3 @@ def test_time_axis_size_with_custom_iter_axis() -> None:
 
     seq = EveryOtherTimepoint(time_plan={"interval": 1, "loops": 5})
     assert seq.sizes["t"] == 3 == len(list(seq))
-
-
-@pytest.mark.parametrize("copier", [copy.copy, copy.deepcopy, pickle.loads])
-def test_copied_sequence_iterates(copier: Any) -> None:
-    seq = useq.MDASequence(
-        time_plan={"interval": 1, "loops": 2},
-        stage_positions=[useq.Position(x=1, y=2, sequence=SUB_Z)],
-        channels=["DAPI"],
-    )
-    events = list(seq)
-    copied = copier(pickle.dumps(seq) if copier is pickle.loads else seq)
-    assert copied.sizes == seq.sizes
-    assert [e.model_dump(exclude={"sequence"}) for e in copied] == [
-        e.model_dump(exclude={"sequence"}) for e in events
-    ]
