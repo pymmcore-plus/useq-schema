@@ -7,6 +7,7 @@
 [![tests](https://github.com/pymmcore-plus/useq-schema/actions/workflows/ci.yml/badge.svg)](https://github.com/pymmcore-plus/useq-schema/actions/workflows/ci.yml)
 [![docs](https://github.com/pymmcore-plus/useq-schema/actions/workflows/docs.yml/badge.svg)](https://pymmcore-plus.github.io/useq-schema/)
 [![codecov](https://codecov.io/gh/pymmcore-plus/useq-schema/branch/main/graph/badge.svg)](https://codecov.io/gh/pymmcore-plus/useq-schema)
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/pymmcore-plus/useq-schema?utm_source=badge)
 
 *An open, implementation-agnostic schema for describing multi-dimensional
 microscopy experiments.*
