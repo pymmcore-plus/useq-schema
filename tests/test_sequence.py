@@ -17,7 +17,7 @@ from useq import (
     ZRangeAround,
 )
 from useq._actions import AcquireImage, CustomAction, HardwareAutofocus
-from useq._mda_event import SLMImage
+from useq._mda_event import ReadOnlyDict, SLMImage
 
 _T = list[tuple[Any, Sequence[float]]]
 
@@ -411,3 +411,12 @@ def test_mda_sequence_no_setup() -> None:
     # no setup event should be prepended
     for ev in events:
         assert not isinstance(ev.action, CustomAction)
+
+
+def test_read_only_dict() -> None:
+    assert ReadOnlyDict() == ReadOnlyDict(None) == {}
+    assert ReadOnlyDict({"t": 1}, c=2) == ReadOnlyDict([("t", 1), ("c", 2)])
+    index = ReadOnlyDict(ReadOnlyDict({"t": 1}))
+    assert dict(index) == {"t": 1}
+    with pytest.raises(TypeError, match="Read-only"):
+        index["t"] = 2
