@@ -47,13 +47,41 @@ def _iter_axis(seq: MDASequence, ax: str) -> tuple[Channel | float | PositionBas
 
 
 @cache
-def _sizes(seq: MDASequence) -> dict[str, int]:
-    return {k: len(list(_iter_axis(seq, k))) for k in seq.axis_order}
-
-
-@cache
 def _used_axes(seq: MDASequence) -> str:
-    return "".join(k for k in seq.axis_order if _sizes(seq)[k])
+    # an axis is used if it has a first item (found without creating all of them)
+    return "".join(k for k in seq.axis_order if any(True for _ in seq.iter_axis(k)))
+
+
+def _product(seq: MDASequence, order: str) -> Iterator[tuple[tuple[int, Any], ...]]:
+    """Like `itertools.product` over the (index, item)s of each axis in `order`.
+
+    But the time axis is never held in memory (it may be millions of timepoints
+    long): it is recreated each time the axes outside of it advance.
+    """
+    outer, has_time, inner = order.partition(Axis.TIME)
+    outer_items = [tuple(enumerate(_iter_axis(seq, ax))) for ax in outer]
+    if not has_time:
+        yield from product(*outer_items)
+        return
+    inner_items = [tuple(enumerate(_iter_axis(seq, ax))) for ax in inner]
+    for head in product(*outer_items):
+        for timepoint in enumerate(seq.iter_axis(Axis.TIME)):
+            for tail in product(*inner_items):
+                yield (*head, timepoint, *tail)
+
+
+# An event with every field at its default value.  Copying it is much faster than
+# `MDAEvent.model_construct`, which looks up the default of each missing field
+# (and pydantic inspects the signature of every default factory, on every call).
+_DEFAULT_EVENT = MDAEvent.model_construct()
+
+
+def _new_event(kwargs: MDAEventDict) -> MDAEvent:
+    """Same as `MDAEvent.model_construct(**kwargs)`, but faster."""
+    event = _DEFAULT_EVENT.model_copy(update=kwargs)
+    if "metadata" not in kwargs:
+        event.__dict__["metadata"] = {}  # model_copy is shallow: don't share it
+    return event
 
 
 def iter_sequence(sequence: MDASequence) -> Iterator[MDAEvent]:
@@ -150,9 +178,7 @@ def _iter_sequence(
         Each event in the MDA sequence.
     """
     order = _used_axes(sequence)
-    # this needs to be tuple(...) to work for mypyc
-    axis_iterators = tuple(enumerate(_iter_axis(sequence, ax)) for ax in order)
-    for item in product(*axis_iterators):
+    for item in _product(sequence, order):
         if not item:  # the case with no events
             continue  # pragma: no cover
         # get axes objects for this event
@@ -240,7 +266,7 @@ def _iter_sequence(
 
         if event_kwargs["index"].get(Axis.TIME) == 0 and _last_t_idx != 0:
             event_kwargs["reset_event_timer"] = True
-        event = MDAEvent.model_construct(**event_kwargs)
+        event = _new_event(event_kwargs)
         if autofocus_plan:
             af_event = autofocus_plan.event(event)
             if af_event:
