@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import cache
 from itertools import product
 from typing import TYPE_CHECKING, Any, cast
 
@@ -16,6 +15,7 @@ from useq._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from useq._hardware_autofocus import AnyAutofocusPlan
     from useq._mda_sequence import MDASequence
     from useq._position import Position, PositionBase, RelativePosition
 
@@ -41,15 +41,21 @@ class PositionDict(TypedDict, total=False):
     z_pos: float
 
 
-@cache
 def _iter_axis(seq: MDASequence, ax: str) -> tuple[Channel | float | PositionBase, ...]:
-    return tuple(seq.iter_axis(ax))
+    return seq._axis_items(ax)  # noqa: SLF001
 
 
-@cache
 def _used_axes(seq: MDASequence) -> str:
-    # an axis is used if it has a first item (found without creating all of them)
-    return "".join(k for k in seq.axis_order if any(True for _ in seq.iter_axis(k)))
+    # an axis is used if it has any items (timepoints are not stored: see `_product`)
+    return "".join(
+        k
+        for k in seq.axis_order
+        if (
+            any(True for _ in seq.iter_axis(k))
+            if k == Axis.TIME
+            else _iter_axis(seq, k)
+        )
+    )
 
 
 def _product(seq: MDASequence, order: str) -> Iterator[tuple[tuple[int, Any], ...]]:
@@ -140,6 +146,7 @@ def _iter_sequence(
     base_event_kwargs: MDAEventDict | None = None,
     event_kwarg_overrides: MDAEventDict | None = None,
     position_offsets: PositionDict | None = None,
+    parent_autofocus_plan: AnyAutofocusPlan | None = None,
     _last_t_idx: int = -1,
     _last_p_idx: int = -1,
 ) -> Iterator[MDAEvent]:
@@ -168,6 +175,8 @@ def _iter_sequence(
         A dictionary of offsets to apply to each position. This can be used to shift
         all positions in a sub-sequence.  Keys must be one of `x_pos`, `y_pos`, or
         `z_pos` and values should be floats.s
+    parent_autofocus_plan : AnyAutofocusPlan | None
+        The autofocus plan to use if `sequence` doesn't have its own.
     _last_t_idx : int
         The index of the last timepoint.  This is used to determine if the event
         should reset the event timer.
@@ -227,7 +236,7 @@ def _iter_sequence(
                     event_kwargs[k] += v  # type: ignore[literal-required]
 
         # grab global autofocus plan (may be overridden by position-specific plan below)
-        autofocus_plan = sequence.autofocus_plan
+        autofocus_plan = sequence.autofocus_plan or parent_autofocus_plan
 
         # if a position has been declared with a sub-sequence, we recurse into it
         if position:
@@ -240,20 +249,14 @@ def _iter_sequence(
                 if position.name:
                     pos_overrides["pos_name"] = position.name
 
-                sub_seq = position.sequence
-                # if the sub-sequence doe not have an autofocus plan, we override it
-                # with the parent sequence's autofocus plan
-                if not sub_seq.autofocus_plan:
-                    sub_seq = sub_seq.model_copy(
-                        update={"autofocus_plan": autofocus_plan}
-                    )
-
-                # recurse into the sub-sequence
+                # recurse into the sub-sequence (which uses this sequence's
+                # autofocus plan, if it doesn't have its own)
                 yield from _iter_sequence(
-                    sub_seq,
+                    position.sequence,
                     base_event_kwargs=event_kwargs.copy(),
                     event_kwarg_overrides=pos_overrides,
                     position_offsets=_offsets,
+                    parent_autofocus_plan=autofocus_plan,
                     _last_t_idx=_last_t_idx,
                     _last_p_idx=_last_p_idx,
                 )

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import gc
+import weakref
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -58,3 +60,20 @@ def test_new_event_matches_model_construct() -> None:
     # metadata is mutable, and must not be shared between events
     assert event.metadata is not _new_event(kwargs).metadata
     assert _new_event({**kwargs, "metadata": {"a": 1}}).metadata == {"a": 1}
+
+
+def test_iteration_does_not_keep_sequence_alive() -> None:
+    seq = useq.MDASequence(time_plan={"interval": 0, "loops": 3}, channels=["DAPI"])
+    ref = weakref.ref(seq)
+    assert len(list(seq)) == 3
+    del seq
+    gc.collect()
+    assert ref() is None
+
+
+def test_iterate_copy_with_new_plan() -> None:
+    seq = useq.MDASequence(z_plan={"range": 1, "step": 1})
+    assert len(list(seq)) == 2
+    copied = seq.model_copy(update={"z_plan": useq.ZRangeAround(range=2, step=1)})
+    assert len(list(copied)) == 3
+    assert len(list(seq)) == 2
