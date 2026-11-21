@@ -13,7 +13,7 @@ from useq._utils import _has_axes
 from useq._z import AnyZPlan  # noqa: TC001  # noqa: TCH001
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator, Iterator
 
     from useq._hardware_autofocus import AnyAutofocusPlan
     from useq._mda_sequence import MDASequence
@@ -149,7 +149,8 @@ def _iter_sequence(
     parent_autofocus_plan: AnyAutofocusPlan | None = None,
     _last_t_idx: int = -1,
     _last_p_idx: int = -1,
-) -> Iterator[MDAEvent]:
+    _autofocus_indices: dict[int, dict[str, int]] | None = None,
+) -> Generator[MDAEvent, None, int]:
     """Helper function for `iter_sequence`.
 
     We put most of the logic into this sub-function so that `iter_sequence` can
@@ -180,12 +181,22 @@ def _iter_sequence(
     _last_t_idx : int
         The index of the last timepoint.  This is used to determine if the event
         should reset the event timer.
+    _autofocus_indices : dict[int, dict[str, int]] | None
+        The index of the last event seen by each autofocus plan (by `id`), in this
+        iteration.
 
     Yields
     ------
     MDAEvent
         Each event in the MDA sequence.
+
+    Returns
+    -------
+    int
+        The index of the last timepoint.
     """
+    if _autofocus_indices is None:
+        _autofocus_indices = {}
     order = _used_axes(sequence)
     for item in _product(sequence, order):
         if not item:  # the case with no events
@@ -200,9 +211,13 @@ def _iter_sequence(
             continue
 
         # build kwargs that will be passed to this MDAEvent
-        event_kwargs = base_event_kwargs or MDAEventDict(sequence=sequence)
-        # the .update() here lets us build on top of the base_event.index if present
-
+        # (a new dict for each event: values must not carry over to the next one)
+        event_kwargs = (
+            base_event_kwargs.copy()
+            if base_event_kwargs
+            else MDAEventDict(sequence=sequence)
+        )
+        # this lets us build on top of the base_event.index if present
         event_kwargs["index"] = ReadOnlyDict(
             {**event_kwargs.get("index", {}), **index}  # type: ignore
         )
@@ -251,14 +266,15 @@ def _iter_sequence(
 
                 # recurse into the sub-sequence (which uses this sequence's
                 # autofocus plan, if it doesn't have its own)
-                yield from _iter_sequence(
+                _last_t_idx = yield from _iter_sequence(
                     position.sequence,
-                    base_event_kwargs=event_kwargs.copy(),
+                    base_event_kwargs=event_kwargs,
                     event_kwarg_overrides=pos_overrides,
                     position_offsets=_offsets,
                     parent_autofocus_plan=autofocus_plan,
                     _last_t_idx=_last_t_idx,
                     _last_p_idx=_last_p_idx,
+                    _autofocus_indices=_autofocus_indices,
                 )
                 continue
             # note that position.sequence may be Falsey even if not None, for example
@@ -271,14 +287,30 @@ def _iter_sequence(
             event_kwargs["reset_event_timer"] = True
         event = _new_event(event_kwargs)
         if autofocus_plan:
-            af_event = autofocus_plan.event(event)
+            af_event = _autofocus_event(autofocus_plan, event, _autofocus_indices)
             if af_event:
                 yield af_event
         yield event
         _last_t_idx = event.index.get(Axis.TIME, _last_t_idx)
+    return _last_t_idx
 
 
 # ###################### Helper functions ######################
+
+
+def _autofocus_event(
+    plan: AnyAutofocusPlan, event: MDAEvent, indices: dict[int, dict[str, int]]
+) -> MDAEvent | None:
+    """Return the autofocus event to perform before `event`, if any.
+
+    The plan compares each event to the last one it has seen, which must be one from
+    this iteration (not from a previous or concurrent one): so it is kept in
+    `indices` (by plan `id`) rather than left on the plan.
+    """
+    plan._previous = indices.get(id(plan), {})  # noqa: SLF001
+    af_event = plan.event(event)
+    indices[id(plan)] = plan._previous  # noqa: SLF001
+    return af_event
 
 
 def _position_offsets(
